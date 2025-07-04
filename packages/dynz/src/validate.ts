@@ -1,0 +1,908 @@
+import { isAfter, isBefore, parse } from 'date-fns';
+import { resolveProperty, resolveRules, unpackRefValue } from './resolve';
+import {
+  BaseErrorMessage,
+  EqualsErrorMessage,
+  EqualsRule,
+  ErrorCode,
+  PrivateValue,
+  MaxErrorMessage,
+  MaxPrecisionErrorMessage,
+  MaxPrecisionRule,
+  MaxRule,
+  MinErrorMessage,
+  MinRule,
+  RegexErrorMessage,
+  RegexRule,
+  ResolvedRules,
+  RuleType,
+  Schema,
+  SchemaType,
+  SchemaValues,
+  ValidationResult,
+  DateString,
+  ValueType,
+  Context,
+  IsNumericErrorMessage,
+  ValidateOptions,
+  CustomRule,
+  CustomErrorMessage,
+} from './types';
+
+export function validate<T extends Schema, TOptions extends ValidateOptions>(
+  schema: T,
+  currentValues: SchemaValues<T> | undefined,
+  newValues: unknown,
+  options: TOptions | {} = {},
+): ValidationResult<SchemaValues<T>> {
+  return _validate(
+    schema,
+    { current: currentValues, new: newValues },
+    '$',
+    {
+      type: 'validate',
+      schema,
+      validateOptions: options,
+      validateMutable: currentValues !== undefined,
+      values: {
+        current: currentValues,
+        new: newValues,
+      },
+    },
+    newValues,
+  ) as ValidationResult<SchemaValues<T>>;
+}
+
+export function _validate<T extends Schema>(
+  schema: T,
+  values: { current: unknown; new: unknown },
+  path: string,
+  context: Context,
+  parentValue?: unknown,
+): ValidationResult<unknown> {
+  /**
+   * If the schema is not included we do not need to validate it
+   */
+  if (!resolveProperty(schema, 'included', path, true, context)) {
+    if (values.new !== undefined) {
+      return {
+        success: false,
+        errors: [
+          {
+            path,
+            schema,
+            value: values.new,
+            current: values.current,
+            code: ErrorCode.INCLUDED,
+            message: `A value is present for a schema that is not included: ${path}`,
+          },
+        ],
+      };
+    }
+
+    return {
+      success: true,
+      values: undefined,
+    };
+  }
+
+  // If the new value is masked; skip all validation and return the value immediately
+  if (isValueMasked(schema, values.new)) {
+    return {
+      success: true,
+      values: values.new,
+    };
+  }
+
+  const newValue = getValue(schema, path, values.new);
+  const currentValue = getValue(schema, path, values.current);
+
+  /**
+   * if the schema is marked as not mutable; the value shuld still be the same
+   */
+  if (
+    context.validateMutable &&
+    resolveProperty(schema, 'mutable', path, true, context) === false
+  ) {
+    if (valueChanged(schema, path, values.current, values.new)) {
+      return {
+        success: false,
+        errors: [
+          {
+            path,
+            schema,
+            value: values.new,
+            current: values.current,
+            code: ErrorCode.IMMUTABLE,
+            message: `The value for a schema that is not mutable has changed: ${path}`,
+          },
+        ],
+      };
+    }
+  }
+
+  /**
+   * Validate required
+   */
+  if (
+    resolveProperty(schema, 'required', path, true, context) &&
+    newValue === undefined
+  ) {
+    return {
+      success: false,
+      errors: [
+        {
+          path,
+          schema,
+          value: newValue,
+          current: currentValue,
+          code: ErrorCode.REQRUIED,
+          message: `A required value is missing for schema: ${path}`,
+        },
+      ],
+    };
+  }
+
+  /**
+   * Type check
+   */
+  if (newValue !== undefined && validateSchema(schema, newValue) === false) {
+    const error = {
+      path,
+      schema,
+      value: newValue,
+      current: currentValue,
+      code: ErrorCode.TYPE,
+    };
+
+    return {
+      success: false,
+      errors: [
+        schema.type === SchemaType.DATE_STRING
+          ? {
+              ...error,
+              expectedType: schema.type,
+              expectedFormat: schema.format,
+              message: `The value for schema ${path} is not a valid date string in the format ${schema.format}`,
+            }
+          : {
+              ...error,
+              expectedType: schema.type,
+              message: `The value for schema ${path} is not of type ${schema.type}`,
+            },
+      ],
+    };
+  }
+
+  /**
+   * Check rules
+   */
+  if (newValue !== undefined) {
+    for (const rule of resolveRules(schema, path, context)) {
+      const result = validateRule(schema, path, rule, newValue, context);
+      if (result !== undefined) {
+        return {
+          success: false,
+          errors: [
+            {
+              ...result,
+              schema,
+              path,
+              value: newValue,
+              current: currentValue,
+            },
+          ],
+        };
+      }
+    }
+  }
+
+  /**
+   * Validate nested fields on object
+   */
+  if (schema.type === SchemaType.OBJECT) {
+    if (!isObject(newValue)) {
+      throw new Error(`new value is not an object: ${newValue}`);
+    }
+
+    if (currentValue !== undefined && !isObject(currentValue)) {
+      throw new Error(`current value is not an object: ${currentValue}`);
+    }
+
+    return Object.entries(schema.fields).reduce<
+      ValidationResult<Record<string, unknown>>
+    >(
+      (acc, [key, innerSchema]) => {
+        const result = _validate(
+          innerSchema,
+          {
+            current: currentValue && currentValue[key],
+            new: newValue[key],
+          },
+          `${path}.${key}`,
+          context,
+        );
+
+        if (acc.success && result.success) {
+          return {
+            success: true,
+            values: { ...acc.values, [key]: result.values },
+          };
+        }
+
+        return {
+          success: false,
+          errors: [
+            ...(acc.success === true ? [] : acc.errors),
+            ...(result.success === true ? [] : result.errors),
+          ],
+        };
+      },
+      { success: true, values: {} },
+    );
+  }
+
+  /**
+   * Validate array
+   */
+  if (schema.type === SchemaType.ARRAY) {
+    if (!isArray(newValue)) {
+      throw new Error(`new value is not an array: ${newValue}`);
+    }
+
+    if (currentValue !== undefined && !isArray(currentValue)) {
+      throw new Error(`current value is not an array: ${currentValue}`);
+    }
+
+    const newContext = {
+      ...context,
+      // We do not validate mutable values in arrays, as they are always mutable
+      validateMutable: false,
+    };
+
+    return newValue.reduce<ValidationResult<unknown[]>>(
+      (acc, cur, index) => {
+        const result = _validate(
+          schema.schema,
+          {
+            current: currentValue && currentValue[index],
+            new: cur,
+          },
+          `${path}.[${index}]`,
+          newContext,
+        );
+
+        if (acc.success && result.success) {
+          acc.values.push(result.values);
+          return acc;
+        }
+
+        return {
+          success: false,
+          errors: [
+            ...(acc.success === true ? [] : acc.errors),
+            ...(result.success === true ? [] : result.errors),
+          ],
+        };
+      },
+      { success: true, values: [] },
+    );
+  }
+
+  return {
+    success: true,
+    values: newValue,
+  };
+}
+
+function validateRule<T extends Schema>(
+  schema: T,
+  path: string,
+  rule: ResolvedRules,
+  value: ValueType<T['type']>,
+  context: Context,
+) {
+  switch (rule.type) {
+    case RuleType.EQUALS:
+      return validateEqualsRule(schema, path, rule, value, context);
+    case RuleType.MIN:
+      return validateMinRule(schema, path, rule, value, context);
+    case RuleType.MAX:
+      return validateMaxRule(schema, path, rule, value, context);
+    case RuleType.MAX_PRECISION:
+      return validateMaxPrecision(schema, path, rule, value, context);
+    case RuleType.REGEX:
+      return validateRegex(rule, value);
+    case RuleType.IS_NUMERIC:
+      return validateIsNumeric(value);
+    case RuleType.CUSTOM:
+      return validateCustomRule(schema, path, rule, value, context);
+  }
+}
+
+/**
+ * Custom rule validator
+ *
+ * @param rule the rule that is executed
+ * @param value the value to be validated
+ * @returns undefined then the validations passses, an error message when it fails
+ */
+function validateCustomRule<T extends Schema>(
+  schema: T,
+  path: string,
+  rule: CustomRule,
+  value: ValueType<T['type']>,
+  context: Context,
+):
+  | Omit<CustomErrorMessage, keyof Omit<BaseErrorMessage, 'message'>>
+  | undefined {
+  const validatorFn = context.validateOptions.customRules?.[rule.name];
+
+  if (validatorFn === undefined) {
+    throw new Error(
+      `Custom rule "${rule.name}" is not defined in the custom rules map.`,
+    );
+  }
+
+  // unpack all references in the rule
+  const unpackedParams = Object.entries(rule.params).reduce<
+    Record<string, unknown>
+  >((acc, [key, valueOrRef]) => {
+    acc[key] = unpackRefValue(valueOrRef, path, context);
+    return acc;
+  }, {});
+
+  const result = validatorFn(
+    {
+      schema: schema,
+      value: value,
+    },
+    unpackedParams,
+    path,
+    schema,
+  );
+
+  return result === true
+    ? undefined
+    : {
+        message: `The value for schema ${path} did not pass the custom validation rule "${rule.name}"`, // Message can be overridden by custom function
+        ...(typeof result !== 'boolean'
+          ? { ...result, success: undefined }
+          : {}),
+        code: ErrorCode.CUSTOM,
+        name: rule.name,
+      };
+}
+
+/**
+ * Equals rule validator
+ *
+ * @param rule the rule that is executed
+ * @param value the value to be validated
+ * @returns undefined then the validations passses, an error message when it fails
+ */
+function validateEqualsRule(
+  schema: Schema,
+  path: string,
+  rule: EqualsRule,
+  value: unknown,
+  context: Context,
+):
+  | Omit<EqualsErrorMessage, keyof Omit<BaseErrorMessage, 'message'>>
+  | undefined {
+  const equals = unpackRefValue(rule.value, path, context);
+  return equals === value
+    ? undefined
+    : {
+        code: ErrorCode.EQUALS,
+        equals: equals,
+        message: `The value for schema ${path} does not equal ${equals}`,
+      };
+}
+
+/**
+ * Min rule validator
+ *
+ * @param rule the rule that is executed
+ * @param value the value to be validated
+ * @returns undefined then the validations passses, an error message when it fails
+ */
+function validateMinRule(
+  schema: Schema,
+  path: string,
+  rule: MinRule,
+  value: unknown,
+  context: Context,
+): Omit<MinErrorMessage, keyof Omit<BaseErrorMessage, 'message'>> | undefined {
+  const min = unpackRefValue(rule.min, path, context);
+
+  if (min === undefined) {
+    return undefined;
+  }
+
+  if (!isNumber(min) && !isString(min)) {
+    throw new Error(`min is not a number or string value ${min}`);
+  }
+
+  const validate = () => {
+    switch (schema.type) {
+      case SchemaType.NUMBER:
+        return assertSchema(schema, value) >= assertNumber(min);
+      case SchemaType.STRING:
+        return assertSchema(schema, value).length >= assertNumber(min);
+      case SchemaType.OBJECT:
+        return (
+          Object.keys(assertSchema(schema, value)).length >= assertNumber(min)
+        );
+      case SchemaType.ARRAY:
+        return assertSchema(schema, value).length >= assertNumber(min);
+      case SchemaType.DATE_STRING: {
+        const date = parseDateString(
+          assertSchema(schema, value),
+          schema.format,
+        );
+        const compareTo = parseDateString(
+          assertSchema(schema, min),
+          schema.format,
+        );
+        return (
+          isAfter(date, compareTo) || date.getTime() === compareTo.getTime()
+        );
+      }
+    }
+  };
+
+  return validate()
+    ? undefined
+    : {
+        code: ErrorCode.MIN,
+        min,
+        message: `The value ${value} for schema ${path} is less than the minimum value of ${min}`,
+      };
+}
+
+/**
+ * Max rule validator
+ *
+ * @param rule the rule that is executed
+ * @param value the value to be validated
+ * @returns undefined then the validations passses, an error message when it fails
+ */
+function validateMaxRule(
+  schema: Schema,
+  path: string,
+  rule: MaxRule,
+  value: unknown,
+  context: Context,
+): Omit<MaxErrorMessage, keyof Omit<BaseErrorMessage, 'message'>> | undefined {
+  const max = unpackRefValue(rule.max, path, context);
+
+  if (!isNumber(max) && !isString(max)) {
+    throw new Error('max is not a number or string value');
+  }
+
+  const validate = () => {
+    switch (schema.type) {
+      case SchemaType.NUMBER:
+        return assertSchema(schema, value) <= assertNumber(max);
+      case SchemaType.STRING:
+        return assertSchema(schema, value).length <= assertNumber(max);
+      case SchemaType.OBJECT:
+        return (
+          Object.keys(assertSchema(schema, value)).length <= assertNumber(max)
+        );
+      case SchemaType.ARRAY:
+        return assertSchema(schema, value).length <= assertNumber(max);
+      case SchemaType.DATE_STRING: {
+        const date = parseDateString(
+          assertSchema(schema, value),
+          schema.format,
+        );
+        const compareTo = parseDateString(
+          assertSchema(schema, max),
+          schema.format,
+        );
+        return (
+          isBefore(date, compareTo) || date.getTime() === compareTo.getTime()
+        );
+      }
+    }
+  };
+
+  return validate()
+    ? undefined
+    : {
+        code: ErrorCode.MAX,
+        max,
+        message: `The value ${value} for schema ${path} is greater than the maximum value of ${max}`,
+      };
+}
+
+/**
+ * Is numeric rule validator
+ *
+ * @param rule the rule that is executed
+ * @param value the value to be validated
+ * @returns undefined then the validations passses, an error message when it fails
+ */
+function validateIsNumeric(
+  value: unknown,
+):
+  | Omit<IsNumericErrorMessage, keyof Omit<BaseErrorMessage, 'message'>>
+  | undefined {
+  const assertedValue = assertString(value);
+  return !Number.isNaN(assertedValue) && !Number.isNaN(+assertedValue)
+    ? undefined
+    : {
+        code: ErrorCode.IS_NUMERIC,
+        message: `The value ${value} is not a valid numeric value`,
+      };
+}
+
+/**
+ * Max precision rule validator
+ *
+ * @param rule the rule that is executed
+ * @param value the value to be validated
+ * @returns undefined then the validations passses, an error message when it fails
+ */
+function validateMaxPrecision(
+  schema: Schema,
+  path: string,
+  rule: MaxPrecisionRule,
+  value: unknown,
+  context: Context,
+):
+  | Omit<MaxPrecisionErrorMessage, keyof Omit<BaseErrorMessage, 'message'>>
+  | undefined {
+  const maxPrecision = assertNumber(unpackRefValue(rule.max, path, context));
+  const precision = getPrecision(assertNumber(value));
+  return maxPrecision <= precision
+    ? undefined
+    : {
+        code: ErrorCode.MAX_PRECISION,
+        maxPrecision,
+        message: `The value ${value} for schema ${path} has a precision of ${precision}, which is greater than the maximum precision of ${maxPrecision}`,
+      };
+}
+
+/**
+ * Regex rule validator
+ *
+ * @param rule the rule that is executed
+ * @param value the value to be validated
+ * @returns undefined then the validations passses, an error message when it fails
+ */
+function validateRegex(
+  rule: RegexRule,
+  value: unknown,
+):
+  | Omit<RegexErrorMessage, keyof Omit<BaseErrorMessage, 'message'>>
+  | undefined {
+  const regex = new RegExp(rule.regex);
+  return regex.test(assertString(value))
+    ? undefined
+    : {
+        code: ErrorCode.REGEX,
+        regex: rule.regex,
+        message: `The value ${value} does not match the regex ${rule.regex}`,
+      };
+}
+
+/**
+ * Validates whether the value is of the correct type
+ *
+ * @param type the expected type of the value
+ * @param value the value to be validated
+ * @returns true if the type is correct, false if not
+ */
+export function validateSchema<T extends Schema>(
+  schema: T,
+  value: unknown,
+): value is ValueType<T['type']> {
+  return schema.type === SchemaType.DATE_STRING
+    ? validateType(schema.type, value, schema.format)
+    : validateType(schema.type, value);
+}
+
+/**
+ * Validates whether the value is of the correct type
+ *
+ * @param type the expected type of the value
+ * @param value the value to be validated
+ * @returns true if the type is correct, false if not
+ */
+export function validateType<
+  T extends Exclude<SchemaType, typeof SchemaType.DATE_STRING>,
+>(type: T, value: unknown): value is ValueType<T>;
+export function validateType<T extends typeof SchemaType.DATE_STRING>(
+  type: T,
+  value: unknown,
+  dateFormat: string,
+): value is ValueType<T>;
+export function validateType<T extends SchemaType>(
+  type: T,
+  value: unknown,
+  dateFormat?: string,
+): value is ValueType<T>;
+export function validateType<T extends SchemaType>(
+  type: T,
+  value: unknown,
+  dateFormat?: string,
+): value is ValueType<T> {
+  switch (type) {
+    case SchemaType.NUMBER:
+      return isNumber(value);
+    case SchemaType.OBJECT:
+      return isObject(value);
+    case SchemaType.STRING:
+      return isString(value);
+    case SchemaType.DATE:
+      return isDate(value);
+    case SchemaType.ARRAY:
+      return isArray(value);
+    case SchemaType.DATE_STRING: {
+      if (dateFormat === undefined) {
+        throw new Error('No date format supplied for date string type');
+      }
+
+      return isDateString(value, dateFormat);
+    }
+    case SchemaType.OPTIONS:
+      return isNumber(value) || isString(value) || isBoolean(value);
+  }
+}
+
+/**
+ * Makes sure that a value is of a certain type; if not it throws an error
+ *
+ * @param type the expected type of the value
+ * @param value the value to be validated
+ */
+export function assertSchema<T extends Schema>(
+  schema: T,
+  value: unknown,
+): ValueType<T['type']> {
+  if (validateSchema(schema, value)) {
+    return value;
+  }
+
+  throw new Error(`Invalid value: ${value} for schema type: ${schema.type}`);
+}
+
+/**
+ * Makes sure that a value is of a certain type; if not it throws an error
+ *
+ * @param type the expected type of the value
+ * @param value the value to be validated
+ */
+export function assertType<
+  T extends Exclude<SchemaType, typeof SchemaType.DATE_STRING>,
+>(type: T, value: unknown): ValueType<T>;
+export function assertType<T extends typeof SchemaType.DATE_STRING>(
+  type: T,
+  value: unknown,
+  dateFormat: string,
+): ValueType<T>;
+export function assertType<T extends SchemaType>(
+  type: T,
+  value: unknown,
+  dateFormat?: string,
+): ValueType<T> {
+  if (validateType(type, value, dateFormat)) {
+    return value;
+  }
+
+  throw new Error(`Invalid value: ${value} for schema type: ${type}`);
+}
+
+/**
+ * Validates whether a value is a string value
+ *
+ * @param value the value to be validated
+ * @returns true if the value is correct, false if not
+ */
+export function isString(value: unknown): value is string {
+  return typeof value === 'string';
+}
+
+/**
+ * Validates whether a value is a number value
+ *
+ * @param value the value to be validated
+ * @returns true if the value is correct, false if not
+ */
+export function isNumber(value: unknown): value is number {
+  return (
+    typeof value === 'number' && !Number.isNaN(value) && Number.isFinite(value)
+  );
+}
+
+/**
+ * Validates whether a value is a date value
+ *
+ * @param value the value to be validated
+ * @returns true if the value is correct, false if not
+ */
+export function isDate(value: unknown): value is Date {
+  return (
+    value instanceof Date &&
+    !isNaN(value.getTime()) &&
+    value.toString() !== 'Invalid Date'
+  );
+}
+
+/**
+ * Validates whether a value is a boolean value
+ *
+ * @param value the value to be validated
+ * @returns true if the value is correct, false if not
+ */
+export function isBoolean(value: unknown): value is boolean {
+  return typeof value === 'boolean';
+}
+
+/**
+ * Validates whether a value is an object (Record<string | number, unknown>) value. If
+ * the value is e.g. an array type it will return false
+ *
+ * @param value the value to be validated
+ * @returns true if the value is correct, false if not
+ */
+export function isObject(
+  value: unknown,
+): value is Record<string | number, unknown> {
+  return typeof value === 'object' && !Array.isArray(value);
+}
+
+/**
+ * Validates whether a value is an array value
+ *
+ * @param value the value to be validated
+ * @returns true if the value is correct, false if not
+ */
+export function isArray(value: unknown): value is unknown[] {
+  return Array.isArray(value);
+}
+
+export function assertNumber(value: unknown): number {
+  return assertType(SchemaType.NUMBER, value);
+}
+
+export function assertObject(value: unknown): Record<string | number, unknown> {
+  return assertType(SchemaType.OBJECT, value);
+}
+
+export function assertArray(value: unknown): unknown[] {
+  return assertType(SchemaType.ARRAY, value);
+}
+
+export function assertString(value: unknown): string {
+  return assertType(SchemaType.STRING, value);
+}
+
+export function assertDateString(value: unknown, format: string): DateString {
+  return assertType(SchemaType.DATE_STRING, value, format);
+}
+
+/**
+ * Validates whether a value is a string date
+ *
+ * @param value the value to be validated
+ * @returns true if the value is correct, false if not
+ */
+export function isDateString(
+  value: unknown,
+  format: string,
+): value is DateString {
+  console.log('format: ', format, value, typeof value);
+  const date =
+    typeof value === 'string' ? parse(value, format, new Date()) : undefined;
+  return date instanceof Date && !isNaN(date.getTime());
+}
+
+export function parseDateString(value: DateString, format: string): Date {
+  return parse(value, format, new Date());
+}
+
+/**
+ * Returns the precision of a number
+ * e.g. 1.23 resolves in a precision of 2
+ *
+ * @param value the number value the precision needs to be determined for
+ * @returns the precision
+ */
+function getPrecision(value: number): number {
+  return (value.toString().split('.')[1] || '').length;
+}
+
+/**
+ * Determines based on the schema and the current and new value whether the value has changed
+ * @param schema
+ * @param path
+ * @param currentValue
+ * @param newValue
+ * @returns
+ */
+function valueChanged<T>(
+  schema: Schema,
+  path: string,
+  currentValue: T | PrivateValue<T>,
+  newValue: T | PrivateValue<T>,
+): boolean {
+  if (schema.private) {
+    if (!isPivateValue(currentValue) || !isPivateValue(newValue)) {
+      throw new Error(
+        `Expected private values for schema ${path}, but got: currentValue=${currentValue}, newValue=${newValue}`,
+      );
+    }
+
+    return (
+      currentValue.state === 'plain' &&
+      newValue.state === 'plain' &&
+      JSON.stringify(currentValue.value) !== JSON.stringify(newValue.value)
+    );
+  }
+
+  return JSON.stringify(currentValue) !== JSON.stringify(newValue);
+}
+
+function getValue(schema: Schema, path: string, value: unknown): unknown {
+  if (schema.private) {
+    if (value === undefined) {
+      return undefined;
+    }
+
+    if (!isPivateValue(value)) {
+      throw new Error(
+        `Expected a private value for schema ${path}, but got: ${value}`,
+      );
+    }
+    return value.value;
+  }
+
+  return value;
+}
+
+export function isValueMasked(schema: Schema, value: unknown): boolean {
+  if (schema.private === true) {
+    return getPrivateData(value).state === 'masked';
+  }
+
+  return false;
+}
+
+function isPivateValue<T>(value: unknown): value is PrivateValue<T> {
+  return (
+    isObject(value) &&
+    (value.state === 'masked' || value.state === 'plain') &&
+    'value' in value
+  );
+}
+
+function getPrivateData(value: unknown): PrivateValue<unknown> {
+  if (value === undefined) {
+    throw new Error(
+      `'undefined' was passed where a private value was expected; if a private value is not required it must still adhere to the following structure: { type: 'masked' | 'plain', value: undefined }. This is the only way that tracking changes is possible`,
+    );
+  }
+
+  if (
+    !isObject(value) ||
+    (value.state !== 'plain' && value.state !== 'masked')
+  ) {
+    throw new Error(`value does not represent a masked value: ${value}`);
+  }
+
+  if (value.state === 'masked') {
+    return {
+      state: 'masked',
+      value: assertString(value.value),
+    };
+  }
+
+  return {
+    state: value.state,
+    value: value.value,
+  };
+}
