@@ -1,0 +1,16 @@
+{
+  "extends": "../../.configs/tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "allowImportingTsExtensions": true,
+    "noResolve": false,
+    "lib": ["es2017", "dom"],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+  },
+  "include": ["src", "../next-example/src/app/is-required.ts"],
+  "exclude": ["node_modules", "dist"],
+
+}

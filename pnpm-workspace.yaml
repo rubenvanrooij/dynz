@@ -1,0 +1,7 @@
+packages:
+  - packages/*
+  - examples/*
+  - docs
+hoistWorkspacePackages: false
+saveWorkspaceProtocol: false
+linkWorkspacePackages: true

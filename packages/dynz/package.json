@@ -1,0 +1,48 @@
+{
+  "name": "dynz",
+  "version": "0.0.1",
+  "private": false,
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "keywords": [
+    "typescript",
+    "schema",
+    "validation",
+    "parsing",
+    "form",
+    "type-safe"
+  ],
+  "files": [
+    "dist"
+  ],
+  "author": "Ruben van Rooij <ruben.van.rooij@gmail.com>",
+  "description": "A powerful TypeScript schema validation with advanced conditional logic, cross-field validation, and static type inference.",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "scripts": {
+    "build": "tsdown",
+    "dev": "tsdown --watch",
+    "check-types": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest run --watch"
+  },
+  "dependencies": {
+    "date-fns": "^4.1.0"
+  },
+  "devDependencies": {  
+    "tsdown": "^0.14.2"
+  }
+}

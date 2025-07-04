@@ -1,0 +1,299 @@
+---
+title: Introduction
+description: Learn how to install and use dynz for schema validation and forms
+---
+
+import { Tabs, Tab } from 'fumadocs-ui/components/tabs';
+import { Callout } from 'fumadocs-ui/components/callout';
+
+# Introduction
+
+dynz is a TypeScript schema validation that provides serializable type-safe validation with dynamic schemas. It is perfect for creating complex
+schemas that power your form logic.
+
+```typescript
+import { string, number, object, validate, equals, lt, min, max } from 'dynz'
+
+// Define a schema
+const schema = object({
+  fields: {
+    name: string({
+      rules: [min(2)]
+    }),
+    age: number({
+      rules: [min(0), max(120)]
+    }),
+    parentalApproval: boolean({
+      rules: [equals(true)],
+      // field is only included when age is under 18
+      included: lt('age', 18)
+    })
+  }
+})
+
+// Validate data
+const result = validate(userSchema, {
+  name: "John Doe",
+  age: 16,
+  parentalApproval: false
+})
+
+if (result.success) {
+  console.log("Valid data:", result.data)
+} else {
+  console.log("Validation errors:", result.errors)
+}
+```
+
+## Installation
+
+<Tabs items={['pnpm', 'npm', 'yarn']}>
+  <Tab value="pnpm">
+    ```bash
+    pnpm add dynz
+    ```
+  </Tab>
+  <Tab value="npm">
+    ```bash
+    npm install dynz
+    ```
+  </Tab>
+  <Tab value="yarn">
+    ```bash
+    yarn add dynz
+    ```
+  </Tab>
+</Tabs>
+
+## Basic Usage
+
+### Creating Your First Schema
+
+Start by importing the schema builders and validation function:
+
+```typescript
+import { string, number, object, validate } from 'dynz'
+
+// Define a schema
+const userSchema = object({
+  fields: {
+    name: string(),
+    age: number({
+      rules: [min(0), max(120)]
+    }),
+    parentalApproval: boolean({
+      rules: [equals(true)],
+      // field is only included when age is under 18
+      included: lt('age', 18)
+    })
+  }
+})
+
+// Some data
+const data = { .... }
+
+// Validate data
+const result = validate(userSchema, undefined, data)
+
+if (result.success) {
+  console.log("Valid data:", result.data)
+} else {
+  console.log("Validation errors:", result.errors)
+}
+```
+
+### Schema Types
+
+dynz supports several built-in schema types:
+
+#### String Schema
+
+```typescript
+import { string } from 'dynz'
+
+const nameSchema = string()
+  .min(2, "Name must be at least 2 characters")
+  .max(50, "Name must not exceed 50 characters")
+  .regex(/^[a-zA-Z\s]+$/, "Name can only contain letters and spaces")
+
+const emailSchema = string()
+  .email("Please enter a valid email address")
+```
+
+#### Number Schema
+
+```typescript
+import { number } from 'dynz'
+
+const ageSchema = number()
+  .min(0, "Age must be positive")
+  .max(120, "Age must be realistic")
+
+const priceSchema = number()
+  .positive("Price must be positive")
+```
+
+#### Object Schema
+
+```typescript
+import { object, string, number } from 'dynz'
+
+const productSchema = object({
+  name: string().min(1),
+  price: number().positive(),
+  description: string().optional()
+})
+```
+
+#### Array Schema
+
+```typescript
+import { array, string } from 'dynz'
+
+const tagsSchema = array(string().min(1))
+  .min(1, "At least one tag is required")
+  .max(5, "Maximum 5 tags allowed")
+```
+
+### Conditional Validation
+
+dynz excels at dynamic, conditional validation based on other field values:
+
+```typescript
+import { object, string, conditions } from 'dynz'
+
+const userSchema = object({
+  accountType: string().oneOf(['personal', 'business']),
+  
+  // Only required if accountType is 'business'
+  companyName: string()
+    .requiredIf(conditions.equals('accountType', 'business'))
+    .min(2),
+  
+  // Different validation rules based on account type
+  email: string()
+    .email()
+    .ruleIf(
+      conditions.equals('accountType', 'business'),
+      string().regex(/@company\.com$/, "Business accounts must use company email")
+    )
+})
+```
+
+### Framework Integration
+
+#### Vue.js with VeeValidate
+
+<Callout type="info">
+  Install the VeeValidate integration: `pnpm add @dynz/veevalidate`
+</Callout>
+
+```typescript
+import { useForm } from 'vee-validate'
+import { toDynzValidator } from '@dynz/veevalidate'
+import { object, string } from 'dynz'
+
+const schema = object({
+  username: string().min(3),
+  password: string().min(8)
+})
+
+const { defineField, handleSubmit, errors } = useForm({
+  validationSchema: toDynzValidator(schema)
+})
+
+const [username, usernameAttrs] = defineField('username')
+const [password, passwordAttrs] = defineField('password')
+```
+
+#### React (with custom hook)
+
+```typescript
+import { useState } from 'react'
+import { validate } from 'dynz'
+
+function useFormValidation(schema) {
+  const [errors, setErrors] = useState({})
+  
+  const validateField = (name, value, allValues) => {
+    const result = validate(schema, { ...allValues, [name]: value })
+    if (!result.success) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: result.errors[name]?.[0]
+      }))
+    } else {
+      setErrors(prev => {
+        const newErrors = { ...prev }
+        delete newErrors[name]
+        return newErrors
+      })
+    }
+  }
+  
+  return { errors, validateField }
+}
+```
+
+## Advanced Features
+
+### Private Field Masking
+
+Mark sensitive fields as private to automatically mask them in validation results:
+
+```typescript
+import { object, string } from 'dynz'
+
+const userSchema = object({
+  username: string(),
+  password: string().private(), // Will be masked in results
+  confirmPassword: string().private()
+})
+```
+
+### Cross-Field Validation
+
+Reference other fields in your validation rules:
+
+```typescript
+import { object, string, conditions } from 'dynz'
+
+const signupSchema = object({
+  password: string().min(8),
+  confirmPassword: string()
+    .equals(conditions.ref('password'), "Passwords must match")
+})
+```
+
+### Custom Rules
+
+Create your own validation rules:
+
+```typescript
+import { string, customRule } from 'dynz'
+
+const strongPasswordRule = customRule<string>((value) => {
+  const hasUppercase = /[A-Z]/.test(value)
+  const hasLowercase = /[a-z]/.test(value)
+  const hasNumbers = /\d/.test(value)
+  const hasSpecialChar = /[!@#$%^&*]/.test(value)
+  
+  return hasUppercase && hasLowercase && hasNumbers && hasSpecialChar
+}, "Password must contain uppercase, lowercase, numbers, and special characters")
+
+const passwordSchema = string()
+  .min(8)
+  .custom(strongPasswordRule)
+```
+
+## Next Steps
+
+Now that you understand the basics, explore more advanced topics:
+
+- **[API Reference](/docs/api)** - Complete API documentation
+- **[Examples](/docs/examples)** - Real-world usage examples
+- **[Framework Integrations](/docs/integrations)** - Vue, React, and other framework guides
+
+<Callout type="tip">
+  Check out the [examples directory](https://github.com/your-username/dynz/tree/main/examples) in the repository for complete working examples with Vue.js and Next.js.
+</Callout>
