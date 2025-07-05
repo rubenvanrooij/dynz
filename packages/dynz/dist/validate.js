@@ -33,9 +33,9 @@ function validate(schema, currentValues, newValues, options = {}) {
             current: currentValues,
             new: newValues,
         },
-    }, newValues);
+    });
 }
-function _validate(schema, values, path, context, parentValue) {
+function _validate(schema, values, path, context) {
     /**
      * If the schema is not included we do not need to validate it
      */
@@ -90,6 +90,7 @@ function _validate(schema, values, path, context, parentValue) {
             };
         }
     }
+    console.log(path, schema['required'], (0, resolve_1.resolveProperty)(schema, 'required', path, true, context));
     /**
      * Validate required
      */
@@ -285,7 +286,7 @@ function validateCustomRule(schema, path, rule, value, context) {
  * @param value the value to be validated
  * @returns undefined then the validations passses, an error message when it fails
  */
-function validateEqualsRule(schema, path, rule, value, context) {
+function validateEqualsRule(_, path, rule, value, context) {
     const equals = (0, resolve_1.unpackRefValue)(rule.value, path, context);
     return equals === value
         ? undefined
@@ -310,30 +311,43 @@ function validateMinRule(schema, path, rule, value, context) {
     if (!isNumber(min) && !isString(min)) {
         throw new Error(`min is not a number or string value ${min}`);
     }
-    const validate = () => {
-        switch (schema.type) {
-            case types_1.SchemaType.NUMBER:
-                return assertSchema(schema, value) >= assertNumber(min);
-            case types_1.SchemaType.STRING:
-                return assertSchema(schema, value).length >= assertNumber(min);
-            case types_1.SchemaType.OBJECT:
-                return (Object.keys(assertSchema(schema, value)).length >= assertNumber(min));
-            case types_1.SchemaType.ARRAY:
-                return assertSchema(schema, value).length >= assertNumber(min);
-            case types_1.SchemaType.DATE_STRING: {
-                const date = parseDateString(assertSchema(schema, value), schema.format);
-                const compareTo = parseDateString(assertSchema(schema, min), schema.format);
-                return ((0, date_fns_1.isAfter)(date, compareTo) || date.getTime() === compareTo.getTime());
-            }
+    switch (schema.type) {
+        case types_1.SchemaType.NUMBER:
+            return assertSchema(schema, value) >= assertNumber(min) ? undefined : {
+                code: types_1.ErrorCode.MIN,
+                min,
+                message: `The value ${value} for schema ${path} is less than the minimum value of ${min}`,
+            };
+        case types_1.SchemaType.STRING:
+            return assertSchema(schema, value).length >= assertNumber(min) ? undefined : {
+                code: types_1.ErrorCode.MIN,
+                min,
+                message: `The value ${value} for schema ${path} shuld have at least ${min} characters`,
+            };
+        case types_1.SchemaType.OBJECT:
+            return Object.keys(assertSchema(schema, value)).length >= assertNumber(min) ? undefined : {
+                code: types_1.ErrorCode.MIN,
+                min,
+                message: `The value ${value} for schema ${path} should have at least ${min} keys`,
+            };
+        case types_1.SchemaType.ARRAY:
+            return assertSchema(schema, value).length >= assertNumber(min) ? undefined : {
+                code: types_1.ErrorCode.MIN,
+                min,
+                message: `The value ${value} for schema ${path} should hold at least ${min} items`,
+            };
+        case types_1.SchemaType.DATE_STRING: {
+            const date = parseDateString(assertSchema(schema, value), schema.format);
+            const compareTo = parseDateString(assertSchema(schema, min), schema.format);
+            return (0, date_fns_1.isAfter)(date, compareTo) || date.getTime() === compareTo.getTime() ? undefined : {
+                code: types_1.ErrorCode.MIN,
+                min,
+                message: `The value ${value} for schema ${path} is before ${min}`,
+            };
         }
-    };
-    return validate()
-        ? undefined
-        : {
-            code: types_1.ErrorCode.MIN,
-            min,
-            message: `The value ${value} for schema ${path} is less than the minimum value of ${min}`,
-        };
+        default:
+            throw new Error(`Schema ${schema.type} has no implementation for the min rule`);
+    }
 }
 /**
  * Max rule validator
@@ -363,6 +377,7 @@ function validateMaxRule(schema, path, rule, value, context) {
                 return ((0, date_fns_1.isBefore)(date, compareTo) || date.getTime() === compareTo.getTime());
             }
         }
+        return false;
     };
     return validate()
         ? undefined
@@ -395,7 +410,7 @@ function validateIsNumeric(value) {
  * @param value the value to be validated
  * @returns undefined then the validations passses, an error message when it fails
  */
-function validateMaxPrecision(schema, path, rule, value, context) {
+function validateMaxPrecision(_, path, rule, value, context) {
     const maxPrecision = assertNumber((0, resolve_1.unpackRefValue)(rule.max, path, context));
     const precision = getPrecision(assertNumber(value));
     return maxPrecision <= precision

@@ -1,7 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.array = exports.number = exports.DEFAULT_DATE_STRING_FORMAT = exports.object = void 0;
+exports.array = exports.DEFAULT_DATE_STRING_FORMAT = exports.object = void 0;
 exports.string = string;
+exports.number = number;
 exports.dateString = dateString;
 exports.optional = optional;
 exports.required = required;
@@ -29,6 +30,13 @@ const object = (value) => {
 };
 exports.object = object;
 exports.DEFAULT_DATE_STRING_FORMAT = 'yyyy-MM-dd';
+function number(value) {
+    return {
+        ...(value || {}),
+        type: types_1.SchemaType.NUMBER,
+    };
+}
+;
 function dateString(value) {
     return {
         ...value,
@@ -36,7 +44,6 @@ function dateString(value) {
         type: types_1.SchemaType.DATE_STRING,
     };
 }
-exports.number = buildBuilder(types_1.SchemaType.NUMBER);
 const array = (value) => {
     return {
         ...value,

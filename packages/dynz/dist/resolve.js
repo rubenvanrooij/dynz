@@ -45,8 +45,11 @@ function isMutable(schema, path, values) {
  * schema
  */
 function resolveProperty(schema, property, path, defaultValue, context) {
-    return schema[property] === undefined || typeof schema[property] === 'boolean'
-        ? schema[property] || defaultValue
+    if (schema[property] === undefined) {
+        return defaultValue;
+    }
+    return typeof schema[property] === 'boolean'
+        ? schema[property]
         : resolveCondition(schema[property], path, context);
 }
 function resolveCondition(condition, path, context) {

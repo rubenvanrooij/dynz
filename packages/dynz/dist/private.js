@@ -8,7 +8,7 @@ const DEFAULT_MASK_FUNCTION = () => {
 function plain(value) {
     return {
         state: 'plain',
-        value,
+        value: value,
     };
 }
 function mask(value, maskFn = DEFAULT_MASK_FUNCTION) {

@@ -14,7 +14,7 @@ import {
   CustomRule,
 } from './types';
 
-export function rules<T extends Rule>(...rules: T[]): T[] {
+export function rules<T extends Rule[]>(...rules: T): T {
   return rules;
 }
 
@@ -51,17 +51,24 @@ export function isNumeric(): IsNumericRule {
 
 export function custom<T extends Record<string, ValueOrRef>>(
   name: string,
+): CustomRule;
+export function custom<T extends Record<string, ValueOrRef>>(
+  name: string,
+  params: T,
+): CustomRule<T>;
+export function custom<T extends Record<string, ValueOrRef>>(
+  name: string,
   params?: T,
 ): CustomRule {
   return { type: RuleType.CUSTOM, name, params: params || {} };
 }
 
-export function conditional<T extends Rule>({
+export function conditional<A extends Condition, T extends Rule>({
   when,
   then,
 }: {
-  when: Condition;
-  then: Exclude<T, ConditionalRule<never>>;
-}): ConditionalRule<T> {
+  when: A;
+  then: Exclude<T, ConditionalRule<never, never>>;
+}): ConditionalRule<A, T> {
   return { type: RuleType.CONDITIONAL, when, then };
 }

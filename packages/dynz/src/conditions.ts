@@ -12,7 +12,7 @@ import {
   MatchesCondition,
   NotEqualsCondition,
   OrCondition,
-  ValueOrRef,
+  Reference,
   ValueType,
 } from './types';
 
@@ -34,9 +34,9 @@ export function or<const T extends Condition[]>(
   };
 }
 
-export function eq<const T extends string, const V extends ValueType>(
+export function eq<const T extends string, const V extends ValueType | Reference>(
   path: T,
-  value: ValueOrRef<V>,
+  value: V,
 ): EqualsCondition<T, V> {
   return {
     type: ConditionType.EQUALS,
@@ -45,9 +45,9 @@ export function eq<const T extends string, const V extends ValueType>(
   };
 }
 
-export function neq<const T extends string, const V extends ValueType>(
+export function neq<const T extends string, const V extends ValueType | Reference>(
   path: T,
-  value: ValueOrRef<V>,
+  value: V,
 ): NotEqualsCondition<T, V> {
   return {
     type: ConditionType.NOT_EQUALS,
@@ -56,9 +56,9 @@ export function neq<const T extends string, const V extends ValueType>(
   };
 }
 
-export function gt<const T extends string, const V extends number | string>(
+export function gt<const T extends string, const V extends number | string | Reference>(
   path: T,
-  value: ValueOrRef<V>,
+  value: V,
 ): GreaterThanCondition<T, V> {
   return {
     type: ConditionType.GREATHER_THAN,
@@ -67,9 +67,9 @@ export function gt<const T extends string, const V extends number | string>(
   };
 }
 
-export function gte<const T extends string, const V extends number>(
+export function gte<const T extends string, const V extends number | Reference>(
   path: T,
-  value: ValueOrRef<V>,
+  value: V,
 ): GreaterThanOrEqualCondition<T, V> {
   return {
     type: ConditionType.GREATHER_THAN_OR_EQUAL,
@@ -78,9 +78,9 @@ export function gte<const T extends string, const V extends number>(
   };
 }
 
-export function lt<const T extends string, const V extends number>(
+export function lt<const T extends string, const V extends number | Reference>(
   path: T,
-  value: ValueOrRef<V>,
+  value: V,
 ): LowerThanCondition<T, V> {
   return {
     type: ConditionType.LOWER_THAN,
@@ -89,9 +89,9 @@ export function lt<const T extends string, const V extends number>(
   };
 }
 
-export function lte<const T extends string, const V extends number>(
+export function lte<const T extends string, const V extends number | Reference>(
   path: T,
-  value: ValueOrRef<V>,
+  value: V,
 ): LowerThanOrEqualCondition<T, V> {
   return {
     type: ConditionType.LOWER_THAN_OR_EQUAL,
@@ -111,9 +111,9 @@ export function matches<const T extends string>(
   };
 }
 
-export function isIn<const T extends string, const V extends ValueType>(
+export function isIn<const T extends string, const V extends Array<ValueType | Reference>>(
   path: T,
-  value: ValueOrRef<V>[],
+  value: V,
 ): IsInCondition<T, V> {
   return {
     type: ConditionType.IS_IN,
@@ -122,9 +122,9 @@ export function isIn<const T extends string, const V extends ValueType>(
   };
 }
 
-export function isNotIn<const T extends string, const V extends ValueType>(
+export function isNotIn<const T extends string, const V extends Array<ValueType | Reference>>(
   path: T,
-  value: ValueOrRef<V>[],
+  value: V,
 ): IsNotInCondition<T, V> {
   return {
     type: ConditionType.IS_NOT_IN,

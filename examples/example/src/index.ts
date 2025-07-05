@@ -1,6 +1,5 @@
-import { eq, gt } from 'dynz/conditions';
-import { equals, min, ref } from 'dynz/rules';
-import { dateString, number, object, string } from 'dynz/schema';
+import { min, ref } from 'dynz/rules';
+import { number, object, string } from 'dynz/schema';
 import { SchemaValues } from 'dynz/types';
 import { validate } from 'dynz/validate';
 
@@ -10,29 +9,43 @@ const schema = object({
       required: true,
       rules: [min(ref('minAge'))],
     }),
-    minAge: number({
+    minAge: string({
       rules: [min(5)],
+      required: false,
     }),
   },
 });
 
-console.log(JSON.stringify(schema, null, 2));
+type Foo = SchemaValues<typeof schema>
+
+// console.log(JSON.stringify(schema, null, 2));
 
 const result = validate(schema, undefined, {
-  age: 10,
-  minAge: 11,
+  age: 6,
+  minAge: '1143',
 });
+
+if(result.success) {
+  const f = result.values
+
+  f.age
+}
+
+// if(result.success) {
+//   const age = result.values.age
+//   console.log(age)
+// }
 
 console.log(result);
 
-function c<const T>(obj: T): T {
-  return obj;
-}
+// function c<const T>(obj: T): T {
+//   return obj;
+// }
 
-const f = c({
-  foo: 'bar',
-  bar: 'foo',
-});
+// const f = c({
+//   foo: 'bar',
+//   bar: 'foo',
+// });
 
 // const form = object({
 //   fields: {

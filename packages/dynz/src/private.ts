@@ -9,7 +9,7 @@ export function plain<A extends string | number>(
 ): PlainPrivateValue<A> {
   return {
     state: 'plain',
-    value,
+    value: value,
   };
 }
 

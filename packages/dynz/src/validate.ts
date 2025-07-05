@@ -49,7 +49,6 @@ export function validate<T extends Schema, TOptions extends ValidateOptions>(
         new: newValues,
       },
     },
-    newValues,
   ) as ValidationResult<SchemaValues<T>>;
 }
 
@@ -58,7 +57,6 @@ export function _validate<T extends Schema>(
   values: { current: unknown; new: unknown },
   path: string,
   context: Context,
-  parentValue?: unknown,
 ): ValidationResult<unknown> {
   /**
    * If the schema is not included we do not need to validate it
@@ -382,7 +380,7 @@ function validateCustomRule<T extends Schema>(
  * @returns undefined then the validations passses, an error message when it fails
  */
 function validateEqualsRule(
-  schema: Schema,
+  _: Schema,
   path: string,
   rule: EqualsRule,
   value: unknown,
@@ -424,41 +422,49 @@ function validateMinRule(
     throw new Error(`min is not a number or string value ${min}`);
   }
 
-  const validate = () => {
-    switch (schema.type) {
-      case SchemaType.NUMBER:
-        return assertSchema(schema, value) >= assertNumber(min);
-      case SchemaType.STRING:
-        return assertSchema(schema, value).length >= assertNumber(min);
-      case SchemaType.OBJECT:
-        return (
-          Object.keys(assertSchema(schema, value)).length >= assertNumber(min)
-        );
-      case SchemaType.ARRAY:
-        return assertSchema(schema, value).length >= assertNumber(min);
-      case SchemaType.DATE_STRING: {
-        const date = parseDateString(
-          assertSchema(schema, value),
-          schema.format,
-        );
-        const compareTo = parseDateString(
-          assertSchema(schema, min),
-          schema.format,
-        );
-        return (
-          isAfter(date, compareTo) || date.getTime() === compareTo.getTime()
-        );
-      }
-    }
-  };
-
-  return validate()
-    ? undefined
-    : {
+  switch (schema.type) {
+    case SchemaType.NUMBER:
+      return assertSchema(schema, value) >= assertNumber(min) ? undefined : {
         code: ErrorCode.MIN,
         min,
         message: `The value ${value} for schema ${path} is less than the minimum value of ${min}`,
       };
+    case SchemaType.STRING:
+      return assertSchema(schema, value).length >= assertNumber(min) ? undefined : {
+        code: ErrorCode.MIN,
+        min,
+        message: `The value ${value} for schema ${path} shuld have at least ${min} characters`,
+      };
+    case SchemaType.OBJECT:
+      return Object.keys(assertSchema(schema, value)).length >= assertNumber(min) ? undefined : {
+          code: ErrorCode.MIN,
+          min,
+          message: `The value ${value} for schema ${path} should have at least ${min} keys`,
+        }
+    case SchemaType.ARRAY:
+      return assertSchema(schema, value).length >= assertNumber(min) ? undefined : {
+        code: ErrorCode.MIN,
+        min,
+        message: `The value ${value} for schema ${path} should hold at least ${min} items`,
+      }
+    case SchemaType.DATE_STRING: {
+      const date = parseDateString(
+        assertSchema(schema, value),
+        schema.format,
+      )
+      const compareTo = parseDateString(
+        assertSchema(schema, min),
+        schema.format,
+      )
+      return isAfter(date, compareTo) || date.getTime() === compareTo.getTime() ? undefined : {
+          code: ErrorCode.MIN,
+          min,
+          message: `The value ${value} for schema ${path} is before ${min}`,
+        }
+    }
+    default:
+      throw new Error(`Min rule cannot be used on schema of type: ${schema.type}`)
+  }
 }
 
 /**
@@ -507,6 +513,8 @@ function validateMaxRule(
         );
       }
     }
+    
+    throw new Error(`Max rule cannot be used on schema of type: ${schema.type}`)
   };
 
   return validate()
@@ -547,7 +555,7 @@ function validateIsNumeric(
  * @returns undefined then the validations passses, an error message when it fails
  */
 function validateMaxPrecision(
-  schema: Schema,
+  _: Schema,
   path: string,
   rule: MaxPrecisionRule,
   value: unknown,
@@ -637,6 +645,8 @@ export function validateType<T extends SchemaType>(
       return isObject(value);
     case SchemaType.STRING:
       return isString(value);
+    case SchemaType.BOOLEAN:
+      return isBoolean(value);
     case SchemaType.DATE:
       return isDate(value);
     case SchemaType.ARRAY:
@@ -795,7 +805,6 @@ export function isDateString(
   value: unknown,
   format: string,
 ): value is DateString {
-  console.log('format: ', format, value, typeof value);
   const date =
     typeof value === 'string' ? parse(value, format, new Date()) : undefined;
   return date instanceof Date && !isNaN(date.getTime());

@@ -48,6 +48,23 @@ export const object = <
 
 export const DEFAULT_DATE_STRING_FORMAT = 'yyyy-MM-dd';
 
+
+export function number(): NumberSchema;
+export function number<T extends Omit<NumberSchema, 'type'>>(
+  value: T,
+): T & Pick<NumberSchema, 'type'>;
+export function number <
+  A extends Omit<NumberSchema, 'type'>,
+>(
+  value?: A,
+): NumberSchema {
+  return {
+    ...(value || {}),
+    type: SchemaType.NUMBER,
+  };
+};
+
+
 export function dateString(): DateStringSchema;
 export function dateString<
   T extends string,
@@ -66,7 +83,6 @@ export function dateString<
   };
 }
 
-export const number = buildBuilder<NumberSchema>(SchemaType.NUMBER);
 export const array = <
   const T extends Schema,
   A extends Omit<ArraySchema<T>, 'type'>,

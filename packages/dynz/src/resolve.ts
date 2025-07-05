@@ -1,16 +1,13 @@
-import { isAfter, parse } from 'date-fns';
 import {
   Condition,
   ConditionType,
   RuleType,
   Schema,
   SchemaType,
-  Context,
   ValueOrRef,
   ResolvedRules,
   Reference,
   GreaterThanCondition,
-  SchemaValues,
   ValueType,
   LowerThanCondition,
   GreaterThanOrEqualCondition,
@@ -20,17 +17,11 @@ import {
 } from './types';
 import {
   assertArray,
-  assertNumber,
-  assertString,
-  assertSchema,
-  isArray,
-  isDateString,
   isNumber,
   isObject,
   isString,
   parseDateString,
   validateSchema,
-  assertType,
 } from './validate';
 
 type ResolveContext = {
@@ -77,7 +68,7 @@ export function isMutable<T extends Schema>(
 ): boolean {
   const nested = getNested(path, schema, values);
 
-  return resolveProperty(nested.schema, 'required', path, true, {
+  return resolveProperty(nested.schema, 'mutable', path, true, {
     schema,
     values: {
       new: values,
@@ -96,8 +87,13 @@ export function resolveProperty<T extends Schema>(
   defaultValue: boolean,
   context: ResolveContext,
 ) {
-  return schema[property] === undefined || typeof schema[property] === 'boolean'
-    ? schema[property] || defaultValue
+
+  if(schema[property] === undefined) {
+    return defaultValue
+  }
+
+  return typeof schema[property] === 'boolean'
+    ? schema[property]
     : resolveCondition(schema[property], path, context);
 }
 
@@ -173,20 +169,20 @@ function validateWithOperator(
 ): boolean {
   const { left, right } = getConditionOperands(condition, path, context);
 
-  return (
-    left !== undefined &&
-    right !== undefined &&
-    OPERATORS[condition.type](left, right)
-  );
+  // Both operands must be defined for comparison
+  if (left === undefined || right === undefined) {                                                                                                                                                                                   │ │
+    return false
+  }
+
+  return OPERATORS[condition.type](left, right)
 }
 
 /**
  * Converts a value to a comparable type based on the schema.
- * - If the schema is a date string, it converts the value to a Date object.
+ * For date strings, converts to milliseconds for proper comparison.                                                                                                                                                                 │ │
+│* For other types, returns the value unchanged.
  */
-function toCompareType<T extends Schema>(schema: T, value: ValueType) {
-  console.log(`toCompareType: schema.type=${schema.type}, value=${value}`);
-
+function toCompareType<T extends Schema>(schema: T, value: ValueType): ValueType | number {
   if (schema.type === SchemaType.DATE_STRING) {
     return parseDateString(`${value}`, schema.format).getTime();
   }
@@ -208,7 +204,7 @@ function getConditionOperands<T extends ValueType>(
   condition: { path: string; value: ValueOrRef<T> | ValueOrRef<T>[] },
   path: string,
   context: ResolveContext,
-): { left?: ValueType; right?: ValueType } {
+): { left?: ValueType | undefined; right?: ValueType | undefined } {
   const nested = getNested(
     ensureAbsolutePath(condition.path, path),
     context.schema,
@@ -432,7 +428,7 @@ export function getNested<T extends Schema>(
           };
         }
 
-        throw new Error('cannot get nested value on non array or non object');
+        throw new Error('Cannot get nested value on non array or non object');
       },
       { value, schema },
     );

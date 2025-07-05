@@ -1,6 +1,11 @@
 export type EnumValues<T> = T[keyof T];
 export type Unpacked<T> = T extends (infer U)[] ? U : T;
 
+type Prettify<T> = {
+  [K in keyof T]: T[K]
+} & {}
+
+
 export type Filter<T extends unknown[], A> = T extends []
   ? []
   : T extends [infer H, ...infer R]
@@ -86,14 +91,14 @@ export type CustomRule<
   params: T;
 };
 
-export type ConditionalRule<TRule extends Rule> = {
+export type ConditionalRule<TCondition, TRule extends Rule> = {
   type: typeof RuleType.CONDITIONAL;
-  when: Condition;
-  then: Exclude<[TRule] extends [never] ? Rule : TRule, ConditionalRule<never>>;
+  when: [TCondition] extends [never] ? Condition : TCondition;
+  then: Exclude<[TRule] extends [never] ? Rule : TRule, ConditionalRule<never, never>>;
 };
 
 export type Rule =
-  | ConditionalRule<never>
+  | ConditionalRule<never, never>
   | MinRule
   | MaxRule
   | EqualsRule
@@ -159,20 +164,20 @@ export type OrCondition<T extends Condition[] = never> = {
 
 export type EqualsCondition<
   T extends string = string,
-  V extends ValueType = ValueType,
+  V extends ValueType | Reference = ValueType | Reference,
 > = {
   type: typeof ConditionType.EQUALS;
   path: T;
-  value: ValueOrRef<V>;
+  value: V;
 };
 
 export type NotEqualsCondition<
   T extends string = string,
-  V extends ValueType = ValueType,
+  V extends ValueType | Reference = ValueType | Reference,
 > = {
   type: typeof ConditionType.NOT_EQUALS;
   path: T;
-  value: ValueOrRef<V>;
+  value: V;
 };
 
 export type MatchesCondition<T extends string = string> = {
@@ -183,56 +188,56 @@ export type MatchesCondition<T extends string = string> = {
 
 export type GreaterThanCondition<
   T extends string = string,
-  V extends number | string = number | string,
+  V extends number | string | Reference = number | string | Reference,
 > = {
   type: typeof ConditionType.GREATHER_THAN;
   path: T;
-  value: ValueOrRef<V>;
+  value: V;
 };
 
 export type GreaterThanOrEqualCondition<
   T extends string = string,
-  V extends number = number,
+  V extends number | Reference = number | Reference,
 > = {
   type: typeof ConditionType.GREATHER_THAN_OR_EQUAL;
   path: T;
-  value: ValueOrRef<V>;
+  value: V;
 };
 
 export type LowerThanCondition<
   T extends string = string,
-  V extends number = number,
+  V extends number | Reference = number | Reference,
 > = {
   type: typeof ConditionType.LOWER_THAN;
   path: T;
-  value: ValueOrRef<V>;
+  value: V;
 };
 
 export type LowerThanOrEqualCondition<
   T extends string = string,
-  V extends number = number,
+  V extends number | Reference = number | Reference,
 > = {
   type: typeof ConditionType.LOWER_THAN_OR_EQUAL;
   path: T;
-  value: ValueOrRef<V>;
+  value: V;
 };
 
 export type IsInCondition<
   T extends string = string,
-  V extends ValueType = ValueType,
+  V extends Array<ValueType | Reference> = Array<ValueType | Reference>,
 > = {
   type: typeof ConditionType.IS_IN;
   path: T;
-  value: ValueOrRef<V>[];
+  value: V;
 };
 
 export type IsNotInCondition<
   T extends string = string,
-  V extends ValueType = ValueType,
+  V extends Array<ValueType | Reference> = Array<ValueType | Reference>,
 > = {
   type: typeof ConditionType.IS_NOT_IN;
   path: T;
-  value: ValueOrRef<V>[];
+  value: V;
 };
 
 export type Condition =
@@ -264,6 +269,7 @@ export const SchemaType = {
   OBJECT: 'object',
   ARRAY: 'array',
   OPTIONS: 'options',
+  BOOLEAN: 'boolean',
 } as const;
 
 export type SchemaType = EnumValues<typeof SchemaType>;
@@ -375,10 +381,23 @@ export type NumberSchema = BaseSchema<
   NumberRules
 >;
 
+/**
+ * BOOLEAN SCHEMA
+ */
+export type BooleanRules =
+  | EqualsRule<boolean | Reference>
+  | CustomRule;
+export type BooleanSchema = BaseSchema<
+  number,
+  typeof SchemaType.NUMBER,
+  BooleanRules
+>;
+
 export type Schema =
   | StringSchema
   | ObjectSchema<never>
   | NumberSchema
+  | BooleanSchema
   | ArraySchema<never>
   | DateStringSchema
   | OptionsSchema<JsonPrimitive>;
@@ -388,68 +407,75 @@ export type SchemaWithParent<T extends Schema = Schema> = T & {
   parentValue?: unknown;
 };
 
-export type IsIncluded<T extends Schema> = T extends { included: unknown }
-  ? T['included'] extends true
-    ? true
-    : false
-  : true;
+// === Field State Helpers ===
+export type IsIncluded<T extends Schema> = 
+  T extends { included: true } ? true : 
+  T extends { included: false } ? false : 
+  true; // default included
 
-export type IsRequired<T extends Schema> = T extends { required: unknown }
-  ? T['required'] extends true
-    ? true
-    : false
-  : false;
+export type IsRequired<T extends Schema> = 
+  T extends { required: true } ? true : 
+  T extends { required: false } ? false : 
+  true; // default required
 
-export type RequiredKeys<T extends ObjectSchema<never>> = {
-  [P in keyof T['fields']]: P;
-};
-export type IsMandatory<T extends Schema> =
+export type IsPrivate<T extends Schema> = 
+  T extends { private: true } ? true : false;
+
+// === Computed Properties ===
+export type IsMandatory<T extends Schema> = 
   IsIncluded<T> extends true ? IsRequired<T> : false;
-export type EvalOptional<T extends Schema, V> =
-  IsMandatory<T> extends true ? V : V | undefined;
-export type Masked<T extends Schema, V> =
+
+export type IsOptionalField<T extends Schema> = 
+  IsMandatory<T> extends false ? true : false;
+
+// === Value Transformers ===
+export type MakeOptional<T extends Schema, V> =
+  IsOptionalField<T> extends true ? V | undefined : V;
+
+export type ApplyPrivacyMask<T extends Schema, V> =
   IsPrivate<T> extends true ? PrivateValue<V> : V;
-export type IsPrivate<T extends Schema> = T['private'] extends true
-  ? true
-  : false;
+
+// === Base Value Types ===
 export type ValueType<T extends SchemaType = SchemaType> =
-  T extends typeof SchemaType.STRING
-    ? string
-    : T extends typeof SchemaType.DATE_STRING
-      ? DateString
-      : T extends typeof SchemaType.DATE
-        ? Date
-        : T extends typeof SchemaType.NUMBER
-          ? number
-          : T extends typeof SchemaType.OBJECT
-            ? Record<string, unknown>
-            : T extends typeof SchemaType.ARRAY
-              ? unknown[]
-              : never;
+  T extends typeof SchemaType.STRING ? string :
+  T extends typeof SchemaType.DATE_STRING ? DateString :
+  T extends typeof SchemaType.DATE ? Date :
+  T extends typeof SchemaType.NUMBER ? number :
+  T extends typeof SchemaType.OBJECT ? Record<string, unknown> :
+  T extends typeof SchemaType.ARRAY ? unknown[] :
+  T extends typeof SchemaType.BOOLEAN ? boolean :
+  never;
 
-export type SchemaValues<T extends Schema> = Masked<
-  T,
-  T extends StringSchema
-    ? EvalOptional<T, string>
-    : T extends DateStringSchema
-      ? EvalOptional<T, DateString>
-      : T extends NumberSchema
-        ? EvalOptional<T, number>
-        : T extends ObjectSchema<never>
-          ? { [A in keyof T['fields']]?: SchemaValues<T['fields'][A]> } & {
-              [A in keyof T['fields'] as IsMandatory<
-                T['fields'][A]
-              > extends true
-                ? A
-                : IsPrivate<T['fields'][A]> extends true
-                  ? A
-                  : never]-?: SchemaValues<T['fields'][A]>;
-            }
-          : T extends ArraySchema<never>
-            ? EvalOptional<T, Array<SchemaValues<T['schema']>>>
-            : never
->;
+// === Object Field Categorization ===
+type OptionalFields<T extends ObjectSchema<never>> = {
+  [K in keyof T['fields'] as IsOptionalField<T['fields'][K]> extends true ? K : never]?: 
+    SchemaValues<T['fields'][K]>;
+};
 
+type RequiredFields<T extends ObjectSchema<never>> = {
+  [K in keyof T['fields'] as IsOptionalField<T['fields'][K]> extends false ? K : never]-?: 
+    SchemaValues<T['fields'][K]>;
+};
+
+type ObjectValue<T extends ObjectSchema<never>> = 
+  OptionalFields<T> & RequiredFields<T>;
+
+// === Main SchemaValues Type ===
+export type SchemaValues<T extends Schema> = Prettify<ApplyPrivacyMask<T,
+  T extends StringSchema ? 
+    MakeOptional<T, ValueType<T['type']>> :
+  T extends DateStringSchema ? 
+    MakeOptional<T, ValueType<T['type']>> :
+  T extends NumberSchema ? 
+    MakeOptional<T, ValueType<T['type']>> :
+  T extends ObjectSchema<never> ? 
+    ObjectValue<T> :
+    T extends BooleanSchema ? 
+    MakeOptional<T, ValueType<T['type']>> :
+  T extends ArraySchema<never> ? 
+    MakeOptional<T, Array<SchemaValues<T['schema']>>> :
+  never
+>>;
 /***
  * RESOLVED SCHEMA
  */
@@ -592,7 +618,7 @@ export type ValidationErrorResult = {
 
 export type PlainPrivateValue<T> = {
   state: 'plain';
-  value?: T;
+  value?: T | undefined;
 };
 
 export type MaskedPrivateValue = {
