@@ -8,14 +8,6 @@ exports.optional = optional;
 exports.required = required;
 exports.rules = rules;
 const types_1 = require("./types");
-function buildBuilder(type) {
-    return (value) => {
-        return {
-            ...(value || {}),
-            type,
-        };
-    };
-}
 function string(value) {
     return {
         ...(value || {}),

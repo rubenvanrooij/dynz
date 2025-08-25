@@ -49,6 +49,7 @@ function _validate(schema, values, path, context) {
                         schema,
                         value: values.new,
                         current: values.current,
+                        customCode: types_1.ErrorCode.INCLUDED,
                         code: types_1.ErrorCode.INCLUDED,
                         message: `A value is present for a schema that is not included: ${path}`,
                     },
@@ -83,6 +84,7 @@ function _validate(schema, values, path, context) {
                         schema,
                         value: values.new,
                         current: values.current,
+                        customCode: types_1.ErrorCode.IMMUTABLE,
                         code: types_1.ErrorCode.IMMUTABLE,
                         message: `The value for a schema that is not mutable has changed: ${path}`,
                     },
@@ -90,7 +92,6 @@ function _validate(schema, values, path, context) {
             };
         }
     }
-    console.log(path, schema['required'], (0, resolve_1.resolveProperty)(schema, 'required', path, true, context));
     /**
      * Validate required
      */
@@ -104,6 +105,7 @@ function _validate(schema, values, path, context) {
                     schema,
                     value: newValue,
                     current: currentValue,
+                    customCode: types_1.ErrorCode.REQRUIED,
                     code: types_1.ErrorCode.REQRUIED,
                     message: `A required value is missing for schema: ${path}`,
                 },
@@ -119,6 +121,7 @@ function _validate(schema, values, path, context) {
             schema,
             value: newValue,
             current: currentValue,
+            customCode: types_1.ErrorCode.TYPE,
             code: types_1.ErrorCode.TYPE,
         };
         return {
@@ -153,6 +156,7 @@ function _validate(schema, values, path, context) {
                             ...result,
                             schema,
                             path,
+                            customCode: rule.code ? rule.code : result.code,
                             value: newValue,
                             current: currentValue,
                         },
@@ -346,7 +350,7 @@ function validateMinRule(schema, path, rule, value, context) {
             };
         }
         default:
-            throw new Error(`Schema ${schema.type} has no implementation for the min rule`);
+            throw new Error(`Min rule cannot be used on schema of type: ${schema.type}`);
     }
 }
 /**
@@ -377,7 +381,7 @@ function validateMaxRule(schema, path, rule, value, context) {
                 return ((0, date_fns_1.isBefore)(date, compareTo) || date.getTime() === compareTo.getTime());
             }
         }
-        return false;
+        throw new Error(`Max rule cannot be used on schema of type: ${schema.type}`);
     };
     return validate()
         ? undefined
@@ -458,6 +462,8 @@ function validateType(type, value, dateFormat) {
             return isObject(value);
         case types_1.SchemaType.STRING:
             return isString(value);
+        case types_1.SchemaType.BOOLEAN:
+            return isBoolean(value);
         case types_1.SchemaType.DATE:
             return isDate(value);
         case types_1.SchemaType.ARRAY:
@@ -488,7 +494,7 @@ function assertType(type, value, dateFormat) {
     if (validateType(type, value, dateFormat)) {
         return value;
     }
-    throw new Error(`Invalid value: ${value} for schema type: ${type}`);
+    throw new Error(`Invalid type: ${typeof value} with ${value} for schema type: ${type}`);
 }
 /**
  * Validates whether a value is a string value
@@ -569,7 +575,6 @@ function assertDateString(value, format) {
  * @returns true if the value is correct, false if not
  */
 function isDateString(value, format) {
-    console.log('format: ', format, value, typeof value);
     const date = typeof value === 'string' ? (0, date_fns_1.parse)(value, format, new Date()) : undefined;
     return date instanceof Date && !isNaN(date.getTime());
 }

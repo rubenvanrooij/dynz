@@ -11,6 +11,7 @@ import {
   unpackRef,
   findSchemaByPath,
   getNested,
+  ResolveContext,
 } from './resolve';
 import { string, number, object, array } from './schema';
 import { min, max, equals, conditional } from './rules';
@@ -19,10 +20,8 @@ import {
   ConditionType, 
   SchemaType, 
   RuleType,
-  type Schema,
   type Reference,
   type Condition,
-  type ResolveContext 
 } from './types';
 
 describe('resolve', () => {

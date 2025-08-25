@@ -10,17 +10,6 @@ import {
   Optional,
 } from './types';
 
-function buildBuilder<T extends Schema>(type: T['type']) {
-  return <A extends Omit<T, 'type'>>(value: A): A & Pick<T, 'type'> => {
-    return {
-      ...(value || {}),
-      type,
-    };
-  };
-}
-
-// export const string = buildBuilder<StringSchema>(SchemaType.STRING);
-
 export function string(): StringSchema;
 export function string<T extends Omit<StringSchema, 'type'>>(
   value: T,
@@ -109,10 +98,10 @@ export function required<T extends Schema>(schema: T): T & { required: true } {
   };
 }
 
-export function rules<T extends Schema, A extends Rule>(
+export function rules<T extends Schema, A extends Rule[]>(
   schema: T,
-  ...rules: A[]
-): T & { rules: A[] } {
+  ...rules: A
+): T & { rules: A } {
   return {
     ...schema,
     rules: rules,

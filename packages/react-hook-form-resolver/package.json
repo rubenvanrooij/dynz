@@ -1,0 +1,20 @@
+{
+  "name": "@dynz/react-hook-form-resolver",
+  "version": "0.0.0",
+  "private": true,
+  "exports": {
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "check-types": "tsc --noEmit",
+    "lint": "eslint . --max-warnings 0",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@hookform/resolvers": "^5.2.1",
+    "dynz": "workspace:^0.0.0",
+    "react-hook-form": "^7.62.0"
+  }
+}

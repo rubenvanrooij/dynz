@@ -19,20 +19,20 @@ function ref(path) {
         path,
     };
 }
-function min(min) {
-    return { type: types_1.RuleType.MIN, min };
+function min(min, code) {
+    return { type: types_1.RuleType.MIN, min, code };
 }
-function max(max) {
-    return { type: types_1.RuleType.MAX, max };
+function max(max, code) {
+    return { type: types_1.RuleType.MAX, max, code };
 }
-function regex(regex) {
-    return { type: types_1.RuleType.REGEX, regex };
+function regex(regex, code) {
+    return { type: types_1.RuleType.REGEX, regex, code };
 }
-function equals(value) {
-    return { type: types_1.RuleType.EQUALS, value };
+function equals(value, code) {
+    return { type: types_1.RuleType.EQUALS, value, code };
 }
-function isNumeric() {
-    return { type: types_1.RuleType.IS_NUMERIC };
+function isNumeric(code) {
+    return { type: types_1.RuleType.IS_NUMERIC, code };
 }
 function custom(name, params) {
     return { type: types_1.RuleType.CUSTOM, name, params: params || {} };

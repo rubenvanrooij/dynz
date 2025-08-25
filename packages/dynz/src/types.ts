@@ -42,6 +42,7 @@ export type Default<T, A> = [T] extends [never] ? A : T;
 
 export type IsNumericRule = {
   type: typeof RuleType.IS_NUMERIC;
+  code?: string | undefined
 };
 
 export type MinRule<
@@ -49,6 +50,7 @@ export type MinRule<
 > = {
   type: typeof RuleType.MIN;
   min: T;
+  code?: string | undefined
 };
 
 export type MaxRule<
@@ -56,31 +58,37 @@ export type MaxRule<
 > = {
   type: typeof RuleType.MAX;
   max: T;
+  code?: string | undefined
 };
 
 export type MaxPrecisionRule = {
   type: typeof RuleType.MAX_PRECISION;
   max: ValueOrRef<number>;
+  code?: string | undefined
 };
 
 export type EqualsRule<T extends ValueOrRef = ValueOrRef> = {
   type: typeof RuleType.EQUALS;
   value: T;
+  code?: string | undefined
 };
 
 export type RegexRule = {
   type: typeof RuleType.REGEX;
   regex: string;
+  code?: string | undefined
 };
 
 export type BeforeRule = {
   type: typeof RuleType.REGEX;
   before: ValueOrRef<Date>;
+  code?: string | undefined
 };
 
 export type AfterRule = {
   type: typeof RuleType.REGEX;
   after: ValueOrRef<Date>;
+  code?: string | undefined
 };
 
 export type CustomRule<
@@ -89,12 +97,14 @@ export type CustomRule<
   type: typeof RuleType.CUSTOM;
   name: string;
   params: T;
+  code?: string | undefined
 };
 
 export type ConditionalRule<TCondition, TRule extends Rule> = {
   type: typeof RuleType.CONDITIONAL;
   when: [TCondition] extends [never] ? Condition : TCondition;
   then: Exclude<[TRule] extends [never] ? Rule : TRule, ConditionalRule<never, never>>;
+  code?: string | undefined
 };
 
 export type Rule =
@@ -274,9 +284,9 @@ export const SchemaType = {
 
 export type SchemaType = EnumValues<typeof SchemaType>;
 
-export type BaseSchema<TValue, TType extends SchemaType, TRule extends Rule> = {
+export type BaseSchema<TValue, TType extends SchemaType, TRule extends Rule > = {
   type: TType;
-  rules?: Array<TRule | ConditionalRule<TRule>>;
+  rules?: Array<TRule | ConditionalRule<Condition, Rule>>;
   default?: TValue;
   required?: boolean | Condition;
   mutable?: boolean | Condition;
@@ -449,19 +459,19 @@ export type ValueType<T extends SchemaType = SchemaType> =
 // === Object Field Categorization ===
 type OptionalFields<T extends ObjectSchema<never>> = {
   [K in keyof T['fields'] as IsOptionalField<T['fields'][K]> extends true ? K : never]?: 
-    SchemaValues<T['fields'][K]>;
+    SchemaValuesInternal<T['fields'][K]>;
 };
 
 type RequiredFields<T extends ObjectSchema<never>> = {
   [K in keyof T['fields'] as IsOptionalField<T['fields'][K]> extends false ? K : never]-?: 
-    SchemaValues<T['fields'][K]>;
+    SchemaValuesInternal<T['fields'][K]>;
 };
 
 type ObjectValue<T extends ObjectSchema<never>> = 
   OptionalFields<T> & RequiredFields<T>;
 
 // === Main SchemaValues Type ===
-export type SchemaValues<T extends Schema> = Prettify<ApplyPrivacyMask<T,
+type SchemaValuesInternal<T extends Schema> = 
   T extends StringSchema ? 
     MakeOptional<T, ValueType<T['type']>> :
   T extends DateStringSchema ? 
@@ -473,15 +483,16 @@ export type SchemaValues<T extends Schema> = Prettify<ApplyPrivacyMask<T,
     T extends BooleanSchema ? 
     MakeOptional<T, ValueType<T['type']>> :
   T extends ArraySchema<never> ? 
-    MakeOptional<T, Array<SchemaValues<T['schema']>>> :
-  never
->>;
+    MakeOptional<T, Array<SchemaValuesInternal<T['schema']>>> :
+  never;
+
+export type SchemaValues<T extends Schema> = Prettify<ApplyPrivacyMask<T, SchemaValuesInternal<T>>>;
 /***
  * RESOLVED SCHEMA
  */
 export type ResolvedRules<T extends Rule = Rule> = Exclude<
   T,
-  ConditionalRule<T>
+  ConditionalRule<Condition, T>
 >;
 
 /**
@@ -532,6 +543,11 @@ export type BaseErrorMessage<
   A = unknown,
   S extends Schema = Schema,
 > = {
+  /**
+   * Defaults to the type safe code, but can be overwritten by 
+   * adding the code property to a rule
+   */
+  customCode: string
   path: string;
   message: string;
   schema: S;

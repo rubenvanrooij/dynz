@@ -50,6 +50,7 @@ exports.SchemaType = {
     OBJECT: 'object',
     ARRAY: 'array',
     OPTIONS: 'options',
+    BOOLEAN: 'boolean',
 };
 exports.ErrorCode = {
     ...exports.RuleType,

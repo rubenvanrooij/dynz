@@ -27,26 +27,26 @@ export function ref<const T extends string>(path: T): Reference<T> {
 
 export function min<
   T extends number | DateString | Reference = number | DateString | Reference,
->(min: T): MinRule<T> {
-  return { type: RuleType.MIN, min };
+>(min: T, code?: string): MinRule<T> {
+  return { type: RuleType.MIN, min, code };
 }
 
 export function max<
   T extends number | DateString | Reference = number | DateString | Reference,
->(max: T): MaxRule<T> {
-  return { type: RuleType.MAX, max };
+>(max: T, code?: string): MaxRule<T> {
+  return { type: RuleType.MAX, max, code };
 }
 
-export function regex(regex: string): RegexRule {
-  return { type: RuleType.REGEX, regex };
+export function regex(regex: string, code?: string): RegexRule {
+  return { type: RuleType.REGEX, regex, code };
 }
 
-export function equals<T extends ValueOrRef>(value: T): EqualsRule<T> {
-  return { type: RuleType.EQUALS, value };
+export function equals<T extends ValueOrRef>(value: T, code?: string): EqualsRule<T> {
+  return { type: RuleType.EQUALS, value, code };
 }
 
-export function isNumeric(): IsNumericRule {
-  return { type: RuleType.IS_NUMERIC };
+export function isNumeric(code?: string): IsNumericRule {
+  return { type: RuleType.IS_NUMERIC, code };
 }
 
 export function custom<T extends Record<string, ValueOrRef>>(

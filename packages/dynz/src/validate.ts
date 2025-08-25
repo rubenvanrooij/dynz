@@ -71,6 +71,7 @@ export function _validate<T extends Schema>(
             schema,
             value: values.new,
             current: values.current,
+            customCode: ErrorCode.INCLUDED,
             code: ErrorCode.INCLUDED,
             message: `A value is present for a schema that is not included: ${path}`,
           },
@@ -111,6 +112,7 @@ export function _validate<T extends Schema>(
             schema,
             value: values.new,
             current: values.current,
+            customCode: ErrorCode.IMMUTABLE,
             code: ErrorCode.IMMUTABLE,
             message: `The value for a schema that is not mutable has changed: ${path}`,
           },
@@ -134,6 +136,7 @@ export function _validate<T extends Schema>(
           schema,
           value: newValue,
           current: currentValue,
+          customCode: ErrorCode.REQRUIED,
           code: ErrorCode.REQRUIED,
           message: `A required value is missing for schema: ${path}`,
         },
@@ -150,6 +153,7 @@ export function _validate<T extends Schema>(
       schema,
       value: newValue,
       current: currentValue,
+      customCode: ErrorCode.TYPE,
       code: ErrorCode.TYPE,
     };
 
@@ -186,6 +190,7 @@ export function _validate<T extends Schema>(
               ...result,
               schema,
               path,
+              customCode: rule.code ? rule.code : result.code,
               value: newValue,
               current: currentValue,
             },
@@ -703,7 +708,7 @@ export function assertType<T extends SchemaType>(
     return value;
   }
 
-  throw new Error(`Invalid value: ${value} for schema type: ${type}`);
+  throw new Error(`Invalid type: ${typeof value} with ${value} for schema type: ${type}`);
 }
 
 /**

@@ -235,7 +235,7 @@ const types_1 = require("./types");
                 success: false,
                 errors: [vitest_1.expect.objectContaining({
                         code: types_1.ErrorCode.TYPE,
-                        path: '$[1]'
+                        path: '$.[1]'
                     })]
             });
         });

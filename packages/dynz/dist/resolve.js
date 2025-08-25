@@ -33,7 +33,7 @@ function isIncluded(schema, path, values) {
 }
 function isMutable(schema, path, values) {
     const nested = getNested(path, schema, values);
-    return resolveProperty(nested.schema, 'required', path, true, {
+    return resolveProperty(nested.schema, 'mutable', path, true, {
         schema,
         values: {
             new: values,
@@ -94,16 +94,18 @@ const OPERATORS = {
 };
 function validateWithOperator(condition, path, context) {
     const { left, right } = getConditionOperands(condition, path, context);
-    return (left !== undefined &&
-        right !== undefined &&
-        OPERATORS[condition.type](left, right));
+    // Both operands must be defined for comparison
+    if (left === undefined || right === undefined) {
+        return false;
+    }
+    return OPERATORS[condition.type](left, right);
 }
 /**
  * Converts a value to a comparable type based on the schema.
- * - If the schema is a date string, it converts the value to a Date object.
+ * For date strings, converts to milliseconds for proper comparison.
+│* For other types, returns the value unchanged.
  */
 function toCompareType(schema, value) {
-    console.log(`toCompareType: schema.type=${schema.type}, value=${value}`);
     if (schema.type === types_1.SchemaType.DATE_STRING) {
         return (0, validate_1.parseDateString)(`${value}`, schema.format).getTime();
     }
@@ -262,7 +264,7 @@ function getNested(path, schema, value) {
                 schema: childSchema,
             };
         }
-        throw new Error('cannot get nested value on non array or non object');
+        throw new Error('Cannot get nested value on non array or non object');
     }, { value, schema });
     return result;
 }

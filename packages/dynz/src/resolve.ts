@@ -24,7 +24,7 @@ import {
   validateSchema,
 } from './validate';
 
-type ResolveContext = {
+export type ResolveContext = {
   schema: Schema;
   values: {
     new: unknown;
@@ -170,7 +170,7 @@ function validateWithOperator(
   const { left, right } = getConditionOperands(condition, path, context);
 
   // Both operands must be defined for comparison
-  if (left === undefined || right === undefined) {                                                                                                                                                                                   │ │
+  if (left === undefined || right === undefined) {                                                                                                                                                                                   
     return false
   }
 
@@ -179,7 +179,7 @@ function validateWithOperator(
 
 /**
  * Converts a value to a comparable type based on the schema.
- * For date strings, converts to milliseconds for proper comparison.                                                                                                                                                                 │ │
+ * For date strings, converts to milliseconds for proper comparison.                                                                                                                                                                 
 │* For other types, returns the value unchanged.
  */
 function toCompareType<T extends Schema>(schema: T, value: ValueType): ValueType | number {
