@@ -3,6 +3,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.array = exports.DEFAULT_DATE_STRING_FORMAT = exports.object = void 0;
 exports.string = string;
 exports.number = number;
+exports.boolean = boolean;
+exports.file = file;
+exports.options = options;
 exports.dateString = dateString;
 exports.optional = optional;
 exports.required = required;
@@ -26,6 +29,27 @@ function number(value) {
     return {
         ...(value || {}),
         type: types_1.SchemaType.NUMBER,
+    };
+}
+;
+function boolean(value) {
+    return {
+        ...(value || {}),
+        type: types_1.SchemaType.BOOLEAN,
+    };
+}
+;
+function file(value) {
+    return {
+        ...(value || {}),
+        type: types_1.SchemaType.FILE,
+    };
+}
+;
+function options(value) {
+    return {
+        ...(value || {}),
+        type: types_1.SchemaType.OPTIONS,
     };
 }
 ;

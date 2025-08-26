@@ -11,30 +11,34 @@ exports.unpackRefValue = unpackRefValue;
 exports.unpackRef = unpackRef;
 exports.findSchemaByPath = findSchemaByPath;
 exports.getNested = getNested;
+exports.cast = cast;
 const types_1 = require("./types");
 const validate_1 = require("./validate");
-function isRequired(schema, path, values) {
-    const nested = getNested(path, schema, values);
+function isRequired(schema, path, values, strict = true) {
+    const nested = getNested(path, schema, values, strict);
     return resolveProperty(nested.schema, 'required', path, true, {
         schema,
+        strict,
         values: {
             new: values,
         },
     });
 }
-function isIncluded(schema, path, values) {
-    const nested = getNested(path, schema, values);
+function isIncluded(schema, path, values, strict = true) {
+    const nested = getNested(path, schema, values, strict);
     return resolveProperty(nested.schema, 'included', path, true, {
         schema,
+        strict,
         values: {
             new: values,
         },
     });
 }
-function isMutable(schema, path, values) {
-    const nested = getNested(path, schema, values);
+function isMutable(schema, path, values, strict = true) {
+    const nested = getNested(path, schema, values, strict);
     return resolveProperty(nested.schema, 'mutable', path, true, {
         schema,
+        strict,
         values: {
             new: values,
         },
@@ -66,7 +70,7 @@ function resolveCondition(condition, path, context) {
         case types_1.ConditionType.LOWER_THAN_OR_EQUAL:
             return validateWithOperator(condition, path, context);
         case types_1.ConditionType.MATCHES: {
-            const left = getNestedValue(ensureAbsolutePath(condition.path, path), context.schema, context.values.new);
+            const left = getNestedValue(ensureAbsolutePath(condition.path, path), context.schema, context.values.new, context.strict);
             if (!(0, validate_1.isString)(left)) {
                 throw new Error(`Condition ${condition.type} expects a string value at path ${condition.path}, but got ${typeof left}`);
             }
@@ -122,7 +126,7 @@ function toCompareType(schema, value) {
  * @returns
  */
 function getConditionOperands(condition, path, context) {
-    const nested = getNested(ensureAbsolutePath(condition.path, path), context.schema, context.values.new);
+    const nested = getNested(ensureAbsolutePath(condition.path, path), context.schema, context.values.new, context.strict);
     const left = (0, validate_1.validateSchema)(nested.schema, nested.value)
         ? toCompareType(nested.schema, nested.value)
         : undefined;
@@ -179,10 +183,10 @@ function unpackRefValue(valueOrRef, path, context) {
 }
 function unpackRef(valueOrRef, path, context) {
     if (isReference(valueOrRef)) {
-        const { schema, value } = getNested(ensureAbsolutePath(valueOrRef.path, path), context.schema, context.values.new);
+        const { schema, value } = getNested(ensureAbsolutePath(valueOrRef.path, path), context.schema, context.values.new, context.strict);
         return {
             schema,
-            value,
+            value: context.strict ? value : cast(schema, value),
             static: false,
         };
     }
@@ -223,7 +227,7 @@ function findSchemaByPath(path, schema, type) {
     }
     return nestedSchema;
 }
-function getNested(path, schema, value) {
+function getNested(path, schema, value, strict) {
     if (schema.private) {
         throw new Error(`Cannot access private schema at path ${path}`);
     }
@@ -248,10 +252,10 @@ function getNested(path, schema, value) {
             };
         }
         if (acc.schema.type === types_1.SchemaType.OBJECT) {
-            if (!(0, validate_1.isObject)(acc.value)) {
+            if (acc.value !== undefined && !(0, validate_1.isObject)(acc.value)) {
                 throw new Error(`Expected an object at path ${path}, but got ${typeof acc.value}`);
             }
-            const val = acc.value[cur];
+            const val = acc.value === undefined ? undefined : acc.value[cur];
             const childSchema = acc.schema.fields[cur];
             if (childSchema === undefined) {
                 throw new Error(`No schema found for path ${path}`);
@@ -266,8 +270,57 @@ function getNested(path, schema, value) {
         }
         throw new Error('Cannot get nested value on non array or non object');
     }, { value, schema });
-    return result;
+    return {
+        schema: result.schema,
+        value: strict ? result.value : cast(result.schema, result.value)
+    };
 }
-function getNestedValue(path, schema, value) {
-    return getNested(path, schema, value).value;
+function getNestedValue(path, schema, value, strict) {
+    return getNested(path, schema, value, strict).value;
+}
+/**
+ * Function that tries to cast a value to the correct chema type:
+ * e.g.:
+ * "12" -> 12
+ * or
+ * true -> "true", 12 -> "12"
+ */
+function cast(schema, value) {
+    if (value === undefined || value === null) {
+        return value;
+    }
+    switch (schema.type) {
+        case types_1.SchemaType.NUMBER: {
+            if ((0, validate_1.isString)(value)) {
+                const parsed = Number(value);
+                if (!Number.isNaN(parsed) && Number.isFinite(parsed)) {
+                    return parsed;
+                }
+            }
+            return value;
+        }
+        case types_1.SchemaType.BOOLEAN:
+            if (value === 'true') {
+                return true;
+            }
+            if (value === 'false') {
+                return false;
+            }
+            return value;
+        case types_1.SchemaType.STRING: {
+            if ((0, validate_1.isNumber)(value) || (0, validate_1.isBoolean)(value)) {
+                return String(value);
+            }
+            return value;
+        }
+        case types_1.SchemaType.ARRAY: {
+            // TODO: Find out of there is any security risk in converting a file list to an array?
+            if (value instanceof FileList) {
+                return Array.from(value);
+            }
+            return value;
+        }
+        default:
+            return value;
+    }
 }

@@ -1,5 +1,5 @@
 import { isAfter, isBefore, parse } from 'date-fns';
-import { resolveProperty, resolveRules, unpackRefValue } from './resolve';
+import { cast, resolveProperty, resolveRules, unpackRefValue } from './resolve';
 import {
   BaseErrorMessage,
   EqualsErrorMessage,
@@ -27,13 +27,15 @@ import {
   ValidateOptions,
   CustomRule,
   CustomErrorMessage,
+  MimeTypeRule,
+  MimeTypeErrorMessage,
 } from './types';
 
-export function validate<T extends Schema, TOptions extends ValidateOptions>(
+export function validate<T extends Schema>(
   schema: T,
   currentValues: SchemaValues<T> | undefined,
   newValues: unknown,
-  options: TOptions | {} = {},
+  options: ValidateOptions = {},
 ): ValidationResult<SchemaValues<T>> {
   return _validate(
     schema,
@@ -42,6 +44,7 @@ export function validate<T extends Schema, TOptions extends ValidateOptions>(
     {
       type: 'validate',
       schema,
+      strict: options.strict || false,
       validateOptions: options,
       validateMutable: currentValues !== undefined,
       values: {
@@ -93,8 +96,13 @@ export function _validate<T extends Schema>(
     };
   }
 
-  const newValue = getValue(schema, path, values.new);
+  let newValue = getValue(schema, path, values.new);
   const currentValue = getValue(schema, path, values.current);
+  
+  // Try auto-casting if strict mode is disabled
+  if(context.validateOptions.strict === false) {
+    newValue = cast(schema, newValue);
+  }
 
   /**
    * if the schema is marked as not mutable; the value shuld still be the same
@@ -320,6 +328,8 @@ function validateRule<T extends Schema>(
       return validateIsNumeric(value);
     case RuleType.CUSTOM:
       return validateCustomRule(schema, path, rule, value, context);
+    case RuleType.MIME_TYPE:
+      return validateMimeTypeRule(schema, path, rule, value, context)
   }
 }
 
@@ -377,6 +387,9 @@ function validateCustomRule<T extends Schema>(
       };
 }
 
+
+
+
 /**
  * Equals rule validator
  *
@@ -402,6 +415,42 @@ function validateEqualsRule(
         message: `The value for schema ${path} does not equal ${equals}`,
       };
 }
+
+/**
+ * Mime type rule validator
+ *
+ * @param rule the rule that is executed
+ * @param value the value to be validated
+ * @returns undefined then the validations passses, an error message when it fails
+ */
+function validateMimeTypeRule(
+  schema: Schema,
+  path: string,
+  rule: MimeTypeRule,
+  value: unknown,
+  context: Context,
+):
+  | Omit<MimeTypeErrorMessage, keyof Omit<BaseErrorMessage, 'message'>>
+  | undefined {
+  const mimeType = unpackRefValue(rule.mimeType, path, context);
+  
+  const mimeTypes = isArray(mimeType) ? mimeType : [mimeType]
+  
+  
+  switch (schema.type) {
+    case SchemaType.FILE:
+      const assertedValue = assertSchema(schema, value)
+      return mimeTypes.includes(assertedValue.type) ? undefined : {
+        code: ErrorCode.MIME_TYPE,
+        mimeType: assertedValue.type,
+        message: `The mime type ${assertedValue.type} for schema ${path} is not equal to ${mimeType}`,
+      };
+    default:
+      throw new Error(`Mime type rule cannot be used on schema of type: ${schema.type}`)
+  }
+
+}
+
 
 /**
  * Min rule validator
@@ -433,6 +482,13 @@ function validateMinRule(
         code: ErrorCode.MIN,
         min,
         message: `The value ${value} for schema ${path} is less than the minimum value of ${min}`,
+      };
+    case SchemaType.FILE:
+      const asstertedValue = assertSchema(schema, value)
+      return asstertedValue.size >= assertNumber(min) ? undefined : {
+        code: ErrorCode.MIN,
+        min,
+        message: `The value ${asstertedValue.name} for schema ${path} shuld have at least ${min} bytes`,
       };
     case SchemaType.STRING:
       return assertSchema(schema, value).length >= assertNumber(min) ? undefined : {
@@ -498,6 +554,8 @@ function validateMaxRule(
         return assertSchema(schema, value) <= assertNumber(max);
       case SchemaType.STRING:
         return assertSchema(schema, value).length <= assertNumber(max);
+      case SchemaType.FILE:
+        return assertSchema(schema, value).size <= assertNumber(max);
       case SchemaType.OBJECT:
         return (
           Object.keys(assertSchema(schema, value)).length <= assertNumber(max)
@@ -656,6 +714,8 @@ export function validateType<T extends SchemaType>(
       return isDate(value);
     case SchemaType.ARRAY:
       return isArray(value);
+    case SchemaType.FILE:
+      return isFile(value)
     case SchemaType.DATE_STRING: {
       if (dateFormat === undefined) {
         throw new Error('No date format supplied for date string type');
@@ -755,6 +815,17 @@ export function isDate(value: unknown): value is Date {
  */
 export function isBoolean(value: unknown): value is boolean {
   return typeof value === 'boolean';
+}
+
+/**
+ * Validates whether a value is a file value
+ *
+ * @param value the value to be validated
+ * @returns true if the value is correct, false if not
+ */
+export function isFile(value: unknown): value is File {
+  console.log(value)
+  return value instanceof File
 }
 
 /**

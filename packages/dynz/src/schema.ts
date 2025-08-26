@@ -8,13 +8,17 @@ import {
   StringSchema,
   Rule,
   Optional,
+  OptionsSchema,
+  BooleanSchema,
+  Prettify,
+  FileSchema,
 } from './types';
 
 export function string(): StringSchema;
-export function string<T extends Omit<StringSchema, 'type'>>(
+export function string<const T extends Omit<StringSchema, 'type'>>(
   value: T,
-): T & Pick<StringSchema, 'type'>;
-export function string<T extends Omit<StringSchema, 'type'>>(
+): Prettify<T & Pick<StringSchema, 'type'>>;
+export function string<const T extends Omit<StringSchema, 'type'>>(
   value?: T,
 ): StringSchema {
   return {
@@ -24,11 +28,11 @@ export function string<T extends Omit<StringSchema, 'type'>>(
 }
 
 export const object = <
-  T extends Record<string, Schema>,
-  A extends Omit<ObjectSchema<T>, 'type'>,
+  const T extends Record<string, Schema>,
+  const A extends Omit<ObjectSchema<T>, 'type'>,
 >(
   value: A,
-): A & Pick<ObjectSchema<T>, 'type'> => {
+): Prettify<A & Pick<ObjectSchema<T>, 'type'>> => {
   return {
     ...value,
     type: SchemaType.OBJECT,
@@ -39,11 +43,11 @@ export const DEFAULT_DATE_STRING_FORMAT = 'yyyy-MM-dd';
 
 
 export function number(): NumberSchema;
-export function number<T extends Omit<NumberSchema, 'type'>>(
+export function number<const T extends Omit<NumberSchema, 'type'>>(
   value: T,
-): T & Pick<NumberSchema, 'type'>;
+): Prettify<T & Pick<NumberSchema, 'type'>>;
 export function number <
-  A extends Omit<NumberSchema, 'type'>,
+  const A extends Omit<NumberSchema, 'type'>,
 >(
   value?: A,
 ): NumberSchema {
@@ -53,17 +57,57 @@ export function number <
   };
 };
 
+export function boolean(): BooleanSchema;
+export function boolean<const T extends Omit<BooleanSchema, 'type'>>(
+  value: T,
+): Prettify<T & Pick<BooleanSchema, 'type'>>;
+export function boolean <
+  A extends Omit<BooleanSchema, 'type'>,
+>(
+  value?: A,
+): BooleanSchema {
+  return {
+    ...(value || {}),
+    type: SchemaType.BOOLEAN,
+  };
+};
+
+export function file(): FileSchema;
+export function file<const T extends Omit<FileSchema, 'type'>>(
+  value: T,
+): Prettify<T & Pick<FileSchema, 'type'>>;
+export function file <
+  A extends Omit<FileSchema, 'type'>,
+>(
+  value?: A,
+): FileSchema {
+  return {
+    ...(value || {}),
+    type: SchemaType.FILE,
+  };
+};
+
+
+export function options<const T extends Omit<OptionsSchema, 'type'>>(
+  value: T,
+): Prettify<T & Pick<OptionsSchema, 'type'>> {
+  return {
+    ...(value || {}),
+    type: SchemaType.OPTIONS,
+  };
+};
+
 
 export function dateString(): DateStringSchema;
 export function dateString<
-  T extends string,
-  A extends Optional<Omit<DateStringSchema<T>, 'type'>, 'format'>,
+  const T extends string,
+  const A extends Optional<Omit<DateStringSchema<T>, 'type'>, 'format'>,
 >(
   value: A,
-): A & Pick<DateStringSchema<T>, 'format'> & Pick<DateStringSchema<T>, 'type'>;
+): Prettify<A & Pick<DateStringSchema<T>, 'format'> & Pick<DateStringSchema<T>, 'type'>>;
 export function dateString<
-  T extends string,
-  A extends Optional<Omit<DateStringSchema<T>, 'type'>, 'format'>,
+  const T extends string,
+  const A extends Optional<Omit<DateStringSchema<T>, 'type'>, 'format'>,
 >(value?: A): DateStringSchema {
   return {
     ...value,
@@ -74,31 +118,31 @@ export function dateString<
 
 export const array = <
   const T extends Schema,
-  A extends Omit<ArraySchema<T>, 'type'>,
+  const A extends Omit<ArraySchema<T>, 'type'>,
 >(
   value: A,
-): A & Pick<ArraySchema<T>, 'type'> => {
+): Prettify<A & Pick<ArraySchema<T>, 'type'>> => {
   return {
     ...value,
     type: SchemaType.ARRAY,
   };
 };
 
-export function optional<T extends Schema>(schema: T): T & { required: false } {
+export function optional<const T extends Schema>(schema: T): T & { required: false } {
   return {
     ...schema,
     required: false,
   };
 }
 
-export function required<T extends Schema>(schema: T): T & { required: true } {
+export function required<const T extends Schema>(schema: T): T & { required: true } {
   return {
     ...schema,
     required: true,
   };
 }
 
-export function rules<T extends Schema, A extends Rule[]>(
+export function rules<const T extends Schema, A extends Rule[]>(
   schema: T,
   ...rules: A
 ): T & { rules: A } {

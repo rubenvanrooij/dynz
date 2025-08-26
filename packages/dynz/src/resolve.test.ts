@@ -121,6 +121,7 @@ describe('resolve', () => {
       const schema = string({ required: true });
       const context: ResolveContext = {
         schema,
+        strict: false,
         values: { new: {} }
       };
       
@@ -132,6 +133,7 @@ describe('resolve', () => {
       const schema = string();
       const context: ResolveContext = {
         schema,
+        strict: false,
         values: { new: {} }
       };
       
@@ -156,6 +158,7 @@ describe('resolve', () => {
       
       const context: ResolveContext = {
         schema: rootSchema,
+        strict: false,
         values: { new: { type: 'user' } }
       };
       
@@ -166,6 +169,7 @@ describe('resolve', () => {
 
   describe('resolveCondition', () => {
     const createContext = (values: unknown): ResolveContext => ({
+      strict: false,
       schema: object({
         fields: {
           type: string(),
@@ -400,6 +404,7 @@ describe('resolve', () => {
       
       const context: ResolveContext = {
         schema,
+        strict: false,
         values: { new: {} }
       };
       
@@ -433,6 +438,7 @@ describe('resolve', () => {
       
       const context: ResolveContext = {
         schema: rootSchema,
+        strict: false,
         values: { new: { type: 'email' } }
       };
       
@@ -465,6 +471,7 @@ describe('resolve', () => {
       
       const context: ResolveContext = {
         schema: rootSchema,
+        strict: false,
         values: { new: { type: 'text' } }
       };
       
@@ -502,6 +509,7 @@ describe('resolve', () => {
     
     const context: ResolveContext = {
       schema,
+      strict: false,
       values: { new: { min: 5, value: 'hello' } }
     };
 
@@ -605,7 +613,7 @@ describe('resolve', () => {
 
     it('should get nested value at simple path', () => {
       const values = { user: { name: 'John', age: 30 } };
-      const result = getNested('$.user.name', schema, values);
+      const result = getNested('$.user.name', schema, values, true);
       
       expect(result).toEqual({
         schema: expect.objectContaining({ type: SchemaType.STRING }),
@@ -615,7 +623,7 @@ describe('resolve', () => {
 
     it('should return default value when value is undefined', () => {
       const values = { user: { age: 30 } };
-      const result = getNested('$.user.name', schema, values);
+      const result = getNested('$.user.name', schema, values, true);
       
       expect(result).toEqual({
         schema: expect.objectContaining({ type: SchemaType.STRING }),
@@ -625,7 +633,7 @@ describe('resolve', () => {
 
     it('should get nested value in array', () => {
       const values = { user: { contacts: ['email@test.com', 'phone'] } };
-      const result = getNested('$.user.contacts[0]', schema, values);
+      const result = getNested('$.user.contacts[0]', schema, values, true);
       
       expect(result).toEqual({
         schema: expect.objectContaining({ type: SchemaType.STRING }),
@@ -641,19 +649,19 @@ describe('resolve', () => {
       });
       
       expect(() => {
-        getNested('$.secret', privateSchema, { secret: 'value' });
+        getNested('$.secret', privateSchema, { secret: 'value' }, true);
       }).toThrow('Cannot access private schema at path $.secret');
     });
 
     it('should throw error when array index is not a number', () => {
       expect(() => {
-        getNested('$.user.contacts[invalid]', schema, { user: { contacts: {} } });
+        getNested('$.user.contacts[invalid]', schema, { user: { contacts: {} } }, true);
       }).toThrow('Expected an array at path $.user.contacts[invalid], but got object');
     });
 
     it('should throw error for invalid path structure', () => {
       expect(() => {
-        getNested('$.user.name.invalid', schema, { user: { name: 'John' } });
+        getNested('$.user.name.invalid', schema, { user: { name: 'John' } }, true);
       }).toThrow('Cannot get nested value on non array or non object');
     });
   });

@@ -1,10 +1,11 @@
 export type EnumValues<T> = T[keyof T];
 export type Unpacked<T> = T extends (infer U)[] ? U : T;
 
-type Prettify<T> = {
+export type Prettify<T> = {
   [K in keyof T]: T[K]
 } & {}
 
+type Flatten<T> = T extends (infer U)[] ? U : T;
 
 export type Filter<T extends unknown[], A> = T extends []
   ? []
@@ -29,6 +30,7 @@ export type JsonPrimitive = string | number | boolean;
 export const RuleType = {
   MIN: 'min',
   MAX: 'max',
+  MIME_TYPE: 'mime_type',
   MAX_PRECISION: 'max_precision',
   REGEX: 'regex',
   EQUALS: 'equals',
@@ -91,6 +93,12 @@ export type AfterRule = {
   code?: string | undefined
 };
 
+export type MimeTypeRule = {
+  type: typeof RuleType.MIME_TYPE;
+  mimeType: ValueOrRef<string[] | string>;
+  code?: string | undefined
+};
+
 export type CustomRule<
   T extends Record<string, ValueOrRef> = Record<string, ValueOrRef>,
 > = {
@@ -115,7 +123,8 @@ export type Rule =
   | RegexRule
   | MaxPrecisionRule
   | IsNumericRule
-  | CustomRule;
+  | CustomRule
+  | MimeTypeRule;
 
 /**
  *
@@ -280,6 +289,7 @@ export const SchemaType = {
   ARRAY: 'array',
   OPTIONS: 'options',
   BOOLEAN: 'boolean',
+  FILE: 'file'
 } as const;
 
 export type SchemaType = EnumValues<typeof SchemaType>;
@@ -346,9 +356,21 @@ export type DateStringSchema<
  */
 export type OptionsRules = EqualsRule | CustomRule;
 export type OptionsSchema<
-  TValue extends JsonPrimitive,
-  TRule extends OptionsRules = OptionsRules,
-> = BaseSchema<TValue, typeof SchemaType.OPTIONS, TRule>;
+  TValue extends string | number = string | number,
+
+> = BaseSchema<TValue, typeof SchemaType.OPTIONS, OptionsRules> & {
+  options: TValue[]
+};
+
+/**
+ * FILE SCHEMA
+ */
+// TODO: Add mime type rule
+export type FileRules = MinRule | MaxRule | MimeTypeRule;
+export type FileSchema<
+  TValue extends string | number = string | number,
+
+> = BaseSchema<TValue, typeof SchemaType.FILE, FileRules>
 
 /**
  * OBJECT SCHEMA
@@ -399,7 +421,7 @@ export type BooleanRules =
   | CustomRule;
 export type BooleanSchema = BaseSchema<
   number,
-  typeof SchemaType.NUMBER,
+  typeof SchemaType.BOOLEAN,
   BooleanRules
 >;
 
@@ -410,7 +432,8 @@ export type Schema =
   | BooleanSchema
   | ArraySchema<never>
   | DateStringSchema
-  | OptionsSchema<JsonPrimitive>;
+  | OptionsSchema<string | number>
+  | FileSchema;
 
 export type SchemaWithParent<T extends Schema = Schema> = T & {
   parent?: Schema;
@@ -421,11 +444,15 @@ export type SchemaWithParent<T extends Schema = Schema> = T & {
 export type IsIncluded<T extends Schema> = 
   T extends { included: true } ? true : 
   T extends { included: false } ? false : 
+  // required is conditionally
+  T['included'] extends {} ? false :
   true; // default included
 
 export type IsRequired<T extends Schema> = 
   T extends { required: true } ? true : 
   T extends { required: false } ? false : 
+  // required is conditionally
+  T['required'] extends {} ? false :
   true; // default required
 
 export type IsPrivate<T extends Schema> = 
@@ -454,6 +481,8 @@ export type ValueType<T extends SchemaType = SchemaType> =
   T extends typeof SchemaType.OBJECT ? Record<string, unknown> :
   T extends typeof SchemaType.ARRAY ? unknown[] :
   T extends typeof SchemaType.BOOLEAN ? boolean :
+  T extends typeof SchemaType.OPTIONS ? string | number :
+  T extends typeof SchemaType.FILE ? File :
   never;
 
 // === Object Field Categorization ===
@@ -479,8 +508,12 @@ type SchemaValuesInternal<T extends Schema> =
   T extends NumberSchema ? 
     MakeOptional<T, ValueType<T['type']>> :
   T extends ObjectSchema<never> ? 
-    ObjectValue<T> :
+    Prettify<ObjectValue<T>> :
     T extends BooleanSchema ? 
+    MakeOptional<T, ValueType<T['type']>> :
+  T extends OptionsSchema ? 
+    MakeOptional<T, Flatten<T['options']>> :
+  T extends FileSchema ? 
     MakeOptional<T, ValueType<T['type']>> :
   T extends ArraySchema<never> ? 
     MakeOptional<T, Array<SchemaValuesInternal<T['schema']>>> :
@@ -502,6 +535,7 @@ export type ResolvedRules<T extends Rule = Rule> = Exclude<
 export type Context<T extends Schema = Schema> = {
   type: 'validate';
   schema: T;
+  strict: boolean
 
   /**
    * Will be set to true if current values is not undefined; if
@@ -561,6 +595,12 @@ export type EqualsErrorMessage<T = unknown> = BaseErrorMessage & {
   equals: T;
 };
 
+export type MimeTypeErrorMessage = BaseErrorMessage & {
+  code: typeof ErrorCode.MIME_TYPE;
+  mimeType: string | string[];
+};
+
+
 export type MinErrorMessage = BaseErrorMessage & {
   code: typeof ErrorCode.MIN;
   min: number | string;
@@ -615,6 +655,7 @@ export type DateStringTypeErrorMessage = BaseErrorMessage & {
 
 export type ErrorMessage =
   | EqualsErrorMessage
+  | MimeTypeErrorMessage
   | MinErrorMessage
   | MaxErrorMessage
   | MaxPrecisionErrorMessage
@@ -669,4 +710,5 @@ export type ValidateOptions<
   TCustomRuleMap extends CustomRuleMap = CustomRuleMap,
 > = {
   customRules?: TCustomRuleMap;
+  strict?: boolean;
 };

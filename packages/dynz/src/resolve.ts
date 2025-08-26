@@ -17,6 +17,7 @@ import {
 } from './types';
 import {
   assertArray,
+  isBoolean,
   isNumber,
   isObject,
   isString,
@@ -26,6 +27,7 @@ import {
 
 export type ResolveContext = {
   schema: Schema;
+  strict: boolean
   values: {
     new: unknown;
   };
@@ -35,11 +37,13 @@ export function isRequired<T extends Schema>(
   schema: T,
   path: string,
   values: unknown,
+  strict: boolean = true
 ): boolean {
-  const nested = getNested(path, schema, values);
+  const nested = getNested(path, schema, values, strict);
 
   return resolveProperty(nested.schema, 'required', path, true, {
     schema,
+    strict,
     values: {
       new: values,
     },
@@ -50,11 +54,13 @@ export function isIncluded<T extends Schema>(
   schema: T,
   path: string,
   values: unknown,
+  strict: boolean = true
 ): boolean {
-  const nested = getNested(path, schema, values);
+  const nested = getNested(path, schema, values, strict);
 
   return resolveProperty(nested.schema, 'included', path, true, {
     schema,
+    strict,
     values: {
       new: values,
     },
@@ -65,11 +71,13 @@ export function isMutable<T extends Schema>(
   schema: T,
   path: string,
   values: unknown,
+  strict: boolean = true
 ): boolean {
-  const nested = getNested(path, schema, values);
+  const nested = getNested(path, schema, values, strict);
 
   return resolveProperty(nested.schema, 'mutable', path, true, {
     schema,
+    strict,
     values: {
       new: values,
     },
@@ -123,6 +131,7 @@ export function resolveCondition(
         ensureAbsolutePath(condition.path, path),
         context.schema,
         context.values.new,
+        context.strict
       );
 
       if (!isString(left)) {
@@ -209,6 +218,7 @@ function getConditionOperands<T extends ValueType>(
     ensureAbsolutePath(condition.path, path),
     context.schema,
     context.values.new,
+    context.strict
   );
 
   const left = validateSchema(nested.schema, nested.value)
@@ -302,11 +312,12 @@ export function unpackRef(
       ensureAbsolutePath(valueOrRef.path, path),
       context.schema,
       context.values.new,
+      context.strict
     );
 
     return {
       schema,
-      value,
+      value: context.strict ? value : cast(schema, value),
       static: false,
     };
   }
@@ -326,10 +337,19 @@ function getParent(path: string): string {
   return path.split('.').slice(0, -1).join('.');
 }
 
-export function findSchemaByPath<T extends Schema, A extends Schema>(
+export function findSchemaByPath(
   path: string,
-  schema: T,
-  type?: A['type'],
+  schema: Schema,
+): Schema
+export function findSchemaByPath<T extends Schema = Schema>(
+  path: string,
+  schema: Schema,
+  type: T['type'],
+): T
+export function findSchemaByPath<T extends Schema = Schema>(
+  path: string,
+  schema: Schema,
+  type?: T['type'],
 ): Schema {
   const nestedSchema = path
     .split(/[.[\]]/)
@@ -372,6 +392,7 @@ export function getNested<T extends Schema>(
   path: string,
   schema: T,
   value: unknown,
+  strict: boolean
 ) {
   if (schema.private) {
     throw new Error(`Cannot access private schema at path ${path}`);
@@ -405,13 +426,13 @@ export function getNested<T extends Schema>(
         }
 
         if (acc.schema.type === SchemaType.OBJECT) {
-          if (!isObject(acc.value)) {
+          if (acc.value !== undefined && !isObject(acc.value)) {
             throw new Error(
               `Expected an object at path ${path}, but got ${typeof acc.value}`,
             );
           }
 
-          const val = acc.value[cur];
+          const val = acc.value === undefined ? undefined : acc.value[cur];
           const childSchema = acc.schema.fields[cur];
 
           if (childSchema === undefined) {
@@ -433,13 +454,66 @@ export function getNested<T extends Schema>(
       { value, schema },
     );
 
-  return result;
+  return {
+    schema: result.schema,
+    value: strict ? result.value : cast(result.schema, result.value)
+  };
 }
 
 function getNestedValue<T extends Schema>(
   path: string,
   schema: T,
   value: unknown,
+  strict: boolean
 ): unknown {
-  return getNested(path, schema, value).value;
+  return getNested(path, schema, value, strict).value;
+}
+
+/**
+ * Function that tries to cast a value to the correct chema type:
+ * e.g.:
+ * "12" -> 12
+ * or
+ * true -> "true", 12 -> "12"
+ */
+export function cast(schema: Schema, value: unknown): unknown {
+  if(value === undefined || value === null) {
+    return value
+  }
+
+  switch (schema.type) {
+    case SchemaType.NUMBER: {
+      if (isString(value)) {
+        const parsed = Number(value);
+        if (!Number.isNaN(parsed) && Number.isFinite(parsed)) {
+          return parsed;
+        }
+      }
+      return value;
+    }
+    case SchemaType.BOOLEAN:
+      if(value === 'true') {
+        return true
+      }
+      if(value === 'false') {
+        return false
+      }
+      return value
+    case SchemaType.STRING: {
+      if (isNumber(value) || isBoolean(value)) {
+        return String(value);
+      }
+      return value;
+    }
+    case SchemaType.ARRAY: {
+      // TODO: Find out of there is any security risk in converting a file list to an array?
+      if(value instanceof FileList) {
+        return Array.from(value)
+      }
+
+      return value;
+    }
+    default:
+      return value;
+  }
 }

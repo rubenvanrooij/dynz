@@ -31,6 +31,7 @@ function dynzResolver(schema, currentValues, schemaOptions, resolverOptions = {}
         const result = (0, validate_1.validate)(schema, currentValues, values, schemaOptions);
         options.shouldUseNativeValidation &&
             (0, resolvers_1.validateFieldsNatively)({}, options);
+        console.log('Dynz reslver...');
         console.log(result);
         if (result.success === false) {
             return {

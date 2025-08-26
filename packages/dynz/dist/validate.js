@@ -10,6 +10,7 @@ exports.isString = isString;
 exports.isNumber = isNumber;
 exports.isDate = isDate;
 exports.isBoolean = isBoolean;
+exports.isFile = isFile;
 exports.isObject = isObject;
 exports.isArray = isArray;
 exports.assertNumber = assertNumber;
@@ -27,6 +28,7 @@ function validate(schema, currentValues, newValues, options = {}) {
     return _validate(schema, { current: currentValues, new: newValues }, '$', {
         type: 'validate',
         schema,
+        strict: options.strict || false,
         validateOptions: options,
         validateMutable: currentValues !== undefined,
         values: {
@@ -68,8 +70,12 @@ function _validate(schema, values, path, context) {
             values: values.new,
         };
     }
-    const newValue = getValue(schema, path, values.new);
+    let newValue = getValue(schema, path, values.new);
     const currentValue = getValue(schema, path, values.current);
+    // Try auto-casting if strict mode is disabled
+    if (context.validateOptions.strict === false) {
+        newValue = (0, resolve_1.cast)(schema, newValue);
+    }
     /**
      * if the schema is marked as not mutable; the value shuld still be the same
      */
@@ -249,6 +255,8 @@ function validateRule(schema, path, rule, value, context) {
             return validateIsNumeric(value);
         case types_1.RuleType.CUSTOM:
             return validateCustomRule(schema, path, rule, value, context);
+        case types_1.RuleType.MIME_TYPE:
+            return validateMimeTypeRule(schema, path, rule, value, context);
     }
 }
 /**
@@ -301,6 +309,28 @@ function validateEqualsRule(_, path, rule, value, context) {
         };
 }
 /**
+ * Mime type rule validator
+ *
+ * @param rule the rule that is executed
+ * @param value the value to be validated
+ * @returns undefined then the validations passses, an error message when it fails
+ */
+function validateMimeTypeRule(schema, path, rule, value, context) {
+    const mimeType = (0, resolve_1.unpackRefValue)(rule.mimeType, path, context);
+    const mimeTypes = isArray(mimeType) ? mimeType : [mimeType];
+    switch (schema.type) {
+        case types_1.SchemaType.FILE:
+            const assertedValue = assertSchema(schema, value);
+            return mimeTypes.includes(assertedValue.type) ? undefined : {
+                code: types_1.ErrorCode.MIME_TYPE,
+                mimeType: assertedValue.type,
+                message: `The mime type ${assertedValue.type} for schema ${path} is not equal to ${mimeType}`,
+            };
+        default:
+            throw new Error(`Mime type rule cannot be used on schema of type: ${schema.type}`);
+    }
+}
+/**
  * Min rule validator
  *
  * @param rule the rule that is executed
@@ -321,6 +351,13 @@ function validateMinRule(schema, path, rule, value, context) {
                 code: types_1.ErrorCode.MIN,
                 min,
                 message: `The value ${value} for schema ${path} is less than the minimum value of ${min}`,
+            };
+        case types_1.SchemaType.FILE:
+            const asstertedValue = assertSchema(schema, value);
+            return asstertedValue.size >= assertNumber(min) ? undefined : {
+                code: types_1.ErrorCode.MIN,
+                min,
+                message: `The value ${asstertedValue.name} for schema ${path} shuld have at least ${min} bytes`,
             };
         case types_1.SchemaType.STRING:
             return assertSchema(schema, value).length >= assertNumber(min) ? undefined : {
@@ -371,6 +408,8 @@ function validateMaxRule(schema, path, rule, value, context) {
                 return assertSchema(schema, value) <= assertNumber(max);
             case types_1.SchemaType.STRING:
                 return assertSchema(schema, value).length <= assertNumber(max);
+            case types_1.SchemaType.FILE:
+                return assertSchema(schema, value).size <= assertNumber(max);
             case types_1.SchemaType.OBJECT:
                 return (Object.keys(assertSchema(schema, value)).length <= assertNumber(max));
             case types_1.SchemaType.ARRAY:
@@ -468,6 +507,8 @@ function validateType(type, value, dateFormat) {
             return isDate(value);
         case types_1.SchemaType.ARRAY:
             return isArray(value);
+        case types_1.SchemaType.FILE:
+            return isFile(value);
         case types_1.SchemaType.DATE_STRING: {
             if (dateFormat === undefined) {
                 throw new Error('No date format supplied for date string type');
@@ -533,6 +574,16 @@ function isDate(value) {
  */
 function isBoolean(value) {
     return typeof value === 'boolean';
+}
+/**
+ * Validates whether a value is a file value
+ *
+ * @param value the value to be validated
+ * @returns true if the value is correct, false if not
+ */
+function isFile(value) {
+    console.log(value);
+    return value instanceof File;
 }
 /**
  * Validates whether a value is an object (Record<string | number, unknown>) value. If

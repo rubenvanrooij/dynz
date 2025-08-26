@@ -1,84 +1,94 @@
 "use client"
 
-import { useForm, SubmitHandler } from "react-hook-form";
-import { min, ref } from 'dynz/rules';
-import { gte } from 'dynz/conditions';
-import { number, object, string } from 'dynz/schema';
-import { dynzResolver } from '@dynz/react-hook-form-resolver/index';
+import { max, mimeType, min, regex } from 'dynz/rules';
+import { eq, or } from 'dynz/conditions';
+import { array, boolean, file, object, options, string } from 'dynz/schema';
 import { SchemaValues } from "dynz/types";
 import { useTranslations } from "next-intl";
+import { Form } from "@/form/form";
+import { Input } from "@/form/input";
+import { Select } from "@/form/select";
+import { BooleanField } from "@/form/boolean";
 
 const stringRequiredRule = min(1, 'required')
+const emailRule = regex(`^[a-zA-Z0-9.!#$%&'*+/=?^_\`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}$`)
 
 const schema = object({
   fields: {
-    firstName: string({
-      required: false,
+    name: string({
       rules: [stringRequiredRule]
-      // rules: [min(ref('age'))],
     }),
-    age: number({
-      rules: [min(5)],
-      required: false,
+    email: string({
+      rules: [emailRule]
     }),
-    sure: number({
-      included: gte('age', 10),
-      rules: [stringRequiredRule, min(5)],
-      required: false,
+    attendanceType: options({
+      default: "Virtual",
+      options: ["In-Person", "Virtual", "Hybrid"],
     }),
+    accomidationRequired: boolean({
+      included: eq('attendanceType', 'In-Person')
+    }),
+    workshopPreferences: options({
+      options: ["AI & Machine Learning", "Web Development", "Data Science", "Cybersecurity"],
+      included: or(
+        eq('attendanceType', 'In-Person'),
+        eq('attendanceType', 'Hybrid')
+      )
+    }),
+    dietry: object({
+      fields: {
+        restrictions: boolean(),
+        details: string({
+          included: eq('restrictions', true)
+        })
+      }
+    }),
+    professionalLevel: options({
+      options: ["Student", "Junior Professional", "Senior Professional", "Executive"]
+    }),
+    studentInstitution: string({
+      included: eq('professionalLevel', 'Student')
+    }),
+    image: array({
+      schema: file({
+        rules: [mimeType(['image/jpeg', 'text/csv'])]
+      }),
+      rules: [min(1), max(1)]
+    })
   },
 });
+
+type RegistrionFormFields = SchemaValues<typeof schema>
 
 
 export default function Home() {
 
   const t = useTranslations();
 
-  const {
-    register,
-    handleSubmit,
-    watch,
-    formState: { errors },
-  } = useForm<SchemaValues<typeof schema>>({
-    resolver: dynzResolver(schema, undefined, undefined, {
-      messageTransformer: (message) => {
 
-        const { schema, value, current, ...rest } = message
+  const onSubmit = (data: any) => {
+    alert(JSON.stringify(data))
+  }
 
-        // parse message args to only contain strings numbers and dates
-        const messageArgs = Object.entries(rest).reduce<Record<string, string | number | Date>>((prev, [key, value]) => {
-          if(typeof value === 'string' || typeof value === 'number' || value instanceof Date) {
-            return {
-              ...prev,
-              [key]: value
-            }
-          }
-
-          return prev
-        }, {})
-        
-        return t(`form.errorMessages.${message.schema.type}.${message.customCode}`, messageArgs)
-      }
-    })
-  })
-  const onSubmit = (data: any) => console.log(data)
-
-  console.log(watch("firstName")) // watch input value by passing the name of it
 
   return (
-    /* "handleSubmit" will validate your inputs before invoking "onSubmit" */
-    <form onSubmit={handleSubmit(onSubmit)}>
+    <Form schema={schema} defaultValues={{
+      attendanceType: undefined
+    }} onSubmit={onSubmit}>
       <h1>{t('HomePage.title')}</h1>
-     <input {...register("firstName")} />
-      <p>{errors.firstName?.message}</p>
 
-      <input type="number" {...register("age")} />
-      <p>{errors.age?.message}</p>
-
-      <input {...register("sure")} />
-      <p>{errors.sure?.message}</p>
-
-      <input type="submit" />
-    </form>
+      {/* <Input path="firstName" /> */}
+      <Input type="string" path="name" />
+      <Input type="string" path="email" />
+      <Select path="attendanceType" />
+      <BooleanField path="accomidationRequired" />
+      <BooleanField path="workshopPreferences" />
+      <BooleanField path="dietry.restrictions" />
+      <Input type="string" path="dietry.details" />
+      <Select path="professionalLevel" />
+      <Input type="string" path="studentInstitution" />
+       <Input type="file" multiple={true} path="image" />
+      <button type="submit">Submit</button>
+    </Form>
   )
 }

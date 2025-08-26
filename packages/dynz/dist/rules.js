@@ -7,6 +7,7 @@ exports.max = max;
 exports.regex = regex;
 exports.equals = equals;
 exports.isNumeric = isNumeric;
+exports.mimeType = mimeType;
 exports.custom = custom;
 exports.conditional = conditional;
 const types_1 = require("./types");
@@ -33,6 +34,9 @@ function equals(value, code) {
 }
 function isNumeric(code) {
     return { type: types_1.RuleType.IS_NUMERIC, code };
+}
+function mimeType(mimeType, code) {
+    return { type: types_1.RuleType.MIME_TYPE, mimeType, code };
 }
 function custom(name, params) {
     return { type: types_1.RuleType.CUSTOM, name, params: params || {} };

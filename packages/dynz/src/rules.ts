@@ -12,6 +12,7 @@ import {
   ValueOrRef,
   IsNumericRule,
   CustomRule,
+  MimeTypeRule,
 } from './types';
 
 export function rules<T extends Rule[]>(...rules: T): T {
@@ -47,6 +48,10 @@ export function equals<T extends ValueOrRef>(value: T, code?: string): EqualsRul
 
 export function isNumeric(code?: string): IsNumericRule {
   return { type: RuleType.IS_NUMERIC, code };
+}
+
+export function mimeType(mimeType: string | string[], code?: string): MimeTypeRule {
+  return { type: RuleType.MIME_TYPE, mimeType, code };
 }
 
 export function custom<T extends Record<string, ValueOrRef>>(

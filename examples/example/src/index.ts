@@ -1,6 +1,5 @@
 import { min, ref } from 'dynz/rules';
-import { number, object, string } from 'dynz/schema';
-// import { SchemaValues } from 'dynz/types';
+import { number, object } from 'dynz/schema';
 import { validate } from 'dynz/validate';
 
 const schema = object({
@@ -9,33 +8,19 @@ const schema = object({
       required: true,
       rules: [min(ref('minAge'))],
     }),
-    minAge: string({
+    minAge: number({
       rules: [min(5)],
       required: false,
     }),
   },
 });
 
-// type Foo = SchemaValues<typeof schema>
-
-// console.log(JSON.stringify(schema, null, 2));
-console.log(schema)
-
 const result = validate(schema, undefined, {
-  age: 6,
-  minAge: 1143,
+  age: '023',
+  minAge: '6',
+}, {
+  strict: false
 });
-
-if(result.success) {
-  const f = result.values
-
-  f.age
-}
-
-// if(result.success) {
-//   const age = result.values.age
-//   console.log(age)
-// }
 
 console.log(result);
 

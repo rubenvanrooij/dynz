@@ -4,6 +4,7 @@ exports.ErrorCode = exports.SchemaType = exports.ConditionType = exports.RuleTyp
 exports.RuleType = {
     MIN: 'min',
     MAX: 'max',
+    MIME_TYPE: 'mime_type',
     MAX_PRECISION: 'max_precision',
     REGEX: 'regex',
     EQUALS: 'equals',
@@ -51,6 +52,7 @@ exports.SchemaType = {
     ARRAY: 'array',
     OPTIONS: 'options',
     BOOLEAN: 'boolean',
+    FILE: 'file'
 };
 exports.ErrorCode = {
     ...exports.RuleType,

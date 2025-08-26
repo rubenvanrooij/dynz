@@ -57,6 +57,7 @@ export function dynzResolver<TSchema extends Schema>(
         options.shouldUseNativeValidation &&
           validateFieldsNatively({}, options);
 
+        console.log('Dynz reslver...')
         console.log(result)
         if(result.success === false) {
           return {

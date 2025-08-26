@@ -76,6 +76,7 @@ const types_1 = require("./types");
             const schema = (0, schema_1.string)({ required: true });
             const context = {
                 schema,
+                strict: false,
                 values: { new: {} }
             };
             const result = (0, resolve_1.resolveProperty)(schema, 'required', '$', false, context);
@@ -85,6 +86,7 @@ const types_1 = require("./types");
             const schema = (0, schema_1.string)();
             const context = {
                 schema,
+                strict: false,
                 values: { new: {} }
             };
             const result = (0, resolve_1.resolveProperty)(schema, 'required', '$', false, context);
@@ -105,6 +107,7 @@ const types_1 = require("./types");
             });
             const context = {
                 schema: rootSchema,
+                strict: false,
                 values: { new: { type: 'user' } }
             };
             const result = (0, resolve_1.resolveProperty)(schema, 'required', '$.email', false, context);
@@ -113,6 +116,7 @@ const types_1 = require("./types");
     });
     (0, vitest_1.describe)('resolveCondition', () => {
         const createContext = (values) => ({
+            strict: false,
             schema: (0, schema_1.object)({
                 fields: {
                     type: (0, schema_1.string)(),
@@ -267,6 +271,7 @@ const types_1 = require("./types");
             });
             const context = {
                 schema,
+                strict: false,
                 values: { new: {} }
             };
             const rules = (0, resolve_1.resolveRules)(schema, '$', context);
@@ -295,6 +300,7 @@ const types_1 = require("./types");
             });
             const context = {
                 schema: rootSchema,
+                strict: false,
                 values: { new: { type: 'email' } }
             };
             const rules = (0, resolve_1.resolveRules)(schema, '$.value', context);
@@ -322,6 +328,7 @@ const types_1 = require("./types");
             });
             const context = {
                 schema: rootSchema,
+                strict: false,
                 values: { new: { type: 'text' } }
             };
             const rules = (0, resolve_1.resolveRules)(schema, '$.value', context);
@@ -353,6 +360,7 @@ const types_1 = require("./types");
         });
         const context = {
             schema,
+            strict: false,
             values: { new: { min: 5, value: 'hello' } }
         };
         (0, vitest_1.it)('should return static value for non-reference', () => {
@@ -442,7 +450,7 @@ const types_1 = require("./types");
         });
         (0, vitest_1.it)('should get nested value at simple path', () => {
             const values = { user: { name: 'John', age: 30 } };
-            const result = (0, resolve_1.getNested)('$.user.name', schema, values);
+            const result = (0, resolve_1.getNested)('$.user.name', schema, values, true);
             (0, vitest_1.expect)(result).toEqual({
                 schema: vitest_1.expect.objectContaining({ type: types_1.SchemaType.STRING }),
                 value: 'John'
@@ -450,7 +458,7 @@ const types_1 = require("./types");
         });
         (0, vitest_1.it)('should return default value when value is undefined', () => {
             const values = { user: { age: 30 } };
-            const result = (0, resolve_1.getNested)('$.user.name', schema, values);
+            const result = (0, resolve_1.getNested)('$.user.name', schema, values, true);
             (0, vitest_1.expect)(result).toEqual({
                 schema: vitest_1.expect.objectContaining({ type: types_1.SchemaType.STRING }),
                 value: 'Unknown'
@@ -458,7 +466,7 @@ const types_1 = require("./types");
         });
         (0, vitest_1.it)('should get nested value in array', () => {
             const values = { user: { contacts: ['email@test.com', 'phone'] } };
-            const result = (0, resolve_1.getNested)('$.user.contacts[0]', schema, values);
+            const result = (0, resolve_1.getNested)('$.user.contacts[0]', schema, values, true);
             (0, vitest_1.expect)(result).toEqual({
                 schema: vitest_1.expect.objectContaining({ type: types_1.SchemaType.STRING }),
                 value: 'email@test.com'
@@ -471,17 +479,17 @@ const types_1 = require("./types");
                 }
             });
             (0, vitest_1.expect)(() => {
-                (0, resolve_1.getNested)('$.secret', privateSchema, { secret: 'value' });
+                (0, resolve_1.getNested)('$.secret', privateSchema, { secret: 'value' }, true);
             }).toThrow('Cannot access private schema at path $.secret');
         });
         (0, vitest_1.it)('should throw error when array index is not a number', () => {
             (0, vitest_1.expect)(() => {
-                (0, resolve_1.getNested)('$.user.contacts[invalid]', schema, { user: { contacts: {} } });
+                (0, resolve_1.getNested)('$.user.contacts[invalid]', schema, { user: { contacts: {} } }, true);
             }).toThrow('Expected an array at path $.user.contacts[invalid], but got object');
         });
         (0, vitest_1.it)('should throw error for invalid path structure', () => {
             (0, vitest_1.expect)(() => {
-                (0, resolve_1.getNested)('$.user.name.invalid', schema, { user: { name: 'John' } });
+                (0, resolve_1.getNested)('$.user.name.invalid', schema, { user: { name: 'John' } }, true);
             }).toThrow('Cannot get nested value on non array or non object');
         });
     });
