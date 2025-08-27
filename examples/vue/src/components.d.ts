@@ -10,7 +10,6 @@ declare module 'vue' {
   export interface GlobalComponents {
     DynzDatestringField: typeof import('./components/dynz-datestring-field/dynz-datestring-field.vue')['default']
     DynzTextField: typeof import('./components/dynz-text-field/dynz-text-field.vue')['default']
-    HelloWorld: typeof import('./components/HelloWorld.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
   }
