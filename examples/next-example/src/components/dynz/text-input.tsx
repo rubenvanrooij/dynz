@@ -1,14 +1,16 @@
 import { FormField, FormItem, FormLabel, FormControl, FormDescription, FormMessage } from "../ui/form"
-import { useFormContext } from "react-hook-form"
+import { DefaultValues, FormProvider, useForm, useFormContext } from "react-hook-form"
 import { Input } from "../ui/input"
 import { useIsIncluded } from "@/hooks/is-included"
-import { ReactNode, useContext } from "react"
-import { SchemaContext } from "@/form/form"
+import { createContext, ReactNode, useContext } from "react"
 import { useIsMutable } from "@/hooks/is-mutable"
 import { useIsRequired } from "@/hooks/is-required"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
-import { findSchemaByPath, OptionsSchema, SchemaType } from "dynz"
+import { findSchemaByPath, OptionsSchema, Schema, SchemaType, SchemaValues } from "dynz"
 import { useTranslations } from "next-intl"
+import { dynzResolver } from "@dynz/react-hook-form-resolver/index"
+
+const SchemaContext = createContext<{ schema: Schema, i18nPath?: string }>({} as unknown as { schema: Schema, i18nPath: string })
 
 export type BaseInputProps = {
     name: string
@@ -18,6 +20,30 @@ export type BaseInputProps = {
 type IncludedWrapper = {
     children?: ReactNode
     name: string
+}
+
+export type FormProps<T extends Schema> = {
+    name: string
+    schema: T
+    children?: ReactNode
+    defaultValues?: DefaultValues<SchemaValues<T>>
+    onSubmit?: (values: SchemaValues<T>) => void
+}
+
+export function DynzForm<T extends Schema>({ schema, children, onSubmit, defaultValues, name }: FormProps<T>) {
+
+    const methods = useForm<SchemaValues<typeof schema>>({
+        resolver: dynzResolver(schema, undefined, {
+          strict: false,
+        }),
+        defaultValues,
+    })
+
+    return (<SchemaContext.Provider  value={{schema, i18nPath: name}}> <FormProvider {...methods}>
+        <form id={name} onSubmit={methods.handleSubmit((values) => onSubmit && onSubmit(values))}>
+            {children}
+        </form>
+    </FormProvider></SchemaContext.Provider>)
 }
 
 export function DynzIncludedWrapper({ name, children }: IncludedWrapper) { 
