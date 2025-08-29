@@ -4,6 +4,59 @@
     "about": "Go to the about page"
   },
 
+  "registrationForm": {
+    "name": {
+      "label": "Name",
+      "placeholder": "Fill in your name"
+    },
+    "email": {
+      "label": "Email",
+      "placeholder": "Fill in your email"
+    },
+    "attendanceType": {
+      "label": "How will you visit the event?",
+      "placeholder": "Select a option"
+    },
+    "accomidationRequired": {
+      "label": "Do we need to arrange an accomidation for you?",
+      "placeholder": "Select an option",
+      "options": {
+        "yes": "Yes",
+        "no": "No"
+      }
+    },
+    "workshopPreferences": {
+      "label": "Which workshop do you want to attend?",
+      "placeholder": "Select an option",
+      "options": {
+        "yes": "Yes",
+        "no": "No"
+      }
+    },
+     "dietry": {
+      "restrictions": {
+        "label": "Do you have any dietry restrictions?",
+        "placeholder": "Select an option",
+        "options": {
+          "yes": "Yes",
+          "no": "No"
+        }
+      },
+      "details": {
+        "label": "Please specify your restrictions",
+        "placeholder": ""
+      }
+    },
+    "professionalLevel": {
+      "label": "What is your professional level?",
+      "placeholder": "Select an option"
+    },
+    "studentInstitution": {
+      "label": "Where do you go to school?",
+      "placeholder": "e.g. TU Eindhoven"
+    }
+  },
+
   "form": {
     "errorMessages": {
         "string": {

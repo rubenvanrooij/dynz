@@ -18,6 +18,7 @@ import {
 import {
   assertArray,
   isBoolean,
+  isIterable,
   isNumber,
   isObject,
   isString,
@@ -27,7 +28,6 @@ import {
 
 export type ResolveContext = {
   schema: Schema;
-  strict: boolean
   values: {
     new: unknown;
   };
@@ -37,13 +37,11 @@ export function isRequired<T extends Schema>(
   schema: T,
   path: string,
   values: unknown,
-  strict: boolean = true
 ): boolean {
-  const nested = getNested(path, schema, values, strict);
+  const nested = getNested(path, schema, values);
 
   return resolveProperty(nested.schema, 'required', path, true, {
     schema,
-    strict,
     values: {
       new: values,
     },
@@ -54,13 +52,11 @@ export function isIncluded<T extends Schema>(
   schema: T,
   path: string,
   values: unknown,
-  strict: boolean = true
 ): boolean {
-  const nested = getNested(path, schema, values, strict);
+  const nested = getNested(path, schema, values);
 
   return resolveProperty(nested.schema, 'included', path, true, {
     schema,
-    strict,
     values: {
       new: values,
     },
@@ -71,13 +67,11 @@ export function isMutable<T extends Schema>(
   schema: T,
   path: string,
   values: unknown,
-  strict: boolean = true
 ): boolean {
-  const nested = getNested(path, schema, values, strict);
+  const nested = getNested(path, schema, values);
 
   return resolveProperty(nested.schema, 'mutable', path, true, {
     schema,
-    strict,
     values: {
       new: values,
     },
@@ -131,7 +125,6 @@ export function resolveCondition(
         ensureAbsolutePath(condition.path, path),
         context.schema,
         context.values.new,
-        context.strict
       );
 
       if (!isString(left)) {
@@ -214,12 +207,13 @@ function getConditionOperands<T extends ValueType>(
   path: string,
   context: ResolveContext,
 ): { left?: ValueType | undefined; right?: ValueType | undefined } {
+
   const nested = getNested(
     ensureAbsolutePath(condition.path, path),
     context.schema,
-    context.values.new,
-    context.strict
+    context.values.new
   );
+
 
   const left = validateSchema(nested.schema, nested.value)
     ? toCompareType(nested.schema, nested.value)
@@ -312,12 +306,11 @@ export function unpackRef(
       ensureAbsolutePath(valueOrRef.path, path),
       context.schema,
       context.values.new,
-      context.strict
     );
 
     return {
       schema,
-      value: context.strict ? value : cast(schema, value),
+      value: 'coerce' in schema && schema.coerce === true ? coerce(schema, value) : value,
       static: false,
     };
   }
@@ -392,7 +385,6 @@ export function getNested<T extends Schema>(
   path: string,
   schema: T,
   value: unknown,
-  strict: boolean
 ) {
   if (schema.private) {
     throw new Error(`Cannot access private schema at path ${path}`);
@@ -456,7 +448,7 @@ export function getNested<T extends Schema>(
 
   return {
     schema: result.schema,
-    value: strict ? result.value : cast(result.schema, result.value)
+    value: 'coerce' in result.schema && result.schema.coerce === true ? coerce(result.schema, result.value) : result.value,
   };
 }
 
@@ -464,9 +456,8 @@ function getNestedValue<T extends Schema>(
   path: string,
   schema: T,
   value: unknown,
-  strict: boolean
 ): unknown {
-  return getNested(path, schema, value, strict).value;
+  return getNested(path, schema, value).value;
 }
 
 /**
@@ -476,29 +467,27 @@ function getNestedValue<T extends Schema>(
  * or
  * true -> "true", 12 -> "12"
  */
-export function cast(schema: Schema, value: unknown): unknown {
+export function coerce(schema: Schema, value: unknown): unknown {
+
   if(value === undefined || value === null) {
     return value
   }
 
   switch (schema.type) {
     case SchemaType.NUMBER: {
-      if (isString(value)) {
-        const parsed = Number(value);
-        if (!Number.isNaN(parsed) && Number.isFinite(parsed)) {
-          return parsed;
-        }
-      }
-      return value;
+      return Number(value)
     }
     case SchemaType.BOOLEAN:
+
       if(value === 'true') {
         return true
       }
+
       if(value === 'false') {
         return false
       }
-      return value
+
+      return new Boolean(value)
     case SchemaType.STRING: {
       if (isNumber(value) || isBoolean(value)) {
         return String(value);
@@ -506,12 +495,11 @@ export function cast(schema: Schema, value: unknown): unknown {
       return value;
     }
     case SchemaType.ARRAY: {
-      // TODO: Find out of there is any security risk in converting a file list to an array?
-      if(value instanceof FileList) {
+      if(isIterable(value) || isString(value)) {
         return Array.from(value)
       }
 
-      return value;
+      return value
     }
     default:
       return value;

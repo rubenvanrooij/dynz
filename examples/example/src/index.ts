@@ -1,28 +1,105 @@
-import { min, ref } from 'dynz/rules';
-import { number, object } from 'dynz/schema';
-import { validate } from 'dynz/validate';
+import { array, min, number, object, string, validate, SchemaValues } from "dynz"
 
 const schema = object({
   fields: {
-    age: number({
-      required: true,
-      rules: [min(ref('minAge'))],
-    }),
-    minAge: number({
-      rules: [min(5)],
-      required: false,
-    }),
-  },
-});
+    name: string({ rules: [min(1)] }),
+    age: number({ required: false }),
+    tags: array({ schema: string() })
+  }
+})
 
+// Inferred type: { name: string; age?: number; tags: string[] }
+type UserData = SchemaValues<typeof schema>
+
+// Type-safe validation results
 const result = validate(schema, undefined, {
-  age: '023',
-  minAge: '6',
-}, {
-  strict: false
-});
+  name: 'John',
+  tags: ['dynz']
+})
 
-console.log(result);
+if (result.success) {
+  // result.values is properly typed as UserData
+  console.log(result.values.name) // ✅ Type-safe access
+}
+
+// const schema = object({
+//   fields: {
+//     accountType: string({
+//       rules: [oneOf(['personal', 'business'])]
+//     }),
+  
+//     // Only included if accountType is 'business'
+//     companyName: string({
+//       rules: [min(2)],
+//       included: eq('accountType', 'business')
+//     }),
+    
+//     email: string({
+//       rules: [email(), conditional({
+//         // Different validation rules based on account type
+//         when: eq('accountType', 'business'),
+//         then: regex('@company\.com$', "Business accounts must use company email")
+//       })]
+//     })
+//   }
+// })
+
+// // Validate data
+// const result = validate(schema, undefined, {
+//   accountType: 'business',
+//   companyName: 'test',
+//   email: 'foo@company.com'
+// })
+
+/**
+ * new interface?
+object({
+  accountType: string()
+    .oneOf(['personal', 'business']),
+  companyName: string()
+    .min(2)
+    .requiredIf(eq('accountType', 'business'))
+  email: string()
+    .email()
+    .conditional({
+      when: eq('accountType', 'business'),
+      then: regex('@company\.com$', "Business accounts must use company email")
+    })
+})
+*/
+
+// const createUserSchema = (user: { role: 'user' | 'admin' }) => {
+//   return object({
+//     fields: {
+//       username: string({
+//         mutable: user.role === 'admin',
+//       }),
+//       bsn: string({
+//         rules: [regex('^\d{8,9}$', 'bsn')],
+//         private: true,
+//       })
+//     }
+//   })
+// }
+
+// const schema = createUserSchema({ role: 'admin' })
+
+// console.log(JSON.stringify(schema, undefined, 2))
+
+// // Validate data
+// const result = validate(schema, {
+//   username: 'foos',
+//   bsn: '123'
+// }, {
+//   username: 'foo',
+//   bsn: mask('3213'),
+// })
+
+// if (result.success) {
+//   console.log("Valid data:", result.values)
+// } else {
+//   console.log("Validation errors:", result.errors)
+// }
 
 // function c<const T>(obj: T): T {
 //   return obj;

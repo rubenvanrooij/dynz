@@ -1,35 +1,48 @@
 "use client"
 
-import { max, mimeType, min, regex } from 'dynz/rules';
-import { eq, or } from 'dynz/conditions';
-import { array, boolean, file, object, options, string } from 'dynz/schema';
-import { SchemaValues } from "dynz/types";
+import { conditional, custom, email, equals, max, mimeType, min, oneOf, regex, validate } from 'dynz';
+import { eq, or } from 'dynz';
+import { array, boolean, file, object, options, string } from 'dynz';
+import { SchemaValues } from "dynz";
 import { useTranslations } from "next-intl";
 import { Form } from "@/form/form";
 import { Input } from "@/form/input";
 import { Select } from "@/form/select";
 import { BooleanField } from "@/form/boolean";
+import { DynzBoolean, DynzIncludedWrapper, DynzSelect, DynzTextInput } from '@/components/dynz/text-input';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertTitle } from '@/components/ui/alert';
+import { PopcornIcon } from 'lucide-react';
 
 const stringRequiredRule = min(1, 'required')
-const emailRule = regex(`^[a-zA-Z0-9.!#$%&'*+/=?^_\`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}$`)
 
 const schema = object({
   fields: {
     name: string({
-      rules: [stringRequiredRule]
+      rules: [stringRequiredRule],
+    }),
+    bsn: string({
+      rules: [custom('bsnValidator')],
     }),
     email: string({
-      rules: [emailRule]
+      rules: [stringRequiredRule, email()],
+      required: eq('name', 'henk')
     }),
     attendanceType: options({
       default: "Virtual",
       options: ["In-Person", "Virtual", "Hybrid"],
     }),
     accomidationRequired: boolean({
+      coerce: true,
       included: eq('attendanceType', 'In-Person')
     }),
     workshopPreferences: options({
-      options: ["AI & Machine Learning", "Web Development", "Data Science", "Cybersecurity"],
+      options: ["AI & Machine Learning", "Web Development", "Data Science", "Cybersecurity", "PHP"],
+      rules: [conditional({
+        when: eq('name', 'Niek'),
+        then: equals('PHP', 'nieks_php_rule')
+      })],
       included: or(
         eq('attendanceType', 'In-Person'),
         eq('attendanceType', 'Hybrid')
@@ -37,9 +50,11 @@ const schema = object({
     }),
     dietry: object({
       fields: {
-        restrictions: boolean(),
+        restrictions: boolean({
+          coerce: true
+        }),
         details: string({
-          included: eq('restrictions', true)
+          included: eq('$.dietry.restrictions', true)
         })
       }
     }),
@@ -49,16 +64,26 @@ const schema = object({
     studentInstitution: string({
       included: eq('professionalLevel', 'Student')
     }),
-    image: array({
-      schema: file({
-        rules: [mimeType(['image/jpeg', 'text/csv'])]
-      }),
-      rules: [min(1), max(1)]
-    })
+    // image: array({
+    //   schema: file({
+    //     rules: [mimeType(['image/jpeg', 'text/csv'])]
+    //   }),
+    //   rules: [min(1), max(1)]
+    // })
   },
 });
 
-type RegistrionFormFields = SchemaValues<typeof schema>
+validate(schema, undefined, {}, {
+  customRules: {
+    bsnValidator: () => {
+
+    }
+  }
+})
+
+console.log(JSON.stringify(schema, undefined, 2))
+
+type Foo = SchemaValues<typeof schema>
 
 
 export default function Home() {
@@ -72,23 +97,41 @@ export default function Home() {
 
 
   return (
-    <Form schema={schema} defaultValues={{
-      attendanceType: undefined
-    }} onSubmit={onSubmit}>
-      <h1>{t('HomePage.title')}</h1>
+  
+      <Card className='flex flex-col gap-4 max-w-100'>
 
-      {/* <Input path="firstName" /> */}
-      <Input type="string" path="name" />
-      <Input type="string" path="email" />
-      <Select path="attendanceType" />
-      <BooleanField path="accomidationRequired" />
-      <BooleanField path="workshopPreferences" />
-      <BooleanField path="dietry.restrictions" />
-      <Input type="string" path="dietry.details" />
-      <Select path="professionalLevel" />
-      <Input type="string" path="studentInstitution" />
-       <Input type="file" multiple={true} path="image" />
-      <button type="submit">Submit</button>
-    </Form>
+<CardHeader>
+      <CardTitle>{t('HomePage.title')}</CardTitle>
+</CardHeader>
+        <CardContent className='gap-2'>
+
+           <Form name="registrationForm" schema={schema} defaultValues={{
+              name: '',
+              email: ''
+            }} onSubmit={onSubmit}>
+              <div className='flex flex-col gap-4'>
+                <DynzTextInput name="name" />
+                <DynzTextInput name="email" />
+                <DynzSelect name="attendanceType" />
+                <DynzBoolean name="accomidationRequired" />
+                <DynzSelect name="workshopPreferences" />
+                <DynzBoolean name="dietry.restrictions" />
+                <DynzTextInput name="dietry.details" />
+                <DynzIncludedWrapper name="dietry.details">
+                  <Alert>
+                    <PopcornIcon />
+                    <AlertTitle>
+                      We will do our best to provide food from which you won't die
+                    </AlertTitle>
+                  </Alert>
+                </DynzIncludedWrapper>
+                <DynzSelect name="professionalLevel" />
+                <DynzTextInput name="studentInstitution" />
+                <Button type="submit">Submit</Button>
+              </div>
+            </Form>
+        </CardContent>
+      </Card>
+
   )
 }

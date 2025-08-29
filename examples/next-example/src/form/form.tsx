@@ -1,18 +1,19 @@
 import { dynzResolver } from "@dynz/react-hook-form-resolver/index"
-import { Schema, SchemaValues } from "dynz/types"
+import { Schema, SchemaValues } from "dynz"
 import { createContext, ReactNode } from "react"
-import { DefaultValues, FormProvider, Resolver, useForm } from 'react-hook-form'
+import { DefaultValues, FormProvider, useForm } from 'react-hook-form'
 
 export type FormProps<T extends Schema> = {
+    name: string
     schema: T
     children?: ReactNode
     defaultValues?: DefaultValues<SchemaValues<T>>
     onSubmit?: (values: SchemaValues<T>) => void
 }
 
-export const SchemaContext = createContext<{ schema: Schema }>({} as unknown as { schema: Schema})
+export const SchemaContext = createContext<{ schema: Schema, i18nPath: string }>({} as unknown as { schema: Schema, i18nPath: string })
 
-export function Form<T extends Schema>({ schema, children, onSubmit, defaultValues }: FormProps<T>) {
+export function Form<T extends Schema>({ schema, children, onSubmit, defaultValues, name }: FormProps<T>) {
 
     const methods = useForm<SchemaValues<typeof schema>>({
         resolver: dynzResolver(schema, undefined, {
@@ -21,8 +22,8 @@ export function Form<T extends Schema>({ schema, children, onSubmit, defaultValu
         defaultValues,
     })
 
-    return (<SchemaContext.Provider value={{schema}}> <FormProvider {...methods}>
-        <form onSubmit={methods.handleSubmit((values) => onSubmit && onSubmit(values))}>
+    return (<SchemaContext.Provider  value={{schema, i18nPath: name}}> <FormProvider {...methods}>
+        <form id={name} onSubmit={methods.handleSubmit((values) => onSubmit && onSubmit(values))}>
             {children}
         </form>
     </FormProvider></SchemaContext.Provider>)

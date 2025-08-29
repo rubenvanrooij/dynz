@@ -1,7 +1,9 @@
 {
   "extends": "../../.configs/tsconfig.base.json",
   "compilerOptions": {
-    "outDir": "dist"
+    "outDir": "dist",
+      "noUnusedLocals": false,
+      "noUnusedParameters": false,
   },
   "include": ["src", "../next-example/src/app/is-required.ts"],
   "exclude": ["node_modules", "dist"]

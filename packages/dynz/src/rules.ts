@@ -13,6 +13,10 @@ import {
   IsNumericRule,
   CustomRule,
   MimeTypeRule,
+  EmailRule,
+  OneOfRule,
+  AfterRule,
+  BeforeRule,
 } from './types';
 
 export function rules<T extends Rule[]>(...rules: T): T {
@@ -53,6 +57,23 @@ export function isNumeric(code?: string): IsNumericRule {
 export function mimeType(mimeType: string | string[], code?: string): MimeTypeRule {
   return { type: RuleType.MIME_TYPE, mimeType, code };
 }
+
+export function email(code?: string): EmailRule {
+  return { type: RuleType.EMAIL, code };
+}
+
+export function after<T extends DateString | Reference>(after: T, code?: string): AfterRule<T> {
+  return { after, type: RuleType.AFTER, code };
+}
+
+export function before<T extends DateString | Reference>(before: T, code?: string): BeforeRule<T> {
+  return { before, type: RuleType.BEFORE, code };
+}
+
+export function oneOf<T extends ValueOrRef[]>(expexted: T, code?: string): OneOfRule<T> {
+  return { type: RuleType.ONE_OF, values: expexted, code };
+}
+
 
 export function custom<T extends Record<string, ValueOrRef>>(
   name: string,

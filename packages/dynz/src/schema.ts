@@ -6,7 +6,6 @@ import {
   SchemaType,
   DateStringSchema,
   StringSchema,
-  Rule,
   Optional,
   OptionsSchema,
   BooleanSchema,
@@ -142,12 +141,12 @@ export function required<const T extends Schema>(schema: T): T & { required: tru
   };
 }
 
-export function rules<const T extends Schema, A extends Rule[]>(
-  schema: T,
-  ...rules: A
-): T & { rules: A } {
-  return {
-    ...schema,
-    rules: rules,
-  };
-}
+// export function rules<const T extends Schema, A extends Rule[]>(
+//   schema: T,
+//   ...rules: A
+// ): T & { rules: A } {
+//   return {
+//     ...schema,
+//     rules: rules,
+//   };
+// }

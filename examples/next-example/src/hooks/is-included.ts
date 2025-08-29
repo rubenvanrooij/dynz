@@ -1,5 +1,4 @@
-import { findSchemaByPath, getNested, isIncluded, isRequired } from "dynz/resolve";
-import { Schema } from "dynz/types";
+import { findSchemaByPath, getNested, isIncluded, isRequired, Schema } from "dynz";
 import { useFormContext } from "react-hook-form";
 
 
@@ -14,6 +13,8 @@ export function useIsIncluded(schema: Schema, path: string) {
     }
 
     const values = watch()
+
+    console.log('isIncluded: ', path, isIncluded(schema, path, values))
        
-    return isIncluded(schema, path, values, false)
+    return isIncluded(schema, path, values)
 }

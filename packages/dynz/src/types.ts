@@ -30,6 +30,10 @@ export type JsonPrimitive = string | number | boolean;
 export const RuleType = {
   MIN: 'min',
   MAX: 'max',
+  AFTER: 'after',
+  BEFORE: 'before',
+  EMAIL: 'email',
+  ONE_OF: 'one_off',
   MIME_TYPE: 'mime_type',
   MAX_PRECISION: 'max_precision',
   REGEX: 'regex',
@@ -75,21 +79,32 @@ export type EqualsRule<T extends ValueOrRef = ValueOrRef> = {
   code?: string | undefined
 };
 
+export type EmailRule = {
+  type: typeof RuleType.EMAIL;
+  code?: string | undefined
+};
+
+export type OneOfRule<T extends ValueOrRef[] = ValueOrRef[]>  = {
+  type: typeof RuleType.ONE_OF;
+  values: T
+  code?: string | undefined
+};
+
 export type RegexRule = {
   type: typeof RuleType.REGEX;
   regex: string;
   code?: string | undefined
 };
 
-export type BeforeRule = {
-  type: typeof RuleType.REGEX;
-  before: ValueOrRef<Date>;
+export type BeforeRule<T extends  string | Reference = string | Reference> = {
+  type: typeof RuleType.BEFORE;
+  before: T;
   code?: string | undefined
 };
 
-export type AfterRule = {
-  type: typeof RuleType.REGEX;
-  after: ValueOrRef<Date>;
+export type AfterRule<T extends  string | Reference = string | Reference> = {
+  type: typeof RuleType.AFTER;
+  after: T;
   code?: string | undefined
 };
 
@@ -124,7 +139,11 @@ export type Rule =
   | MaxPrecisionRule
   | IsNumericRule
   | CustomRule
-  | MimeTypeRule;
+  | MimeTypeRule
+  | OneOfRule
+  | EmailRule
+  | BeforeRule
+  | AfterRule;
 
 /**
  *
@@ -294,7 +313,7 @@ export const SchemaType = {
 
 export type SchemaType = EnumValues<typeof SchemaType>;
 
-export type BaseSchema<TValue, TType extends SchemaType, TRule extends Rule > = {
+export type BaseSchema<TValue, TType extends SchemaType, TRule extends Rule> = {
   type: TType;
   rules?: Array<TRule | ConditionalRule<Condition, Rule>>;
   default?: TValue;
@@ -318,13 +337,15 @@ export type StringRules =
   | MaxRule<number | Reference>
   | EqualsRule
   | IsNumericRule
-  | CustomRule;
+  | EmailRule
+  | CustomRule
+  | OneOfRule<Array<string | Reference>>;
 export type StringSchema<TRule extends StringRules = StringRules> = BaseSchema<
   string,
   typeof SchemaType.STRING,
   TRule
 > &
-  PrivateSchema;
+  PrivateSchema & { coerce?: boolean };
 
 /**
  * STRING DATE SCHEMA
@@ -332,9 +353,12 @@ export type StringSchema<TRule extends StringRules = StringRules> = BaseSchema<
 export type DateStringRules =
   | MinRule<DateString | Reference>
   | MaxRule<DateString | Reference>
+  | AfterRule<DateString | Reference>
+  | BeforeRule<DateString | Reference>
   | EqualsRule<DateString | Reference>
   | RegexRule
-  | CustomRule;
+  | CustomRule
+  | OneOfRule<Array<DateString | Reference>>;
 
 export type DateStringSchema<
   TFormat extends string = string,
@@ -396,6 +420,7 @@ export type ArraySchema<T extends Schema> = BaseSchema<
   ArrayRules
 > & {
   schema: [T] extends [never] ? Schema : T;
+  coerce?: boolean
 };
 
 /**
@@ -406,12 +431,15 @@ export type NumberRules =
   | MaxRule<number | Reference>
   | MaxPrecisionRule
   | EqualsRule<number | Reference>
-  | CustomRule;
+  | CustomRule
+  | OneOfRule<Array<number | Reference>>;
 export type NumberSchema = BaseSchema<
   number,
   typeof SchemaType.NUMBER,
   NumberRules
->;
+> & {
+  coerce?: boolean
+};
 
 /**
  * BOOLEAN SCHEMA
@@ -423,7 +451,9 @@ export type BooleanSchema = BaseSchema<
   number,
   typeof SchemaType.BOOLEAN,
   BooleanRules
->;
+> & {
+  coerce?: boolean
+};
 
 export type Schema =
   | StringSchema
@@ -535,7 +565,6 @@ export type ResolvedRules<T extends Rule = Rule> = Exclude<
 export type Context<T extends Schema = Schema> = {
   type: 'validate';
   schema: T;
-  strict: boolean
 
   /**
    * Will be set to true if current values is not undefined; if
@@ -611,6 +640,16 @@ export type MaxErrorMessage = BaseErrorMessage & {
   max: number | string;
 };
 
+export type BeforeErrorMessage = BaseErrorMessage & {
+  code: typeof ErrorCode.BEFORE;
+  before: string;
+};
+
+export type AfterErrorMessage = BaseErrorMessage & {
+  code: typeof ErrorCode.AFTER;
+  after: string;
+};
+
 export type CustomErrorMessage = BaseErrorMessage & {
   code: typeof ErrorCode.CUSTOM;
   name: string;
@@ -625,9 +664,19 @@ export type MaxPrecisionErrorMessage = BaseErrorMessage & {
   maxPrecision: number;
 };
 
+export type EmailErrorMEssage = BaseErrorMessage & {
+  code: typeof ErrorCode.EMAIL;
+};
+
 export type RegexErrorMessage = BaseErrorMessage & {
   code: typeof ErrorCode.REGEX;
   regex: string;
+};
+
+
+export type OneOfErrorMessage = BaseErrorMessage & {
+  code: typeof ErrorCode.ONE_OF;
+  expected: Array<ValueType>
 };
 
 export type ImmutableErrorMessage = BaseErrorMessage & {
@@ -666,7 +715,11 @@ export type ErrorMessage =
   | TypeErrorMessage
   | DateStringTypeErrorMessage
   | IsNumericErrorMessage
-  | CustomErrorMessage;
+  | CustomErrorMessage
+  | EmailErrorMEssage
+  | OneOfErrorMessage
+  | BeforeErrorMessage
+  | AfterErrorMessage;
 
 export type ValidationErrorResult = {
   success: false;

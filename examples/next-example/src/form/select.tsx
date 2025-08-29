@@ -1,10 +1,8 @@
 import { DetailedHTMLProps, InputHTMLAttributes, SelectHTMLAttributes, useContext } from "react"
 import { useFormContext } from "react-hook-form"
 import { SchemaContext } from "./form"
-import { findSchemaByPath, isIncluded } from "dynz/resolve"
-import { useIsIncluded } from "@/is-included"
-import { isIn } from "dynz/conditions"
-import { OptionsSchema, SchemaType } from "dynz/types"
+import { useIsIncluded } from "@/hooks/is-included"
+import { findSchemaByPath, OptionsSchema, SchemaType } from "dynz"
 
 export type SelectProps<T extends string> = {
     path: T

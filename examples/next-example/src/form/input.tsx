@@ -1,9 +1,8 @@
 import { DetailedHTMLProps, InputHTMLAttributes, useContext } from "react"
 import { useFormContext } from "react-hook-form"
 import { SchemaContext } from "./form"
-import { isIncluded } from "dynz/resolve"
-import { useIsIncluded } from "@/is-included"
-import { isIn } from "dynz/conditions"
+import { useIsIncluded } from "@/hooks/is-included"
+import { useIsMutable } from "@/hooks/is-mutable"
 
 export type InputProps<T extends string> = {
     path: T
@@ -15,6 +14,7 @@ export function Input<T extends string>({ path, ...props }: InputProps<T>) {
     const { register, formState, getFieldState } = useFormContext()
 
     const isIncluded = useIsIncluded(schema, `$.${path}`)
+    const isMutable = useIsMutable(schema, `$.${path}`)
 
     if(isIncluded === false) {
         return <></>
@@ -24,6 +24,6 @@ export function Input<T extends string>({ path, ...props }: InputProps<T>) {
 
     return (<>
     {path}
-     <input {...props} {...register(path)} />
+     <input {...props} {...register(path)} readOnly={isMutable === false} />
       <p>{error?.message}</p></>)
 }

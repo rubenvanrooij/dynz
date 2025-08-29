@@ -1,5 +1,5 @@
 import { isAfter, isBefore, parse } from 'date-fns';
-import { cast, resolveProperty, resolveRules, unpackRefValue } from './resolve';
+import { coerce, resolveProperty, resolveRules, unpackRefValue } from './resolve';
 import {
   BaseErrorMessage,
   EqualsErrorMessage,
@@ -29,6 +29,14 @@ import {
   CustomErrorMessage,
   MimeTypeRule,
   MimeTypeErrorMessage,
+  EmailErrorMEssage,
+  EmailRule,
+  OneOfRule,
+  OneOfErrorMessage,
+  BeforeRule,
+  BeforeErrorMessage,
+  AfterRule,
+  AfterErrorMessage,
 } from './types';
 
 export function validate<T extends Schema>(
@@ -44,7 +52,6 @@ export function validate<T extends Schema>(
     {
       type: 'validate',
       schema,
-      strict: options.strict || false,
       validateOptions: options,
       validateMutable: currentValues !== undefined,
       values: {
@@ -99,9 +106,9 @@ export function _validate<T extends Schema>(
   let newValue = getValue(schema, path, values.new);
   const currentValue = getValue(schema, path, values.current);
   
-  // Try auto-casting if strict mode is disabled
-  if(context.validateOptions.strict === false) {
-    newValue = cast(schema, newValue);
+  // Try coercing the value
+  if('coerce' in schema && schema.coerce === true) {
+    newValue = coerce(schema, newValue);
   }
 
   /**
@@ -237,7 +244,7 @@ export function _validate<T extends Schema>(
         if (acc.success && result.success) {
           return {
             success: true,
-            values: { ...acc.values, [key]: result.values },
+            values: result.values !== undefined ? { ...acc.values, [key]: result.values } : acc.values,
           };
         }
 
@@ -330,6 +337,14 @@ function validateRule<T extends Schema>(
       return validateCustomRule(schema, path, rule, value, context);
     case RuleType.MIME_TYPE:
       return validateMimeTypeRule(schema, path, rule, value, context)
+    case RuleType.EMAIL:
+      return validateEmail(rule, value)
+    case RuleType.ONE_OF:
+      return validateOneOfRule(rule, value)
+    case RuleType.BEFORE:
+      return beforeRuleValidator(schema, path, rule, value, context)
+    case RuleType.AFTER:
+      return afterRuleValidator(schema, path, rule, value, context)
   }
 }
 
@@ -510,17 +525,17 @@ function validateMinRule(
       }
     case SchemaType.DATE_STRING: {
       const date = parseDateString(
-        assertSchema(schema, value),
+        assertString(value),
         schema.format,
       )
       const compareTo = parseDateString(
-        assertSchema(schema, min),
+        assertString(min),
         schema.format,
       )
       return isAfter(date, compareTo) || date.getTime() === compareTo.getTime() ? undefined : {
           code: ErrorCode.MIN,
           min,
-          message: `The value ${value} for schema ${path} is before ${min}`,
+          message: `The value ${value} for schema ${path} is before or on ${min}`,
         }
     }
     default:
@@ -657,6 +672,128 @@ function validateRegex(
         code: ErrorCode.REGEX,
         regex: rule.regex,
         message: `The value ${value} does not match the regex ${rule.regex}`,
+      };
+}
+
+/**
+ * Email rule validator
+ *
+ * @param rule the rule that is executed
+ * @param value the value to be validated
+ * @returns undefined then the validations passses, an error message when it fails
+ */
+const EMAIL_REGEX = /^(?!\.)(?!.*\.\.)([a-z0-9_'+\-\.]*)[a-z0-9_'+\-]@([a-z0-9][a-z0-9\-]*\.)+[a-z]{2,}$/i
+function validateEmail(
+  _: EmailRule,
+  value: unknown,
+):
+  | Omit<EmailErrorMEssage, keyof Omit<BaseErrorMessage, 'message'>>
+  | undefined {
+  return EMAIL_REGEX.test(assertString(value))
+    ? undefined
+    : {
+        code: ErrorCode.EMAIL,
+        message: `The value ${value} is not a valid email address`,
+      };
+}
+
+
+/**
+ * Before rule validator
+ *
+ * @param rule the rule that is executed
+ * @param value the value to be validated
+ * @returns undefined then the validations passses, an error message when it fails
+ */
+function beforeRuleValidator(
+  schema: Schema,
+  path: string,
+  rule: BeforeRule,
+  value: unknown,
+  context: Context,
+):
+  | Omit<BeforeErrorMessage, keyof Omit<BaseErrorMessage, 'message'>>
+  | undefined {
+
+  switch(schema.type) {
+    case SchemaType.DATE_STRING:
+      const date = parseDateString(
+        assertString(value),
+        schema.format,
+      )
+      const before = assertString(unpackRefValue(rule.before, path, context));
+      const compareTo = parseDateString(
+        before,
+        schema.format,
+      )
+      return isBefore(date, compareTo) ? undefined : {
+          code: ErrorCode.BEFORE,
+          before: before,
+          message: `The value ${value} for schema ${path} is after ${before}`,
+        }
+    default:
+      throw new Error(`Before rule cannot be used on schema of type: ${schema.type}`)
+  }
+}
+
+/**
+ * After rule validator
+ *
+ * @param rule the rule that is executed
+ * @param value the value to be validated
+ * @returns undefined then the validations passses, an error message when it fails
+ */
+function afterRuleValidator(
+  schema: Schema,
+  path: string,
+  rule: AfterRule,
+  value: unknown,
+  context: Context,
+):
+  | Omit<AfterErrorMessage, keyof Omit<BaseErrorMessage, 'message'>>
+  | undefined {
+
+  switch(schema.type) {
+    case SchemaType.DATE_STRING:
+      const date = parseDateString(
+        assertString(value),
+        schema.format,
+      )
+      const after = assertString(unpackRefValue(rule.after, path, context));
+      const compareTo = parseDateString(
+        after,
+        schema.format,
+      )
+      return isAfter(date, compareTo) ? undefined : {
+          code: ErrorCode.AFTER,
+          after: after,
+          message: `The value ${value} for schema ${path} is before ${after}`,
+        }
+    default:
+      throw new Error(`Before rule cannot be used on schema of type: ${schema.type}`)
+  }
+}
+
+
+/**
+ * One off rule validator
+ *
+ * @param rule the rule that is executed
+ * @param value the value to be validated
+ * @returns undefined then the validations passses, an error message when it fails
+ */
+function validateOneOfRule(
+  rule: OneOfRule,
+  value: unknown,
+):
+  | Omit<OneOfErrorMessage, keyof Omit<BaseErrorMessage, 'message'>>
+  | undefined {
+
+  return rule.values.some((v) => v === value)  ? undefined
+    : {
+        code: ErrorCode.ONE_OF,
+        expected: rule.values,
+        message: `The value ${value} is not a one of ${rule.values}`,
       };
 }
 
@@ -816,6 +953,17 @@ export function isDate(value: unknown): value is Date {
 export function isBoolean(value: unknown): value is boolean {
   return typeof value === 'boolean';
 }
+
+/**
+ * Validates whether a value is a iterable value
+ *
+ * @param value the value to be validated
+ * @returns true if the value is correct, false if not
+ */
+export function isIterable(value: unknown): value is Iterable<unknown> {
+  return value != null && typeof value === 'object' && Symbol.iterator in value;
+}
+
 
 /**
  * Validates whether a value is a file value
