@@ -13,7 +13,7 @@ type UserData = SchemaValues<typeof schema>
 
 // Type-safe validation results
 const result = validate(schema, undefined, {
-  name: 'John',
+  name: 'Joshns',
   tags: ['dynz']
 })
 

@@ -1,3 +1,4 @@
+
 export type EnumValues<T> = T[keyof T];
 export type Unpacked<T> = T extends (infer U)[] ? U : T;
 
@@ -572,6 +573,14 @@ export type Context<T extends Schema = Schema> = {
    */
   validateOptions: ValidateOptions;
   validateMutable: boolean;
+  /**
+   * Whether or not to strip not included fields.
+   * Defaults to `false`
+   * 
+   * If set to true it will strip the included fields from the values
+   * result instead of returning an 'included' error
+   */
+  stripNotIncludedFields: boolean
   values: {
     current: unknown;
     new: unknown;

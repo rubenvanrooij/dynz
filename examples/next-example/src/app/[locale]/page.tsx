@@ -16,10 +16,7 @@ const stringRequiredRule = min(1, 'required')
 const schema = object({
   fields: {
     name: string({
-      rules: [stringRequiredRule],
-    }),
-    bsn: string({
-      rules: [custom('bsnValidator')],
+      rules: [stringRequiredRule, min(3)],
     }),
     email: string({
       rules: [stringRequiredRule, email()],

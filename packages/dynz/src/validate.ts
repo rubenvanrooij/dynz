@@ -54,6 +54,7 @@ export function validate<T extends Schema>(
       schema,
       validateOptions: options,
       validateMutable: currentValues !== undefined,
+      stripNotIncludedFields: true,
       values: {
         current: currentValues,
         new: newValues,
@@ -72,6 +73,14 @@ export function _validate<T extends Schema>(
    * If the schema is not included we do not need to validate it
    */
   if (!resolveProperty(schema, 'included', path, true, context)) {
+
+    if(context.stripNotIncludedFields === true) {
+      return {
+        success: true,
+        values: undefined,
+      };
+    }
+
     if (values.new !== undefined) {
       return {
         success: false,

@@ -6,7 +6,7 @@ import { createContext, ReactNode, useContext } from "react"
 import { useIsMutable } from "@/hooks/is-mutable"
 import { useIsRequired } from "@/hooks/is-required"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
-import { findSchemaByPath, OptionsSchema, Schema, SchemaType, SchemaValues } from "dynz"
+import { ErrorMessage, findSchemaByPath, OptionsSchema, Schema, SchemaType, SchemaValues } from "dynz"
 import { useTranslations } from "next-intl"
 import { dynzResolver } from "@dynz/react-hook-form-resolver/index"
 
@@ -32,9 +32,15 @@ export type FormProps<T extends Schema> = {
 
 export function DynzForm<T extends Schema>({ schema, children, onSubmit, defaultValues, name }: FormProps<T>) {
 
+    const t = useTranslations()
     const methods = useForm<SchemaValues<typeof schema>>({
         resolver: dynzResolver(schema, undefined, {
           strict: false,
+        }, {
+            messageTransformer: (error: ErrorMessage) => {
+                const customErrorMessagePath = `${name}.${error.path.slice(2)}.errors.${error.customCode}`
+                return t.has(customErrorMessagePath) ? t(customErrorMessagePath, error as unknown as Record<string, string | number | Date>) : t(`errors.${error.customCode}`, error as unknown as Record<string, string | number | Date>)
+            }
         }),
         defaultValues,
     })

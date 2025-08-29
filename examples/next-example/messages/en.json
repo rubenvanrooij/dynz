@@ -56,7 +56,11 @@
       "placeholder": "e.g. TU Eindhoven"
     }
   },
-
+  "errors": {
+    "required": "This field is required",
+    "email": "E-mail address invalid",
+    "min": "This field must at least have {min} characters"
+  },
   "form": {
     "errorMessages": {
         "string": {
