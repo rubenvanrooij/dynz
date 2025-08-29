@@ -1,15 +1,11 @@
 "use client"
 
-import { conditional, custom, email, equals, max, mimeType, min, oneOf, regex, validate } from 'dynz';
+import { conditional, custom, email, equals, min, validate } from 'dynz';
 import { eq, or } from 'dynz';
-import { array, boolean, file, object, options, string } from 'dynz';
+import { boolean, object, options, string } from 'dynz';
 import { SchemaValues } from "dynz";
 import { useTranslations } from "next-intl";
-import { Form } from "@/form/form";
-import { Input } from "@/form/input";
-import { Select } from "@/form/select";
-import { BooleanField } from "@/form/boolean";
-import { DynzBoolean, DynzIncludedWrapper, DynzSelect, DynzTextInput } from '@/components/dynz/text-input';
+import { DynzBoolean, DynzForm, DynzIncludedWrapper, DynzSelect, DynzTextInput } from '@/components/dynz/text-input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertTitle } from '@/components/ui/alert';
@@ -73,18 +69,6 @@ const schema = object({
   },
 });
 
-validate(schema, undefined, {}, {
-  customRules: {
-    bsnValidator: () => {
-
-    }
-  }
-})
-
-console.log(JSON.stringify(schema, undefined, 2))
-
-type Foo = SchemaValues<typeof schema>
-
 
 export default function Home() {
 
@@ -105,7 +89,7 @@ export default function Home() {
 </CardHeader>
         <CardContent className='gap-2'>
 
-           <Form name="registrationForm" schema={schema} defaultValues={{
+           <DynzForm name="registrationForm" schema={schema} defaultValues={{
               name: '',
               email: ''
             }} onSubmit={onSubmit}>
@@ -129,7 +113,7 @@ export default function Home() {
                 <DynzTextInput name="studentInstitution" />
                 <Button type="submit">Submit</Button>
               </div>
-            </Form>
+            </DynzForm>
         </CardContent>
       </Card>
 
