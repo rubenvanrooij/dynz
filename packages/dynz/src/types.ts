@@ -403,7 +403,7 @@ export type ArraySchema<T extends Schema> = BaseSchema<
  */
 export type TupleRules = MinRule<number> | MaxRule<number> | CustomRule;
 export type TupleSchema<T extends Schema[]> = BaseSchema<
-  [T] extends [never] ? unknown[] : SchemaValuesInternal<T>[],
+  [T] extends [never] ? unknown[] : TupleValue<T>[],
   typeof SchemaType.TUPLE,
   ArrayRules
 > & {
