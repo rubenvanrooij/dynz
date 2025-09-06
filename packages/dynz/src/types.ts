@@ -280,6 +280,7 @@ export const SchemaType = {
   NUMBER: "number",
   OBJECT: "object",
   ARRAY: "array",
+  TUPLE: "tuple",
   OPTIONS: "options",
   BOOLEAN: "boolean",
   FILE: "file",
@@ -398,6 +399,19 @@ export type ArraySchema<T extends Schema> = BaseSchema<
 };
 
 /**
+ * TUPLE SCHEMA
+ */
+export type TupleRules = MinRule<number> | MaxRule<number> | CustomRule;
+export type TupleSchema<T extends Schema[]> = BaseSchema<
+  [T] extends [never] ? unknown[] : SchemaValuesInternal<T>[],
+  typeof SchemaType.TUPLE,
+  ArrayRules
+> & {
+  schema: [T] extends [never] ? Schema[] : T;
+  coerce?: boolean;
+};
+
+/**
  * NUMBER SCHEMA
  */
 export type NumberRules =
@@ -425,6 +439,7 @@ export type Schema =
   | NumberSchema
   | BooleanSchema
   | ArraySchema<never>
+  | TupleSchema<never>
   | DateStringSchema
   | OptionsSchema<string | number>
   | FileSchema;
@@ -484,7 +499,9 @@ export type ValueType<T extends SchemaType = SchemaType> = T extends typeof Sche
                 ? string | number
                 : T extends typeof SchemaType.FILE
                   ? File
-                  : never;
+                  : T extends typeof SchemaType.TUPLE
+                    ? unknown[]
+                    : never;
 
 // === Object Field Categorization ===
 type OptionalFields<T extends ObjectSchema<never>> = {
@@ -500,6 +517,8 @@ type RequiredFields<T extends ObjectSchema<never>> = {
 };
 
 export type ObjectValue<T extends ObjectSchema<never>> = OptionalFields<T> & RequiredFields<T>;
+
+export type TupleValue<T extends Schema[]> = { [K in keyof T]: SchemaValuesInternal<T[K]> };
 
 // === Main SchemaValues Type ===
 export type SchemaValuesInternal<T extends Schema> = T extends StringSchema
@@ -518,7 +537,9 @@ export type SchemaValuesInternal<T extends Schema> = T extends StringSchema
               ? MakeOptional<T, ValueType<T["type"]>>
               : T extends ArraySchema<never>
                 ? MakeOptional<T, Array<SchemaValuesInternal<T["schema"]>>>
-                : never;
+                : T extends TupleSchema<never>
+                  ? MakeOptional<T, TupleValue<T["schema"]>>
+                  : never;
 
 export type SchemaValues<T extends Schema> = Prettify<ApplyPrivacyMask<T, SchemaValuesInternal<T>>>;
 /***

@@ -1,13 +1,18 @@
-import { conditional, email, eq, matches, min, object, options, regex, string } from "dynz";
+import { SchemaValues, tuple, string, boolean, number, validate } from "dynz";
 
-// const foo = object({
-//   fields: {
-//     password: string(),
-//     confirmPassword: string({
-//       rules: [equals(ref('password'))]
-//     })
-//   }
-// })
+const foo = tuple({
+  schema: [
+    string(),
+    boolean(),
+    number(),
+  ]
+})
+
+const f= validate(foo, undefined, ['foo', true, 123])
+
+if(f.success) {
+  const a = f.values[1]
+}
 
 // const schema = object({
 //   fields: {
@@ -29,33 +34,33 @@ import { conditional, email, eq, matches, min, object, options, regex, string } 
 //   console.log(result.values); // ✅ Type-safe access
 // }
 
-const schema = object({
-  fields: {
-    accountType: options({
-      options: ["personal", "business"],
-    }),
+// const schema = object({
+//   fields: {
+//     accountType: options({
+//       options: ["personal", "business"],
+//     }),
 
-    // Only included if accountType is 'business'
-    companyName: string({
-      rules: [min(2)],
-      required: matches("email", "@gmail.com$"),
-      included: eq("accountType", "business"),
-    }),
+//     // Only included if accountType is 'business'
+//     companyName: string({
+//       rules: [min(2)],
+//       required: matches("email", "@gmail.com$"),
+//       included: eq("accountType", "business"),
+//     }),
 
-    email: string({
-      rules: [
-        email(),
-        conditional({
-          // Different validation rules based on account type
-          when: eq("accountType", "business"),
-          then: regex("@company.com$", "Business accounts must use company email"),
-        }),
-      ],
-    }),
-  },
-});
+//     email: string({
+//       rules: [
+//         email(),
+//         conditional({
+//           // Different validation rules based on account type
+//           when: eq("accountType", "business"),
+//           then: regex("@company.com$", "Business accounts must use company email"),
+//         }),
+//       ],
+//     }),
+//   },
+// });
 
-console.log(JSON.stringify(schema, undefined, 2));
+// console.log(JSON.stringify(schema, undefined, 2));
 
 // // Validate data
 // const result = validate(schema, undefined, {
