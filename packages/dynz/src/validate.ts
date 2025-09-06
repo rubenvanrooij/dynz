@@ -35,7 +35,6 @@ import {
   SchemaType,
   type SchemaValues,
   type ValidateOptions,
-  ValidationErrorResult,
   type ValidationResult,
   type ValueType,
 } from "./types";
