@@ -416,6 +416,7 @@ describe("validate", () => {
   describe("mutability validation", () => {
     it("should fail when immutable field is changed", () => {
       const schema = string({ mutable: false });
+      // biome-ignore lint/suspicious/noExplicitAny: unit test
       const result = validate(schema, "original" as any, "changed");
 
       expect(result).toEqual({
@@ -431,6 +432,7 @@ describe("validate", () => {
 
     it("should pass when immutable field is not changed", () => {
       const schema = string({ mutable: false });
+      // biome-ignore lint/suspicious/noExplicitAny: unit test
       const result = validate(schema, "same" as any, "same");
 
       expect(result.success).toBe(true);
@@ -438,6 +440,7 @@ describe("validate", () => {
 
     it("should pass when mutable field is changed", () => {
       const schema = string({ mutable: true });
+      // biome-ignore lint/suspicious/noExplicitAny: unit test
       const result = validate(schema, "original" as any, "changed");
 
       expect(result.success).toBe(true);
@@ -861,6 +864,7 @@ describe("validate", () => {
       const schema = string({ private: true, mutable: false });
       const currentValue = plain("original");
       const newValue = plain("changed");
+      // biome-ignore lint/suspicious/noExplicitAny: unit test
       const result = validate(schema, currentValue as any, newValue);
 
       expect(result).toEqual({
@@ -877,6 +881,7 @@ describe("validate", () => {
       const schema = string({ private: true, mutable: false });
       const currentValue = plain("same");
       const newValue = plain("same");
+      // biome-ignore lint/suspicious/noExplicitAny: unit test
       const result = validate(schema, currentValue as any, newValue);
 
       expect(result.success).toBe(true);
