@@ -101,7 +101,7 @@ export function resolveProperty<T extends Schema>(
   path: string,
   defaultValue: boolean,
   context: ResolveContext
-) {
+): boolean {
   if (schema[property] === undefined) {
     return defaultValue;
   }
@@ -327,7 +327,11 @@ export function findSchemaByPath<T extends Schema = Schema>(path: string, schema
   return nestedSchema;
 }
 
-export function getNested<T extends Schema>(path: string, schema: T, value: unknown) {
+export function getNested<T extends Schema>(
+  path: string,
+  schema: T,
+  value: unknown
+): { schema: Schema; value: unknown } {
   if (schema.private) {
     throw new Error(`Cannot access private schema at path ${path}`);
   }
