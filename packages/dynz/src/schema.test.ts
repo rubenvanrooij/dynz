@@ -3,6 +3,7 @@ import { equals, max, min } from "./rules";
 import {
   array,
   boolean,
+  date,
   // rules,
   DEFAULT_DATE_STRING_FORMAT,
   dateString,
@@ -353,6 +354,77 @@ describe("schema", () => {
           schema: { type: SchemaType.STRING },
         },
       });
+    });
+  });
+
+  describe("date", () => {
+    it("should create basic date schema", () => {
+      const schema = date();
+
+      expect(schema).toEqual({
+        type: SchemaType.DATE,
+      });
+    });
+
+    it("should create date schema with options", () => {
+      const schema = date({
+        required: true,
+        default: new Date("2024-01-01"),
+      });
+
+      expect(schema).toEqual({
+        type: SchemaType.DATE,
+        required: true,
+        default: new Date("2024-01-01"),
+      });
+    });
+
+    it("should create date schema with coercion enabled", () => {
+      const schema = date({
+        coerce: true,
+      });
+
+      expect(schema).toEqual({
+        type: SchemaType.DATE,
+        coerce: true,
+      });
+    });
+
+    it("should create date schema with all properties", () => {
+      const schema = date({
+        required: false,
+        mutable: true,
+        included: true,
+        private: false,
+        coerce: true,
+        default: new Date("2023-12-25"),
+      });
+
+      expect(schema).toEqual({
+        type: SchemaType.DATE,
+        required: false,
+        mutable: true,
+        included: true,
+        private: false,
+        coerce: true,
+        default: new Date("2023-12-25"),
+      });
+    });
+
+    it("should create date schema with validation rules", () => {
+      const minDate = new Date("2020-01-01");
+      const maxDate = new Date("2030-12-31");
+      const equalDate = new Date("2024-06-15");
+
+      const schema = date({
+        rules: [min(minDate), max(maxDate), equals(equalDate)],
+      });
+
+      expect(schema.type).toBe(SchemaType.DATE);
+      expect(schema.rules).toHaveLength(3);
+      expect(schema.rules?.[0]).toEqual({ type: "min", min: minDate });
+      expect(schema.rules?.[1]).toEqual({ type: "max", max: maxDate });
+      expect(schema.rules?.[2]).toEqual({ type: "equals", value: equalDate });
     });
   });
 

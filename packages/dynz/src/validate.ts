@@ -568,8 +568,8 @@ function validateMaxRule(
 ): Omit<MaxErrorMessage, keyof Omit<BaseErrorMessage, "message">> | undefined {
   const max = unpackRefValue(rule.max, path, context);
 
-  if (!isNumber(max) && !isString(max)) {
-    throw new Error("max is not a number or string value");
+  if (!isNumber(max) && !isString(max) && !isDate(max)) {
+    throw new Error("max is not a number, string, or date value");
   }
 
   const validate = () => {

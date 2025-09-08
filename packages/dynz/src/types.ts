@@ -5,8 +5,6 @@ export type Prettify<T> = {
   [K in keyof T]: T[K];
 } & {};
 
-type Flatten<T> = T extends (infer U)[] ? U : T;
-
 export type Filter<T extends unknown[], A> = T extends []
   ? []
   : T extends [infer H, ...infer R]
