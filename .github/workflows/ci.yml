@@ -1,0 +1,66 @@
+name: Test
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+
+  install:
+    name: Install packages
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup environment
+        uses: ./.github/actions/environment
+      
+  library_preview:
+    name: Publish dynz library via pkg.pr.new
+    needs: install
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup environment
+        uses: ./.github/actions/environment
+      - name: Publish library
+        run: pnpx pkg-pr-new publish --compact --comment=update --pnpm
+        working-directory: ./packages/dynz
+
+  format_check:
+    name: Run format in library
+    needs: install
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup environment
+        uses: ./.github/actions/environment
+      - name: Format check
+        run: pnpm format:check
+  
+  lint:
+    name: Run lint in library
+    needs: install
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup environment
+        uses: ./.github/actions/environment
+      - name: lint check
+        run: pnpm lint:check
+
+  test:
+    name: Run lint in library
+    needs: install
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup environment
+        uses: ./.github/actions/environment
+      - name: test
+        run: pnpm test
