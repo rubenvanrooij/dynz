@@ -1526,9 +1526,11 @@ describe("validate", () => {
 
       // For mutation tests, we need to pass a SchemaValues type as currentValues
       // Let's use a simpler test with strings
+      // biome-ignore lint/suspicious/noExplicitAny: unit test
       const result1 = validate(schema, originalDate as any, sameDate);
       expect(result1.success).toBe(true);
 
+      // biome-ignore lint/suspicious/noExplicitAny: unit test
       const result2 = validate(schema, originalDate as any, differentDate);
       expect(result2.success).toBe(false);
     });
