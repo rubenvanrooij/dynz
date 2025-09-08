@@ -20,6 +20,9 @@
   "files": [
     "dist"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "author": "Ruben van Rooij <ruben.van.rooij@gmail.com>",
   "description": "A powerful TypeScript schema validation with advanced conditional logic, cross-field validation, and static type inference.",
   "main": "./dist/index.js",

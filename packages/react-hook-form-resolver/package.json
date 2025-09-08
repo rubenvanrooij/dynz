@@ -13,13 +13,16 @@
     "form",
     "type-safe"
   ],
-    "repository": {
+  "repository": {
     "type": "git",
     "url": "https://github.com/rubenvanrooij/dynz"
   },
   "files": [
     "dist"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "author": "Ruben van Rooij <ruben.van.rooij@gmail.com>",
   "description": "React hook form integration for dynz.",
   "main": "./dist/index.js",
