@@ -10,7 +10,8 @@
     "dev": "pnpm -r --parallel run dev",
     "lint": "biome lint --write",
     "lint:check": "biome lint .",
-    "prepare": "husky"
+    "prepare": "husky",
+    "ci:publish": "pnpm publish -r"
   },
   "keywords": [],
   "author": "",
