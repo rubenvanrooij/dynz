@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { and, eq, or } from "./conditions";
-import { conditional, custom, equals, isNumeric, max, min, ref, regex, rules } from "./rules";
+import { after, before, conditional, custom, equals, isNumeric, max, min, ref, regex, rules } from "./rules";
 import { ConditionType, RuleType } from "./types";
 
 describe("rules", () => {
@@ -522,6 +522,94 @@ describe("rules", () => {
       expect(rule.when.conditions[1].type).toBe(ConditionType.OR);
       expect(rule.then.type).toBe(RuleType.EQUALS);
       expect(rule.then.value.type).toBe("__reference");
+    });
+  });
+
+  describe("after rule", () => {
+    it("should create after rule with date string", () => {
+      const rule = after("2024-01-01");
+
+      expect(rule).toEqual({
+        type: RuleType.AFTER,
+        after: "2024-01-01",
+      });
+    });
+
+    it("should create after rule with Date object", () => {
+      const dateObj = new Date("2024-01-01");
+      const rule = after(dateObj);
+
+      expect(rule).toEqual({
+        type: RuleType.AFTER,
+        after: dateObj,
+      });
+    });
+
+    it("should create after rule with reference", () => {
+      const reference = ref("$.startDate");
+      const rule = after(reference);
+
+      expect(rule).toEqual({
+        type: RuleType.AFTER,
+        after: {
+          type: "__reference",
+          path: "$.startDate",
+        },
+      });
+    });
+
+    it("should create after rule with custom code", () => {
+      const rule = after("2024-06-15", "CUSTOM_AFTER_ERROR");
+
+      expect(rule).toEqual({
+        type: RuleType.AFTER,
+        after: "2024-06-15",
+        code: "CUSTOM_AFTER_ERROR",
+      });
+    });
+  });
+
+  describe("before rule", () => {
+    it("should create before rule with date string", () => {
+      const rule = before("2024-12-31");
+
+      expect(rule).toEqual({
+        type: RuleType.BEFORE,
+        before: "2024-12-31",
+      });
+    });
+
+    it("should create before rule with Date object", () => {
+      const dateObj = new Date("2024-12-31");
+      const rule = before(dateObj);
+
+      expect(rule).toEqual({
+        type: RuleType.BEFORE,
+        before: dateObj,
+      });
+    });
+
+    it("should create before rule with reference", () => {
+      const reference = ref("$.endDate");
+      const rule = before(reference);
+
+      expect(rule).toEqual({
+        type: RuleType.BEFORE,
+        before: {
+          type: "__reference",
+          path: "$.endDate",
+        },
+      });
+    });
+
+    it("should create before rule with custom code", () => {
+      const rule = before("2024-01-01", "CUSTOM_BEFORE_ERROR");
+
+      expect(rule).toEqual({
+        type: RuleType.BEFORE,
+        before: "2024-01-01",
+        code: "CUSTOM_BEFORE_ERROR",
+      });
     });
   });
 

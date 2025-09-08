@@ -1,6 +1,6 @@
 {
   "name": "dynz",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "private": false,
   "license": "MIT",
   "type": "module",
@@ -42,7 +42,7 @@
   "dependencies": {
     "date-fns": "^4.1.0"
   },
-  "devDependencies": {  
+  "devDependencies": {
     "tsdown": "^0.14.2"
   }
 }
