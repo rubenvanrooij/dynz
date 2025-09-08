@@ -271,7 +271,7 @@ export function unpackRef(
 
     return {
       schema,
-      value: "coerce" in schema && schema.coerce === true ? coerce(schema, value) : value,
+      value: "coerce" in schema && schema.coerce === true ? coerce(schema.type, value) : value,
       static: false,
     };
   }
@@ -387,7 +387,9 @@ export function getNested<T extends Schema>(path: string, schema: T, value: unkn
   return {
     schema: result.schema,
     value:
-      "coerce" in result.schema && result.schema.coerce === true ? coerce(result.schema, result.value) : result.value,
+      "coerce" in result.schema && result.schema.coerce === true
+        ? coerce(result.schema.type, result.value)
+        : result.value,
   };
 }
 
@@ -402,12 +404,18 @@ function getNestedValue<T extends Schema>(path: string, schema: T, value: unknow
  * or
  * true -> "true", 12 -> "12"
  */
-export function coerce(schema: Schema, value: unknown): unknown {
+export function coerce(type: SchemaType, value: unknown): unknown {
   if (value === undefined || value === null) {
     return value;
   }
 
-  switch (schema.type) {
+  switch (type) {
+    case SchemaType.DATE: {
+      if (isNumber(value) || isString(value)) {
+        return new Date(value);
+      }
+      return value;
+    }
     case SchemaType.NUMBER: {
       return Number(value);
     }

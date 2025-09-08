@@ -1,6 +1,7 @@
 import {
   type ArraySchema,
   type BooleanSchema,
+  type DateSchema,
   type DateStringSchema,
   type FileSchema,
   type NumberSchema,
@@ -50,6 +51,15 @@ export function boolean<A extends Omit<BooleanSchema, "type">>(value?: A): Boole
   return {
     ...(value || {}),
     type: SchemaType.BOOLEAN,
+  };
+}
+
+export function date(): DateSchema;
+export function date<const T extends Omit<DateSchema, "type">>(value: T): Prettify<T & Pick<DateSchema, "type">>;
+export function date<A extends Omit<DateSchema, "type">>(value?: A): DateSchema {
+  return {
+    ...(value || {}),
+    type: SchemaType.DATE,
   };
 }
 

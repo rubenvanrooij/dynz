@@ -518,6 +518,17 @@ function validateMinRule(
             message: `The value ${value} for schema ${path} is before or on ${min}`,
           };
     }
+    case SchemaType.DATE: {
+      const date = assertDate(value);
+      const compareTo = assertDate(coerce(schema.type, min));
+      return isAfter(date, compareTo) || date.getTime() === compareTo.getTime()
+        ? undefined
+        : {
+            code: ErrorCode.MIN,
+            min,
+            message: `The value ${value} for schema ${path} is before or on ${min}`,
+          };
+    }
     default:
       throw new Error(`Min rule cannot be used on schema of type: ${schema.type}`);
   }
@@ -558,6 +569,11 @@ function validateMaxRule(
       case SchemaType.DATE_STRING: {
         const date = parseDateString(assertSchema(schema, value), schema.format);
         const compareTo = parseDateString(assertSchema(schema, max), schema.format);
+        return isBefore(date, compareTo) || date.getTime() === compareTo.getTime();
+      }
+      case SchemaType.DATE: {
+        const date = assertSchema(schema, value);
+        const compareTo = assertSchema(schema, coerce(schema.type, max));
         return isBefore(date, compareTo) || date.getTime() === compareTo.getTime();
       }
     }
@@ -686,6 +702,18 @@ function beforeRuleValidator(
             message: `The value ${value} for schema ${path} is after ${before}`,
           };
     }
+    case SchemaType.DATE: {
+      const date = assertDate(value);
+      const before = assertDate(coerce(SchemaType.DATE, unpackRefValue(rule.before, path, context)));
+
+      return isBefore(date, before)
+        ? undefined
+        : {
+            code: ErrorCode.BEFORE,
+            before: before,
+            message: `The value ${value} for schema ${path} is after ${before}`,
+          };
+    }
     default:
       throw new Error(`Before rule cannot be used on schema of type: ${schema.type}`);
   }
@@ -711,6 +739,18 @@ function afterRuleValidator(
       const after = assertString(unpackRefValue(rule.after, path, context));
       const compareTo = parseDateString(after, schema.format);
       return isAfter(date, compareTo)
+        ? undefined
+        : {
+            code: ErrorCode.AFTER,
+            after: after,
+            message: `The value ${value} for schema ${path} is before ${after}`,
+          };
+    }
+    case SchemaType.DATE: {
+      const date = assertDate(value);
+      const after = assertDate(coerce(SchemaType.DATE, unpackRefValue(rule.after, path, context)));
+
+      return isAfter(date, after)
         ? undefined
         : {
             code: ErrorCode.AFTER,
@@ -937,6 +977,10 @@ export function assertArray(value: unknown): unknown[] {
 
 export function assertString(value: unknown): string {
   return assertType(SchemaType.STRING, value);
+}
+
+export function assertDate(value: unknown): Date {
+  return assertType(SchemaType.DATE, value);
 }
 
 export function assertDateString(value: unknown, format: string): DateString {
