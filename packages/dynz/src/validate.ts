@@ -254,7 +254,7 @@ export function _validate<T extends Schema>(
   /**
    * Validate array
    */
-  if (schema.type === SchemaType.ARRAY) {
+  if (schema.type === SchemaType.ARRAY || schema.type === SchemaType.TUPLE) {
     if (!isArray(newValue)) {
       throw new Error(`new value is not an array: ${newValue}`);
     }
@@ -271,8 +271,29 @@ export function _validate<T extends Schema>(
 
     return newValue.reduce<ValidationResult<unknown[]>>(
       (acc, cur, index) => {
+        const validationSchema =
+          schema.type === SchemaType.ARRAY ? schema.schema : (schema.schema[index] as Schema | undefined);
+
+        if (validationSchema === undefined) {
+          return {
+            success: false,
+            errors: [
+              {
+                path: `${path}.[${index}]`,
+                schema,
+                value: cur,
+                current: currentValue?.[index],
+                customCode: ErrorCode.TYPE,
+                code: ErrorCode.TYPE,
+                expectedType: schema.type,
+                message: `The value for schema ${path} is not of type ${schema.type}`,
+              },
+            ],
+          };
+        }
+
         const result = _validate(
-          schema.schema,
+          validationSchema,
           {
             current: currentValue?.[index],
             new: cur,
@@ -858,6 +879,8 @@ export function validateType<T extends SchemaType>(
 
       return isDateString(value, dateFormat);
     }
+    case SchemaType.TUPLE:
+      return isArray(value);
     case SchemaType.OPTIONS:
       return isNumber(value) || isString(value) || isBoolean(value);
   }

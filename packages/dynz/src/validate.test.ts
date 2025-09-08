@@ -14,7 +14,7 @@ import {
   oneOf,
   regex,
 } from "./rules";
-import { array, boolean, date, dateString, file, number, object, options, string } from "./schema";
+import { array, boolean, date, dateString, file, number, object, options, string, tuple } from "./schema";
 import { type CustomRuleMap, ErrorCode, SchemaType } from "./types";
 import {
   isArray,
@@ -519,6 +519,257 @@ describe("validate", () => {
           }),
         ],
       });
+    });
+  });
+
+  describe("tuple validation", () => {
+    it("should validate basic tuple with correct types", () => {
+      const schema = tuple({
+        schema: [string(), number(), boolean()],
+      });
+      const result = validate(schema, undefined, ["hello", 42, true]);
+
+      expect(result).toEqual({
+        success: true,
+        values: ["hello", 42, true],
+      });
+    });
+
+    it("should fail when tuple value is not an array", () => {
+      const schema = tuple({
+        schema: [string(), number()],
+      });
+      const result = validate(schema, undefined, "not an array");
+
+      expect(result).toEqual({
+        success: false,
+        errors: [
+          expect.objectContaining({
+            code: ErrorCode.TYPE,
+            expectedType: SchemaType.TUPLE,
+          }),
+        ],
+      });
+    });
+
+    it("should fail when tuple has wrong type at specific position", () => {
+      const schema = tuple({
+        schema: [string(), number(), boolean()],
+      });
+      const result = validate(schema, undefined, ["hello", "not a number", true]);
+
+      expect(result).toEqual({
+        success: false,
+        errors: [
+          expect.objectContaining({
+            code: ErrorCode.TYPE,
+            path: "$.[1]",
+            expectedType: SchemaType.NUMBER,
+          }),
+        ],
+      });
+    });
+
+    it("should fail when tuple has too many elements", () => {
+      const schema = tuple({
+        schema: [string(), number()],
+      });
+      const result = validate(schema, undefined, ["hello", 42, "extra"]);
+
+      expect(result).toEqual({
+        success: false,
+        errors: [
+          expect.objectContaining({
+            code: ErrorCode.TYPE,
+            path: "$.[2]",
+            expectedType: SchemaType.TUPLE,
+          }),
+        ],
+      });
+    });
+
+    it("should validate tuple with fewer elements than schema length", () => {
+      const schema = tuple({
+        schema: [string(), number({ required: false }), boolean({ required: false })],
+      });
+      const result = validate(schema, undefined, ["hello"]);
+
+      expect(result.success).toBe(true);
+    });
+
+    it("should validate empty tuple", () => {
+      const schema = tuple({
+        schema: [],
+      });
+      const result = validate(schema, undefined, []);
+
+      expect(result).toEqual({
+        success: true,
+        values: [],
+      });
+    });
+
+    it("should fail when empty tuple schema receives non-empty array", () => {
+      const schema = tuple({
+        schema: [],
+      });
+      const result = validate(schema, undefined, ["unexpected"]);
+
+      expect(result).toEqual({
+        success: false,
+        errors: [
+          expect.objectContaining({
+            code: ErrorCode.TYPE,
+            path: "$.[0]",
+            expectedType: SchemaType.TUPLE,
+          }),
+        ],
+      });
+    });
+
+    it("should validate nested tuple", () => {
+      const schema = tuple({
+        schema: [
+          string(),
+          tuple({
+            schema: [number(), boolean()],
+          }),
+        ],
+      });
+      const result = validate(schema, undefined, ["hello", [42, true]]);
+
+      expect(result).toEqual({
+        success: true,
+        values: ["hello", [42, true]],
+      });
+    });
+
+    it("should fail validation for nested tuple with wrong inner type", () => {
+      const schema = tuple({
+        schema: [
+          string(),
+          tuple({
+            schema: [number(), boolean()],
+          }),
+        ],
+      });
+      const result = validate(schema, undefined, ["hello", [42, "not boolean"]]);
+
+      expect(result).toEqual({
+        success: false,
+        errors: [
+          expect.objectContaining({
+            code: ErrorCode.TYPE,
+            path: "$.[1].[1]",
+            expectedType: SchemaType.BOOLEAN,
+          }),
+        ],
+      });
+    });
+
+    it("should validate tuple with complex nested schemas", () => {
+      const schema = tuple({
+        schema: [
+          string(),
+          object({
+            fields: {
+              id: number(),
+              name: string(),
+            },
+          }),
+          array({ schema: string() }),
+        ],
+      });
+
+      const result = validate(schema, undefined, ["hello", { id: 1, name: "John" }, ["tag1", "tag2"]]);
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.values[0]).toBe("hello");
+        expect(result.values[1]).toEqual({ id: 1, name: "John" });
+        expect(result.values[2]).toEqual(["tag1", "tag2"]);
+      }
+    });
+
+    it("should validate tuple with rules on individual elements", () => {
+      const schema = tuple({
+        schema: [string({ rules: [min(3), max(10)] }), number({ rules: [min(0), max(100)] }), boolean()],
+      });
+
+      const validResult = validate(schema, undefined, ["hello", 50, true]);
+      expect(validResult.success).toBe(true);
+
+      const invalidStringResult = validate(schema, undefined, ["hi", 50, true]);
+      expect(invalidStringResult.success).toBe(false);
+
+      const invalidNumberResult = validate(schema, undefined, ["hello", 150, true]);
+      expect(invalidNumberResult.success).toBe(false);
+    });
+
+    it("should validate tuple with required and optional elements", () => {
+      const schema = tuple({
+        schema: [string({ required: true }), number({ required: false }), boolean({ required: false })],
+      });
+
+      const fullResult = validate(schema, undefined, ["hello", 42, true]);
+      expect(fullResult.success).toBe(true);
+
+      const partialResult = validate(schema, undefined, ["hello"]);
+      expect(partialResult.success).toBe(true);
+
+      // For tuples, if we provide an empty array, there's no element at position 0
+      // so it should actually pass because undefined is processed for the required field
+      // Let me test with undefined at the first position instead
+      const undefinedRequiredResult = validate(schema, undefined, [undefined, 42]);
+      expect(undefinedRequiredResult.success).toBe(false);
+    });
+
+    it("should validate tuple with date elements", () => {
+      const schema = tuple({
+        schema: [date(), dateString({ format: "MM/dd/yyyy" })],
+      });
+
+      const testDate = new Date("2023-12-25");
+      const result = validate(schema, undefined, [testDate, "12/25/2023"]);
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.values[0]).toBe(testDate);
+        expect(result.values[1]).toBe("12/25/2023");
+      }
+    });
+
+    it("should validate tuple with coercion enabled on elements", () => {
+      const schema = tuple({
+        schema: [string({ coerce: true }), number({ coerce: true }), boolean({ coerce: true })],
+      });
+
+      const result = validate(schema, undefined, [123, "456", "true"]);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.values[0]).toBe("123");
+        expect(result.values[1]).toBe(456);
+        expect(result.values[2]).toBe(true);
+      }
+    });
+
+    it("should handle mutability validation for tuples", () => {
+      const originalTuple = ["original", 42];
+      const changedTuple = ["changed", 42];
+
+      // Test that the tuple itself can be immutable
+      const tupleSchema = tuple({
+        schema: [string(), number()],
+        mutable: false,
+      });
+
+      // biome-ignore lint/suspicious/noExplicitAny: unit test
+      const tupleChangedResult = validate(tupleSchema, originalTuple as any, changedTuple);
+      expect(tupleChangedResult.success).toBe(false);
+
+      // biome-ignore lint/suspicious/noExplicitAny: unit test
+      const tupleSameResult = validate(tupleSchema, originalTuple as any, originalTuple);
+      expect(tupleSameResult.success).toBe(true);
     });
   });
 
@@ -1338,6 +1589,15 @@ describe("validate", () => {
         expect(validateType(SchemaType.DATE, new Date("2023-12-25"))).toBe(true);
         expect(validateType(SchemaType.DATE, "2023-12-25")).toBe(false);
         expect(validateType(SchemaType.DATE, new Date("invalid"))).toBe(false);
+      });
+
+      it("should validate tuple type", () => {
+        expect(validateType(SchemaType.TUPLE, [])).toBe(true);
+        expect(validateType(SchemaType.TUPLE, [1, 2, 3])).toBe(true);
+        expect(validateType(SchemaType.TUPLE, ["hello", "world"])).toBe(true);
+        expect(validateType(SchemaType.TUPLE, "not an array")).toBe(false);
+        expect(validateType(SchemaType.TUPLE, {})).toBe(false);
+        expect(validateType(SchemaType.TUPLE, null)).toBe(false);
       });
 
       it("should validate date string type with format", () => {

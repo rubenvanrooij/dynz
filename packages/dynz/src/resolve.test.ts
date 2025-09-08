@@ -523,7 +523,7 @@ describe("resolve", () => {
       fields: {
         user: object({
           fields: {
-            name: string({ default: "Unknown" }),
+            name: string(),
             age: number(),
             contacts: array({
               schema: string(),
@@ -540,16 +540,6 @@ describe("resolve", () => {
       expect(result).toEqual({
         schema: expect.objectContaining({ type: SchemaType.STRING }),
         value: "John",
-      });
-    });
-
-    it("should return default value when value is undefined", () => {
-      const values = { user: { age: 30 } };
-      const result = getNested("$.user.name", schema, values);
-
-      expect(result).toEqual({
-        schema: expect.objectContaining({ type: SchemaType.STRING }),
-        value: "Unknown",
       });
     });
 

@@ -3,9 +3,9 @@ import { equals, max, min } from "./rules";
 import {
   array,
   boolean,
-  date,
   // rules,
   DEFAULT_DATE_STRING_FORMAT,
+  date,
   dateString,
   file,
   number,
@@ -14,6 +14,7 @@ import {
   options,
   required,
   string,
+  tuple,
 } from "./schema";
 import { SchemaType } from "./types";
 
@@ -30,14 +31,12 @@ describe("schema", () => {
     it("should create string schema with options", () => {
       const schema = string({
         required: true,
-        default: "hello",
         rules: [min(3), max(10)],
       });
 
       expect(schema).toEqual({
         type: SchemaType.STRING,
         required: true,
-        default: "hello",
         rules: [
           { type: "min", min: 3 },
           { type: "max", max: 10 },
@@ -51,7 +50,6 @@ describe("schema", () => {
         mutable: true,
         included: false,
         private: true,
-        default: "test",
       });
 
       expect(schema).toEqual({
@@ -60,7 +58,6 @@ describe("schema", () => {
         mutable: true,
         included: false,
         private: true,
-        default: "test",
       });
     });
   });
@@ -77,14 +74,12 @@ describe("schema", () => {
     it("should create number schema with options", () => {
       const schema = number({
         required: true,
-        default: 42,
         rules: [min(0), max(100)],
       });
 
       expect(schema).toEqual({
         type: SchemaType.NUMBER,
         required: true,
-        default: 42,
         rules: [
           { type: "min", min: 0 },
           { type: "max", max: 100 },
@@ -215,7 +210,6 @@ describe("schema", () => {
         mutable: true,
         included: true,
         private: false,
-        default: "medium",
       });
 
       expect(schema).toEqual({
@@ -225,7 +219,6 @@ describe("schema", () => {
         mutable: true,
         included: true,
         private: false,
-        default: "medium",
       });
     });
   });
@@ -357,6 +350,116 @@ describe("schema", () => {
     });
   });
 
+  describe("tuple", () => {
+    it("should create basic tuple schema with mixed types", () => {
+      const schema = tuple({
+        schema: [string(), number(), boolean()],
+      });
+
+      expect(schema).toEqual({
+        type: SchemaType.TUPLE,
+        schema: [{ type: SchemaType.STRING }, { type: SchemaType.NUMBER }, { type: SchemaType.BOOLEAN }],
+      });
+    });
+
+    it("should create tuple schema with single element", () => {
+      const schema = tuple({
+        schema: [string()],
+      });
+
+      expect(schema).toEqual({
+        type: SchemaType.TUPLE,
+        schema: [{ type: SchemaType.STRING }],
+      });
+    });
+
+    it("should create tuple schema with empty array", () => {
+      const schema = tuple({
+        schema: [],
+      });
+
+      expect(schema).toEqual({
+        type: SchemaType.TUPLE,
+        schema: [],
+      });
+    });
+
+    it("should create tuple schema with complex types", () => {
+      const schema = tuple({
+        schema: [
+          string({ required: true }),
+          number({ rules: [min(0), max(100)] }),
+          object({
+            fields: {
+              name: string(),
+              age: number(),
+            },
+          }),
+          array({ schema: string() }),
+        ],
+      });
+
+      expect(schema.type).toBe(SchemaType.TUPLE);
+      expect(schema.schema).toHaveLength(4);
+      expect(schema.schema[0]).toEqual({ type: SchemaType.STRING, required: true });
+      expect(schema.schema[1]).toEqual({
+        type: SchemaType.NUMBER,
+        rules: [
+          { type: "min", min: 0 },
+          { type: "max", max: 100 },
+        ],
+      });
+      expect(schema.schema[2].type).toBe(SchemaType.OBJECT);
+      expect(schema.schema[3].type).toBe(SchemaType.ARRAY);
+    });
+
+    it("should create tuple schema with nested tuples", () => {
+      const schema = tuple({
+        schema: [
+          string(),
+          tuple({
+            schema: [number(), boolean()],
+          }),
+        ],
+      });
+
+      expect(schema.type).toBe(SchemaType.TUPLE);
+      expect(schema.schema).toHaveLength(2);
+      expect(schema.schema[0].type).toBe(SchemaType.STRING);
+      expect(schema.schema[1].type).toBe(SchemaType.TUPLE);
+      expect(schema.schema[1].schema).toEqual([{ type: SchemaType.NUMBER }, { type: SchemaType.BOOLEAN }]);
+    });
+
+    it("should create tuple schema with all base properties", () => {
+      const schema = tuple({
+        schema: [string(), number()],
+        required: false,
+        mutable: true,
+        included: true,
+        private: false,
+      });
+
+      expect(schema.type).toBe(SchemaType.TUPLE);
+      expect(schema.schema).toEqual([{ type: SchemaType.STRING }, { type: SchemaType.NUMBER }]);
+      expect(schema.required).toBe(false);
+      expect(schema.mutable).toBe(true);
+      expect(schema.included).toBe(true);
+      expect(schema.private).toBe(false);
+    });
+
+    it("should create tuple schema with date and date string", () => {
+      const schema = tuple({
+        schema: [date(), dateString({ format: "MM/dd/yyyy" })],
+      });
+
+      expect(schema.type).toBe(SchemaType.TUPLE);
+      expect(schema.schema).toEqual([
+        { type: SchemaType.DATE },
+        { type: SchemaType.DATE_STRING, format: "MM/dd/yyyy" },
+      ]);
+    });
+  });
+
   describe("date", () => {
     it("should create basic date schema", () => {
       const schema = date();
@@ -369,13 +472,11 @@ describe("schema", () => {
     it("should create date schema with options", () => {
       const schema = date({
         required: true,
-        default: new Date("2024-01-01"),
       });
 
       expect(schema).toEqual({
         type: SchemaType.DATE,
         required: true,
-        default: new Date("2024-01-01"),
       });
     });
 
@@ -397,7 +498,6 @@ describe("schema", () => {
         included: true,
         private: false,
         coerce: true,
-        default: new Date("2023-12-25"),
       });
 
       expect(schema).toEqual({
@@ -407,7 +507,6 @@ describe("schema", () => {
         included: true,
         private: false,
         coerce: true,
-        default: new Date("2023-12-25"),
       });
     });
 
@@ -453,14 +552,12 @@ describe("schema", () => {
       const schema = dateString({
         format: "dd-MM-yyyy",
         required: true,
-        default: "01-01-2024",
       });
 
       expect(schema).toEqual({
         type: SchemaType.DATE_STRING,
         format: "dd-MM-yyyy",
         required: true,
-        default: "01-01-2024",
       });
     });
 
@@ -490,13 +587,12 @@ describe("schema", () => {
       });
 
       it("should override required property", () => {
-        const baseSchema = number({ required: true, default: 0 });
+        const baseSchema = number({ required: true });
         const optionalSchema = optional(baseSchema);
 
         expect(optionalSchema).toEqual({
           type: SchemaType.NUMBER,
           required: false,
-          default: 0,
         });
       });
     });
@@ -537,7 +633,7 @@ describe("schema", () => {
               fields: {
                 street: string({ required: true }),
                 city: string({ required: true }),
-                country: string({ default: "US" }),
+                country: string({}),
               },
             }),
             rules: [max(3)],

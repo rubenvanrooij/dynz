@@ -1,15 +1,38 @@
 ---
-title: Introduction
-description: Learn how to install and use dynz for schema validation and forms
+title: Defining schemas
+description: Learn how to create and use schemas with dynz
 ---
 
 import { Tabs, Tab } from 'fumadocs-ui/components/tabs';
 import { Callout } from 'fumadocs-ui/components/callout';
 
-# Introduction
+# Defining Schemas
 
-`dynz` is a TypeScript schema validator that provides serializable type-safe validation with dynamic schemas. It is perfect for creating complex
-schemas that power your form logic.
+To validate data, you must first define a schema. Schemas represent types, from simple primitive values to complex nested objects and arrays.
+
+# Primitives
+```typescript
+
+import { string, number, object, validate, equals, lt, min, max } from 'dynz'
+
+// Primitive types
+string()
+number()
+boolean()
+dateString()
+
+```
+
+{/* STRING: "string",
+  DATE: "date",
+  DATE_STRING: "date_string",
+  NUMBER: "number",
+  OBJECT: "object",
+  ARRAY: "array",
+  OPTIONS: "options",
+  BOOLEAN: "boolean",
+  FILE: "file", */}
+
 
 ```typescript
 import { string, number, object, validate, equals, lt, min, max } from 'dynz'
