@@ -1,17 +1,19 @@
-import { SchemaValues, tuple, string, boolean, number, validate } from "dynz";
+import { boolean, number, SchemaValues, string, tuple, validate } from "dynz";
 
 const foo = tuple({
   schema: [
     string(),
     boolean(),
-    number(),
-  ]
-})
+    tuple({
+      schema: [string(), boolean()],
+    }),
+  ],
+});
 
-const f= validate(foo, undefined, ['foo', true, 123])
+const f = validate(foo, undefined, ["foo", true, 123]);
 
-if(f.success) {
-  const a = f.values[1]
+if (f.success) {
+  const a = f.values[2][1];
 }
 
 // const schema = object({

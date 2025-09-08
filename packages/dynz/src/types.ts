@@ -288,10 +288,9 @@ export const SchemaType = {
 
 export type SchemaType = EnumValues<typeof SchemaType>;
 
-export type BaseSchema<TValue, TType extends SchemaType, TRule extends Rule> = {
+export type BaseSchema<TType extends SchemaType, TRule extends Rule> = {
   type: TType;
   rules?: Array<TRule | ConditionalRule<Condition, Rule>>;
-  default?: TValue;
   required?: boolean | Condition;
   mutable?: boolean | Condition;
   included?: boolean | Condition;
@@ -315,11 +314,7 @@ export type StringRules =
   | EmailRule
   | CustomRule
   | OneOfRule<Array<string | Reference>>;
-export type StringSchema<TRule extends StringRules = StringRules> = BaseSchema<
-  string,
-  typeof SchemaType.STRING,
-  TRule
-> &
+export type StringSchema<TRule extends StringRules = StringRules> = BaseSchema<typeof SchemaType.STRING, TRule> &
   PrivateSchema & { coerce?: boolean };
 
 /**
@@ -338,7 +333,7 @@ export type DateStringRules =
 export type DateStringSchema<
   TFormat extends string = string,
   TRule extends DateStringRules = DateStringRules,
-> = BaseSchema<DateString, typeof SchemaType.DATE_STRING, TRule> &
+> = BaseSchema<typeof SchemaType.DATE_STRING, TRule> &
   PrivateSchema & {
     /*
      * Unicode Tokens
@@ -355,7 +350,6 @@ export type DateStringSchema<
  */
 export type OptionsRules = EqualsRule | CustomRule;
 export type OptionsSchema<TValue extends string | number = string | number> = BaseSchema<
-  TValue,
   typeof SchemaType.OPTIONS,
   OptionsRules
 > & {
@@ -367,21 +361,13 @@ export type OptionsSchema<TValue extends string | number = string | number> = Ba
  */
 // TODO: Add mime type rule
 export type FileRules = MinRule | MaxRule | MimeTypeRule;
-export type FileSchema<TValue extends string | number = string | number> = BaseSchema<
-  TValue,
-  typeof SchemaType.FILE,
-  FileRules
->;
+export type FileSchema = BaseSchema<typeof SchemaType.FILE, FileRules>;
 
 /**
  * OBJECT SCHEMA
  */
 export type ObjectRules = CustomRule | MinRule<number> | MaxRule<number>;
-export type ObjectSchema<T extends Record<string, Schema>> = BaseSchema<
-  [T] extends [never] ? Record<string, unknown> : { [A in keyof T]: SchemaValuesInternal<T[A]> },
-  typeof SchemaType.OBJECT,
-  ObjectRules
-> & {
+export type ObjectSchema<T extends Record<string, Schema>> = BaseSchema<typeof SchemaType.OBJECT, ObjectRules> & {
   fields: [T] extends [never] ? Record<string, Schema> : T;
 };
 
@@ -389,11 +375,7 @@ export type ObjectSchema<T extends Record<string, Schema>> = BaseSchema<
  * ARRAY SCHEMA
  */
 export type ArrayRules = MinRule<number> | MaxRule<number> | CustomRule;
-export type ArraySchema<T extends Schema> = BaseSchema<
-  [T] extends [never] ? unknown[] : SchemaValuesInternal<T>[],
-  typeof SchemaType.ARRAY,
-  ArrayRules
-> & {
+export type ArraySchema<T extends Schema> = BaseSchema<typeof SchemaType.ARRAY, ArrayRules> & {
   schema: [T] extends [never] ? Schema : T;
   coerce?: boolean;
 };
@@ -401,13 +383,9 @@ export type ArraySchema<T extends Schema> = BaseSchema<
 /**
  * TUPLE SCHEMA
  */
-export type TupleRules = MinRule<number> | MaxRule<number> | CustomRule;
-export type TupleSchema<T extends Schema[] = never> = BaseSchema<
-  [T] extends [never] ? unknown[] : TupleValue<T>[],
-  typeof SchemaType.TUPLE,
-  ArrayRules
-> & {
-  schema: [T] extends [never] ? Schema[] : T;
+export type TupleRules = CustomRule;
+export type TupleSchema<T extends Schema[] = never> = BaseSchema<typeof SchemaType.TUPLE, ArrayRules> & {
+  schema: [T] extends [never] ? unknown[] : T;
 };
 
 /**
@@ -420,7 +398,7 @@ export type DateRules =
   | BeforeRule<Date | Reference>
   | EqualsRule<Date | Reference>
   | CustomRule;
-export type DateSchema = BaseSchema<Date, typeof SchemaType.DATE, DateRules> & {
+export type DateSchema = BaseSchema<typeof SchemaType.DATE, DateRules> & {
   coerce?: boolean;
 };
 
@@ -434,7 +412,7 @@ export type NumberRules =
   | EqualsRule<number | Reference>
   | CustomRule
   | OneOfRule<Array<number | Reference>>;
-export type NumberSchema = BaseSchema<number, typeof SchemaType.NUMBER, NumberRules> & {
+export type NumberSchema = BaseSchema<typeof SchemaType.NUMBER, NumberRules> & {
   coerce?: boolean;
 };
 
@@ -442,7 +420,7 @@ export type NumberSchema = BaseSchema<number, typeof SchemaType.NUMBER, NumberRu
  * BOOLEAN SCHEMA
  */
 export type BooleanRules = EqualsRule<boolean | Reference> | CustomRule;
-export type BooleanSchema = BaseSchema<number, typeof SchemaType.BOOLEAN, BooleanRules> & {
+export type BooleanSchema = BaseSchema<typeof SchemaType.BOOLEAN, BooleanRules> & {
   coerce?: boolean;
 };
 
@@ -532,7 +510,9 @@ type RequiredFields<T extends ObjectSchema<never>> = {
 
 export type ObjectValue<T extends ObjectSchema<never>> = OptionalFields<T> & RequiredFields<T>;
 
-export type TupleValue<T extends Schema[]> = { [K in keyof T]: SchemaValuesInternal<T[K]> };
+export type TupleValue<T extends Schema[] | unknown> = {
+  [K in keyof T]: T[K] extends Schema ? SchemaValuesInternal<T[K]> : unknown;
+};
 
 export type SchemaValuesInternal<T extends Schema> = T extends ObjectSchema<never>
   ? Prettify<ObjectValue<T>>

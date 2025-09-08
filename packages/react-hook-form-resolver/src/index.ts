@@ -1,6 +1,6 @@
 import { toNestErrors, validateFieldsNatively } from "@hookform/resolvers";
 import { type ErrorMessage, type ObjectSchema, type SchemaValues, type ValidateOptions, validate } from "dynz";
-import { appendErrors, type FieldError, type FieldValues, type Resolver } from "react-hook-form";
+import { appendErrors, type FieldError, type FieldValues, type Resolver, type ResolverError } from "react-hook-form";
 
 type MessageTransformerFunc = (errorMessage: ErrorMessage) => string;
 

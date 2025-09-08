@@ -271,7 +271,8 @@ export function _validate<T extends Schema>(
 
     return newValue.reduce<ValidationResult<unknown[]>>(
       (acc, cur, index) => {
-        const validationSchema = schema.type === SchemaType.ARRAY ? schema.schema : schema.schema[index];
+        const validationSchema =
+          schema.type === SchemaType.ARRAY ? schema.schema : (schema.schema[index] as Schema | undefined);
 
         if (validationSchema === undefined) {
           return {
