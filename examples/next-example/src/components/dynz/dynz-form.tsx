@@ -123,7 +123,12 @@ export function DynzTextInput({ name, description }: BaseInputProps) {
           <FormItem>
             <DynzFormLabel name={name} />
             <FormControl>
-              <Input placeholder={t(`${i18nPath}.${name}.placeholder`)} {...field} value={field.value || ''} readOnly={isMutable === false} />
+              <Input
+                placeholder={t(`${i18nPath}.${name}.placeholder`)}
+                {...field}
+                value={field.value || ""}
+                readOnly={isMutable === false}
+              />
             </FormControl>
             {description && <FormDescription>{description}</FormDescription>}
             <FormMessage />
