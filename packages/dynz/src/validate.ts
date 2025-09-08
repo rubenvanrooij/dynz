@@ -110,7 +110,7 @@ export function _validate<T extends Schema>(
 
   // Try coercing the value
   if ("coerce" in schema && schema.coerce === true) {
-    newValue = coerce(schema, newValue);
+    newValue = coerce(schema.type, newValue);
   }
 
   /**
@@ -390,20 +390,33 @@ function validateCustomRule<T extends Schema>(
  * @returns undefined then the validations passses, an error message when it fails
  */
 function validateEqualsRule(
-  _: Schema,
+  schema: Schema,
   path: string,
   rule: EqualsRule,
   value: unknown,
   context: Context
 ): Omit<EqualsErrorMessage, keyof Omit<BaseErrorMessage, "message">> | undefined {
-  const equals = unpackRefValue(rule.value, path, context);
-  return equals === value
-    ? undefined
-    : {
-        code: ErrorCode.EQUALS,
-        equals: equals,
-        message: `The value for schema ${path} does not equal ${equals}`,
-      };
+  const refOrValue = unpackRefValue(rule.value, path, context);
+
+  switch (schema.type) {
+    case SchemaType.DATE:
+      return assertDate(coerce(SchemaType.DATE, refOrValue)).getTime() === assertDate(value).getTime()
+        ? undefined
+        : {
+            code: ErrorCode.EQUALS,
+            equals: refOrValue,
+            message: `The value for schema ${path} does not equal ${refOrValue}`,
+          };
+    default: {
+      return refOrValue === value
+        ? undefined
+        : {
+            code: ErrorCode.EQUALS,
+            equals: refOrValue,
+            message: `The value for schema ${path} does not equal ${refOrValue}`,
+          };
+    }
+  }
 }
 
 /**
@@ -460,53 +473,58 @@ function validateMinRule(
     return undefined;
   }
 
-  if (!isNumber(min) && !isString(min)) {
-    throw new Error(`min is not a number or string value ${min}`);
-  }
-
   switch (schema.type) {
-    case SchemaType.NUMBER:
-      return assertSchema(schema, value) >= assertNumber(min)
+    case SchemaType.NUMBER: {
+      const compareTo = assertNumber(min);
+      return assertSchema(schema, value) >= compareTo
         ? undefined
         : {
             code: ErrorCode.MIN,
-            min,
+            min: compareTo,
             message: `The value ${value} for schema ${path} is less than the minimum value of ${min}`,
           };
+    }
     case SchemaType.FILE: {
       const asstertedValue = assertSchema(schema, value);
-      return asstertedValue.size >= assertNumber(min)
+      const compareTo = assertNumber(min);
+      return asstertedValue.size >= compareTo
         ? undefined
         : {
             code: ErrorCode.MIN,
-            min,
-            message: `The value ${asstertedValue.name} for schema ${path} shuld have at least ${min} bytes`,
+            min: compareTo,
+            message: `The value ${asstertedValue.name} for schema ${path} shuld have at least ${compareTo} bytes`,
           };
     }
-    case SchemaType.STRING:
-      return assertSchema(schema, value).length >= assertNumber(min)
+    case SchemaType.STRING: {
+      const compareTo = assertNumber(min);
+      return assertSchema(schema, value).length >= compareTo
         ? undefined
         : {
             code: ErrorCode.MIN,
-            min,
-            message: `The value ${value} for schema ${path} shuld have at least ${min} characters`,
+            min: compareTo,
+            message: `The value ${value} for schema ${path} shuld have at least ${compareTo} characters`,
           };
-    case SchemaType.OBJECT:
-      return Object.keys(assertSchema(schema, value)).length >= assertNumber(min)
+    }
+    case SchemaType.OBJECT: {
+      const compareTo = assertNumber(min);
+      return Object.keys(assertSchema(schema, value)).length >= compareTo
         ? undefined
         : {
             code: ErrorCode.MIN,
-            min,
-            message: `The value ${value} for schema ${path} should have at least ${min} keys`,
+            min: compareTo,
+            message: `The value ${value} for schema ${path} should have at least ${compareTo} keys`,
           };
-    case SchemaType.ARRAY:
-      return assertSchema(schema, value).length >= assertNumber(min)
+    }
+    case SchemaType.ARRAY: {
+      const compareTo = assertNumber(min);
+      return assertSchema(schema, value).length >= compareTo
         ? undefined
         : {
             code: ErrorCode.MIN,
-            min,
-            message: `The value ${value} for schema ${path} should hold at least ${min} items`,
+            min: compareTo,
+            message: `The value ${value} for schema ${path} should hold at least ${compareTo} items`,
           };
+    }
     case SchemaType.DATE_STRING: {
       const date = parseDateString(assertString(value), schema.format);
       const compareTo = parseDateString(assertString(min), schema.format);
@@ -514,7 +532,18 @@ function validateMinRule(
         ? undefined
         : {
             code: ErrorCode.MIN,
-            min,
+            min: compareTo,
+            message: `The value ${value} for schema ${path} is before or on ${min}`,
+          };
+    }
+    case SchemaType.DATE: {
+      const date = assertDate(value);
+      const compareTo = assertDate(coerce(schema.type, min));
+      return isAfter(date, compareTo) || date.getTime() === compareTo.getTime()
+        ? undefined
+        : {
+            code: ErrorCode.MIN,
+            min: compareTo,
             message: `The value ${value} for schema ${path} is before or on ${min}`,
           };
     }
@@ -539,8 +568,8 @@ function validateMaxRule(
 ): Omit<MaxErrorMessage, keyof Omit<BaseErrorMessage, "message">> | undefined {
   const max = unpackRefValue(rule.max, path, context);
 
-  if (!isNumber(max) && !isString(max)) {
-    throw new Error("max is not a number or string value");
+  if (!isNumber(max) && !isString(max) && !isDate(max)) {
+    throw new Error("max is not a number, string, or date value");
   }
 
   const validate = () => {
@@ -558,6 +587,11 @@ function validateMaxRule(
       case SchemaType.DATE_STRING: {
         const date = parseDateString(assertSchema(schema, value), schema.format);
         const compareTo = parseDateString(assertSchema(schema, max), schema.format);
+        return isBefore(date, compareTo) || date.getTime() === compareTo.getTime();
+      }
+      case SchemaType.DATE: {
+        const date = assertSchema(schema, value);
+        const compareTo = assertSchema(schema, coerce(schema.type, max));
         return isBefore(date, compareTo) || date.getTime() === compareTo.getTime();
       }
     }
@@ -686,6 +720,18 @@ function beforeRuleValidator(
             message: `The value ${value} for schema ${path} is after ${before}`,
           };
     }
+    case SchemaType.DATE: {
+      const date = assertDate(value);
+      const before = assertDate(coerce(SchemaType.DATE, unpackRefValue(rule.before, path, context)));
+
+      return isBefore(date, before)
+        ? undefined
+        : {
+            code: ErrorCode.BEFORE,
+            before: before,
+            message: `The value ${value} for schema ${path} is after ${before}`,
+          };
+    }
     default:
       throw new Error(`Before rule cannot be used on schema of type: ${schema.type}`);
   }
@@ -711,6 +757,18 @@ function afterRuleValidator(
       const after = assertString(unpackRefValue(rule.after, path, context));
       const compareTo = parseDateString(after, schema.format);
       return isAfter(date, compareTo)
+        ? undefined
+        : {
+            code: ErrorCode.AFTER,
+            after: after,
+            message: `The value ${value} for schema ${path} is before ${after}`,
+          };
+    }
+    case SchemaType.DATE: {
+      const date = assertDate(value);
+      const after = assertDate(coerce(SchemaType.DATE, unpackRefValue(rule.after, path, context)));
+
+      return isAfter(date, after)
         ? undefined
         : {
             code: ErrorCode.AFTER,
@@ -937,6 +995,10 @@ export function assertArray(value: unknown): unknown[] {
 
 export function assertString(value: unknown): string {
   return assertType(SchemaType.STRING, value);
+}
+
+export function assertDate(value: unknown): Date {
+  return assertType(SchemaType.DATE, value);
 }
 
 export function assertDateString(value: unknown, format: string): DateString {

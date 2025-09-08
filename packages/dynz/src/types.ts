@@ -5,8 +5,6 @@ export type Prettify<T> = {
   [K in keyof T]: T[K];
 } & {};
 
-type Flatten<T> = T extends (infer U)[] ? U : T;
-
 export type Filter<T extends unknown[], A> = T extends []
   ? []
   : T extends [infer H, ...infer R]
@@ -45,13 +43,13 @@ export type IsNumericRule = {
   code?: string | undefined;
 };
 
-export type MinRule<T extends number | string | Reference = number | string | Reference> = {
+export type MinRule<T extends Date | number | string | Reference = Date | number | string | Reference> = {
   type: typeof RuleType.MIN;
   min: T;
   code?: string | undefined;
 };
 
-export type MaxRule<T extends number | string | Reference = number | string | Reference> = {
+export type MaxRule<T extends Date | number | string | Reference = Date | number | string | Reference> = {
   type: typeof RuleType.MAX;
   max: T;
   code?: string | undefined;
@@ -86,13 +84,13 @@ export type RegexRule = {
   code?: string | undefined;
 };
 
-export type BeforeRule<T extends string | Reference = string | Reference> = {
+export type BeforeRule<T extends Date | string | Reference = Date | string | Reference> = {
   type: typeof RuleType.BEFORE;
   before: T;
   code?: string | undefined;
 };
 
-export type AfterRule<T extends string | Reference = string | Reference> = {
+export type AfterRule<T extends Date | string | Reference = Date | string | Reference> = {
   type: typeof RuleType.AFTER;
   after: T;
   code?: string | undefined;
@@ -398,6 +396,20 @@ export type ArraySchema<T extends Schema> = BaseSchema<
 };
 
 /**
+ * DATE SCHEMA
+ */
+export type DateRules =
+  | MinRule<Date | Reference>
+  | MaxRule<Date | Reference>
+  | AfterRule<Date | Reference>
+  | BeforeRule<Date | Reference>
+  | EqualsRule<Date | Reference>
+  | CustomRule;
+export type DateSchema = BaseSchema<Date, typeof SchemaType.DATE, DateRules> & {
+  coerce?: boolean;
+};
+
+/**
  * NUMBER SCHEMA
  */
 export type NumberRules =
@@ -427,7 +439,8 @@ export type Schema =
   | ArraySchema<never>
   | DateStringSchema
   | OptionsSchema<string | number>
-  | FileSchema;
+  | FileSchema
+  | DateSchema;
 
 export type SchemaWithParent<T extends Schema = Schema> = T & {
   parent?: Schema;
@@ -501,24 +514,11 @@ type RequiredFields<T extends ObjectSchema<never>> = {
 
 export type ObjectValue<T extends ObjectSchema<never>> = OptionalFields<T> & RequiredFields<T>;
 
-// === Main SchemaValues Type ===
-export type SchemaValuesInternal<T extends Schema> = T extends StringSchema
-  ? MakeOptional<T, ValueType<T["type"]>>
-  : T extends DateStringSchema
-    ? MakeOptional<T, ValueType<T["type"]>>
-    : T extends NumberSchema
-      ? MakeOptional<T, ValueType<T["type"]>>
-      : T extends ObjectSchema<never>
-        ? Prettify<ObjectValue<T>>
-        : T extends BooleanSchema
-          ? MakeOptional<T, ValueType<T["type"]>>
-          : T extends OptionsSchema
-            ? MakeOptional<T, Flatten<T["options"]>>
-            : T extends FileSchema
-              ? MakeOptional<T, ValueType<T["type"]>>
-              : T extends ArraySchema<never>
-                ? MakeOptional<T, Array<SchemaValuesInternal<T["schema"]>>>
-                : never;
+export type SchemaValuesInternal<T extends Schema> = T extends ObjectSchema<never>
+  ? Prettify<ObjectValue<T>>
+  : T extends ArraySchema<never>
+    ? MakeOptional<T, Array<SchemaValuesInternal<T["schema"]>>>
+    : MakeOptional<T, ValueType<T["type"]>>;
 
 export type SchemaValues<T extends Schema> = Prettify<ApplyPrivacyMask<T, SchemaValuesInternal<T>>>;
 /***
@@ -596,22 +596,22 @@ export type MimeTypeErrorMessage = BaseErrorMessage & {
 
 export type MinErrorMessage = BaseErrorMessage & {
   code: typeof ErrorCode.MIN;
-  min: number | string;
+  min: Date | number | string;
 };
 
 export type MaxErrorMessage = BaseErrorMessage & {
   code: typeof ErrorCode.MAX;
-  max: number | string;
+  max: Date | number | string;
 };
 
 export type BeforeErrorMessage = BaseErrorMessage & {
   code: typeof ErrorCode.BEFORE;
-  before: string;
+  before: Date | string;
 };
 
 export type AfterErrorMessage = BaseErrorMessage & {
   code: typeof ErrorCode.AFTER;
-  after: string;
+  after: Date | string;
 };
 
 export type CustomErrorMessage = BaseErrorMessage & {
