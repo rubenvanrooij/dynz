@@ -39,5 +39,16 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - run: npx jsr publish # --dry-run
+  library_jsr:
+    name: Publish library to JSR
+    needs: default_ci
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Publish library
+        run: npx jsr publish
         working-directory: ./packages/dynz
