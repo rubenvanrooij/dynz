@@ -31,17 +31,11 @@ export function ref<const T extends string>(path: T): Reference<T> {
   };
 }
 
-export function min<T extends number | DateString | Reference = number | DateString | Reference>(
-  min: T,
-  code?: string
-): MinRule<T> {
+export function min<T extends Date | number | DateString | Reference>(min: T, code?: string): MinRule<T> {
   return { type: RuleType.MIN, min, code };
 }
 
-export function max<T extends number | DateString | Reference = number | DateString | Reference>(
-  max: T,
-  code?: string
-): MaxRule<T> {
+export function max<T extends Date | number | DateString | Reference>(max: T, code?: string): MaxRule<T> {
   return { type: RuleType.MAX, max, code };
 }
 
@@ -69,11 +63,11 @@ export function email(code?: string): EmailRule {
   return { type: RuleType.EMAIL, code };
 }
 
-export function after<T extends DateString | Reference>(after: T, code?: string): AfterRule<T> {
+export function after<T extends Date | DateString | Reference>(after: T, code?: string): AfterRule<T> {
   return { after, type: RuleType.AFTER, code };
 }
 
-export function before<T extends DateString | Reference>(before: T, code?: string): BeforeRule<T> {
+export function before<T extends Date | DateString | Reference>(before: T, code?: string): BeforeRule<T> {
   return { before, type: RuleType.BEFORE, code };
 }
 

@@ -1,4 +1,11 @@
-import { conditional, email, eq, matches, min, object, options, regex, string } from "dynz";
+import { date, validate, after, before, min, equals } from "dynz";
+
+const schema = date({
+  coerce: true,
+  rules: [equals(new Date('2023-01-01'))]
+})
+
+console.log(validate(schema, undefined, 'Sun Jan 01 2023 02:00:00 GMT+0100'));
 
 // const foo = object({
 //   fields: {
@@ -29,33 +36,33 @@ import { conditional, email, eq, matches, min, object, options, regex, string } 
 //   console.log(result.values); // ✅ Type-safe access
 // }
 
-const schema = object({
-  fields: {
-    accountType: options({
-      options: ["personal", "business"],
-    }),
+// const schema = object({
+//   fields: {
+//     accountType: options({
+//       options: ["personal", "business"],
+//     }),
 
-    // Only included if accountType is 'business'
-    companyName: string({
-      rules: [min(2)],
-      required: matches("email", "@gmail.com$"),
-      included: eq("accountType", "business"),
-    }),
+//     // Only included if accountType is 'business'
+//     companyName: string({
+//       rules: [min(2)],
+//       required: matches("email", "@gmail.com$"),
+//       included: eq("accountType", "business"),
+//     }),
 
-    email: string({
-      rules: [
-        email(),
-        conditional({
-          // Different validation rules based on account type
-          when: eq("accountType", "business"),
-          then: regex("@company.com$", "Business accounts must use company email"),
-        }),
-      ],
-    }),
-  },
-});
+//     email: string({
+//       rules: [
+//         email(),
+//         conditional({
+//           // Different validation rules based on account type
+//           when: eq("accountType", "business"),
+//           then: regex("@company.com$", "Business accounts must use company email"),
+//         }),
+//       ],
+//     }),
+//   },
+// });
 
-console.log(JSON.stringify(schema, undefined, 2));
+// console.log(JSON.stringify(schema, undefined, 2));
 
 // // Validate data
 // const result = validate(schema, undefined, {

@@ -406,10 +406,10 @@ export type DateRules =
   | AfterRule<Date | Reference>
   | BeforeRule<Date | Reference>
   | EqualsRule<Date | Reference>
-  | RegexRule
-  | CustomRule
-  | OneOfRule<Array<DateString | Reference>>;
-export type DateSchema = BaseSchema<Date, typeof SchemaType.DATE, DateRules>;
+  | CustomRule;
+export type DateSchema = BaseSchema<Date, typeof SchemaType.DATE, DateRules> & {
+  coerce?: boolean;
+};
 
 /**
  * NUMBER SCHEMA
@@ -600,12 +600,12 @@ export type MimeTypeErrorMessage = BaseErrorMessage & {
 
 export type MinErrorMessage = BaseErrorMessage & {
   code: typeof ErrorCode.MIN;
-  min: number | string;
+  min: Date | number | string;
 };
 
 export type MaxErrorMessage = BaseErrorMessage & {
   code: typeof ErrorCode.MAX;
-  max: number | string;
+  max: Date | number | string;
 };
 
 export type BeforeErrorMessage = BaseErrorMessage & {
