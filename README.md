@@ -1,1 +1,1 @@
-#PNPM monorepo
+packages/dynz/README.md
