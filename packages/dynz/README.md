@@ -4,8 +4,6 @@
 [![CI][ci-image]][ci-url]
 [![NPM version][npm-image]][npm-url]
 [![Downloads][downloads-image]][npm-url]
-[![JSR version][jsr-image]][jsr-url]
-[![Discord][discord-image]][discord-url]
 
 A powerful TypeScript schema validation with advanced conditional logic, cross-field validation, and privacy controls.
 
@@ -525,3 +523,11 @@ MIT © dynz
 ---
 
 Built with ❤️ for type-safe validation
+
+[license-image]: https://img.shields.io/badge/License-MIT-brightgreen.svg?style=flat-square
+[license-url]: https://opensource.org/licenses/MIT
+[ci-image]: https://img.shields.io/github/actions/workflow/status/rubenvanrooij/dynz/ci.yml?branch=main&logo=github&style=flat-square
+[ci-url]: https://github.com//rubenvanrooij/dynz/actions/workflows/ci.yml
+[npm-image]: https://img.shields.io/npm/v/dynz.svg?style=flat-square
+[npm-url]: https://npmjs.org/package/dynz
+[downloads-image]: https://img.shields.io/npm/dm/dynz.svg?style=flat-square
