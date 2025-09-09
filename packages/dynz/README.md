@@ -5,7 +5,7 @@
 [![NPM version][npm-image]][npm-url]
 [![Downloads][downloads-image]][npm-url]
 
-A powerful TypeScript schema validation with advanced conditional logic, cross-field validation, and privacy controls.
+A powerful TypeScript schema validation library with advanced conditional logic, cross-field validation, and privacy controls.
 
 ## Features
 
