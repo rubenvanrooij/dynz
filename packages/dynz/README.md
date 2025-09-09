@@ -1,5 +1,12 @@
 # dynz
 
+[![License: MIT][license-image]][license-url]
+[![CI][ci-image]][ci-url]
+[![NPM version][npm-image]][npm-url]
+[![Downloads][downloads-image]][npm-url]
+[![JSR version][jsr-image]][jsr-url]
+[![Discord][discord-image]][discord-url]
+
 A powerful TypeScript schema validation with advanced conditional logic, cross-field validation, and privacy controls.
 
 ## Features
