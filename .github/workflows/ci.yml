@@ -27,7 +27,7 @@ jobs:
         uses: ./.github/actions/environment
       - name: Publish library
         run: pnpx pkg-pr-new publish --compact --comment=update --pnpm
-        working-directory: ./packages/dynz
+        working-directory: packages/dynz
 
   format_check:
     name: Run format in library
