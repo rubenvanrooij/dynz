@@ -18,16 +18,14 @@ jobs:
       
   library_preview:
     name: Publish dynz library via pkg.pr.new
-    needs: install
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      - name: Setup environment
-        uses: ./.github/actions/environment
+      - run: pnpm install --frozen-lockfile
       - name: Publish library
         run: pnpx pkg-pr-new publish --compact --comment=update --pnpm
-        working-directory: packages/dynz
+        working-directory: ./packages/dynz
 
   format_check:
     name: Run format in library
