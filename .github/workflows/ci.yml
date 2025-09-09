@@ -34,8 +34,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: Publish library
-        run: pnpx pkg-pr-new publish --compact --comment=update --pnpm
-        working-directory: ./packages/dynz
+        run: pnpx pkg-pr-new publish --compact --comment=update --pnpm ./packages/dynz'
 
   format_check:
     name: Run format in library
