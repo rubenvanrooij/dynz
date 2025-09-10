@@ -61,7 +61,7 @@ jobs:
         run: pnpm lint:check
 
   test:
-    name: Run lint in library
+    name: Test
     needs: install
     runs-on: ubuntu-latest
     steps:
