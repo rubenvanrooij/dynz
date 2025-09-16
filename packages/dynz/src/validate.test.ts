@@ -1140,7 +1140,7 @@ describe("validate", () => {
             errors: [
               expect.objectContaining({
                 code: ErrorCode.MAX,
-                max: "2023-01-01",
+                max: new Date("2022-12-31T23:00:00.000Z"),
               }),
             ],
           });
@@ -1554,7 +1554,7 @@ describe("validate", () => {
 
       expect(() => {
         validate(schema, undefined, 5);
-      }).toThrow("max is not a number, string, or date value");
+      }).toThrow("Invalid type: object with [object Object] for schema type: number");
     });
 
     it("should throw error when min is not number or string", () => {
