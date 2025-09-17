@@ -1,0 +1,58 @@
+---
+title: Basic Usage
+description: Learn how to define and validate a schema
+---
+
+In `dynz` to validate data you first need to create a schema. The simplest schema way to this is as follows:
+
+```typescript
+// define the schema
+const schema = string()
+
+// validate some data
+const result = validate(schema, 'I am a string')
+
+// log the result
+console.log(result)
+```
+
+## Handling validation results
+
+The next thing you need to do is handle the results from the validation. The validate function returns a discriminated union with a 
+`success` boolean property. If it is `true` there will be a `values` property with the parsed values; if set to `false` it there will 
+be an `errors` object explaining 
+
+```typescript
+const result = validate(schema, 'I am a string')
+
+if(result.success) {
+  result.values // 'I am a string'
+} else {
+  rsult.errors  // Array of `ErrorMessage`
+}
+```
+
+## Rules
+
+Rules can be used to define extra checks on certain schema. You simply pass in a set of rules to a schema and they will be validated against:
+
+```typescript
+const schema = string({
+  rules: [min(1), max(5), regex('^\d+$')]
+})
+```
+
+Every schema has a defined set of supported rules, trying to use an unsupported rule will throw a typescript error
+
+```typescript
+const schema = number({
+  rules: [regex('...')] // Throws `Type 'RegexRule' is not assignable to type ....`
+})
+```
+
+## Cards
+
+<Cards>
+  <Card title="Learn more about Next.js" href="https://nextjs.org/docs" />
+  <Card title="Learn more about Fumadocs" href="https://fumadocs.vercel.app" />
+</Cards>

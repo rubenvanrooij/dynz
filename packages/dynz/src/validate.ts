@@ -41,6 +41,17 @@ import {
 
 export function validate<T extends Schema>(
   schema: T,
+  values: unknown,
+  options?: ValidateOptions
+): ValidationResult<SchemaValues<T>>;
+export function validate<T extends Schema>(
+  schema: T,
+  currentValues: SchemaValues<T>,
+  values: unknown,
+  options?: ValidateOptions
+): ValidationResult<SchemaValues<T>>;
+export function validate<T extends Schema>(
+  schema: T,
   currentValues: SchemaValues<T> | undefined,
   newValues: unknown,
   options: ValidateOptions = {}
