@@ -12,6 +12,7 @@ import {
   type Schema,
   SchemaType,
   type StringSchema,
+  type TupleSchema,
 } from "./types";
 
 export function string(): StringSchema;
@@ -103,6 +104,15 @@ export const array = <const T extends Schema, const A extends Omit<ArraySchema<T
   return {
     ...value,
     type: SchemaType.ARRAY,
+  };
+};
+
+export const tuple = <const T extends Schema[], const A extends Omit<TupleSchema<T>, "type">>(
+  value: A
+): Prettify<A & Pick<TupleSchema<T>, "type">> => {
+  return {
+    ...value,
+    type: SchemaType.TUPLE,
   };
 };
 

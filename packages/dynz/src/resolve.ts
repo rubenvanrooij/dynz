@@ -356,7 +356,7 @@ export function getNested<T extends Schema>(
           }
 
           return {
-            value: val === undefined ? acc.schema.default : val,
+            value: val,
             schema: acc.schema.schema,
           };
         }
@@ -378,7 +378,7 @@ export function getNested<T extends Schema>(
           }
 
           return {
-            value: val === undefined ? acc.schema.fields[cur]?.default : val,
+            value: val,
             schema: childSchema,
           };
         }

@@ -5,6 +5,8 @@ export type Prettify<T> = {
   [K in keyof T]: T[K];
 } & {};
 
+type Flatten<T> = T extends (infer U)[] ? U : T;
+
 export type Filter<T extends unknown[], A> = T extends []
   ? []
   : T extends [infer H, ...infer R]
@@ -278,6 +280,7 @@ export const SchemaType = {
   NUMBER: "number",
   OBJECT: "object",
   ARRAY: "array",
+  TUPLE: "tuple",
   OPTIONS: "options",
   BOOLEAN: "boolean",
   FILE: "file",
@@ -285,10 +288,9 @@ export const SchemaType = {
 
 export type SchemaType = EnumValues<typeof SchemaType>;
 
-export type BaseSchema<TValue, TType extends SchemaType, TRule extends Rule> = {
+export type BaseSchema<TType extends SchemaType, TRule extends Rule> = {
   type: TType;
   rules?: Array<TRule | ConditionalRule<Condition, Rule>>;
-  default?: TValue;
   required?: boolean | Condition;
   mutable?: boolean | Condition;
   included?: boolean | Condition;
@@ -312,11 +314,7 @@ export type StringRules =
   | EmailRule
   | CustomRule
   | OneOfRule<Array<string | Reference>>;
-export type StringSchema<TRule extends StringRules = StringRules> = BaseSchema<
-  string,
-  typeof SchemaType.STRING,
-  TRule
-> &
+export type StringSchema<TRule extends StringRules = StringRules> = BaseSchema<typeof SchemaType.STRING, TRule> &
   PrivateSchema & { coerce?: boolean };
 
 /**
@@ -335,7 +333,7 @@ export type DateStringRules =
 export type DateStringSchema<
   TFormat extends string = string,
   TRule extends DateStringRules = DateStringRules,
-> = BaseSchema<DateString, typeof SchemaType.DATE_STRING, TRule> &
+> = BaseSchema<typeof SchemaType.DATE_STRING, TRule> &
   PrivateSchema & {
     /*
      * Unicode Tokens
@@ -352,7 +350,6 @@ export type DateStringSchema<
  */
 export type OptionsRules = EqualsRule | CustomRule;
 export type OptionsSchema<TValue extends string | number = string | number> = BaseSchema<
-  TValue,
   typeof SchemaType.OPTIONS,
   OptionsRules
 > & {
@@ -364,21 +361,13 @@ export type OptionsSchema<TValue extends string | number = string | number> = Ba
  */
 // TODO: Add mime type rule
 export type FileRules = MinRule | MaxRule | MimeTypeRule;
-export type FileSchema<TValue extends string | number = string | number> = BaseSchema<
-  TValue,
-  typeof SchemaType.FILE,
-  FileRules
->;
+export type FileSchema = BaseSchema<typeof SchemaType.FILE, FileRules>;
 
 /**
  * OBJECT SCHEMA
  */
 export type ObjectRules = CustomRule | MinRule<number> | MaxRule<number>;
-export type ObjectSchema<T extends Record<string, Schema>> = BaseSchema<
-  [T] extends [never] ? Record<string, unknown> : { [A in keyof T]: SchemaValuesInternal<T[A]> },
-  typeof SchemaType.OBJECT,
-  ObjectRules
-> & {
+export type ObjectSchema<T extends Record<string, Schema>> = BaseSchema<typeof SchemaType.OBJECT, ObjectRules> & {
   fields: [T] extends [never] ? Record<string, Schema> : T;
 };
 
@@ -386,13 +375,17 @@ export type ObjectSchema<T extends Record<string, Schema>> = BaseSchema<
  * ARRAY SCHEMA
  */
 export type ArrayRules = MinRule<number> | MaxRule<number> | CustomRule;
-export type ArraySchema<T extends Schema> = BaseSchema<
-  [T] extends [never] ? unknown[] : SchemaValuesInternal<T>[],
-  typeof SchemaType.ARRAY,
-  ArrayRules
-> & {
+export type ArraySchema<T extends Schema> = BaseSchema<typeof SchemaType.ARRAY, ArrayRules> & {
   schema: [T] extends [never] ? Schema : T;
   coerce?: boolean;
+};
+
+/**
+ * TUPLE SCHEMA
+ */
+export type TupleRules = CustomRule;
+export type TupleSchema<T extends Schema[] = never> = BaseSchema<typeof SchemaType.TUPLE, ArrayRules> & {
+  schema: [T] extends [never] ? unknown[] : T;
 };
 
 /**
@@ -405,7 +398,7 @@ export type DateRules =
   | BeforeRule<Date | Reference>
   | EqualsRule<Date | Reference>
   | CustomRule;
-export type DateSchema = BaseSchema<Date, typeof SchemaType.DATE, DateRules> & {
+export type DateSchema = BaseSchema<typeof SchemaType.DATE, DateRules> & {
   coerce?: boolean;
 };
 
@@ -419,7 +412,7 @@ export type NumberRules =
   | EqualsRule<number | Reference>
   | CustomRule
   | OneOfRule<Array<number | Reference>>;
-export type NumberSchema = BaseSchema<number, typeof SchemaType.NUMBER, NumberRules> & {
+export type NumberSchema = BaseSchema<typeof SchemaType.NUMBER, NumberRules> & {
   coerce?: boolean;
 };
 
@@ -427,7 +420,7 @@ export type NumberSchema = BaseSchema<number, typeof SchemaType.NUMBER, NumberRu
  * BOOLEAN SCHEMA
  */
 export type BooleanRules = EqualsRule<boolean | Reference> | CustomRule;
-export type BooleanSchema = BaseSchema<number, typeof SchemaType.BOOLEAN, BooleanRules> & {
+export type BooleanSchema = BaseSchema<typeof SchemaType.BOOLEAN, BooleanRules> & {
   coerce?: boolean;
 };
 
@@ -437,6 +430,7 @@ export type Schema =
   | NumberSchema
   | BooleanSchema
   | ArraySchema<never>
+  | TupleSchema<never>
   | DateStringSchema
   | OptionsSchema<string | number>
   | FileSchema
@@ -497,7 +491,9 @@ export type ValueType<T extends SchemaType = SchemaType> = T extends typeof Sche
                 ? string | number
                 : T extends typeof SchemaType.FILE
                   ? File
-                  : never;
+                  : T extends typeof SchemaType.TUPLE
+                    ? unknown[]
+                    : never;
 
 // === Object Field Categorization ===
 type OptionalFields<T extends ObjectSchema<never>> = {
@@ -514,11 +510,19 @@ type RequiredFields<T extends ObjectSchema<never>> = {
 
 export type ObjectValue<T extends ObjectSchema<never>> = OptionalFields<T> & RequiredFields<T>;
 
+export type TupleValue<T extends Schema[] | unknown> = {
+  [K in keyof T]: T[K] extends Schema ? SchemaValuesInternal<T[K]> : unknown;
+};
+
 export type SchemaValuesInternal<T extends Schema> = T extends ObjectSchema<never>
   ? Prettify<ObjectValue<T>>
   : T extends ArraySchema<never>
     ? MakeOptional<T, Array<SchemaValuesInternal<T["schema"]>>>
-    : MakeOptional<T, ValueType<T["type"]>>;
+    : T extends OptionsSchema
+      ? MakeOptional<T, Flatten<T["options"]>>
+      : T extends TupleSchema
+        ? MakeOptional<T, TupleValue<T["schema"]>>
+        : MakeOptional<T, ValueType<T["type"]>>;
 
 export type SchemaValues<T extends Schema> = Prettify<ApplyPrivacyMask<T, SchemaValuesInternal<T>>>;
 /***

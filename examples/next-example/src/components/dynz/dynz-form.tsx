@@ -49,22 +49,6 @@ export function DynzForm<T extends ObjectSchema<never>, A extends SchemaValues<T
 }: FormProps<T, A>) {
   const t = useTranslations();
 
-  // const resolver = dynzResolver(
-  //   schema,
-  //   undefined,
-  //   {
-  //     stripNotIncludedValues: true,
-  //   },
-  //   {
-  //     messageTransformer: (error: ErrorMessage) => {
-  //       const customErrorMessagePath = `${name}.${error.path.slice(2)}.errors.${error.customCode}`;
-  //       return t.has(customErrorMessagePath)
-  //         ? t(customErrorMessagePath, error as unknown as Record<string, string | number | Date>)
-  //         : t(`errors.${error.customCode}`, error as unknown as Record<string, string | number | Date>);
-  //     },
-  //   }
-  // );
-
   const methods = useForm({
     resolver: dynzResolver(
       schema,
@@ -139,7 +123,12 @@ export function DynzTextInput({ name, description }: BaseInputProps) {
           <FormItem>
             <DynzFormLabel name={name} />
             <FormControl>
-              <Input placeholder={t(`${i18nPath}.${name}.placeholder`)} {...field} readOnly={isMutable === false} />
+              <Input
+                placeholder={t(`${i18nPath}.${name}.placeholder`)}
+                {...field}
+                value={field.value || ""}
+                readOnly={isMutable === false}
+              />
             </FormControl>
             {description && <FormDescription>{description}</FormDescription>}
             <FormMessage />
