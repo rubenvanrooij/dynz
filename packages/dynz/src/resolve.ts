@@ -421,9 +421,17 @@ export function coerce(type: SchemaType, value: unknown): unknown {
       return value;
     }
     case SchemaType.NUMBER: {
-      return Number(value);
+      if (!isNumber(value)) {
+        return Number(value).valueOf();
+      }
+
+      return value;
     }
     case SchemaType.BOOLEAN:
+      if (isBoolean(value)) {
+        return value;
+      }
+
       if (value === "true") {
         return true;
       }
@@ -432,10 +440,10 @@ export function coerce(type: SchemaType, value: unknown): unknown {
         return false;
       }
 
-      return new Boolean(value);
+      return new Boolean(value).valueOf();
     case SchemaType.STRING: {
       if (isNumber(value) || isBoolean(value)) {
-        return String(value);
+        return String(value).valueOf();
       }
       return value;
     }
