@@ -29,14 +29,7 @@ jobs:
         uses: actions/checkout@v4
       - name: Setup environment
         uses: ./.github/actions/environment
-      - name: Creating .npmrc
-        run: |
-          cat << EOF > "$HOME/.npmrc"
-            //registry.npmjs.org/:_authToken=$NPM_TOKEN
-          EOF
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-      - name: Create and publish versions
+      - name: Create and publish vers ions
         uses: changesets/action@v1
         with:
           version: pnpm ci:version
@@ -44,5 +37,6 @@ jobs:
           title: "chore: update versions"
           publish: pnpm ci:publish --no-git-checks
         env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
