@@ -24,8 +24,10 @@ jobs:
     runs-on: ubuntu-latest
     needs: setup_environment
     steps:
-      - run: pnpm test
-      
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup environment
+        uses: ./.github/actions/environment
       - name: Create and publish versions
         uses: changesets/action@v1
         with:
@@ -44,6 +46,10 @@ jobs:
       contents: read
       id-token: write
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup environment
+        uses: ./.github/actions/environment
       - name: Publish library
         run: npx jsr publish
         working-directory: ./packages/dynz
