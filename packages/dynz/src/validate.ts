@@ -1,11 +1,14 @@
 import { isAfter, isBefore, parse } from "date-fns";
 import { coerce, resolveProperty, resolveRules, unpackRefValue } from "./resolve";
+import { getStringValidator, VALIDATORS } from "./string/validators";
 import {
   type AfterErrorMessage,
   type AfterRule,
   type BaseErrorMessage,
   type BeforeErrorMessage,
   type BeforeRule,
+  type Condition,
+  type ConditionalRule,
   type Context,
   type CustomErrorMessage,
   type CustomRule,
@@ -15,6 +18,7 @@ import {
   type EqualsErrorMessage,
   type EqualsRule,
   ErrorCode,
+  type ExtractRules,
   type IsNumericErrorMessage,
   type MaxErrorMessage,
   type MaxPrecisionErrorMessage,
@@ -30,10 +34,13 @@ import {
   type RegexErrorMessage,
   type RegexRule,
   type ResolvedRules,
+  type Rule,
   RuleType,
   type Schema,
   SchemaType,
   type SchemaValues,
+  type StringSchema,
+  type Unpacked,
   type ValidateOptions,
   type ValidationResult,
   type ValueType,
@@ -192,8 +199,16 @@ export function _validate<T extends Schema>(
    */
   if (newValue !== undefined) {
     for (const rule of resolveRules(schema, path, context)) {
-      const result = validateRule(schema, path, rule, newValue, context);
+      const result = validateRule({
+        schema,
+        path,
+        rule,
+        value: newValue,
+        context,
+      } as ValidateRuleContext<T>);
+
       if (result !== undefined) {
+        const a = result;
         return {
           success: false,
           errors: [
@@ -301,39 +316,56 @@ export function _validate<T extends Schema>(
   };
 }
 
-function validateRule<T extends Schema>(
-  schema: T,
-  path: string,
-  rule: ResolvedRules,
-  value: ValueType<T["type"]>,
-  context: Context
-) {
-  switch (rule.type) {
-    case RuleType.EQUALS:
-      return validateEqualsRule(schema, path, rule, value, context);
-    case RuleType.MIN:
-      return validateMinRule(schema, path, rule, value, context);
-    case RuleType.MAX:
-      return validateMaxRule(schema, path, rule, value, context);
-    case RuleType.MAX_PRECISION:
-      return validateMaxPrecision(schema, path, rule, value, context);
-    case RuleType.REGEX:
-      return validateRegex(rule, value);
-    case RuleType.IS_NUMERIC:
-      return validateIsNumeric(value);
-    case RuleType.CUSTOM:
-      return validateCustomRule(schema, path, rule, value, context);
-    case RuleType.MIME_TYPE:
-      return validateMimeTypeRule(schema, path, rule, value, context);
-    case RuleType.EMAIL:
-      return validateEmail(rule, value);
-    case RuleType.ONE_OF:
-      return validateOneOfRule(rule, value);
-    case RuleType.BEFORE:
-      return beforeRuleValidator(schema, path, rule, value, context);
-    case RuleType.AFTER:
-      return afterRuleValidator(schema, path, rule, value, context);
+type ValidateRuleContext<T extends Schema> = T extends object
+  ? {
+      // type needs to be here for proper type narrowing
+      type: T["type"];
+      schema: T;
+      path: string;
+      rule: ResolvedRules<ExtractRules<T>>; //Exclude<Unpacked<Exclude<T["rules"], undefined>>, ConditionalRule<Condition, Rule>>;
+      value: ValueType<T["type"]>;
+      context: Context;
+    }
+  : never;
+
+function validateRule<T extends Schema>(context: ValidateRuleContext<T>) {
+  if (context.rule.type === RuleType.CUSTOM) {
+    throw new Error("fo");
+    // return validateCustomRule(context.schema, context.path, context.rule, context.);
   }
+
+  if (context.type === SchemaType.STRING) {
+    return getStringValidator(context.rule)(context);
+  }
+
+  throw new Error("damn..");
+
+  // switch (rule.type) {
+  //   case RuleType.EQUALS:
+  //     return validateEqualsRule(schema, path, rule, value, context);
+  //   case RuleType.MIN:
+  //     return validateMinRule(schema, path, rule, value, context);
+  //   case RuleType.MAX:
+  //     return validateMaxRule(schema, path, rule, value, context);
+  //   case RuleType.MAX_PRECISION:
+  //     return validateMaxPrecision(schema, path, rule, value, context);
+  //   case RuleType.REGEX:
+  //     return validateRegex(rule, value);
+  //   case RuleType.IS_NUMERIC:
+  //     return validateIsNumeric(value);
+  //   case RuleType.CUSTOM:
+  //     return validateCustomRule(schema, path, rule, value, context);
+  //   case RuleType.MIME_TYPE:
+  //     return validateMimeTypeRule(schema, path, rule, value, context);
+  //   case RuleType.EMAIL:
+  //     return validateEmail(rule, value);
+  //   case RuleType.ONE_OF:
+  //     return validateOneOfRule(rule, value);
+  //   case RuleType.BEFORE:
+  //     return beforeRuleValidator(schema, path, rule, value, context);
+  //   case RuleType.AFTER:
+  //     return afterRuleValidator(schema, path, rule, value, context);
+  // }
 }
 
 /**

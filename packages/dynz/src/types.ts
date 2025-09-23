@@ -19,6 +19,8 @@ export type Optional<T, K extends keyof T> = Pick<Partial<T>, K> & Omit<T, K>;
 
 export type JsonPrimitive = string | number | boolean;
 
+export type ExtractRules<T extends Schema> = Unpacked<Exclude<T["rules"], undefined>>;
+
 export const RuleType = {
   MIN: "min",
   MAX: "max",
@@ -524,7 +526,9 @@ export type SchemaValues<T extends Schema> = Prettify<ApplyPrivacyMask<T, Schema
 /***
  * RESOLVED SCHEMA
  */
-export type ResolvedRules<T extends Rule = Rule> = Exclude<T, ConditionalRule<Condition, T>>;
+export type ResolvedRules<T extends Rule = Rule> = Exclude<T, ConditionalRule<Condition, Rule>>;
+
+//Exclude<Unpacked<Exclude<T["rules"], undefined>>, ConditionalRule<Condition, Rule>>;
 
 /**
  * CONTEXT

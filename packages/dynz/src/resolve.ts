@@ -2,6 +2,7 @@ import {
   type Condition,
   ConditionType,
   type EqualsCondition,
+  type ExtractRules,
   type GreaterThanCondition,
   type GreaterThanOrEqualCondition,
   type LowerThanCondition,
@@ -247,10 +248,14 @@ function getConditionOperands<T extends ValueType>(
   };
 }
 
-export function resolveRules(schema: Schema, path: string, context: ResolveContext): ResolvedRules[] {
+export function resolveRules<T extends Schema>(
+  schema: T,
+  path: string,
+  context: ResolveContext
+): ResolvedRules<ExtractRules<T>>[] {
   return (schema.rules || [])
     .filter((rule) => (rule.type === RuleType.CONDITIONAL ? resolveCondition(rule.when, path, context) : true))
-    .map((rule): ResolvedRules => (rule.type === RuleType.CONDITIONAL ? rule.then : rule));
+    .map((rule) => (rule.type === RuleType.CONDITIONAL ? rule.then : rule) as ResolvedRules<ExtractRules<T>>);
 }
 
 export function isReference(value: unknown): value is Reference {
