@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mask, plain } from "./private";
 import {
   after,
@@ -31,6 +31,14 @@ import {
 } from "./validate";
 
 describe("validate", () => {
+  beforeEach(() => {
+    vi.stubEnv("TZ", "UTC");
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   describe("basic validation", () => {
     it("should validate a simple string schema", () => {
       const schema = string();
@@ -1140,7 +1148,7 @@ describe("validate", () => {
             errors: [
               expect.objectContaining({
                 code: ErrorCode.MAX,
-                max: new Date("2022-12-31T23:00:00.000Z"),
+                max: new Date("2023-01-01T00:00:00.000Z"),
               }),
             ],
           });
