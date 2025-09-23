@@ -584,13 +584,6 @@ function validateMinRule(
   }
 }
 
-/**
- * Max rule validator
- *
- * @param rule the rule that is executed
- * @param value the value to be validated
- * @returns undefined then the validations passses, an error message when it fails
- */
 function validateMaxRule(
   schema: Schema,
   path: string,
@@ -600,44 +593,87 @@ function validateMaxRule(
 ): Omit<MaxErrorMessage, keyof Omit<BaseErrorMessage, "message">> | undefined {
   const max = unpackRefValue(rule.max, path, context);
 
-  if (!isNumber(max) && !isString(max) && !isDate(max)) {
-    throw new Error("max is not a number, string, or date value");
+  if (max === undefined) {
+    return undefined;
   }
 
-  const validate = () => {
-    switch (schema.type) {
-      case SchemaType.NUMBER:
-        return assertSchema(schema, value) <= assertNumber(max);
-      case SchemaType.STRING:
-        return assertSchema(schema, value).length <= assertNumber(max);
-      case SchemaType.FILE:
-        return assertSchema(schema, value).size <= assertNumber(max);
-      case SchemaType.OBJECT:
-        return Object.keys(assertSchema(schema, value)).length <= assertNumber(max);
-      case SchemaType.ARRAY:
-        return assertSchema(schema, value).length <= assertNumber(max);
-      case SchemaType.DATE_STRING: {
-        const date = parseDateString(assertSchema(schema, value), schema.format);
-        const compareTo = parseDateString(assertSchema(schema, max), schema.format);
-        return isBefore(date, compareTo) || date.getTime() === compareTo.getTime();
-      }
-      case SchemaType.DATE: {
-        const date = assertSchema(schema, value);
-        const compareTo = assertSchema(schema, coerce(schema.type, max));
-        return isBefore(date, compareTo) || date.getTime() === compareTo.getTime();
-      }
+  switch (schema.type) {
+    case SchemaType.NUMBER: {
+      const compareTo = assertNumber(max);
+      return assertSchema(schema, value) <= compareTo
+        ? undefined
+        : {
+            code: ErrorCode.MAX,
+            max: compareTo,
+            message: `The value ${value} for schema ${path} is greater than the maximum value of ${max}`,
+          };
     }
-
-    throw new Error(`Max rule cannot be used on schema of type: ${schema.type}`);
-  };
-
-  return validate()
-    ? undefined
-    : {
-        code: ErrorCode.MAX,
-        max,
-        message: `The value ${value} for schema ${path} is greater than the maximum value of ${max}`,
-      };
+    case SchemaType.FILE: {
+      const asstertedValue = assertSchema(schema, value);
+      const compareTo = assertNumber(max);
+      return asstertedValue.size <= compareTo
+        ? undefined
+        : {
+            code: ErrorCode.MAX,
+            max: compareTo,
+            message: `The value ${asstertedValue.name} for schema ${path} shuld have a maximum of ${compareTo} bytes`,
+          };
+    }
+    case SchemaType.STRING: {
+      const compareTo = assertNumber(max);
+      return assertSchema(schema, value).length <= compareTo
+        ? undefined
+        : {
+            code: ErrorCode.MAX,
+            max: compareTo,
+            message: `The value ${value} for schema ${path} shuld have a maximum ${compareTo} characters`,
+          };
+    }
+    case SchemaType.OBJECT: {
+      const compareTo = assertNumber(max);
+      return Object.keys(assertSchema(schema, value)).length <= compareTo
+        ? undefined
+        : {
+            code: ErrorCode.MAX,
+            max: compareTo,
+            message: `The value ${value} for schema ${path} should have a maximum of ${compareTo} keys`,
+          };
+    }
+    case SchemaType.ARRAY: {
+      const compareTo = assertNumber(max);
+      return assertSchema(schema, value).length <= compareTo
+        ? undefined
+        : {
+            code: ErrorCode.MAX,
+            max: compareTo,
+            message: `The value ${value} for schema ${path} should hold a maximum of ${compareTo} items`,
+          };
+    }
+    case SchemaType.DATE_STRING: {
+      const date = parseDateString(assertString(value), schema.format);
+      const compareTo = parseDateString(assertString(max), schema.format);
+      return isBefore(date, compareTo) || date.getTime() === compareTo.getTime()
+        ? undefined
+        : {
+            code: ErrorCode.MAX,
+            max: compareTo,
+            message: `The value ${value} for schema ${path} is after or on ${max}`,
+          };
+    }
+    case SchemaType.DATE: {
+      const date = assertDate(value);
+      const compareTo = assertDate(coerce(schema.type, max));
+      return isBefore(date, compareTo) || date.getTime() === compareTo.getTime()
+        ? undefined
+        : {
+            code: ErrorCode.MAX,
+            max: compareTo,
+            message: `The value ${value} for schema ${path} is after or on ${max}`,
+          };
+    }
+    default:
+      throw new Error(`Min rule cannot be used on schema of type: ${schema.type}`);
+  }
 }
 
 /**

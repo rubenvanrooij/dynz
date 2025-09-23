@@ -20,6 +20,15 @@ runs:
       shell: bash
       run: pnpm install
 
-    - name: Build library
+    - name: Create packages build cache
+      id: library-build-cache
+      uses: actions/cache@v4
+      with:
+        path: |
+          ${{ github.workspace }}/packages/dynz/dist
+          ${{ github.workspace }}/packages/react-hook-form-resolver/dist
+        key: library-build-cache-${{ hashFiles('packages/**/*.ts', '!packages/**/*.test.ts') }}
+      
+    - name: Build packages
       shell: bash
-      run: pnpm build
+      run: pnpm run build:packages
