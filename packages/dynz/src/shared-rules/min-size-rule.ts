@@ -1,14 +1,25 @@
 import { unpackRefValue } from "../resolve";
 import type { FileSchema } from "../schemas";
-import {
-  ErrorCode,
-  type ExtractResolvedRules,
-  type MinSizeErrorMessage,
-  type MinSizeRule,
-  type OmitBaseErrorMessageProps,
-  type ValidateRuleContext,
+import type {
+  ErrorMessageFromRule,
+  ExtractResolvedRules,
+  OmitBaseErrorMessageProps,
+  ValidateRuleContext,
 } from "../types";
+import type { Reference } from "../conditions";
 import { assertNumber } from "../validate";
+
+export type MinSizeRule<T extends number | Reference = number | Reference> = {
+  type: "min_size";
+  min: T;
+  code?: string | undefined;
+};
+
+export type MinSizeRuleErrorMessage = ErrorMessageFromRule<MinSizeRule>;
+
+export function minSize<T extends number | Reference>(min: T, code?: string): MinSizeRule<T> {
+  return { min, type: "min_size", code };
+}
 
 export function minSizeRule<T extends FileSchema>({
   rule,
@@ -16,7 +27,7 @@ export function minSizeRule<T extends FileSchema>({
   path,
   context,
 }: ValidateRuleContext<T, Extract<ExtractResolvedRules<T>, MinSizeRule>>):
-  | OmitBaseErrorMessageProps<MinSizeErrorMessage>
+  | OmitBaseErrorMessageProps<MinSizeRuleErrorMessage>
   | undefined {
   const min = unpackRefValue(rule.min, path, context);
 
@@ -28,7 +39,7 @@ export function minSizeRule<T extends FileSchema>({
   return value.size >= compareTo
     ? undefined
     : {
-        code: ErrorCode.MIN_SIZE,
+        code: "min_size",
         min: compareTo,
         message: `The value ${value} for schema ${path} should have at least a size of ${compareTo}`,
       };

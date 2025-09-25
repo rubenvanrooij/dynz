@@ -1,12 +1,5 @@
-import type {
-  BaseSchema,
-  CustomRule,
-  MaxLengthRule,
-  MinLengthRule,
-  Schema,
-  SchemaType,
-  SchemaValuesInternal,
-} from "../../types";
+import type { CustomRule, MaxLengthRule, MinLengthRule } from "../../shared-rules";
+import type { BaseSchema, Schema, SchemaType, SchemaValuesInternal } from "../../types";
 
 /**
  * ARRAY SCHEMA

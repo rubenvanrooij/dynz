@@ -10,8 +10,9 @@ import type {
   OptionsSchema,
   StringSchema,
 } from "../schemas";
+import type { ConditionalRule } from "../shared-rules";
 import type { PrivateValue } from "./private";
-import type { ConditionalRule, Rule } from "./rules";
+import type { BaseRule } from "./rules";
 import type { DateString, EnumValues, Prettify } from "./utils";
 
 export const SchemaType = {
@@ -28,9 +29,9 @@ export const SchemaType = {
 
 export type SchemaType = EnumValues<typeof SchemaType>;
 
-export type BaseSchema<TValue, TType extends SchemaType, TRule extends Rule> = {
+export type BaseSchema<TValue, TType extends SchemaType, TRule extends BaseRule> = {
   type: TType;
-  rules?: Array<TRule | ConditionalRule<Condition, Rule>>;
+  rules?: Array<TRule | ConditionalRule<TRule, never>>;
   default?: TValue;
   required?: boolean | Condition;
   mutable?: boolean | Condition;

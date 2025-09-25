@@ -1,12 +1,5 @@
-import type {
-  BaseSchema,
-  CustomRule,
-  MaxEntriesRule,
-  MinEntriesRule,
-  Schema,
-  SchemaType,
-  SchemaValuesInternal,
-} from "../../types";
+import type { CustomRule, MaxEntriesRule, MinEntriesRule } from "../../shared-rules";
+import type { BaseSchema, Schema, SchemaType, SchemaValuesInternal } from "../../types";
 
 /**
  * OBJECT SCHEMA

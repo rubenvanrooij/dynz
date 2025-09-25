@@ -1,15 +1,14 @@
 import { customRule, maxEntriesRule, minEntriesRule } from "../../shared-rules";
 import type { ValidateRuleContextUnion } from "../../types";
-import { RuleType } from "../../types";
 import type { ObjectSchema } from "./types";
 
 export function validateObject(context: ValidateRuleContextUnion<ObjectSchema<never>>) {
   switch (context.ruleType) {
-    case RuleType.MIN_ENTRIES:
+    case "min_entries":
       return minEntriesRule(context);
-    case RuleType.MAX_ENTRIES:
+    case "max_entries":
       return maxEntriesRule(context);
-    case RuleType.CUSTOM:
+    case "custom":
       return customRule(context);
   }
 }

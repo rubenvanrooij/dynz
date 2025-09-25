@@ -1,14 +1,25 @@
+import type { Reference } from "../conditions";
 import { unpackRefValue } from "../resolve";
 import type { ObjectSchema } from "../schemas";
-import {
-  ErrorCode,
-  type ExtractResolvedRules,
-  type MinEntriesErrorMessage,
-  type MinEntriesRule,
-  type OmitBaseErrorMessageProps,
-  type ValidateRuleContext,
+import type {
+  ErrorMessageFromRule,
+  ExtractResolvedRules,
+  OmitBaseErrorMessageProps,
+  ValidateRuleContext,
 } from "../types";
 import { assertNumber } from "../validate";
+
+export type MinEntriesRule<T extends number | Reference = number | Reference> = {
+  type: "min_entries";
+  min: T;
+  code?: string | undefined;
+};
+
+export type MinEntriesRuleErrorMessage = ErrorMessageFromRule<MinEntriesRule>;
+
+export function minEntries<T extends number | Reference>(min: T, code?: string): MinEntriesRule<T> {
+  return { min, type: "min_entries", code };
+}
 
 export function minEntriesRule<T extends ObjectSchema<never>>({
   rule,
@@ -16,7 +27,7 @@ export function minEntriesRule<T extends ObjectSchema<never>>({
   path,
   context,
 }: ValidateRuleContext<T, Extract<ExtractResolvedRules<T>, MinEntriesRule>>):
-  | OmitBaseErrorMessageProps<MinEntriesErrorMessage>
+  | OmitBaseErrorMessageProps<MinEntriesRuleErrorMessage>
   | undefined {
   const min = unpackRefValue(rule.min, path, context);
 
@@ -28,7 +39,7 @@ export function minEntriesRule<T extends ObjectSchema<never>>({
   return Object.entries(value).length >= compareTo
     ? undefined
     : {
-        code: ErrorCode.MIN_ENTRIES,
+        code: "min_entries",
         min: compareTo,
         message: `The value ${value} for schema ${path} should have at least ${compareTo} entries`,
       };

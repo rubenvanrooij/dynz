@@ -1,5 +1,6 @@
 import { ensureAbsolutePath, getNested, type ResolveContext, unpackRef } from "../resolve";
-import { type Schema, SchemaType, type ValueOrReference, type ValueType } from "../types";
+import { type Schema, SchemaType, type ValueType } from "../types";
+import type { ValueOrReference } from "./reference";
 import { assertArray, isString, parseDateString, validateSchema } from "../validate";
 import {
   type Condition,

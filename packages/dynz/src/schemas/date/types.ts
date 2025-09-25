@@ -1,14 +1,6 @@
-import type {
-  AfterRule,
-  BaseSchema,
-  BeforeRule,
-  CustomRule,
-  EqualsRule,
-  MaxDateRule,
-  MinDateRule,
-  Reference,
-  SchemaType,
-} from "../../types";
+import type { Reference } from "../../conditions";
+import type { AfterRule, BeforeRule, CustomRule, EqualsRule, MaxDateRule, MinDateRule } from "../../shared-rules";
+import type { BaseSchema, SchemaType } from "../../types";
 
 export type DateRules =
   | MinDateRule

@@ -1,14 +1,25 @@
+import type { Reference } from "../conditions";
 import { unpackRefValue } from "../resolve";
 import type { FileSchema } from "../schemas";
-import {
-  ErrorCode,
-  type ExtractResolvedRules,
-  type MaxSizeErrorMessage,
-  type MaxSizeRule,
-  type OmitBaseErrorMessageProps,
-  type ValidateRuleContext,
+import type {
+  ErrorMessageFromRule,
+  ExtractResolvedRules,
+  OmitBaseErrorMessageProps,
+  ValidateRuleContext,
 } from "../types";
 import { assertNumber } from "../validate";
+
+export type MaxSizeRule<T extends number | Reference = number | Reference> = {
+  type: "max_size";
+  max: T;
+  code?: string | undefined;
+};
+
+export type MaxSizeRuleErrorMessage = ErrorMessageFromRule<MaxSizeRule>;
+
+export function maxSize<T extends number | Reference>(max: T, code?: string): MaxSizeRule<T> {
+  return { max, type: "max_size", code };
+}
 
 export function maxSizeRule<T extends FileSchema>({
   rule,
@@ -16,7 +27,7 @@ export function maxSizeRule<T extends FileSchema>({
   path,
   context,
 }: ValidateRuleContext<T, Extract<ExtractResolvedRules<T>, MaxSizeRule>>):
-  | OmitBaseErrorMessageProps<MaxSizeErrorMessage>
+  | OmitBaseErrorMessageProps<MaxSizeRuleErrorMessage>
   | undefined {
   const min = unpackRefValue(rule.max, path, context);
 
@@ -28,7 +39,7 @@ export function maxSizeRule<T extends FileSchema>({
   return value.size <= compareTo
     ? undefined
     : {
-        code: ErrorCode.MAX_SIZE,
+        code: "max_size",
         max: compareTo,
         message: `The value ${value} for schema ${path} should have a maximum size of ${compareTo}`,
       };

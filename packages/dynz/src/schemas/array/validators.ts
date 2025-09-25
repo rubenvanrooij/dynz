@@ -2,16 +2,15 @@ import { customRule } from "../../shared-rules";
 import { maxLengthRule } from "../../shared-rules/max-length-rule";
 import { minLengthRule } from "../../shared-rules/min-length-rule";
 import type { ValidateRuleContextUnion } from "../../types";
-import { RuleType } from "../../types";
 import type { ArraySchema } from "./types";
 
 export function validateArray(context: ValidateRuleContextUnion<ArraySchema<never>>) {
   switch (context.ruleType) {
-    case RuleType.MIN_LENGTH:
+    case "min_length":
       return minLengthRule(context);
-    case RuleType.MAX_LENGTH:
+    case "max_length":
       return maxLengthRule(context);
-    case RuleType.CUSTOM:
+    case "custom":
       return customRule(context);
   }
 }

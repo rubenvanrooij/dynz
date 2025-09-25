@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { equals, max, maxDate, maxLength, min, minDate, minLength } from "./rules";
 import {
   array,
   boolean,
@@ -12,6 +11,7 @@ import {
   options,
   string,
 } from "./schemas";
+import { equals, max, maxDate, maxLength, min, minDate, minLength } from "./shared-rules";
 import { SchemaType } from "./types";
 
 describe("schema", () => {
@@ -98,7 +98,7 @@ describe("schema", () => {
       expect(schema.rules).toHaveLength(3);
       expect(schema.rules?.[0]).toEqual({ type: "min", min: 18 });
       expect(schema.rules?.[1]).toEqual({ type: "max", max: 65 });
-      expect(schema.rules?.[2]).toEqual({ type: "equals", value: 25 });
+      expect(schema.rules?.[2]).toEqual({ type: "equals", equals: 25 });
     });
   });
 
@@ -421,7 +421,7 @@ describe("schema", () => {
       expect(schema.rules).toHaveLength(3);
       expect(schema.rules?.[0]).toEqual({ type: "min_date", min: minimumDate });
       expect(schema.rules?.[1]).toEqual({ type: "max_date", max: maximumDate });
-      expect(schema.rules?.[2]).toEqual({ type: "equals", value: equalDate });
+      expect(schema.rules?.[2]).toEqual({ type: "equals", equals: equalDate });
     });
   });
 

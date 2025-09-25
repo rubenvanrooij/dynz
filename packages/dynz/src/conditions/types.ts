@@ -1,4 +1,5 @@
-import type { EnumValues, Reference, ValueType } from "../types";
+import type { EnumValues, ValueType } from "../types";
+import type { Reference } from "./reference";
 
 export const ConditionType = {
   OR: "or",

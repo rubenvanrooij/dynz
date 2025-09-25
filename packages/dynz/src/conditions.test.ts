@@ -1,7 +1,20 @@
 import { describe, expect, it } from "vitest";
-import { and, ConditionType, eq, gt, gte, isIn, isNotIn, lt, lte, matches, neq, or } from "./conditions";
-import { ref } from "./rules";
-import { REFERENCE_TYPE } from "./types";
+import {
+  and,
+  ConditionType,
+  eq,
+  gt,
+  gte,
+  isIn,
+  isNotIn,
+  lt,
+  lte,
+  matches,
+  neq,
+  or,
+  REFERENCE_TYPE,
+  ref,
+} from "./conditions";
 
 describe("conditions", () => {
   describe("logical conditions", () => {

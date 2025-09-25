@@ -1,4 +1,5 @@
-import type { BaseSchema, CustomRule, EqualsRule, SchemaType } from "../../types";
+import type { CustomRule, EqualsRule } from "../../shared-rules";
+import type { BaseSchema, SchemaType } from "../../types";
 
 /**
  * ENUM SCHEMA

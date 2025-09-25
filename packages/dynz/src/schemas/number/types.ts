@@ -1,21 +1,13 @@
-import type {
-  BaseSchema,
-  CustomRule,
-  EqualsRule,
-  MaxPrecisionRule,
-  MaxRule,
-  MinRule,
-  OneOfRule,
-  Reference,
-  SchemaType,
-} from "../../types";
+import type { Reference } from "../../conditions";
+import type { CustomRule, EqualsRule, MaxPrecisionRule, MaxRule, MinRule, OneOfRule } from "../../shared-rules";
+import type { BaseSchema, SchemaType } from "../../types";
 
 /**
  * NUMBER SCHEMA
  */
 export type NumberRules =
-  | MinRule<number | Reference>
-  | MaxRule<number | Reference>
+  | MinRule
+  | MaxRule
   | MaxPrecisionRule
   | EqualsRule<number | Reference>
   | CustomRule

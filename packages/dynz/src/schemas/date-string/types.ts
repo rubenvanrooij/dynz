@@ -1,24 +1,7 @@
-import type {
-  AfterRule,
-  BaseSchema,
-  BeforeRule,
-  CustomRule,
-  DateString,
-  EqualsRule,
-  OneOfRule,
-  PrivateSchema,
-  Reference,
-  RegexRule,
-  SchemaType,
-} from "../../types";
+import type { CustomRule } from "../../shared-rules";
+import type { BaseSchema, DateString, PrivateSchema, SchemaType } from "../../types";
 
-export type DateStringRules =
-  | AfterRule<DateString | Reference>
-  | BeforeRule<DateString | Reference>
-  | EqualsRule<DateString | Reference>
-  | RegexRule
-  | CustomRule
-  | OneOfRule<Array<DateString | Reference>>;
+export type DateStringRules = CustomRule;
 
 export type DateStringSchema<
   TFormat extends string = string,

@@ -1,5 +1,5 @@
+import type { Reference } from "../../conditions";
 import type {
-  BaseSchema,
   CustomRule,
   EmailRule,
   EqualsRule,
@@ -7,11 +7,10 @@ import type {
   MaxLengthRule,
   MinLengthRule,
   OneOfRule,
-  PrivateSchema,
-  Reference,
   RegexRule,
-  SchemaType,
-} from "../../types";
+} from "../../shared-rules";
+
+import type { BaseSchema, PrivateSchema, SchemaType } from "../../types";
 
 /**
  * STRING SCHEMA

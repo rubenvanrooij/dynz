@@ -1,13 +1,12 @@
 import { customRule, equalsRule } from "../../shared-rules";
 import type { ValidateRuleContextUnion } from "../../types";
-import { RuleType } from "../../types";
 import type { OptionsSchema } from "./types";
 
 export function validateOptions(context: ValidateRuleContextUnion<OptionsSchema>) {
   switch (context.ruleType) {
-    case RuleType.EQUALS:
+    case "equals":
       return equalsRule(context);
-    case RuleType.CUSTOM:
+    case "custom":
       return customRule(context);
   }
 }

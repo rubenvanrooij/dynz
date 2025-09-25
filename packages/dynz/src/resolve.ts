@@ -1,14 +1,5 @@
-import { resolveCondition } from "./conditions";
-import {
-  type ExtractRules,
-  REFERENCE_TYPE,
-  type Reference,
-  type ResolvedRules,
-  RuleType,
-  type Schema,
-  SchemaType,
-  type ValueOrReference,
-} from "./types";
+import { REFERENCE_TYPE, type Reference, resolveCondition, type ValueOrReference } from "./conditions";
+import { type ExtractRules, type ResolvedRules, type Schema, SchemaType } from "./types";
 import { isBoolean, isIterable, isNumber, isObject, isString } from "./validate";
 
 export type ResolveContext = {
@@ -98,10 +89,10 @@ export function resolveRules<T extends Schema>(
   schema: T,
   path: string,
   context: ResolveContext
-): ResolvedRules<ExtractRules<T>>[] {
+): ResolvedRules<T, ExtractRules<T>>[] {
   return (schema.rules || [])
-    .filter((rule) => (rule.type === RuleType.CONDITIONAL ? resolveCondition(rule.when, path, context) : true))
-    .map((rule) => (rule.type === RuleType.CONDITIONAL ? rule.then : rule) as ResolvedRules<ExtractRules<T>>);
+    .filter((rule) => (rule.type === "conditional" ? resolveCondition(rule.when, path, context) : true))
+    .map((rule) => (rule.type === "conditional" ? rule.then : rule) as ResolvedRules<T, ExtractRules<T>>);
 }
 
 export function isReference(value: unknown): value is Reference {

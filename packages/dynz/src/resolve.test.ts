@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { type Condition, ConditionType, eq, resolveCondition } from "./conditions";
+import { type Condition, ConditionType, eq, REFERENCE_TYPE, type Reference, ref, resolveCondition } from "./conditions";
 import {
   findSchemaByPath,
   getNested,
@@ -13,9 +13,9 @@ import {
   unpackRef,
   unpackRefValue,
 } from "./resolve";
-import { conditional, equals, maxLength, min, minLength, ref } from "./rules";
 import { array, number, object, string } from "./schemas";
-import { REFERENCE_TYPE, type Reference, RuleType, SchemaType } from "./types";
+import { conditional, equals, maxLength, minLength } from "./shared-rules";
+import { SchemaType } from "./types";
 
 describe("resolve", () => {
   describe("isRequired", () => {
@@ -334,9 +334,9 @@ describe("resolve", () => {
 
       const rules = resolveRules(schema, "$", context);
       expect(rules).toHaveLength(3);
-      expect(rules[0].type).toBe(RuleType.MIN_LENGTH);
-      expect(rules[1].type).toBe(RuleType.MAX_LENGTH);
-      expect(rules[2].type).toBe(RuleType.EQUALS);
+      expect(rules[0].type).toBe("min_length");
+      expect(rules[1].type).toBe("max_length");
+      expect(rules[2].type).toBe("equals");
     });
 
     it("should filter conditional rules based on condition result", () => {
@@ -367,8 +367,8 @@ describe("resolve", () => {
 
       const rules = resolveRules(schema, "$.value", context);
       expect(rules).toHaveLength(2);
-      expect(rules[0].type).toBe(RuleType.MAX_LENGTH);
-      expect(rules[1].type).toBe(RuleType.MIN_LENGTH);
+      expect(rules[0].type).toBe("max_length");
+      expect(rules[1].type).toBe("min_length");
     });
 
     it("should exclude conditional rules when condition is false", () => {
@@ -378,7 +378,7 @@ describe("resolve", () => {
           path: "$.type",
           value: "email",
         },
-        then: min(5),
+        then: minLength(5),
       });
 
       const schema = string({
@@ -399,7 +399,7 @@ describe("resolve", () => {
 
       const rules = resolveRules(schema, "$.value", context);
       expect(rules).toHaveLength(1);
-      expect(rules[0].type).toBe(RuleType.MAX_LENGTH);
+      expect(rules[0].type).toBe("max_length");
     });
   });
 

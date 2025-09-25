@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { and, ConditionType, eq, or } from "./conditions";
+import { and, ConditionType, eq, or, REFERENCE_TYPE, ref } from "./conditions";
 import {
   after,
   before,
@@ -11,45 +11,10 @@ import {
   maxDate,
   min,
   minDate,
-  ref,
   regex,
-  rules,
-} from "./rules";
-import { REFERENCE_TYPE, RuleType } from "./types";
+} from "./shared-rules";
 
 describe("rules", () => {
-  describe("rules function", () => {
-    it("should return array of rules when given multiple rules", () => {
-      const result = rules(min(5), max(10), regex("^[a-z]+$"));
-
-      expect(result).toEqual([
-        { type: RuleType.MIN, min: 5 },
-        { type: RuleType.MAX, max: 10 },
-        { type: RuleType.REGEX, regex: "^[a-z]+$" },
-      ]);
-    });
-
-    it("should return array with single rule", () => {
-      const result = rules(equals("test"));
-
-      expect(result).toEqual([{ type: RuleType.EQUALS, value: "test" }]);
-    });
-
-    it("should return empty array when no rules provided", () => {
-      const result = rules();
-
-      expect(result).toEqual([]);
-    });
-
-    it("should preserve rule order", () => {
-      const result = rules(max(100), min(1), equals(50));
-
-      expect(result[0]).toEqual({ type: RuleType.MAX, max: 100 });
-      expect(result[1]).toEqual({ type: RuleType.MIN, min: 1 });
-      expect(result[2]).toEqual({ type: RuleType.EQUALS, value: 50 });
-    });
-  });
-
   describe("ref function", () => {
     it("should create reference with simple path", () => {
       const reference = ref("name");
@@ -100,7 +65,7 @@ describe("rules", () => {
       const rule = min(5);
 
       expect(rule).toEqual({
-        type: RuleType.MIN,
+        type: "min",
         min: 5,
       });
     });
@@ -109,7 +74,7 @@ describe("rules", () => {
       const rule = min(3.14);
 
       expect(rule).toEqual({
-        type: RuleType.MIN,
+        type: "min",
         min: 3.14,
       });
     });
@@ -118,7 +83,7 @@ describe("rules", () => {
       const rule = min(0);
 
       expect(rule).toEqual({
-        type: RuleType.MIN,
+        type: "min",
         min: 0,
       });
     });
@@ -127,7 +92,7 @@ describe("rules", () => {
       const rule = min(-10);
 
       expect(rule).toEqual({
-        type: RuleType.MIN,
+        type: "min",
         min: -10,
       });
     });
@@ -135,7 +100,7 @@ describe("rules", () => {
     it.skip("should create min rule with date string", () => {
       // const rule = minDate("2024-01-01");
       // expect(rule).toEqual({
-      //   type: RuleType.MIN_DATE,
+      //   type: 'min'_DATE,
       //   min: "2024-01-01",
       // });
     });
@@ -145,7 +110,7 @@ describe("rules", () => {
       const rule = min(reference);
 
       expect(rule).toEqual({
-        type: RuleType.MIN,
+        type: "min",
         min: {
           _type: REFERENCE_TYPE,
           path: "minimumValue",
@@ -157,7 +122,7 @@ describe("rules", () => {
       const rule = min(ref("$.startDate"));
 
       expect(rule).toEqual({
-        type: RuleType.MIN,
+        type: "min",
         min: {
           _type: REFERENCE_TYPE,
           path: "$.startDate",
@@ -171,7 +136,7 @@ describe("rules", () => {
       const rule = max(100);
 
       expect(rule).toEqual({
-        type: RuleType.MAX,
+        type: "max",
         max: 100,
       });
     });
@@ -180,7 +145,7 @@ describe("rules", () => {
       const rule = max(99.99);
 
       expect(rule).toEqual({
-        type: RuleType.MAX,
+        type: "max",
         max: 99.99,
       });
     });
@@ -190,7 +155,7 @@ describe("rules", () => {
       const rule = max(reference);
 
       expect(rule).toEqual({
-        type: RuleType.MAX,
+        type: "max",
         max: {
           _type: REFERENCE_TYPE,
           path: "maximumAllowed",
@@ -202,7 +167,7 @@ describe("rules", () => {
       const rule = max(ref("limits[0]"));
 
       expect(rule).toEqual({
-        type: RuleType.MAX,
+        type: "max",
         max: {
           _type: REFERENCE_TYPE,
           path: "limits[0]",
@@ -216,7 +181,7 @@ describe("rules", () => {
       const rule = regex("^[^@]+@[^@]+\\.[^@]+$");
 
       expect(rule).toEqual({
-        type: RuleType.REGEX,
+        type: "regex",
         regex: "^[^@]+@[^@]+\\.[^@]+$",
       });
     });
@@ -225,7 +190,7 @@ describe("rules", () => {
       const rule = regex("^\\+?[1-9]\\d{1,14}$");
 
       expect(rule).toEqual({
-        type: RuleType.REGEX,
+        type: "regex",
         regex: "^\\+?[1-9]\\d{1,14}$",
       });
     });
@@ -234,7 +199,7 @@ describe("rules", () => {
       const rule = regex("^[a-zA-Z0-9]+$");
 
       expect(rule).toEqual({
-        type: RuleType.REGEX,
+        type: "regex",
         regex: "^[a-zA-Z0-9]+$",
       });
     });
@@ -245,7 +210,7 @@ describe("rules", () => {
       const rule = regex(urlPattern);
 
       expect(rule).toEqual({
-        type: RuleType.REGEX,
+        type: "regex",
         regex: urlPattern,
       });
     });
@@ -255,7 +220,7 @@ describe("rules", () => {
       const rule = regex(passwordPattern);
 
       expect(rule).toEqual({
-        type: RuleType.REGEX,
+        type: "regex",
         regex: passwordPattern,
       });
     });
@@ -264,7 +229,7 @@ describe("rules", () => {
       const rule = regex("[0-9]+");
 
       expect(rule).toEqual({
-        type: RuleType.REGEX,
+        type: "regex",
         regex: "[0-9]+",
       });
     });
@@ -275,8 +240,8 @@ describe("rules", () => {
       const rule = equals("admin");
 
       expect(rule).toEqual({
-        type: RuleType.EQUALS,
-        value: "admin",
+        type: "equals",
+        equals: "admin",
       });
     });
 
@@ -284,8 +249,8 @@ describe("rules", () => {
       const rule = equals(42);
 
       expect(rule).toEqual({
-        type: RuleType.EQUALS,
-        value: 42,
+        type: "equals",
+        equals: 42,
       });
     });
 
@@ -293,8 +258,8 @@ describe("rules", () => {
       const rule = equals(true);
 
       expect(rule).toEqual({
-        type: RuleType.EQUALS,
-        value: true,
+        type: "equals",
+        equals: true,
       });
     });
 
@@ -303,8 +268,8 @@ describe("rules", () => {
       const rule = equals(reference);
 
       expect(rule).toEqual({
-        type: RuleType.EQUALS,
-        value: {
+        type: "equals",
+        equals: {
           _type: REFERENCE_TYPE,
           path: "confirmPassword",
         },
@@ -315,8 +280,8 @@ describe("rules", () => {
       const rule = equals(ref("$.user.expectedRole"));
 
       expect(rule).toEqual({
-        type: RuleType.EQUALS,
-        value: {
+        type: "equals",
+        equals: {
           _type: REFERENCE_TYPE,
           path: "$.user.expectedRole",
         },
@@ -327,8 +292,8 @@ describe("rules", () => {
       const rule = equals(["admin", "user"]);
 
       expect(rule).toEqual({
-        type: RuleType.EQUALS,
-        value: ["admin", "user"],
+        type: "equals",
+        equals: ["admin", "user"],
       });
     });
   });
@@ -338,14 +303,14 @@ describe("rules", () => {
       const rule = isNumeric();
 
       expect(rule).toEqual({
-        type: RuleType.IS_NUMERIC,
+        type: "is_numeric",
       });
     });
 
     it("should create isNumeric rule without parameters", () => {
       const rule = isNumeric();
 
-      expect(rule.type).toBe(RuleType.IS_NUMERIC);
+      expect(rule.type).toBe("is_numeric");
       expect(Object.keys(rule)).toHaveLength(2);
     });
   });
@@ -355,7 +320,7 @@ describe("rules", () => {
       const rule = custom("validateUniqueEmail");
 
       expect(rule).toEqual({
-        type: RuleType.CUSTOM,
+        type: "custom",
         name: "validateUniqueEmail",
         params: {},
       });
@@ -368,7 +333,7 @@ describe("rules", () => {
       });
 
       expect(rule).toEqual({
-        type: RuleType.CUSTOM,
+        type: "custom",
         name: "validateLength",
         params: {
           min: 5,
@@ -384,7 +349,7 @@ describe("rules", () => {
       });
 
       expect(rule).toEqual({
-        type: RuleType.CUSTOM,
+        type: "custom",
         name: "validateGreaterThan",
         params: {
           threshold: {
@@ -420,7 +385,7 @@ describe("rules", () => {
       const rule = custom("simpleValidation", {});
 
       expect(rule).toEqual({
-        type: RuleType.CUSTOM,
+        type: "custom",
         name: "simpleValidation",
         params: {},
       });
@@ -435,14 +400,14 @@ describe("rules", () => {
       });
 
       expect(rule).toEqual({
-        type: RuleType.CONDITIONAL,
+        type: "conditional",
         when: {
           type: ConditionType.EQUALS,
           path: "$.type",
           value: "premium",
         },
         then: {
-          type: RuleType.MIN,
+          type: "min",
           min: 10,
         },
       });
@@ -455,7 +420,7 @@ describe("rules", () => {
       });
 
       expect(rule).toEqual({
-        type: RuleType.CONDITIONAL,
+        type: "conditional",
         when: {
           type: ConditionType.AND,
           conditions: [
@@ -472,7 +437,7 @@ describe("rules", () => {
           ],
         },
         then: {
-          type: RuleType.MAX,
+          type: "max",
           max: 1000,
         },
       });
@@ -485,7 +450,7 @@ describe("rules", () => {
       });
 
       expect(rule.when.type).toBe(ConditionType.OR);
-      expect(rule.then.type).toBe(RuleType.REGEX);
+      expect(rule.then.type).toBe("regex");
     });
 
     it("should create conditional rule with custom rule", () => {
@@ -498,14 +463,14 @@ describe("rules", () => {
       });
 
       expect(rule).toEqual({
-        type: RuleType.CONDITIONAL,
+        type: "conditional",
         when: {
           type: ConditionType.EQUALS,
           path: "$.requiresValidation",
           value: true,
         },
         then: {
-          type: RuleType.CUSTOM,
+          type: "custom",
           name: "complexBusinessValidation",
           params: {
             level: "strict",
@@ -524,27 +489,18 @@ describe("rules", () => {
       expect(rule.when.type).toBe(ConditionType.AND);
       expect(rule.when.conditions).toHaveLength(2);
       expect(rule.when.conditions[1].type).toBe(ConditionType.OR);
-      expect(rule.then.type).toBe(RuleType.EQUALS);
-      expect(rule.then.value._type).toBe(REFERENCE_TYPE);
+      expect(rule.then.type).toBe("equals");
+      expect(rule.then.equals._type).toBe(REFERENCE_TYPE);
     });
   });
 
   describe("after rule", () => {
-    it("should create after rule with date string", () => {
-      const rule = after("2024-01-01");
-
-      expect(rule).toEqual({
-        type: RuleType.AFTER,
-        after: "2024-01-01",
-      });
-    });
-
     it("should create after rule with Date object", () => {
       const dateObj = new Date("2024-01-01");
       const rule = after(dateObj);
 
       expect(rule).toEqual({
-        type: RuleType.AFTER,
+        type: "after",
         after: dateObj,
       });
     });
@@ -554,7 +510,7 @@ describe("rules", () => {
       const rule = after(reference);
 
       expect(rule).toEqual({
-        type: RuleType.AFTER,
+        type: "after",
         after: {
           _type: REFERENCE_TYPE,
           path: "$.startDate",
@@ -563,32 +519,23 @@ describe("rules", () => {
     });
 
     it("should create after rule with custom code", () => {
-      const rule = after("2024-06-15", "CUSTOM_AFTER_ERROR");
+      const rule = after(new Date("2024-06-15"), "CUSTOM_AFTER_ERROR");
 
       expect(rule).toEqual({
-        type: RuleType.AFTER,
-        after: "2024-06-15",
+        type: "after",
+        after: new Date("2024-06-15"),
         code: "CUSTOM_AFTER_ERROR",
       });
     });
   });
 
   describe("before rule", () => {
-    it("should create before rule with date string", () => {
-      const rule = before("2024-12-31");
-
-      expect(rule).toEqual({
-        type: RuleType.BEFORE,
-        before: "2024-12-31",
-      });
-    });
-
     it("should create before rule with Date object", () => {
       const dateObj = new Date("2024-12-31");
       const rule = before(dateObj);
 
       expect(rule).toEqual({
-        type: RuleType.BEFORE,
+        type: "before",
         before: dateObj,
       });
     });
@@ -598,7 +545,7 @@ describe("rules", () => {
       const rule = before(reference);
 
       expect(rule).toEqual({
-        type: RuleType.BEFORE,
+        type: "before",
         before: {
           _type: REFERENCE_TYPE,
           path: "$.endDate",
@@ -607,11 +554,11 @@ describe("rules", () => {
     });
 
     it("should create before rule with custom code", () => {
-      const rule = before("2024-01-01", "CUSTOM_BEFORE_ERROR");
+      const rule = before(new Date("2024-01-01"), "CUSTOM_BEFORE_ERROR");
 
       expect(rule).toEqual({
-        type: RuleType.BEFORE,
-        before: "2024-01-01",
+        type: "before",
+        before: new Date("2024-01-01"),
         code: "CUSTOM_BEFORE_ERROR",
       });
     });
@@ -619,42 +566,42 @@ describe("rules", () => {
 
   describe("rule combinations", () => {
     it("should create complex rule set for password validation", () => {
-      const passwordRules = rules(
+      const passwordRules = [
         min(8),
         max(128),
         regex("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]+$"),
         conditional({
           when: eq("$.securityLevel", "high"),
           then: min(12),
-        })
-      );
+        }),
+      ];
 
       expect(passwordRules).toHaveLength(4);
-      expect(passwordRules[0].type).toBe(RuleType.MIN);
-      expect(passwordRules[1].type).toBe(RuleType.MAX);
-      expect(passwordRules[2].type).toBe(RuleType.REGEX);
-      expect(passwordRules[3].type).toBe(RuleType.CONDITIONAL);
+      expect(passwordRules[0].type).toBe("min");
+      expect(passwordRules[1].type).toBe("max");
+      expect(passwordRules[2].type).toBe("regex");
+      expect(passwordRules[3].type).toBe("conditional");
     });
 
     it("should create email validation rule set", () => {
-      const emailRules = rules(
+      const emailRules = [
         regex("^[^@]+@[^@]+\\.[^@]+$"),
         max(320), // RFC 5321 limit
         custom("validateEmailDomain", {
           allowedDomains: ["company.com", "partner.org"],
           blockDisposable: true,
-        })
-      );
+        }),
+      ] as const;
 
       expect(emailRules).toHaveLength(3);
-      expect(emailRules[0].type).toBe(RuleType.REGEX);
-      expect(emailRules[1].type).toBe(RuleType.MAX);
-      expect(emailRules[2].type).toBe(RuleType.CUSTOM);
+      expect(emailRules[0].type).toBe("regex");
+      expect(emailRules[1].type).toBe("max");
+      expect(emailRules[2].type).toBe("custom");
       expect(emailRules[2].name).toBe("validateEmailDomain");
     });
 
     it("should create age validation with cross-references", () => {
-      const ageRules = rules(
+      const ageRules = [
         min(ref("$.legalMinimumAge")),
         max(ref("$.retirementAge")),
         conditional({
@@ -662,17 +609,17 @@ describe("rules", () => {
           then: custom("validateParentalConsent", {
             guardianEmail: ref("$.guardian.email"),
           }),
-        })
-      );
+        }),
+      ] as const;
 
       expect(ageRules).toHaveLength(3);
       expect(ageRules[0].min._type).toBe(REFERENCE_TYPE);
       expect(ageRules[1].max._type).toBe(REFERENCE_TYPE);
-      expect(ageRules[2].type).toBe(RuleType.CONDITIONAL);
+      expect(ageRules[2].type).toBe("conditional");
     });
 
     it("should create date range validation", () => {
-      const dateRules = rules(
+      const dateRules = [
         minDate(ref("$.startDate")),
         maxDate(new Date("2030-12-31")),
         conditional({
@@ -681,8 +628,8 @@ describe("rules", () => {
             maxOccurrences: ref("$.maxRecurrences"),
             endDate: ref("$.seriesEndDate"),
           }),
-        })
-      );
+        }),
+      ] as const;
 
       expect(dateRules).toHaveLength(3);
       expect(dateRules[0].min.path).toBe("$.startDate");

@@ -1,14 +1,25 @@
+import type { Reference } from "../conditions";
 import { unpackRefValue } from "../resolve";
 import type { NumberSchema } from "../schemas";
-import {
-  ErrorCode,
-  type ExtractResolvedRules,
-  type MaxErrorMessage,
-  type MaxRule,
-  type OmitBaseErrorMessageProps,
-  type ValidateRuleContext,
+import type {
+  ErrorMessageFromRule,
+  ExtractResolvedRules,
+  OmitBaseErrorMessageProps,
+  ValidateRuleContext,
 } from "../types";
 import { assertNumber } from "../validate";
+
+export type MaxRule<T extends number | Reference = number | Reference> = {
+  type: "max";
+  max: T;
+  code?: string | undefined;
+};
+
+export type MaxRuleErrorMessage = ErrorMessageFromRule<MaxRule>;
+
+export function max<T extends number | Reference>(max: T, code?: string): MaxRule<T> {
+  return { max, type: "max", code };
+}
 
 export function maxRule<T extends NumberSchema>({
   rule,
@@ -16,7 +27,7 @@ export function maxRule<T extends NumberSchema>({
   path,
   context,
 }: ValidateRuleContext<T, Extract<ExtractResolvedRules<T>, MaxRule>>):
-  | OmitBaseErrorMessageProps<MaxErrorMessage>
+  | OmitBaseErrorMessageProps<MaxRuleErrorMessage>
   | undefined {
   const max = unpackRefValue(rule.max, path, context);
 
@@ -28,8 +39,8 @@ export function maxRule<T extends NumberSchema>({
   return value <= compareTo
     ? undefined
     : {
-        code: ErrorCode.MAX,
+        code: "max",
         max: compareTo,
-        message: `The value ${value} for schema ${path} shuld have a maximum of ${compareTo}`,
+        message: `The value ${value} for schema ${path} should have a maximum of ${compareTo}`,
       };
 }

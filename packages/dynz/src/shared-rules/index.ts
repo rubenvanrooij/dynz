@@ -1,7 +1,10 @@
 export * from "./after-rule";
 export * from "./before-rule";
+export * from "./conditional-rule";
 export * from "./custom-rule";
+export * from "./email-rule";
 export * from "./equals-rule";
+export * from "./is-numeric-rule";
 export * from "./max-date-rule";
 export * from "./max-entries-rule";
 export * from "./max-length-rule";
@@ -15,3 +18,4 @@ export * from "./min-length-rule";
 export * from "./min-rule";
 export * from "./min-size-rule";
 export * from "./one-off-rule";
+export * from "./regex-rule";

@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mask, plain } from "./private";
+import { array, boolean, date, dateString, file, number, object, options, string } from "./schemas";
 import {
   after,
   before,
@@ -17,8 +18,7 @@ import {
   minLength,
   oneOf,
   regex,
-} from "./rules";
-import { array, boolean, date, dateString, file, number, object, options, string } from "./schemas";
+} from "./shared-rules";
 import { type CustomRuleMap, ErrorCode, SchemaType } from "./types";
 import {
   isArray,
@@ -267,7 +267,7 @@ describe("validate", () => {
         success: false,
         errors: [
           expect.objectContaining({
-            code: ErrorCode.EQUALS,
+            code: "equals",
             equals: targetDate,
           }),
         ],
@@ -286,7 +286,7 @@ describe("validate", () => {
         success: false,
         errors: [
           expect.objectContaining({
-            code: ErrorCode.MIN_DATE,
+            code: "min_date",
             min: minimumDate,
           }),
         ],
@@ -303,7 +303,7 @@ describe("validate", () => {
       const invalidResult = validate(schema, undefined, new Date("2024-01-01"));
       expect(invalidResult.success).toBe(false);
       if (!invalidResult.success) {
-        expect(invalidResult.errors[0].code).toBe(ErrorCode.MAX_DATE);
+        expect(invalidResult.errors[0].code).toBe("max_date");
       }
     });
 
@@ -319,7 +319,7 @@ describe("validate", () => {
         success: false,
         errors: [
           expect.objectContaining({
-            code: ErrorCode.AFTER,
+            code: "after",
             after: afterDate,
           }),
         ],
@@ -338,7 +338,7 @@ describe("validate", () => {
         success: false,
         errors: [
           expect.objectContaining({
-            code: ErrorCode.BEFORE,
+            code: "before",
             before: beforeDate,
           }),
         ],
@@ -551,7 +551,7 @@ describe("validate", () => {
           success: false,
           errors: [
             expect.objectContaining({
-              code: ErrorCode.MIN_LENGTH,
+              code: "min_length",
               min: 5,
             }),
           ],
@@ -573,7 +573,7 @@ describe("validate", () => {
           success: false,
           errors: [
             expect.objectContaining({
-              code: ErrorCode.MIN,
+              code: "min",
               min: 10,
             }),
           ],
@@ -597,7 +597,7 @@ describe("validate", () => {
           success: false,
           errors: [
             expect.objectContaining({
-              code: ErrorCode.MAX_LENGTH,
+              code: "max_length",
               max: 3,
             }),
           ],
@@ -619,7 +619,7 @@ describe("validate", () => {
           success: false,
           errors: [
             expect.objectContaining({
-              code: ErrorCode.MAX,
+              code: "max",
               max: 10,
             }),
           ],
@@ -643,7 +643,7 @@ describe("validate", () => {
           success: false,
           errors: [
             expect.objectContaining({
-              code: ErrorCode.EQUALS,
+              code: "equals",
               equals: "hello",
             }),
           ],
@@ -665,7 +665,7 @@ describe("validate", () => {
           success: false,
           errors: [
             expect.objectContaining({
-              code: ErrorCode.EQUALS,
+              code: "equals",
               equals: 42,
             }),
           ],
@@ -689,7 +689,7 @@ describe("validate", () => {
           success: false,
           errors: [
             expect.objectContaining({
-              code: ErrorCode.REGEX,
+              code: "regex",
               regex: "^[a-z]+$",
             }),
           ],
@@ -731,7 +731,7 @@ describe("validate", () => {
           success: false,
           errors: [
             expect.objectContaining({
-              code: ErrorCode.IS_NUMERIC,
+              code: "is_numeric",
             }),
           ],
         });
@@ -754,7 +754,7 @@ describe("validate", () => {
           success: false,
           errors: [
             expect.objectContaining({
-              code: ErrorCode.REGEX,
+              code: "regex",
             }),
           ],
         });
@@ -940,7 +940,7 @@ describe("validate", () => {
           success: false,
           errors: [
             expect.objectContaining({
-              code: ErrorCode.MAX_PRECISION,
+              code: "max_precision",
               maxPrecision: 1,
             }),
           ],
@@ -972,7 +972,7 @@ describe("validate", () => {
           success: false,
           errors: [
             expect.objectContaining({
-              code: ErrorCode.CUSTOM,
+              code: "custom",
               name: "isEven",
             }),
           ],
@@ -1004,7 +1004,7 @@ describe("validate", () => {
           success: false,
           errors: [
             expect.objectContaining({
-              code: ErrorCode.EMAIL,
+              code: "email",
             }),
           ],
         });
@@ -1027,8 +1027,8 @@ describe("validate", () => {
           success: false,
           errors: [
             expect.objectContaining({
-              code: ErrorCode.ONE_OF,
-              expected: ["red", "green", "blue"],
+              code: "one_of",
+              values: ["red", "green", "blue"],
             }),
           ],
         });
@@ -1053,7 +1053,7 @@ describe("validate", () => {
           success: false,
           errors: [
             expect.objectContaining({
-              code: ErrorCode.MIME_TYPE,
+              code: "mime_type",
               mimeType: "text/plain",
             }),
           ],
@@ -1069,96 +1069,96 @@ describe("validate", () => {
       });
     });
 
-    describe.skip("date string rules", () => {
-      describe("before rule", () => {
-        it("should pass when date is before specified date", () => {
-          const schema = dateString({ rules: [before("2024-01-01")] });
-          const result = validate(schema, undefined, "2023-12-25");
+    // describe.skip("date string rules", () => {
+    //   describe("before rule", () => {
+    //     it("should pass when date is before specified date", () => {
+    //       const schema = dateString({ rules: [before(new Date("2024-01-01"))] });
+    //       const result = validate(schema, undefined, "2023-12-25");
 
-          expect(result.success).toBe(true);
-        });
+    //       expect(result.success).toBe(true);
+    //     });
 
-        it("should fail when date is after specified date", () => {
-          const schema = dateString({ rules: [before("2023-01-01")] });
-          const result = validate(schema, undefined, "2023-12-25");
+    //     it("should fail when date is after specified date", () => {
+    //       const schema = dateString({ rules: [before("2023-01-01")] });
+    //       const result = validate(schema, undefined, "2023-12-25");
 
-          expect(result).toEqual({
-            success: false,
-            errors: [
-              expect.objectContaining({
-                code: ErrorCode.BEFORE,
-                before: "2023-01-01",
-              }),
-            ],
-          });
-        });
-      });
+    //       expect(result).toEqual({
+    //         success: false,
+    //         errors: [
+    //           expect.objectContaining({
+    //             code: ErrorCode.BEFORE,
+    //             before: "2023-01-01",
+    //           }),
+    //         ],
+    //       });
+    //     });
+    //   });
 
-      describe("after rule", () => {
-        it("should pass when date is after specified date", () => {
-          const schema = dateString({ rules: [after("2023-01-01")] });
-          const result = validate(schema, undefined, "2023-12-25");
+    //   describe("after rule", () => {
+    //     it("should pass when date is after specified date", () => {
+    //       const schema = dateString({ rules: [after("2023-01-01")] });
+    //       const result = validate(schema, undefined, "2023-12-25");
 
-          expect(result.success).toBe(true);
-        });
+    //       expect(result.success).toBe(true);
+    //     });
 
-        it("should fail when date is before specified date", () => {
-          const schema = dateString({ rules: [after("2024-01-01")] });
-          const result = validate(schema, undefined, "2023-12-25");
+    //     it("should fail when date is before specified date", () => {
+    //       const schema = dateString({ rules: [after("2024-01-01")] });
+    //       const result = validate(schema, undefined, "2023-12-25");
 
-          expect(result).toEqual({
-            success: false,
-            errors: [
-              expect.objectContaining({
-                code: ErrorCode.AFTER,
-                after: "2024-01-01",
-              }),
-            ],
-          });
-        });
-      });
+    //       expect(result).toEqual({
+    //         success: false,
+    //         errors: [
+    //           expect.objectContaining({
+    //             code: ErrorCode.AFTER,
+    //             after: "2024-01-01",
+    //           }),
+    //         ],
+    //       });
+    //     });
+    //   });
 
-      // describe.skip("min/max rules for date strings", () => {
-      //   it("should pass when date is after minimum date", () => {
-      //     const schema = dateString({ rules: [min("2023-01-01")] });
-      //     const result = validate(schema, undefined, "2023-12-25");
+    //   // describe.skip("min/max rules for date strings", () => {
+    //   //   it("should pass when date is after minimum date", () => {
+    //   //     const schema = dateString({ rules: [min("2023-01-01")] });
+    //   //     const result = validate(schema, undefined, "2023-12-25");
 
-      //     expect(result.success).toBe(true);
-      //   });
+    //   //     expect(result.success).toBe(true);
+    //   //   });
 
-      //   it("should fail when date is before minimum date", () => {
-      //     const schema = dateString({ rules: [min("2024-01-01")] });
-      //     const result = validate(schema, undefined, "2023-12-25");
+    //   //   it("should fail when date is before minimum date", () => {
+    //   //     const schema = dateString({ rules: [min("2024-01-01")] });
+    //   //     const result = validate(schema, undefined, "2023-12-25");
 
-      //     expect(result.success).toBe(false);
-      //     if (!result.success) {
-      //       expect(result.errors[0].code).toBe(ErrorCode.MIN);
-      //     }
-      //   });
+    //   //     expect(result.success).toBe(false);
+    //   //     if (!result.success) {
+    //   //       expect(result.errors[0].code).toBe('min');
+    //   //     }
+    //   //   });
 
-      //   it("should pass when date is before maximum date", () => {
-      //     const schema = dateString({ rules: [max("2024-01-01")] });
-      //     const result = validate(schema, undefined, "2023-12-25");
+    //   //   it("should pass when date is before maximum date", () => {
+    //   //     const schema = dateString({ rules: [max("2024-01-01")] });
+    //   //     const result = validate(schema, undefined, "2023-12-25");
 
-      //     expect(result.success).toBe(true);
-      //   });
+    //   //     expect(result.success).toBe(true);
+    //   //   });
 
-      //   it("should fail when date is after maximum date", () => {
-      //     const schema = dateString({ rules: [max("2023-01-01")] });
-      //     const result = validate(schema, undefined, "2023-12-25");
+    //   //   it("should fail when date is after maximum date", () => {
+    //   //     const schema = dateString({ rules: [max("2023-01-01")] });
+    //   //     const result = validate(schema, undefined, "2023-12-25");
 
-      //     expect(result).toEqual({
-      //       success: false,
-      //       errors: [
-      //         expect.objectContaining({
-      //           code: ErrorCode.MAX,
-      //           max: new Date("2023-01-01T00:00:00.000Z"),
-      //         }),
-      //       ],
-      //     });
-      //   });
-      // });
-    });
+    //   //     expect(result).toEqual({
+    //   //       success: false,
+    //   //       errors: [
+    //   //         expect.objectContaining({
+    //   //           code: 'max',
+    //   //           max: new Date("2023-01-01T00:00:00.000Z"),
+    //   //         }),
+    //   //       ],
+    //   //     });
+    //   //   });
+    //   // });
+    // });
   });
 
   describe("type validation functions", () => {

@@ -1,28 +1,27 @@
 import { customRule, equalsRule, maxLengthRule, minLengthRule, oneOfRule } from "../../shared-rules";
-import { RuleType, type ValidateRuleContextUnion } from "../../types";
-
-import { emailRule } from "./rules/email-rule";
-import { isNumericRule } from "./rules/is-numeric-rule";
-import { regexRule } from "./rules/regex-rule";
+import { emailRule } from "../../shared-rules/email-rule";
+import { isNumericRule } from "../../shared-rules/is-numeric-rule";
+import { regexRule } from "../../shared-rules/regex-rule";
+import type { ValidateRuleContextUnion } from "../../types";
 import type { StringSchema } from "./types";
 
 export function validateString(context: ValidateRuleContextUnion<StringSchema>) {
   switch (context.ruleType) {
-    case RuleType.MIN_LENGTH:
+    case "min_length":
       return minLengthRule(context);
-    case RuleType.MAX_LENGTH:
+    case "max_length":
       return maxLengthRule(context);
-    case RuleType.EQUALS:
+    case "equals":
       return equalsRule(context);
-    case RuleType.REGEX:
+    case "regex":
       return regexRule(context);
-    case RuleType.IS_NUMERIC:
+    case "is_numeric":
       return isNumericRule(context);
-    case RuleType.EMAIL:
+    case "email":
       return emailRule(context);
-    case RuleType.ONE_OF:
+    case "one_of":
       return oneOfRule(context);
-    case RuleType.CUSTOM:
+    case "custom":
       return customRule(context);
   }
 }
