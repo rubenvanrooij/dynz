@@ -13,11 +13,12 @@ import {
   type MimeTypeRule,
   type MinRule,
   type OneOfRule,
+  REFERENCE_TYPE,
   type Reference,
   type RegexRule,
   type Rule,
   RuleType,
-  type ValueOrRef,
+  type ValueOrReference,
 } from "./types";
 
 export function rules<T extends Rule[]>(...rules: T): T {
@@ -26,7 +27,7 @@ export function rules<T extends Rule[]>(...rules: T): T {
 
 export function ref<const T extends string>(path: T): Reference<T> {
   return {
-    type: "__reference",
+    _type: REFERENCE_TYPE,
     path,
   };
 }
@@ -47,7 +48,7 @@ export function regex(regex: string, code?: string): RegexRule {
   return { type: RuleType.REGEX, regex, code };
 }
 
-export function equals<T extends ValueOrRef>(value: T, code?: string): EqualsRule<T> {
+export function equals<T extends ValueOrReference>(value: T, code?: string): EqualsRule<T> {
   return { type: RuleType.EQUALS, value, code };
 }
 
@@ -71,13 +72,13 @@ export function before<T extends Date | DateString | Reference>(before: T, code?
   return { before, type: RuleType.BEFORE, code };
 }
 
-export function oneOf<T extends ValueOrRef[]>(expexted: T, code?: string): OneOfRule<T> {
+export function oneOf<T extends ValueOrReference[]>(expexted: T, code?: string): OneOfRule<T> {
   return { type: RuleType.ONE_OF, values: expexted, code };
 }
 
 export function custom(name: string): CustomRule;
-export function custom<T extends Record<string, ValueOrRef>>(name: string, params: T): CustomRule<T>;
-export function custom<T extends Record<string, ValueOrRef>>(name: string, params?: T): CustomRule {
+export function custom<T extends Record<string, ValueOrReference>>(name: string, params: T): CustomRule<T>;
+export function custom<T extends Record<string, ValueOrReference>>(name: string, params?: T): CustomRule {
   return { type: RuleType.CUSTOM, name, params: params || {} };
 }
 

@@ -8,12 +8,13 @@ import {
   type LowerThanCondition,
   type LowerThanOrEqualCondition,
   type NotEqualsCondition,
+  REFERENCE_TYPE,
   type Reference,
   type ResolvedRules,
   RuleType,
   type Schema,
   SchemaType,
-  type ValueOrRef,
+  type ValueOrReference,
   type ValueType,
 } from "./types";
 import {
@@ -201,7 +202,7 @@ function toCompareType<T extends Schema>(schema: T, value: ValueType): ValueType
  * @returns
  */
 function getConditionOperands<T extends ValueType>(
-  condition: { path: string; value: ValueOrRef<T> | ValueOrRef<T>[] },
+  condition: { path: string; value: ValueOrReference<T> | ValueOrReference<T>[] },
   path: string,
   context: ResolveContext
 ): { left?: ValueType | undefined; right?: ValueType | undefined } {
@@ -259,15 +260,15 @@ export function resolveRules<T extends Schema>(
 }
 
 export function isReference(value: unknown): value is Reference {
-  return typeof value === "object" && value !== null && "type" in value && value.type === "__reference";
+  return typeof value === "object" && value !== null && "_type" in value && value._type === REFERENCE_TYPE;
 }
 
-export function unpackRefValue(valueOrRef: ValueOrRef, path: string, context: ResolveContext): unknown {
+export function unpackRefValue(valueOrRef: ValueOrReference, path: string, context: ResolveContext): unknown {
   return unpackRef(valueOrRef, path, context).value;
 }
 
 export function unpackRef(
-  valueOrRef: ValueOrRef,
+  valueOrRef: ValueOrReference,
   path: string,
   context: ResolveContext
 ): { value: unknown; static: true } | { schema: Schema; value: unknown; static: false } {

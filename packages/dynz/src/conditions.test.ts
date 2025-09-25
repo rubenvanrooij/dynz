@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { and, eq, gt, gte, isIn, isNotIn, lt, lte, matches, neq, or } from "./conditions";
 import { ref } from "./rules";
-import { ConditionType } from "./types";
+import { ConditionType, REFERENCE_TYPE } from "./types";
 
 describe("conditions", () => {
   describe("logical conditions", () => {
@@ -159,7 +159,7 @@ describe("conditions", () => {
           type: ConditionType.EQUALS,
           path: "$.confirmPassword",
           value: {
-            type: "__reference",
+            _type: "__dref",
             path: "password",
           },
         });
@@ -184,7 +184,7 @@ describe("conditions", () => {
           type: ConditionType.NOT_EQUALS,
           path: "$.newPassword",
           value: {
-            type: "__reference",
+            _type: REFERENCE_TYPE,
             path: "currentPassword",
           },
         });
@@ -219,7 +219,7 @@ describe("conditions", () => {
           type: ConditionType.GREATHER_THAN,
           path: "$.endDate",
           value: {
-            type: "__reference",
+            _type: REFERENCE_TYPE,
             path: "startDate",
           },
         });
@@ -244,7 +244,7 @@ describe("conditions", () => {
           type: ConditionType.GREATHER_THAN_OR_EQUAL,
           path: "$.maxValue",
           value: {
-            type: "__reference",
+            _type: REFERENCE_TYPE,
             path: "minValue",
           },
         });
@@ -269,7 +269,7 @@ describe("conditions", () => {
           type: ConditionType.LOWER_THAN,
           path: "$.current",
           value: {
-            type: "__reference",
+            _type: REFERENCE_TYPE,
             path: "maximum",
           },
         });
@@ -294,7 +294,7 @@ describe("conditions", () => {
           type: ConditionType.LOWER_THAN_OR_EQUAL,
           path: "$.quantity",
           value: {
-            type: "__reference",
+            _type: REFERENCE_TYPE,
             path: "stock",
           },
         });
@@ -376,11 +376,11 @@ describe("conditions", () => {
           path: "$.category",
           value: [
             {
-              type: "__reference",
+              _type: REFERENCE_TYPE,
               path: "allowedCategories[0]",
             },
             {
-              type: "__reference",
+              _type: REFERENCE_TYPE,
               path: "allowedCategories[1]",
             },
           ],
@@ -417,11 +417,11 @@ describe("conditions", () => {
           path: "$.userId",
           value: [
             {
-              type: "__reference",
+              _type: REFERENCE_TYPE,
               path: "blockedUsers[0]",
             },
             {
-              type: "__reference",
+              _type: REFERENCE_TYPE,
               path: "blockedUsers[1]",
             },
           ],
@@ -458,12 +458,12 @@ describe("conditions", () => {
           {
             type: ConditionType.NOT_EQUALS,
             path: "$.newPassword",
-            value: { type: "__reference", path: "currentPassword" },
+            value: { _type: REFERENCE_TYPE, path: "currentPassword" },
           },
           {
             type: ConditionType.EQUALS,
             path: "$.confirmPassword",
-            value: { type: "__reference", path: "newPassword" },
+            value: { _type: REFERENCE_TYPE, path: "newPassword" },
           },
           {
             type: ConditionType.GREATHER_THAN_OR_EQUAL,
@@ -515,7 +515,7 @@ describe("conditions", () => {
         type: ConditionType.GREATHER_THAN,
         path: "$.scores[0]",
         value: {
-          type: "__reference",
+          _type: REFERENCE_TYPE,
           path: "$.scores[1]",
         },
       });

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { and, eq, or } from "./conditions";
 import { after, before, conditional, custom, equals, isNumeric, max, min, ref, regex, rules } from "./rules";
-import { ConditionType, RuleType } from "./types";
+import { ConditionType, REFERENCE_TYPE, RuleType } from "./types";
 
 describe("rules", () => {
   describe("rules function", () => {
@@ -41,7 +41,7 @@ describe("rules", () => {
       const reference = ref("name");
 
       expect(reference).toEqual({
-        type: "__reference",
+        _type: REFERENCE_TYPE,
         path: "name",
       });
     });
@@ -50,7 +50,7 @@ describe("rules", () => {
       const reference = ref("$.user.email");
 
       expect(reference).toEqual({
-        type: "__reference",
+        _type: REFERENCE_TYPE,
         path: "$.user.email",
       });
     });
@@ -59,7 +59,7 @@ describe("rules", () => {
       const reference = ref("items[0].id");
 
       expect(reference).toEqual({
-        type: "__reference",
+        _type: REFERENCE_TYPE,
         path: "items[0].id",
       });
     });
@@ -68,7 +68,7 @@ describe("rules", () => {
       const reference = ref("user.profile.settings.theme");
 
       expect(reference).toEqual({
-        type: "__reference",
+        _type: REFERENCE_TYPE,
         path: "user.profile.settings.theme",
       });
     });
@@ -134,7 +134,7 @@ describe("rules", () => {
       expect(rule).toEqual({
         type: RuleType.MIN,
         min: {
-          type: "__reference",
+          _type: REFERENCE_TYPE,
           path: "minimumValue",
         },
       });
@@ -146,7 +146,7 @@ describe("rules", () => {
       expect(rule).toEqual({
         type: RuleType.MIN,
         min: {
-          type: "__reference",
+          _type: REFERENCE_TYPE,
           path: "$.startDate",
         },
       });
@@ -188,7 +188,7 @@ describe("rules", () => {
       expect(rule).toEqual({
         type: RuleType.MAX,
         max: {
-          type: "__reference",
+          _type: REFERENCE_TYPE,
           path: "maximumAllowed",
         },
       });
@@ -200,7 +200,7 @@ describe("rules", () => {
       expect(rule).toEqual({
         type: RuleType.MAX,
         max: {
-          type: "__reference",
+          _type: REFERENCE_TYPE,
           path: "limits[0]",
         },
       });
@@ -301,7 +301,7 @@ describe("rules", () => {
       expect(rule).toEqual({
         type: RuleType.EQUALS,
         value: {
-          type: "__reference",
+          _type: REFERENCE_TYPE,
           path: "confirmPassword",
         },
       });
@@ -313,7 +313,7 @@ describe("rules", () => {
       expect(rule).toEqual({
         type: RuleType.EQUALS,
         value: {
-          type: "__reference",
+          _type: REFERENCE_TYPE,
           path: "$.user.expectedRole",
         },
       });
@@ -384,7 +384,7 @@ describe("rules", () => {
         name: "validateGreaterThan",
         params: {
           threshold: {
-            type: "__reference",
+            _type: REFERENCE_TYPE,
             path: "minimumValue",
           },
           strict: true,
@@ -406,7 +406,7 @@ describe("rules", () => {
       expect(rule.name).toBe("validateBusinessRules");
       expect(rule.params.category).toBe("finance");
       expect(rule.params.limits.daily).toEqual({
-        type: "__reference",
+        _type: REFERENCE_TYPE,
         path: "$.settings.dailyLimit",
       });
       expect(rule.params.allowOverride).toBe(false);
@@ -521,7 +521,7 @@ describe("rules", () => {
       expect(rule.when.conditions).toHaveLength(2);
       expect(rule.when.conditions[1].type).toBe(ConditionType.OR);
       expect(rule.then.type).toBe(RuleType.EQUALS);
-      expect(rule.then.value.type).toBe("__reference");
+      expect(rule.then.value._type).toBe(REFERENCE_TYPE);
     });
   });
 
@@ -552,7 +552,7 @@ describe("rules", () => {
       expect(rule).toEqual({
         type: RuleType.AFTER,
         after: {
-          type: "__reference",
+          _type: REFERENCE_TYPE,
           path: "$.startDate",
         },
       });
@@ -596,7 +596,7 @@ describe("rules", () => {
       expect(rule).toEqual({
         type: RuleType.BEFORE,
         before: {
-          type: "__reference",
+          _type: REFERENCE_TYPE,
           path: "$.endDate",
         },
       });
@@ -662,8 +662,8 @@ describe("rules", () => {
       );
 
       expect(ageRules).toHaveLength(3);
-      expect(ageRules[0].min.type).toBe("__reference");
-      expect(ageRules[1].max.type).toBe("__reference");
+      expect(ageRules[0].min._type).toBe(REFERENCE_TYPE);
+      expect(ageRules[1].max._type).toBe(REFERENCE_TYPE);
       expect(ageRules[2].type).toBe(RuleType.CONDITIONAL);
     });
 
@@ -683,7 +683,7 @@ describe("rules", () => {
       expect(dateRules).toHaveLength(3);
       expect(dateRules[0].min.path).toBe("$.startDate");
       expect(dateRules[1].max).toBe("2030-12-31");
-      expect(dateRules[2].then.params.maxOccurrences.type).toBe("__reference");
+      expect(dateRules[2].then.params.maxOccurrences._type).toBe(REFERENCE_TYPE);
     });
   });
 });

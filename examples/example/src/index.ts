@@ -1,4 +1,4 @@
-import { conditional, email, eq, matches, min, object, options, regex, string } from "dynz";
+import * as d from "dynz";
 
 // const foo = object({
 //   fields: {
@@ -29,41 +29,53 @@ import { conditional, email, eq, matches, min, object, options, regex, string } 
 //   console.log(result.values); // ✅ Type-safe access
 // }
 
-const schema = object({
+d.pipe(
+  d.string(),
+  d.min(1)
+)
+
+d.object({
+  accountType: d.options(),
+  companyName: d.required(d.string())
+})
+
+
+const schema = d.object({
   fields: {
-    accountType: options({
-      options: ["personal", "business"],
+    accountType: d.options({
+      values: ["personal", "business"],
     }),
 
     // Only included if accountType is 'business'
-    companyName: string({
-      rules: [min(2)],
-      required: matches("email", "@gmail.com$"),
-      included: eq("accountType", "business"),
+    companyName: d.string({
+      rules: [d.min(2)],
+      required: d.matches("email", "@gmail.com$"),
+      included: d.eq("accountType", "business"),
     }),
 
-    email: string({
+    email: d.string({
       rules: [
-        email(),
-        conditional({
+        d.email(),
+        d.conditional({
           // Different validation rules based on account type
-          when: eq("accountType", "business"),
-          then: regex("@company.com$", "Business accounts must use company email"),
+          when: d.eq("accountType", "business"),
+          then: d.regex("@company.com$", "Business accounts must use company email"),
         }),
       ],
     }),
   },
 });
 
-console.log(JSON.stringify(schema, undefined, 2));
+// console.log(JSON.stringify(schema, undefined, 2));
 
 // // Validate data
-// const result = validate(schema, undefined, {
-//   accountType: 'business',
-//   companyName: 'test',
-//   email: 'foo@company.com'
-// })
+const result = d.validate(schema, undefined, {
+  accountType: 'business',
+  companyName: 'test',
+  email: 'foo@company.com'
+})
 
+console.log(result)
 /**
  * new interface?
 object({

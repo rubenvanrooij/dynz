@@ -15,8 +15,8 @@ import {
   unpackRefValue,
 } from "./resolve";
 import { conditional, equals, max, min, ref } from "./rules";
-import { array, number, object, string } from "./schema";
-import { type Condition, ConditionType, type Reference, RuleType, SchemaType } from "./types";
+import { array, number, object, string } from "./schemas";
+import { type Condition, ConditionType, REFERENCE_TYPE, type Reference, RuleType, SchemaType } from "./types";
 
 describe("resolve", () => {
   describe("isRequired", () => {
@@ -407,7 +407,7 @@ describe("resolve", () => {
   describe("isReference", () => {
     it("should return true for reference object", () => {
       const reference: Reference = {
-        type: "__reference",
+        _type: REFERENCE_TYPE,
         path: "$.other",
       };
 

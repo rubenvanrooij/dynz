@@ -1,47 +1,26 @@
-import { isAfter, isBefore, parse } from "date-fns";
-import { coerce, resolveProperty, resolveRules, unpackRefValue } from "./resolve";
-import { getStringValidator, VALIDATORS } from "./string/validators";
+import { parse } from "date-fns";
+import { coerce, resolveProperty, resolveRules } from "./resolve";
 import {
-  type AfterErrorMessage,
-  type AfterRule,
-  type BaseErrorMessage,
-  type BeforeErrorMessage,
-  type BeforeRule,
-  type Condition,
-  type ConditionalRule,
+  validateArray,
+  validateBoolean,
+  validateDate,
+  validateDateString,
+  validateFile,
+  validateNumber,
+  validateObject,
+  validateOptions,
+  validateString,
+} from "./schemas";
+import {
   type Context,
-  type CustomErrorMessage,
-  type CustomRule,
   type DateString,
-  type EmailErrorMEssage,
-  type EmailRule,
-  type EqualsErrorMessage,
-  type EqualsRule,
   ErrorCode,
-  type ExtractRules,
-  type IsNumericErrorMessage,
-  type MaxErrorMessage,
-  type MaxPrecisionErrorMessage,
-  type MaxPrecisionRule,
-  type MaxRule,
-  type MimeTypeErrorMessage,
-  type MimeTypeRule,
-  type MinErrorMessage,
-  type MinRule,
-  type OneOfErrorMessage,
-  type OneOfRule,
   type PrivateValue,
-  type RegexErrorMessage,
-  type RegexRule,
-  type ResolvedRules,
-  type Rule,
-  RuleType,
   type Schema,
   SchemaType,
   type SchemaValues,
-  type StringSchema,
-  type Unpacked,
   type ValidateOptions,
+  type ValidateRuleContextUnion,
   type ValidationResult,
   type ValueType,
 } from "./types";
@@ -200,15 +179,16 @@ export function _validate<T extends Schema>(
   if (newValue !== undefined) {
     for (const rule of resolveRules(schema, path, context)) {
       const result = validateRule({
+        type: schema.type,
+        ruleType: rule.type,
         schema,
         path,
         rule,
         value: newValue,
         context,
-      } as ValidateRuleContext<T>);
+      } as ValidateRuleContextUnion<T>);
 
       if (result !== undefined) {
-        const a = result;
         return {
           success: false,
           errors: [
@@ -316,557 +296,27 @@ export function _validate<T extends Schema>(
   };
 }
 
-type ValidateRuleContext<T extends Schema> = T extends object
-  ? {
-      // type needs to be here for proper type narrowing
-      type: T["type"];
-      schema: T;
-      path: string;
-      rule: ResolvedRules<ExtractRules<T>>; //Exclude<Unpacked<Exclude<T["rules"], undefined>>, ConditionalRule<Condition, Rule>>;
-      value: ValueType<T["type"]>;
-      context: Context;
-    }
-  : never;
-
-function validateRule<T extends Schema>(context: ValidateRuleContext<T>) {
-  if (context.rule.type === RuleType.CUSTOM) {
-    throw new Error("fo");
-    // return validateCustomRule(context.schema, context.path, context.rule, context.);
-  }
-
-  if (context.type === SchemaType.STRING) {
-    return getStringValidator(context.rule)(context);
-  }
-
-  throw new Error("damn..");
-
-  // switch (rule.type) {
-  //   case RuleType.EQUALS:
-  //     return validateEqualsRule(schema, path, rule, value, context);
-  //   case RuleType.MIN:
-  //     return validateMinRule(schema, path, rule, value, context);
-  //   case RuleType.MAX:
-  //     return validateMaxRule(schema, path, rule, value, context);
-  //   case RuleType.MAX_PRECISION:
-  //     return validateMaxPrecision(schema, path, rule, value, context);
-  //   case RuleType.REGEX:
-  //     return validateRegex(rule, value);
-  //   case RuleType.IS_NUMERIC:
-  //     return validateIsNumeric(value);
-  //   case RuleType.CUSTOM:
-  //     return validateCustomRule(schema, path, rule, value, context);
-  //   case RuleType.MIME_TYPE:
-  //     return validateMimeTypeRule(schema, path, rule, value, context);
-  //   case RuleType.EMAIL:
-  //     return validateEmail(rule, value);
-  //   case RuleType.ONE_OF:
-  //     return validateOneOfRule(rule, value);
-  //   case RuleType.BEFORE:
-  //     return beforeRuleValidator(schema, path, rule, value, context);
-  //   case RuleType.AFTER:
-  //     return afterRuleValidator(schema, path, rule, value, context);
-  // }
-}
-
-/**
- * Custom rule validator
- *
- * @param rule the rule that is executed
- * @param value the value to be validated
- * @returns undefined then the validations passses, an error message when it fails
- */
-function validateCustomRule<T extends Schema>(
-  schema: T,
-  path: string,
-  rule: CustomRule,
-  value: ValueType<T["type"]>,
-  context: Context
-): Omit<CustomErrorMessage, keyof Omit<BaseErrorMessage, "message">> | undefined {
-  const validatorFn = context.validateOptions.customRules?.[rule.name];
-
-  if (validatorFn === undefined) {
-    throw new Error(`Custom rule "${rule.name}" is not defined in the custom rules map.`);
-  }
-
-  // unpack all references in the rule
-  const unpackedParams = Object.entries(rule.params).reduce<Record<string, unknown>>((acc, [key, valueOrRef]) => {
-    acc[key] = unpackRefValue(valueOrRef, path, context);
-    return acc;
-  }, {});
-
-  const result = validatorFn(
-    {
-      schema: schema,
-      value: value,
-    },
-    unpackedParams,
-    path,
-    schema
-  );
-
-  return result === true
-    ? undefined
-    : {
-        message: `The value for schema ${path} did not pass the custom validation rule "${rule.name}"`, // Message can be overridden by custom function
-        ...(typeof result !== "boolean" ? { ...result, success: undefined } : {}),
-        code: ErrorCode.CUSTOM,
-        name: rule.name,
-      };
-}
-
-/**
- * Equals rule validator
- *
- * @param rule the rule that is executed
- * @param value the value to be validated
- * @returns undefined then the validations passses, an error message when it fails
- */
-function validateEqualsRule(
-  schema: Schema,
-  path: string,
-  rule: EqualsRule,
-  value: unknown,
-  context: Context
-): Omit<EqualsErrorMessage, keyof Omit<BaseErrorMessage, "message">> | undefined {
-  const refOrValue = unpackRefValue(rule.value, path, context);
-
-  switch (schema.type) {
+function validateRule<T extends Schema>(context: ValidateRuleContextUnion<T>) {
+  switch (context.type) {
+    case SchemaType.STRING:
+      return validateString(context);
+    case SchemaType.NUMBER:
+      return validateNumber(context);
+    case SchemaType.ARRAY:
+      return validateArray(context);
+    case SchemaType.BOOLEAN:
+      return validateBoolean(context);
     case SchemaType.DATE:
-      return assertDate(coerce(SchemaType.DATE, refOrValue)).getTime() === assertDate(value).getTime()
-        ? undefined
-        : {
-            code: ErrorCode.EQUALS,
-            equals: refOrValue,
-            message: `The value for schema ${path} does not equal ${refOrValue}`,
-          };
-    default: {
-      return refOrValue === value
-        ? undefined
-        : {
-            code: ErrorCode.EQUALS,
-            equals: refOrValue,
-            message: `The value for schema ${path} does not equal ${refOrValue}`,
-          };
-    }
+      return validateDate(context);
+    case SchemaType.DATE_STRING:
+      return validateDateString(context);
+    case SchemaType.FILE:
+      return validateFile(context);
+    case SchemaType.OBJECT:
+      return validateObject(context);
+    case SchemaType.OPTIONS:
+      return validateOptions(context);
   }
-}
-
-/**
- * Mime type rule validator
- *
- * @param rule the rule that is executed
- * @param value the value to be validated
- * @returns undefined then the validations passses, an error message when it fails
- */
-function validateMimeTypeRule(
-  schema: Schema,
-  path: string,
-  rule: MimeTypeRule,
-  value: unknown,
-  context: Context
-): Omit<MimeTypeErrorMessage, keyof Omit<BaseErrorMessage, "message">> | undefined {
-  const mimeType = unpackRefValue(rule.mimeType, path, context);
-
-  const mimeTypes = isArray(mimeType) ? mimeType : [mimeType];
-
-  switch (schema.type) {
-    case SchemaType.FILE: {
-      const assertedValue = assertSchema(schema, value);
-      return mimeTypes.includes(assertedValue.type)
-        ? undefined
-        : {
-            code: ErrorCode.MIME_TYPE,
-            mimeType: assertedValue.type,
-            message: `The mime type ${assertedValue.type} for schema ${path} is not equal to ${mimeType}`,
-          };
-    }
-    default:
-      throw new Error(`Mime type rule cannot be used on schema of type: ${schema.type}`);
-  }
-}
-
-/**
- * Min rule validator
- *
- * @param rule the rule that is executed
- * @param value the value to be validated
- * @returns undefined then the validations passses, an error message when it fails
- */
-function validateMinRule(
-  schema: Schema,
-  path: string,
-  rule: MinRule,
-  value: unknown,
-  context: Context
-): Omit<MinErrorMessage, keyof Omit<BaseErrorMessage, "message">> | undefined {
-  const min = unpackRefValue(rule.min, path, context);
-
-  if (min === undefined) {
-    return undefined;
-  }
-
-  switch (schema.type) {
-    case SchemaType.NUMBER: {
-      const compareTo = assertNumber(min);
-      return assertSchema(schema, value) >= compareTo
-        ? undefined
-        : {
-            code: ErrorCode.MIN,
-            min: compareTo,
-            message: `The value ${value} for schema ${path} is less than the minimum value of ${min}`,
-          };
-    }
-    case SchemaType.FILE: {
-      const asstertedValue = assertSchema(schema, value);
-      const compareTo = assertNumber(min);
-      return asstertedValue.size >= compareTo
-        ? undefined
-        : {
-            code: ErrorCode.MIN,
-            min: compareTo,
-            message: `The value ${asstertedValue.name} for schema ${path} shuld have at least ${compareTo} bytes`,
-          };
-    }
-    case SchemaType.STRING: {
-      const compareTo = assertNumber(min);
-      return assertSchema(schema, value).length >= compareTo
-        ? undefined
-        : {
-            code: ErrorCode.MIN,
-            min: compareTo,
-            message: `The value ${value} for schema ${path} shuld have at least ${compareTo} characters`,
-          };
-    }
-    case SchemaType.OBJECT: {
-      const compareTo = assertNumber(min);
-      return Object.keys(assertSchema(schema, value)).length >= compareTo
-        ? undefined
-        : {
-            code: ErrorCode.MIN,
-            min: compareTo,
-            message: `The value ${value} for schema ${path} should have at least ${compareTo} keys`,
-          };
-    }
-    case SchemaType.ARRAY: {
-      const compareTo = assertNumber(min);
-      return assertSchema(schema, value).length >= compareTo
-        ? undefined
-        : {
-            code: ErrorCode.MIN,
-            min: compareTo,
-            message: `The value ${value} for schema ${path} should hold at least ${compareTo} items`,
-          };
-    }
-    case SchemaType.DATE_STRING: {
-      const date = parseDateString(assertString(value), schema.format);
-      const compareTo = parseDateString(assertString(min), schema.format);
-      return isAfter(date, compareTo) || date.getTime() === compareTo.getTime()
-        ? undefined
-        : {
-            code: ErrorCode.MIN,
-            min: compareTo,
-            message: `The value ${value} for schema ${path} is before or on ${min}`,
-          };
-    }
-    case SchemaType.DATE: {
-      const date = assertDate(value);
-      const compareTo = assertDate(coerce(schema.type, min));
-      return isAfter(date, compareTo) || date.getTime() === compareTo.getTime()
-        ? undefined
-        : {
-            code: ErrorCode.MIN,
-            min: compareTo,
-            message: `The value ${value} for schema ${path} is before or on ${min}`,
-          };
-    }
-    default:
-      throw new Error(`Min rule cannot be used on schema of type: ${schema.type}`);
-  }
-}
-
-function validateMaxRule(
-  schema: Schema,
-  path: string,
-  rule: MaxRule,
-  value: unknown,
-  context: Context
-): Omit<MaxErrorMessage, keyof Omit<BaseErrorMessage, "message">> | undefined {
-  const max = unpackRefValue(rule.max, path, context);
-
-  if (max === undefined) {
-    return undefined;
-  }
-
-  switch (schema.type) {
-    case SchemaType.NUMBER: {
-      const compareTo = assertNumber(max);
-      return assertSchema(schema, value) <= compareTo
-        ? undefined
-        : {
-            code: ErrorCode.MAX,
-            max: compareTo,
-            message: `The value ${value} for schema ${path} is greater than the maximum value of ${max}`,
-          };
-    }
-    case SchemaType.FILE: {
-      const asstertedValue = assertSchema(schema, value);
-      const compareTo = assertNumber(max);
-      return asstertedValue.size <= compareTo
-        ? undefined
-        : {
-            code: ErrorCode.MAX,
-            max: compareTo,
-            message: `The value ${asstertedValue.name} for schema ${path} shuld have a maximum of ${compareTo} bytes`,
-          };
-    }
-    case SchemaType.STRING: {
-      const compareTo = assertNumber(max);
-      return assertSchema(schema, value).length <= compareTo
-        ? undefined
-        : {
-            code: ErrorCode.MAX,
-            max: compareTo,
-            message: `The value ${value} for schema ${path} shuld have a maximum ${compareTo} characters`,
-          };
-    }
-    case SchemaType.OBJECT: {
-      const compareTo = assertNumber(max);
-      return Object.keys(assertSchema(schema, value)).length <= compareTo
-        ? undefined
-        : {
-            code: ErrorCode.MAX,
-            max: compareTo,
-            message: `The value ${value} for schema ${path} should have a maximum of ${compareTo} keys`,
-          };
-    }
-    case SchemaType.ARRAY: {
-      const compareTo = assertNumber(max);
-      return assertSchema(schema, value).length <= compareTo
-        ? undefined
-        : {
-            code: ErrorCode.MAX,
-            max: compareTo,
-            message: `The value ${value} for schema ${path} should hold a maximum of ${compareTo} items`,
-          };
-    }
-    case SchemaType.DATE_STRING: {
-      const date = parseDateString(assertString(value), schema.format);
-      const compareTo = parseDateString(assertString(max), schema.format);
-      return isBefore(date, compareTo) || date.getTime() === compareTo.getTime()
-        ? undefined
-        : {
-            code: ErrorCode.MAX,
-            max: compareTo,
-            message: `The value ${value} for schema ${path} is after or on ${max}`,
-          };
-    }
-    case SchemaType.DATE: {
-      const date = assertDate(value);
-      const compareTo = assertDate(coerce(schema.type, max));
-      return isBefore(date, compareTo) || date.getTime() === compareTo.getTime()
-        ? undefined
-        : {
-            code: ErrorCode.MAX,
-            max: compareTo,
-            message: `The value ${value} for schema ${path} is after or on ${max}`,
-          };
-    }
-    default:
-      throw new Error(`Min rule cannot be used on schema of type: ${schema.type}`);
-  }
-}
-
-/**
- * Is numeric rule validator
- *
- * @param rule the rule that is executed
- * @param value the value to be validated
- * @returns undefined then the validations passses, an error message when it fails
- */
-function validateIsNumeric(
-  value: unknown
-): Omit<IsNumericErrorMessage, keyof Omit<BaseErrorMessage, "message">> | undefined {
-  const assertedValue = assertString(value);
-  return !Number.isNaN(assertedValue) && !Number.isNaN(+assertedValue)
-    ? undefined
-    : {
-        code: ErrorCode.IS_NUMERIC,
-        message: `The value ${value} is not a valid numeric value`,
-      };
-}
-
-/**
- * Max precision rule validator
- *
- * @param rule the rule that is executed
- * @param value the value to be validated
- * @returns undefined then the validations passses, an error message when it fails
- */
-function validateMaxPrecision(
-  _: Schema,
-  path: string,
-  rule: MaxPrecisionRule,
-  value: unknown,
-  context: Context
-): Omit<MaxPrecisionErrorMessage, keyof Omit<BaseErrorMessage, "message">> | undefined {
-  const maxPrecision = assertNumber(unpackRefValue(rule.max, path, context));
-  const precision = getPrecision(assertNumber(value));
-  return maxPrecision >= precision
-    ? undefined
-    : {
-        code: ErrorCode.MAX_PRECISION,
-        maxPrecision,
-        message: `The value ${value} for schema ${path} has a precision of ${precision}, which is greater than the maximum precision of ${maxPrecision}`,
-      };
-}
-
-/**
- * Regex rule validator
- *
- * @param rule the rule that is executed
- * @param value the value to be validated
- * @returns undefined then the validations passses, an error message when it fails
- */
-function validateRegex(
-  rule: RegexRule,
-  value: unknown
-): Omit<RegexErrorMessage, keyof Omit<BaseErrorMessage, "message">> | undefined {
-  const regex = new RegExp(rule.regex);
-  return regex.test(assertString(value))
-    ? undefined
-    : {
-        code: ErrorCode.REGEX,
-        regex: rule.regex,
-        message: `The value ${value} does not match the regex ${rule.regex}`,
-      };
-}
-
-/**
- * Email rule validator
- *
- * @param rule the rule that is executed
- * @param value the value to be validated
- * @returns undefined then the validations passses, an error message when it fails
- */
-const EMAIL_REGEX = /^(?!\.)(?!.*\.\.)([a-z0-9_'+\-.]*)[a-z0-9_'+-]@([a-z0-9][a-z0-9-]*\.)+[a-z]{2,}$/i;
-function validateEmail(
-  _: EmailRule,
-  value: unknown
-): Omit<EmailErrorMEssage, keyof Omit<BaseErrorMessage, "message">> | undefined {
-  return EMAIL_REGEX.test(assertString(value))
-    ? undefined
-    : {
-        code: ErrorCode.EMAIL,
-        message: `The value ${value} is not a valid email address`,
-      };
-}
-
-/**
- * Before rule validator
- *
- * @param rule the rule that is executed
- * @param value the value to be validated
- * @returns undefined then the validations passses, an error message when it fails
- */
-function beforeRuleValidator(
-  schema: Schema,
-  path: string,
-  rule: BeforeRule,
-  value: unknown,
-  context: Context
-): Omit<BeforeErrorMessage, keyof Omit<BaseErrorMessage, "message">> | undefined {
-  switch (schema.type) {
-    case SchemaType.DATE_STRING: {
-      const date = parseDateString(assertString(value), schema.format);
-      const before = assertString(unpackRefValue(rule.before, path, context));
-      const compareTo = parseDateString(before, schema.format);
-      return isBefore(date, compareTo)
-        ? undefined
-        : {
-            code: ErrorCode.BEFORE,
-            before: before,
-            message: `The value ${value} for schema ${path} is after ${before}`,
-          };
-    }
-    case SchemaType.DATE: {
-      const date = assertDate(value);
-      const before = assertDate(coerce(SchemaType.DATE, unpackRefValue(rule.before, path, context)));
-
-      return isBefore(date, before)
-        ? undefined
-        : {
-            code: ErrorCode.BEFORE,
-            before: before,
-            message: `The value ${value} for schema ${path} is after ${before}`,
-          };
-    }
-    default:
-      throw new Error(`Before rule cannot be used on schema of type: ${schema.type}`);
-  }
-}
-
-/**
- * After rule validator
- *
- * @param rule the rule that is executed
- * @param value the value to be validated
- * @returns undefined then the validations passses, an error message when it fails
- */
-function afterRuleValidator(
-  schema: Schema,
-  path: string,
-  rule: AfterRule,
-  value: unknown,
-  context: Context
-): Omit<AfterErrorMessage, keyof Omit<BaseErrorMessage, "message">> | undefined {
-  switch (schema.type) {
-    case SchemaType.DATE_STRING: {
-      const date = parseDateString(assertString(value), schema.format);
-      const after = assertString(unpackRefValue(rule.after, path, context));
-      const compareTo = parseDateString(after, schema.format);
-      return isAfter(date, compareTo)
-        ? undefined
-        : {
-            code: ErrorCode.AFTER,
-            after: after,
-            message: `The value ${value} for schema ${path} is before ${after}`,
-          };
-    }
-    case SchemaType.DATE: {
-      const date = assertDate(value);
-      const after = assertDate(coerce(SchemaType.DATE, unpackRefValue(rule.after, path, context)));
-
-      return isAfter(date, after)
-        ? undefined
-        : {
-            code: ErrorCode.AFTER,
-            after: after,
-            message: `The value ${value} for schema ${path} is before ${after}`,
-          };
-    }
-    default:
-      throw new Error(`Before rule cannot be used on schema of type: ${schema.type}`);
-  }
-}
-
-/**
- * One off rule validator
- *
- * @param rule the rule that is executed
- * @param value the value to be validated
- * @returns undefined then the validations passses, an error message when it fails
- */
-function validateOneOfRule(
-  rule: OneOfRule,
-  value: unknown
-): Omit<OneOfErrorMessage, keyof Omit<BaseErrorMessage, "message">> | undefined {
-  return rule.values.some((v) => v === value)
-    ? undefined
-    : {
-        code: ErrorCode.ONE_OF,
-        expected: rule.values,
-        message: `The value ${value} is not a one of ${rule.values}`,
-      };
 }
 
 /**
@@ -1095,9 +545,9 @@ export function parseDateString(value: DateString, format: string): Date {
  * @param value the number value the precision needs to be determined for
  * @returns the precision
  */
-function getPrecision(value: number): number {
-  return (value.toString().split(".")[1] || "").length;
-}
+// function getPrecision(value: number): number {
+//   return (value.toString().split(".")[1] || "").length;
+// }
 
 /**
  * Determines based on the schema and the current and new value whether the value has changed

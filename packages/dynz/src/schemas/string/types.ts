@@ -11,7 +11,7 @@ import type {
   Reference,
   RegexRule,
   SchemaType,
-} from "../types";
+} from "../../types";
 
 /**
  * STRING SCHEMA

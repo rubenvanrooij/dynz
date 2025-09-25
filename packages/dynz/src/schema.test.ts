@@ -3,18 +3,15 @@ import { equals, max, min } from "./rules";
 import {
   array,
   boolean,
-  date,
-  // rules,
   DEFAULT_DATE_STRING_FORMAT,
+  date,
   dateString,
   file,
   number,
   object,
-  optional,
   options,
-  required,
   string,
-} from "./schema";
+} from "./schemas";
 import { SchemaType } from "./types";
 
 describe("schema", () => {
@@ -186,31 +183,31 @@ describe("schema", () => {
   describe("options", () => {
     it("should create options schema with string options", () => {
       const schema = options({
-        options: ["apple", "banana", "orange"],
+        values: ["apple", "banana", "orange"],
       });
 
       expect(schema).toEqual({
         type: SchemaType.OPTIONS,
-        options: ["apple", "banana", "orange"],
+        values: ["apple", "banana", "orange"],
       });
     });
 
     it("should create options schema with number options", () => {
       const schema = options({
-        options: [1, 2, 3, 4, 5],
+        values: [1, 2, 3, 4, 5],
         required: true,
       });
 
       expect(schema).toEqual({
         type: SchemaType.OPTIONS,
-        options: [1, 2, 3, 4, 5],
+        values: [1, 2, 3, 4, 5],
         required: true,
       });
     });
 
     it("should create options schema with all properties", () => {
       const schema = options({
-        options: ["small", "medium", "large"],
+        values: ["small", "medium", "large"],
         required: false,
         mutable: true,
         included: true,
@@ -220,7 +217,7 @@ describe("schema", () => {
 
       expect(schema).toEqual({
         type: SchemaType.OPTIONS,
-        options: ["small", "medium", "large"],
+        values: ["small", "medium", "large"],
         required: false,
         mutable: true,
         included: true,
@@ -477,61 +474,13 @@ describe("schema", () => {
     });
   });
 
-  describe("helper functions", () => {
-    describe("optional", () => {
-      it("should make schema optional", () => {
-        const baseSchema = string({ required: true });
-        const optionalSchema = optional(baseSchema);
-
-        expect(optionalSchema).toEqual({
-          type: SchemaType.STRING,
-          required: false,
-        });
-      });
-
-      it("should override required property", () => {
-        const baseSchema = number({ required: true, default: 0 });
-        const optionalSchema = optional(baseSchema);
-
-        expect(optionalSchema).toEqual({
-          type: SchemaType.NUMBER,
-          required: false,
-          default: 0,
-        });
-      });
-    });
-
-    describe("required", () => {
-      it("should make schema required", () => {
-        const baseSchema = string({ required: false });
-        const requiredSchema = required(baseSchema);
-
-        expect(requiredSchema).toEqual({
-          type: SchemaType.STRING,
-          required: true,
-        });
-      });
-
-      it("should override required property", () => {
-        const baseSchema = number({ required: false, mutable: true });
-        const requiredSchema = required(baseSchema);
-
-        expect(requiredSchema).toEqual({
-          type: SchemaType.NUMBER,
-          required: true,
-          mutable: true,
-        });
-      });
-    });
-  });
-
   describe("complex schema compositions", () => {
     it("should create complex nested schema structure", () => {
       const userSchema = object({
         fields: {
           id: number({ required: true }),
           name: string({ required: true, rules: [min(2), max(50)] }),
-          email: optional(string({ rules: [{ type: "regex", regex: "^[^@]+@[^@]+$" }] })),
+          email: string({ rules: [{ type: "regex", regex: "^[^@]+@[^@]+$" }], required: false }),
           addresses: array({
             schema: object({
               fields: {
