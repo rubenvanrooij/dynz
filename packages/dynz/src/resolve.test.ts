@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { eq } from "./conditions";
+import { type Condition, ConditionType, eq, resolveCondition } from "./conditions";
 import {
   findSchemaByPath,
   getNested,
@@ -8,15 +8,14 @@ import {
   isReference,
   isRequired,
   type ResolveContext,
-  resolveCondition,
   resolveProperty,
   resolveRules,
   unpackRef,
   unpackRefValue,
 } from "./resolve";
-import { conditional, equals, max, min, ref } from "./rules";
+import { conditional, equals, maxLength, min, minLength, ref } from "./rules";
 import { array, number, object, string } from "./schemas";
-import { type Condition, ConditionType, REFERENCE_TYPE, type Reference, RuleType, SchemaType } from "./types";
+import { REFERENCE_TYPE, type Reference, RuleType, SchemaType } from "./types";
 
 describe("resolve", () => {
   describe("isRequired", () => {
@@ -325,7 +324,7 @@ describe("resolve", () => {
   describe("resolveRules", () => {
     it("should return all rules when no conditions", () => {
       const schema = string({
-        rules: [min(3), max(10), equals("test")],
+        rules: [minLength(3), maxLength(10), equals("test")],
       });
 
       const context: ResolveContext = {
@@ -335,8 +334,8 @@ describe("resolve", () => {
 
       const rules = resolveRules(schema, "$", context);
       expect(rules).toHaveLength(3);
-      expect(rules[0].type).toBe(RuleType.MIN);
-      expect(rules[1].type).toBe(RuleType.MAX);
+      expect(rules[0].type).toBe(RuleType.MIN_LENGTH);
+      expect(rules[1].type).toBe(RuleType.MAX_LENGTH);
       expect(rules[2].type).toBe(RuleType.EQUALS);
     });
 
@@ -347,11 +346,11 @@ describe("resolve", () => {
           path: "$.type",
           value: "email",
         },
-        then: min(5),
+        then: minLength(5),
       });
 
       const schema = string({
-        rules: [max(10), conditionalRule],
+        rules: [maxLength(10), conditionalRule],
       });
 
       const rootSchema = object({
@@ -368,8 +367,8 @@ describe("resolve", () => {
 
       const rules = resolveRules(schema, "$.value", context);
       expect(rules).toHaveLength(2);
-      expect(rules[0].type).toBe(RuleType.MAX);
-      expect(rules[1].type).toBe(RuleType.MIN);
+      expect(rules[0].type).toBe(RuleType.MAX_LENGTH);
+      expect(rules[1].type).toBe(RuleType.MIN_LENGTH);
     });
 
     it("should exclude conditional rules when condition is false", () => {
@@ -383,7 +382,7 @@ describe("resolve", () => {
       });
 
       const schema = string({
-        rules: [max(10), conditionalRule],
+        rules: [maxLength(10), conditionalRule],
       });
 
       const rootSchema = object({
@@ -400,7 +399,7 @@ describe("resolve", () => {
 
       const rules = resolveRules(schema, "$.value", context);
       expect(rules).toHaveLength(1);
-      expect(rules[0].type).toBe(RuleType.MAX);
+      expect(rules[0].type).toBe(RuleType.MAX_LENGTH);
     });
   });
 

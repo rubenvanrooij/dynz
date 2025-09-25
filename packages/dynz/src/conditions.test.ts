@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { and, eq, gt, gte, isIn, isNotIn, lt, lte, matches, neq, or } from "./conditions";
+import { and, ConditionType, eq, gt, gte, isIn, isNotIn, lt, lte, matches, neq, or } from "./conditions";
 import { ref } from "./rules";
-import { ConditionType, REFERENCE_TYPE } from "./types";
+import { REFERENCE_TYPE } from "./types";
 
 describe("conditions", () => {
   describe("logical conditions", () => {

@@ -4,15 +4,15 @@ import type {
   BeforeRule,
   CustomRule,
   EqualsRule,
-  MaxRule,
-  MinRule,
+  MaxDateRule,
+  MinDateRule,
   Reference,
   SchemaType,
 } from "../../types";
 
 export type DateRules =
-  | MinRule<Date | Reference>
-  | MaxRule<Date | Reference>
+  | MinDateRule
+  | MaxDateRule
   | AfterRule<Date | Reference>
   | BeforeRule<Date | Reference>
   | EqualsRule<Date | Reference>

@@ -4,8 +4,8 @@ import type {
   EmailRule,
   EqualsRule,
   IsNumericRule,
-  MaxRule,
-  MinRule,
+  MaxLengthRule,
+  MinLengthRule,
   OneOfRule,
   PrivateSchema,
   Reference,
@@ -18,8 +18,8 @@ import type {
  */
 export type StringRules =
   | RegexRule
-  | MinRule<number | Reference>
-  | MaxRule<number | Reference>
+  | MinLengthRule
+  | MaxLengthRule
   | EqualsRule
   | IsNumericRule
   | EmailRule

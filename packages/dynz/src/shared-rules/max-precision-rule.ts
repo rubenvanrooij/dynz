@@ -1,7 +1,7 @@
-import { unpackRefValue } from "../../../resolve";
-import { ErrorCode, type MaxPrecisionRule, type ValidateRuleContext } from "../../../types";
-import { assertNumber } from "../../../validate";
-import type { NumberSchema } from "../types";
+import { unpackRefValue } from "../resolve";
+import type { NumberSchema } from "../schemas/number/types";
+import { ErrorCode, type MaxPrecisionRule, type ValidateRuleContext } from "../types";
+import { assertNumber } from "../validate";
 
 export function maxPrecisionRule({ value, rule, path, context }: ValidateRuleContext<NumberSchema, MaxPrecisionRule>) {
   const maxPrecision = assertNumber(unpackRefValue(rule.max, path, context));

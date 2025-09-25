@@ -5,8 +5,6 @@ import type {
   CustomRule,
   DateString,
   EqualsRule,
-  MaxRule,
-  MinRule,
   OneOfRule,
   PrivateSchema,
   Reference,
@@ -15,8 +13,6 @@ import type {
 } from "../../types";
 
 export type DateStringRules =
-  | MinRule<DateString | Reference>
-  | MaxRule<DateString | Reference>
   | AfterRule<DateString | Reference>
   | BeforeRule<DateString | Reference>
   | EqualsRule<DateString | Reference>

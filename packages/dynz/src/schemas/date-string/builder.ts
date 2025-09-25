@@ -14,6 +14,7 @@ export function dateString<
 >(value?: A): DateStringSchema {
   return {
     ...value,
+
     format: value?.format || DEFAULT_DATE_STRING_FORMAT,
     type: SchemaType.DATE_STRING,
   };

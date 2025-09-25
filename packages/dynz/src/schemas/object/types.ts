@@ -1,9 +1,8 @@
 import type {
   BaseSchema,
   CustomRule,
-  MaxRule,
-  MinRule,
-  Reference,
+  MaxEntriesRule,
+  MinEntriesRule,
   Schema,
   SchemaType,
   SchemaValuesInternal,
@@ -12,7 +11,7 @@ import type {
 /**
  * OBJECT SCHEMA
  */
-export type ObjectRules = CustomRule | MinRule<number | Reference> | MaxRule<number | Reference>;
+export type ObjectRules = CustomRule | MinEntriesRule | MaxEntriesRule;
 export type ObjectSchema<T extends Record<string, Schema>> = BaseSchema<
   [T] extends [never] ? Record<string, unknown> : { [A in keyof T]: SchemaValuesInternal<T[A]> },
   typeof SchemaType.OBJECT,

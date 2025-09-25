@@ -1,3 +1,4 @@
+import type { Reference, ValueType } from "../types";
 import {
   type AndCondition,
   type Condition,
@@ -12,8 +13,6 @@ import {
   type MatchesCondition,
   type NotEqualsCondition,
   type OrCondition,
-  type Reference,
-  type ValueType,
 } from "./types";
 
 export function and<const T extends Condition[]>(...conditions: T): Pick<AndCondition, "type"> & { conditions: T } {

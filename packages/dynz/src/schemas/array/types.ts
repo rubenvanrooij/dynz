@@ -1,9 +1,8 @@
 import type {
   BaseSchema,
   CustomRule,
-  MaxRule,
-  MinRule,
-  Reference,
+  MaxLengthRule,
+  MinLengthRule,
   Schema,
   SchemaType,
   SchemaValuesInternal,
@@ -12,7 +11,7 @@ import type {
 /**
  * ARRAY SCHEMA
  */
-export type ArrayRules = MinRule<number | Reference> | MaxRule<number | Reference> | CustomRule;
+export type ArrayRules = MinLengthRule | MaxLengthRule | CustomRule;
 export type ArraySchema<T extends Schema> = BaseSchema<
   [T] extends [never] ? unknown[] : SchemaValuesInternal<T>[],
   typeof SchemaType.ARRAY,

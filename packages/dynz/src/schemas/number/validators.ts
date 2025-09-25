@@ -1,7 +1,7 @@
-import { customRule, equalsRule, oneOfRule } from "../../shared-rules";
+import { customRule, equalsRule, maxPrecisionRule, maxRule, minRule, oneOfRule } from "../../shared-rules";
+
 import type { ValidateRuleContextUnion } from "../../types";
 import { RuleType } from "../../types";
-import { maxPrecisionRule, maxRule, minRule } from "./rules";
 import type { NumberSchema } from "./types";
 
 export function validateNumber(context: ValidateRuleContextUnion<NumberSchema>) {

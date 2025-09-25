@@ -46,9 +46,49 @@ export type MinErrorMessage = BaseErrorMessage & {
   min: Date | number | string;
 };
 
+export type MinDateErrorMessage = BaseErrorMessage & {
+  code: typeof ErrorCode.MIN_DATE;
+  min: Date;
+};
+
+export type MinLengthErrorMessage = BaseErrorMessage & {
+  code: typeof ErrorCode.MIN_LENGTH;
+  min: number;
+};
+
+export type MinSizeErrorMessage = BaseErrorMessage & {
+  code: typeof ErrorCode.MIN_SIZE;
+  min: number;
+};
+
+export type MinEntriesErrorMessage = BaseErrorMessage & {
+  code: typeof ErrorCode.MIN_ENTRIES;
+  min: number;
+};
+
 export type MaxErrorMessage = BaseErrorMessage & {
   code: typeof ErrorCode.MAX;
   max: Date | number | string;
+};
+
+export type MaxEntriesErrorMessage = BaseErrorMessage & {
+  code: typeof ErrorCode.MAX_ENTRIES;
+  max: number;
+};
+
+export type MaxDateErrorMessage = BaseErrorMessage & {
+  code: typeof ErrorCode.MAX_DATE;
+  max: Date;
+};
+
+export type MaxLengthErrorMessage = BaseErrorMessage & {
+  code: typeof ErrorCode.MAX_LENGTH;
+  max: number;
+};
+
+export type MaxSizeErrorMessage = BaseErrorMessage & {
+  code: typeof ErrorCode.MAX_SIZE;
+  max: number;
 };
 
 export type BeforeErrorMessage = BaseErrorMessage & {
@@ -116,7 +156,15 @@ export type ErrorMessage =
   | EqualsErrorMessage
   | MimeTypeErrorMessage
   | MinErrorMessage
+  | MinDateErrorMessage
+  | MinLengthErrorMessage
+  | MinSizeErrorMessage
+  | MinEntriesErrorMessage
   | MaxErrorMessage
+  | MaxSizeErrorMessage
+  | MaxDateErrorMessage
+  | MaxLengthErrorMessage
+  | MaxEntriesErrorMessage
   | MaxPrecisionErrorMessage
   | RegexErrorMessage
   | ImmutableErrorMessage

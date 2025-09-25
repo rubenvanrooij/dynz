@@ -1,7 +1,7 @@
-import { unpackRefValue } from "../../../resolve";
-import { ErrorCode, type MimeTypeRule, type ValidateRuleContext } from "../../../types";
-import { isArray } from "../../../validate";
-import type { FileSchema } from "../types";
+import { unpackRefValue } from "../resolve";
+import type { FileSchema } from "../schemas/file/types";
+import { ErrorCode, type MimeTypeRule, type ValidateRuleContext } from "../types";
+import { isArray } from "../validate";
 
 export function mimeTypeRule({ rule, value, path, context }: ValidateRuleContext<FileSchema, MimeTypeRule>) {
   const mimeType = unpackRefValue(rule.mimeType, path, context);

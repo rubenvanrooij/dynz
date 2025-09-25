@@ -377,6 +377,7 @@ export function validateType<T extends SchemaType>(
       return isDateString(value, dateFormat);
     }
     case SchemaType.OPTIONS:
+      // TODO: Validate if value is actually one of the options in the schema
       return isNumber(value) || isString(value) || isBoolean(value);
   }
 }

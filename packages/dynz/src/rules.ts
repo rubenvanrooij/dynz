@@ -1,17 +1,25 @@
+import type { Condition } from "./conditions";
 import {
   type AfterRule,
   type BeforeRule,
-  type Condition,
   type ConditionalRule,
   type CustomRule,
   type DateString,
   type EmailRule,
   type EqualsRule,
   type IsNumericRule,
+  type MaxDateRule,
+  type MaxEntriesRule,
+  type MaxLengthRule,
   type MaxPrecisionRule,
   type MaxRule,
+  type MaxSizeRule,
   type MimeTypeRule,
+  type MinDateRule,
+  type MinEntriesRule,
+  type MinLengthRule,
   type MinRule,
+  type MinSizeRule,
   type OneOfRule,
   REFERENCE_TYPE,
   type Reference,
@@ -32,12 +40,44 @@ export function ref<const T extends string>(path: T): Reference<T> {
   };
 }
 
-export function min<T extends Date | number | DateString | Reference>(min: T, code?: string): MinRule<T> {
+export function min<T extends number | Reference>(min: T, code?: string): MinRule<T> {
   return { type: RuleType.MIN, min, code };
 }
 
-export function max<T extends Date | number | DateString | Reference>(max: T, code?: string): MaxRule<T> {
+export function max<T extends number | Reference>(max: T, code?: string): MaxRule<T> {
   return { type: RuleType.MAX, max, code };
+}
+
+export function minLength<T extends number | Reference>(min: T, code?: string): MinLengthRule<T> {
+  return { type: RuleType.MIN_LENGTH, min, code };
+}
+
+export function maxLength<T extends number | Reference>(max: T, code?: string): MaxLengthRule<T> {
+  return { type: RuleType.MAX_LENGTH, max, code };
+}
+
+export function minEntries<T extends number | Reference>(min: T, code?: string): MinEntriesRule<T> {
+  return { type: RuleType.MIN_ENTRIES, min, code };
+}
+
+export function maxEntries<T extends number | Reference>(max: T, code?: string): MaxEntriesRule<T> {
+  return { type: RuleType.MAX_ENTRIES, max, code };
+}
+
+export function minDate<T extends Date | Reference>(min: T, code?: string): MinDateRule<T> {
+  return { type: RuleType.MIN_DATE, min, code };
+}
+
+export function maxDate<T extends Date | Reference>(max: T, code?: string): MaxDateRule<T> {
+  return { type: RuleType.MAX_DATE, max, code };
+}
+
+export function minSize<T extends number | Reference>(min: T, code?: string): MinSizeRule<T> {
+  return { type: RuleType.MIN_SIZE, min, code };
+}
+
+export function maxSize<T extends number | Reference>(max: T, code?: string): MaxSizeRule<T> {
+  return { type: RuleType.MAX_SIZE, max, code };
 }
 
 export function maxPrecision<T extends number | Reference>(max: T, code?: string): MaxPrecisionRule<T> {

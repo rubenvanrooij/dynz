@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { equals, max, min } from "./rules";
+import { equals, max, maxDate, maxLength, min, minDate, minLength } from "./rules";
 import {
   array,
   boolean,
@@ -28,7 +28,7 @@ describe("schema", () => {
       const schema = string({
         required: true,
         default: "hello",
-        rules: [min(3), max(10)],
+        rules: [minLength(3), maxLength(10)],
       });
 
       expect(schema).toEqual({
@@ -36,8 +36,8 @@ describe("schema", () => {
         required: true,
         default: "hello",
         rules: [
-          { type: "min", min: 3 },
-          { type: "max", max: 10 },
+          { type: "min_length", min: 3 },
+          { type: "max_length", max: 10 },
         ],
       });
     });
@@ -183,31 +183,31 @@ describe("schema", () => {
   describe("options", () => {
     it("should create options schema with string options", () => {
       const schema = options({
-        values: ["apple", "banana", "orange"],
+        options: ["apple", "banana", "orange"],
       });
 
       expect(schema).toEqual({
         type: SchemaType.OPTIONS,
-        values: ["apple", "banana", "orange"],
+        options: ["apple", "banana", "orange"],
       });
     });
 
     it("should create options schema with number options", () => {
       const schema = options({
-        values: [1, 2, 3, 4, 5],
+        options: [1, 2, 3, 4, 5],
         required: true,
       });
 
       expect(schema).toEqual({
         type: SchemaType.OPTIONS,
-        values: [1, 2, 3, 4, 5],
+        options: [1, 2, 3, 4, 5],
         required: true,
       });
     });
 
     it("should create options schema with all properties", () => {
       const schema = options({
-        values: ["small", "medium", "large"],
+        options: ["small", "medium", "large"],
         required: false,
         mutable: true,
         included: true,
@@ -217,7 +217,7 @@ describe("schema", () => {
 
       expect(schema).toEqual({
         type: SchemaType.OPTIONS,
-        values: ["small", "medium", "large"],
+        options: ["small", "medium", "large"],
         required: false,
         mutable: true,
         included: true,
@@ -306,15 +306,15 @@ describe("schema", () => {
     it("should create array schema with number items", () => {
       const schema = array({
         schema: number(),
-        rules: [min(1), max(5)],
+        rules: [minLength(1), maxLength(5)],
       });
 
       expect(schema).toEqual({
         type: SchemaType.ARRAY,
         schema: { type: SchemaType.NUMBER },
         rules: [
-          { type: "min", min: 1 },
-          { type: "max", max: 5 },
+          { type: "min_length", min: 1 },
+          { type: "max_length", max: 5 },
         ],
       });
     });
@@ -409,18 +409,18 @@ describe("schema", () => {
     });
 
     it("should create date schema with validation rules", () => {
-      const minDate = new Date("2020-01-01");
-      const maxDate = new Date("2030-12-31");
+      const minimumDate = new Date("2020-01-01");
+      const maximumDate = new Date("2030-12-31");
       const equalDate = new Date("2024-06-15");
 
       const schema = date({
-        rules: [min(minDate), max(maxDate), equals(equalDate)],
+        rules: [minDate(minimumDate), maxDate(maximumDate), equals(equalDate)],
       });
 
       expect(schema.type).toBe(SchemaType.DATE);
       expect(schema.rules).toHaveLength(3);
-      expect(schema.rules?.[0]).toEqual({ type: "min", min: minDate });
-      expect(schema.rules?.[1]).toEqual({ type: "max", max: maxDate });
+      expect(schema.rules?.[0]).toEqual({ type: "min_date", min: minimumDate });
+      expect(schema.rules?.[1]).toEqual({ type: "max_date", max: maximumDate });
       expect(schema.rules?.[2]).toEqual({ type: "equals", value: equalDate });
     });
   });
@@ -479,7 +479,7 @@ describe("schema", () => {
       const userSchema = object({
         fields: {
           id: number({ required: true }),
-          name: string({ required: true, rules: [min(2), max(50)] }),
+          name: string({ required: true, rules: [minLength(2), maxLength(50)] }),
           email: string({ rules: [{ type: "regex", regex: "^[^@]+@[^@]+$" }], required: false }),
           addresses: array({
             schema: object({
@@ -489,7 +489,7 @@ describe("schema", () => {
                 country: string({ default: "US" }),
               },
             }),
-            rules: [max(3)],
+            rules: [maxLength(3)],
           }),
           createdAt: dateString({
             format: "yyyy-MM-dd",

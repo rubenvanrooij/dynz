@@ -1,3 +1,4 @@
+import type { Condition } from "../conditions";
 import type {
   ArraySchema,
   BooleanSchema,
@@ -9,7 +10,6 @@ import type {
   OptionsSchema,
   StringSchema,
 } from "../schemas";
-import type { Condition } from "./condition";
 import type { PrivateValue } from "./private";
 import type { ConditionalRule, Rule } from "./rules";
 import type { DateString, EnumValues, Prettify } from "./utils";

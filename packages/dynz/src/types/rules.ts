@@ -1,4 +1,4 @@
-import type { Condition } from "./condition";
+import type { Condition } from "../conditions";
 import type { Reference, ValueOrReference } from "./reference";
 import type { Schema } from "./schema";
 import type { EnumValues, Unpacked } from "./utils";
@@ -6,6 +6,16 @@ import type { EnumValues, Unpacked } from "./utils";
 export const RuleType = {
   MIN: "min",
   MAX: "max",
+  MIN_LENGTH: "min_length",
+  MIN_SIZE: "min_size",
+  MIN_DATE: "min_date",
+  MIN_ENTRIES: "min_entries",
+
+  MAX_LENGTH: "max_length",
+  MAX_SIZE: "max_size",
+  MAX_DATE: "max_date",
+  MAX_ENTRIES: "max_entries",
+
   AFTER: "after",
   BEFORE: "before",
   EMAIL: "email",
@@ -27,14 +37,62 @@ export type IsNumericRule = {
   code?: string | undefined;
 };
 
-export type MinRule<T extends Date | number | string | Reference = Date | number | string | Reference> = {
+export type MinRule<T extends number | Reference = number | Reference> = {
   type: typeof RuleType.MIN;
+  min: T;
+  code?: string | undefined;
+};
+
+export type MinLengthRule<T extends number | Reference = number | Reference> = {
+  type: typeof RuleType.MIN_LENGTH;
+  min: T;
+  code?: string | undefined;
+};
+
+export type MinSizeRule<T extends number | Reference = number | Reference> = {
+  type: typeof RuleType.MIN_SIZE;
+  min: T;
+  code?: string | undefined;
+};
+
+export type MinEntriesRule<T extends number | Reference = number | Reference> = {
+  type: typeof RuleType.MIN_ENTRIES;
+  min: T;
+  code?: string | undefined;
+};
+
+export type MinDateRule<T extends Date | Reference = Date | Reference> = {
+  type: typeof RuleType.MIN_DATE;
   min: T;
   code?: string | undefined;
 };
 
 export type MaxRule<T extends Date | number | string | Reference = Date | number | string | Reference> = {
   type: typeof RuleType.MAX;
+  max: T;
+  code?: string | undefined;
+};
+
+export type MaxEntriesRule<T extends number | Reference = number | Reference> = {
+  type: typeof RuleType.MAX_ENTRIES;
+  max: T;
+  code?: string | undefined;
+};
+
+export type MaxLengthRule<T extends number | Reference = number | Reference> = {
+  type: typeof RuleType.MAX_LENGTH;
+  max: T;
+  code?: string | undefined;
+};
+
+export type MaxSizeRule<T extends number | Reference = number | Reference> = {
+  type: typeof RuleType.MAX_SIZE;
+  max: T;
+  code?: string | undefined;
+};
+
+export type MaxDateRule<T extends Date | Reference = Date | Reference> = {
+  type: typeof RuleType.MAX_DATE;
   max: T;
   code?: string | undefined;
 };
@@ -103,7 +161,15 @@ export type ConditionalRule<TCondition, TRule extends Rule> = {
 export type Rule =
   | ConditionalRule<never, never>
   | MinRule
+  | MinSizeRule
+  | MinDateRule
+  | MinLengthRule
+  | MinEntriesRule
   | MaxRule
+  | MaxSizeRule
+  | MaxEntriesRule
+  | MaxDateRule
+  | MaxLengthRule
   | EqualsRule
   | RegexRule
   | MaxPrecisionRule

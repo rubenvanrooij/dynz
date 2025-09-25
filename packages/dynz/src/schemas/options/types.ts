@@ -9,5 +9,5 @@ export type OptionsSchema<TValue extends string | number = string | number> = Ba
   typeof SchemaType.OPTIONS,
   OptionsRules
 > & {
-  values: TValue[];
+  options: TValue[];
 };
