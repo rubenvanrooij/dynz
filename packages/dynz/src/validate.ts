@@ -405,7 +405,7 @@ function validateEqualsRule(
         : {
             code: ErrorCode.EQUALS,
             equals: refOrValue,
-            message: `The value for schema ${path} does not equal ${refOrValue}`,
+            message: `The value for schema ${path} doesn't equal ${refOrValue}`,
           };
     default: {
       return refOrValue === value
