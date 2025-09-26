@@ -12,7 +12,7 @@
     "lint": "biome lint --write",
     "lint:check": "biome lint .",
     "prepare": "husky",
-    "ci:version": "pnpm changelog && pnpx changeset version && pnpm install --no-frozen-lockfile && git add .",
+    "ci:version": "pnpx changeset version && pnpm install --no-frozen-lockfile && git add .",
     "ci:publish": "pnpm publish -r --access=public"
   },
   "repository": {
