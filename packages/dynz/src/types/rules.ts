@@ -3,7 +3,7 @@
 // import type { Schema } from "./schema";
 // import type { EnumValues, Unpacked } from "./utils";
 
-import type { ConditionalRule } from "../shared-rules";
+import type { ConditionalRule } from "../rules";
 import type { Schema } from "./schema";
 import type { Unpacked } from "./utils";
 

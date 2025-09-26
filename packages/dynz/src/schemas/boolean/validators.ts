@@ -1,4 +1,4 @@
-import { customRule, equalsRule } from "../../shared-rules";
+import { customRule, equalsRule } from "../../rules";
 import type { ValidateRuleContextUnion } from "../../types";
 import type { BooleanSchema } from "./types";
 

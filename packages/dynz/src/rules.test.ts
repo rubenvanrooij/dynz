@@ -1,19 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { and, ConditionType, eq, or } from "./conditions";
 import { REFERENCE_TYPE, ref } from "./reference";
-import {
-  after,
-  before,
-  conditional,
-  custom,
-  equals,
-  isNumeric,
-  max,
-  maxDate,
-  min,
-  minDate,
-  regex,
-} from "./shared-rules";
+import { after, before, conditional, custom, equals, isNumeric, max, maxDate, min, minDate, regex } from "./rules";
 
 describe("rules", () => {
   describe("ref function", () => {

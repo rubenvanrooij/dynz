@@ -1,4 +1,4 @@
-import { customRule, maxEntriesRule, minEntriesRule } from "../../shared-rules";
+import { customRule, maxEntriesRule, minEntriesRule } from "../../rules";
 import type { ValidateRuleContextUnion } from "../../types";
 import type { ObjectSchema } from "./types";
 

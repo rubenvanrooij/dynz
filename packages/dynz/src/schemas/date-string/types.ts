@@ -1,4 +1,4 @@
-import type { CustomRule } from "../../shared-rules";
+import type { CustomRule } from "../../rules";
 import type { BaseSchema, DateString, PrivateSchema, SchemaType } from "../../types";
 
 export type DateStringRules = CustomRule;

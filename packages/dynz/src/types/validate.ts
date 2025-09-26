@@ -19,7 +19,7 @@ import type {
   MinSizeRuleErrorMessage,
   OneOfRuleErrorMessage,
   RegexRuleErrorMessage,
-} from "../shared-rules";
+} from "../rules";
 import type { BaseRule, ExtractResolvedRules } from "./rules";
 import type { Schema, SchemaType, ValueType } from "./schema";
 import type { EnumValues, ErrorMessageFromRule, JsonPrimitive } from "./utils";

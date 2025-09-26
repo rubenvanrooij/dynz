@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { equals, max, maxDate, maxLength, min, minDate, minLength } from "./rules";
 import {
   array,
   boolean,
@@ -11,7 +12,6 @@ import {
   options,
   string,
 } from "./schemas";
-import { equals, max, maxDate, maxLength, min, minDate, minLength } from "./shared-rules";
 import { SchemaType } from "./types";
 
 describe("schema", () => {

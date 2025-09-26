@@ -1,5 +1,5 @@
 import type { Reference } from "../../reference";
-import type { AfterRule, BeforeRule, CustomRule, EqualsRule, MaxDateRule, MinDateRule } from "../../shared-rules";
+import type { AfterRule, BeforeRule, CustomRule, EqualsRule, MaxDateRule, MinDateRule } from "../../rules";
 import type { BaseSchema, SchemaType } from "../../types";
 
 export type DateRules =

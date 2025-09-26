@@ -1,7 +1,7 @@
-import { customRule, equalsRule, maxLengthRule, minLengthRule, oneOfRule } from "../../shared-rules";
-import { emailRule } from "../../shared-rules/email-rule";
-import { isNumericRule } from "../../shared-rules/is-numeric-rule";
-import { regexRule } from "../../shared-rules/regex-rule";
+import { customRule, equalsRule, maxLengthRule, minLengthRule, oneOfRule } from "../../rules";
+import { emailRule } from "../../rules/email-rule";
+import { isNumericRule } from "../../rules/is-numeric-rule";
+import { regexRule } from "../../rules/regex-rule";
 import type { ValidateRuleContextUnion } from "../../types";
 import type { StringSchema } from "./types";
 

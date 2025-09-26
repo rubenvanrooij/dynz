@@ -1,5 +1,5 @@
 import type { Reference } from "../../reference";
-import type { CustomRule, EqualsRule, MaxPrecisionRule, MaxRule, MinRule, OneOfRule } from "../../shared-rules";
+import type { CustomRule, EqualsRule, MaxPrecisionRule, MaxRule, MinRule, OneOfRule } from "../../rules";
 import type { BaseSchema, SchemaType } from "../../types";
 
 /**

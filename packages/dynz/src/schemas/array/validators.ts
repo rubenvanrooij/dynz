@@ -1,6 +1,6 @@
-import { customRule } from "../../shared-rules";
-import { maxLengthRule } from "../../shared-rules/max-length-rule";
-import { minLengthRule } from "../../shared-rules/min-length-rule";
+import { customRule } from "../../rules";
+import { maxLengthRule } from "../../rules/max-length-rule";
+import { minLengthRule } from "../../rules/min-length-rule";
 import type { ValidateRuleContextUnion } from "../../types";
 import type { ArraySchema } from "./types";
 

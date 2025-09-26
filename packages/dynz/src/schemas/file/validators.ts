@@ -1,7 +1,7 @@
-import { customRule } from "../../shared-rules";
-import { maxSizeRule } from "../../shared-rules/max-size-rule";
-import { mimeTypeRule } from "../../shared-rules/mime-type-rule";
-import { minSizeRule } from "../../shared-rules/min-size-rule";
+import { customRule } from "../../rules";
+import { maxSizeRule } from "../../rules/max-size-rule";
+import { mimeTypeRule } from "../../rules/mime-type-rule";
+import { minSizeRule } from "../../rules/min-size-rule";
 import type { ValidateRuleContextUnion } from "../../types";
 import type { FileSchema } from "./types";
 

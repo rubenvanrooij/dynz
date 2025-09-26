@@ -1,4 +1,4 @@
-import type { CustomRule, MaxEntriesRule, MinEntriesRule } from "../../shared-rules";
+import type { CustomRule, MaxEntriesRule, MinEntriesRule } from "../../rules";
 import type { BaseSchema, Schema, SchemaType, SchemaValuesInternal } from "../../types";
 
 /**

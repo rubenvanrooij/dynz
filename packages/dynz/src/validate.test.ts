@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mask, plain } from "./private";
-import { array, boolean, date, dateString, file, number, object, options, string } from "./schemas";
 import {
   after,
   before,
@@ -18,7 +17,8 @@ import {
   minLength,
   oneOf,
   regex,
-} from "./shared-rules";
+} from "./rules";
+import { array, boolean, date, dateString, file, number, object, options, string } from "./schemas";
 import { type CustomRuleMap, ErrorCode, SchemaType } from "./types";
 import {
   isArray,

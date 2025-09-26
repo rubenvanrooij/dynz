@@ -8,7 +8,7 @@ import type {
   MinLengthRule,
   OneOfRule,
   RegexRule,
-} from "../../shared-rules";
+} from "../../rules";
 
 import type { BaseSchema, PrivateSchema, SchemaType } from "../../types";
 

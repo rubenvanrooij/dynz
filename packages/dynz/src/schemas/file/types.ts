@@ -1,4 +1,4 @@
-import type { CustomRule, MaxSizeRule, MimeTypeRule, MinSizeRule } from "../../shared-rules";
+import type { CustomRule, MaxSizeRule, MimeTypeRule, MinSizeRule } from "../../rules";
 import type { BaseSchema, SchemaType } from "../../types";
 
 export type FileRules = MinSizeRule | MaxSizeRule | MimeTypeRule | CustomRule;

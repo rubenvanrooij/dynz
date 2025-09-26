@@ -11,8 +11,8 @@ import {
   resolveRules,
 } from "./conditions";
 import { isReference, REFERENCE_TYPE, type Reference, ref, unpackRef, unpackRefValue } from "./reference";
+import { conditional, equals, maxLength, minLength } from "./rules";
 import { array, number, object, string } from "./schemas";
-import { conditional, equals, maxLength, minLength } from "./shared-rules";
 import { type ResolveContext, SchemaType } from "./types";
 import { findSchemaByPath, getNested } from "./utils";
 
