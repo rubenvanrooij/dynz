@@ -5,4 +5,4 @@ export * from "./rules";
 export * from "./schemas";
 export * from "./types";
 export * from "./utils";
-export * from "./validate";
+export * from "./validate/validate";

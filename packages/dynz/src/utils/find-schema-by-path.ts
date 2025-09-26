@@ -1,5 +1,5 @@
 import { type Schema, SchemaType } from "../types";
-import { isNumber } from "../validate";
+import { isNumber } from "../validate/validate";
 
 export function findSchemaByPath(path: string, schema: Schema): Schema;
 export function findSchemaByPath<T extends Schema = Schema>(path: string, schema: Schema, type: T["type"]): T;

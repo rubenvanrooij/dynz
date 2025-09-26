@@ -1,5 +1,6 @@
 import { parse } from "date-fns";
-import { resolveProperty, resolveRules } from "./conditions";
+import { resolveProperty, resolveRules } from "../conditions";
+import { isPivateValue, isValueMasked, type PrivateValue } from "../private";
 import {
   validateArray,
   validateBoolean,
@@ -10,12 +11,11 @@ import {
   validateObject,
   validateOptions,
   validateString,
-} from "./schemas";
+} from "../schemas";
 import {
   type Context,
   type DateString,
   ErrorCode,
-  type PrivateValue,
   type Schema,
   SchemaType,
   type SchemaValues,
@@ -23,8 +23,8 @@ import {
   type ValidateRuleContextUnion,
   type ValidationResult,
   type ValueType,
-} from "./types";
-import { coerce } from "./utils";
+} from "../types";
+import { coerce } from "../utils";
 
 export function validate<T extends Schema>(
   schema: T,
@@ -590,40 +590,4 @@ function getValue(schema: Schema, path: string, value: unknown): unknown {
   }
 
   return value;
-}
-
-export function isValueMasked(schema: Schema, value: unknown): boolean {
-  if (schema.private === true) {
-    return getPrivateData(value).state === "masked";
-  }
-
-  return false;
-}
-
-function isPivateValue<T>(value: unknown): value is PrivateValue<T> {
-  return isObject(value) && (value.state === "masked" || value.state === "plain") && "value" in value;
-}
-
-function getPrivateData(value: unknown): PrivateValue<unknown> {
-  if (value === undefined) {
-    throw new Error(
-      `'undefined' was passed where a private value was expected; if a private value is not required it must still adhere to the following structure: { type: 'masked' | 'plain', value: undefined }. This is the only way that tracking changes is possible`
-    );
-  }
-
-  if (!isObject(value) || (value.state !== "plain" && value.state !== "masked")) {
-    throw new Error(`value does not represent a masked value: ${value}`);
-  }
-
-  if (value.state === "masked") {
-    return {
-      state: "masked",
-      value: assertString(value.value),
-    };
-  }
-
-  return {
-    state: value.state,
-    value: value.value,
-  };
 }
