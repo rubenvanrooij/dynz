@@ -29,9 +29,6 @@ import * as d from "dynz";
 //   console.log(result.values); // ✅ Type-safe access
 // }
 
-
-
-
 const schema = d.object({
   fields: {
     accountType: d.options({
@@ -42,7 +39,7 @@ const schema = d.object({
 
     // Only included if accountType is 'business'
     companyName: d.string({
-      rules: [d.minLength(d.ref('minLength'))],
+      rules: [d.minLength(d.ref("minLength"))],
       required: d.matches("email", "@gmail.com$"),
       included: d.eq("accountType", "business"),
     }),
@@ -64,13 +61,13 @@ const schema = d.object({
 
 // // Validate data
 const result = d.validate(schema, undefined, {
-  accountType: 'business',
+  accountType: "business",
   minLength: 10,
-  companyName: 'test',
-  email: 'foo@company.com'
-})
+  companyName: "test",
+  email: "foo@company.com",
+});
 
-console.log(result)
+console.log(result);
 /**
  * new interface?
 object({
