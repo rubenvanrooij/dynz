@@ -1,4 +1,4 @@
-import type { Reference } from "../../conditions";
+import type { Reference } from "../../reference";
 import type {
   CustomRule,
   EmailRule,

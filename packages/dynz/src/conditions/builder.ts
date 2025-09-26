@@ -1,5 +1,5 @@
+import type { Reference } from "../reference/reference";
 import type { ValueType } from "../types";
-import type { Reference } from "./reference";
 import {
   type AndCondition,
   type Condition,

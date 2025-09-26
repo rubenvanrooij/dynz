@@ -1,5 +1,4 @@
-import type { ValueOrReference } from "../conditions";
-import { unpackRefValue } from "../resolve";
+import { unpackRefValue, type ValueOrReference } from "../reference";
 import type {
   ErrorMessageFromRule,
   ExtractResolvedRules,

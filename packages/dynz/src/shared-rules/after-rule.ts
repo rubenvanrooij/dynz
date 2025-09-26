@@ -1,8 +1,8 @@
 import { isAfter } from "date-fns";
-import { coerce, unpackRefValue } from "../resolve";
+import { type Reference, unpackRefValue } from "../reference";
 import type { DateSchema } from "../schemas";
 import type { ErrorMessageFromRule, OmitBaseErrorMessageProps, ValidateRuleContext } from "../types";
-import type { Reference } from "../conditions";
+import { coerce } from "../utils";
 import { assertDate } from "../validate";
 
 export type AfterRule<T extends Date | Reference = Date | Reference> = {
@@ -27,7 +27,7 @@ export function afterRule({
   | OmitBaseErrorMessageProps<AfterRuleErrorMessage>
   | undefined {
   const after = unpackRefValue(rule.after, path, context);
-  const compareTo = assertDate(coerce(schema.type, after));
+  const compareTo = assertDate(coerce(schema, after));
   return isAfter(value, compareTo)
     ? undefined
     : {

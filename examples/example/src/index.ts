@@ -38,9 +38,11 @@ const schema = d.object({
       options: ["personal", "business"],
     }),
 
+    minLength: d.number(),
+
     // Only included if accountType is 'business'
     companyName: d.string({
-      rules: [d.min(d.ref('accuntType'))],
+      rules: [d.minLength(d.ref('minLength'))],
       required: d.matches("email", "@gmail.com$"),
       included: d.eq("accountType", "business"),
     }),
@@ -63,6 +65,7 @@ const schema = d.object({
 // // Validate data
 const result = d.validate(schema, undefined, {
   accountType: 'business',
+  minLength: 10,
   companyName: 'test',
   email: 'foo@company.com'
 })

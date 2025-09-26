@@ -1,4 +1,4 @@
-import type { Reference } from "../../conditions";
+import type { Reference } from "../../reference";
 import type { AfterRule, BeforeRule, CustomRule, EqualsRule, MaxDateRule, MinDateRule } from "../../shared-rules";
 import type { BaseSchema, SchemaType } from "../../types";
 

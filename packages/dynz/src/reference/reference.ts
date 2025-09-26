@@ -7,6 +7,10 @@ export type Reference<T extends string = string> = {
   readonly path: T;
 };
 
+export function isReference(value: unknown): value is Reference {
+  return typeof value === "object" && value !== null && "_type" in value && value._type === REFERENCE_TYPE;
+}
+
 /**
  * Describes either a value or a reference.
  */

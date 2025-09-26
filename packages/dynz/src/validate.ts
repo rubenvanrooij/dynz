@@ -1,5 +1,5 @@
 import { parse } from "date-fns";
-import { coerce, resolveProperty, resolveRules } from "./resolve";
+import { resolveProperty, resolveRules } from "./conditions";
 import {
   validateArray,
   validateBoolean,
@@ -24,6 +24,7 @@ import {
   type ValidationResult,
   type ValueType,
 } from "./types";
+import { coerce } from "./utils";
 
 export function validate<T extends Schema>(
   schema: T,
@@ -91,13 +92,8 @@ export function _validate<T extends Schema>(
     };
   }
 
-  let newValue = getValue(schema, path, values.new);
+  const newValue = coerce(schema, getValue(schema, path, values.new));
   const currentValue = getValue(schema, path, values.current);
-
-  // Try coercing the value
-  if ("coerce" in schema && schema.coerce === true) {
-    newValue = coerce(schema.type, newValue);
-  }
 
   /**
    * if the schema is marked as not mutable; the value shuld still be the same

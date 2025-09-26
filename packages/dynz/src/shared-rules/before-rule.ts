@@ -1,8 +1,8 @@
 import { isBefore } from "date-fns";
-import type { Reference } from "../conditions";
-import { coerce, unpackRefValue } from "../resolve";
+import { type Reference, unpackRefValue } from "../reference";
 import type { DateSchema } from "../schemas";
 import type { ErrorMessageFromRule, OmitBaseErrorMessageProps, ValidateRuleContext } from "../types";
+import { coerce } from "../utils";
 import { assertDate } from "../validate";
 
 export type BeforeRule<T extends Date | Reference = Date | Reference> = {
@@ -27,7 +27,7 @@ export function beforeRule({
   | OmitBaseErrorMessageProps<BeforeRuleErrorMessage>
   | undefined {
   const before = unpackRefValue(rule.before, path, context);
-  const compareTo = assertDate(coerce(schema.type, before));
+  const compareTo = assertDate(coerce(schema, before));
   return isBefore(value, compareTo)
     ? undefined
     : {

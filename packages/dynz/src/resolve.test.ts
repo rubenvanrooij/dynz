@@ -1,21 +1,20 @@
 import { describe, expect, it } from "vitest";
-import { type Condition, ConditionType, eq, REFERENCE_TYPE, type Reference, ref, resolveCondition } from "./conditions";
 import {
-  findSchemaByPath,
-  getNested,
+  type Condition,
+  ConditionType,
+  eq,
   isIncluded,
   isMutable,
-  isReference,
   isRequired,
-  type ResolveContext,
+  resolveCondition,
   resolveProperty,
   resolveRules,
-  unpackRef,
-  unpackRefValue,
-} from "./resolve";
+} from "./conditions";
+import { isReference, REFERENCE_TYPE, type Reference, ref, unpackRef, unpackRefValue } from "./reference";
 import { array, number, object, string } from "./schemas";
 import { conditional, equals, maxLength, minLength } from "./shared-rules";
-import { SchemaType } from "./types";
+import { type ResolveContext, SchemaType } from "./types";
+import { findSchemaByPath, getNested } from "./utils";
 
 describe("resolve", () => {
   describe("isRequired", () => {

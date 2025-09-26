@@ -1,5 +1,4 @@
-import type { ValueOrReference } from "../conditions";
-import { coerce, unpackRefValue } from "../resolve";
+import { unpackRefValue, type ValueOrReference } from "../reference";
 import type { BooleanSchema, DateSchema, NumberSchema, OptionsSchema, StringSchema } from "../schemas";
 import type {
   ErrorMessageFromRule,
@@ -7,6 +6,7 @@ import type {
   OmitBaseErrorMessageProps,
   ValidateRuleContext,
 } from "../types";
+import { coerce } from "../utils";
 import { assertDate } from "../validate";
 
 export type EqualsRule<T extends ValueOrReference = ValueOrReference> = {
@@ -48,7 +48,7 @@ export function equalsDateRule<T extends DateSchema>({
 }: ValidateRuleContext<T, Extract<ExtractResolvedRules<T>, EqualsRule>>):
   | OmitBaseErrorMessageProps<EqualsRuleErrorMessage>
   | undefined {
-  const compareTo = assertDate(coerce(schema.type, unpackRefValue(rule.equals, path, context)));
+  const compareTo = assertDate(coerce(schema, unpackRefValue(rule.equals, path, context)));
   return compareTo.getTime() === value.getTime()
     ? undefined
     : {

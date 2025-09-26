@@ -1,4 +1,4 @@
-import { unpackRefValue } from "../resolve";
+import { type Reference, unpackRefValue } from "../reference";
 import type { FileSchema } from "../schemas";
 import type {
   ErrorMessageFromRule,
@@ -6,7 +6,6 @@ import type {
   OmitBaseErrorMessageProps,
   ValidateRuleContext,
 } from "../types";
-import type { Reference } from "../conditions";
 import { assertNumber } from "../validate";
 
 export type MinSizeRule<T extends number | Reference = number | Reference> = {

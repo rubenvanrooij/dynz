@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { and, ConditionType, eq, or, REFERENCE_TYPE, ref } from "./conditions";
+import { and, ConditionType, eq, or } from "./conditions";
+import { REFERENCE_TYPE, ref } from "./reference";
 import {
   after,
   before,

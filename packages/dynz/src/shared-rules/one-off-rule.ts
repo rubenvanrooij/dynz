@@ -1,4 +1,4 @@
-import type { ValueOrReference } from "../conditions";
+import type { ValueOrReference } from "../reference";
 import type { NumberSchema, StringSchema } from "../schemas";
 import type {
   ErrorMessageFromRule,

@@ -1,5 +1,4 @@
-import type { Reference } from "../conditions";
-import { unpackRefValue } from "../resolve";
+import { type Reference, unpackRefValue } from "../reference";
 import type { FileSchema } from "../schemas/file/types";
 import type { ErrorMessageFromRule, OmitBaseErrorMessageProps, ValidateRuleContext } from "../types";
 import { isArray } from "../validate";

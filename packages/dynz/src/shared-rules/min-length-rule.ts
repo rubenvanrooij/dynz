@@ -1,5 +1,4 @@
-import type { Reference } from "../conditions";
-import { unpackRefValue } from "../resolve";
+import { type Reference, unpackRefValue } from "../reference";
 import type { ArraySchema, StringSchema } from "../schemas";
 import type {
   ErrorMessageFromRule,
