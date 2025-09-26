@@ -1,5 +1,11 @@
 # dynz
 
+## 0.0.4
+
+### Patch Changes
+
+- 0dec073: fixed typo
+
 ## 0.0.3
 
 ### Patch Changes
