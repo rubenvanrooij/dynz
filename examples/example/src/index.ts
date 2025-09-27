@@ -60,24 +60,26 @@ const schema = d.object({
 const schemaTwo = d.object({
   fields: {
     birthDates: d.array({
-      schema: d.date()
+      schema: d.date(),
     }),
     otherFields: d.object({
       fields: {
-         deathDate: d.date({
-          rules: [d.after(d.ref('$.birthDate.[2]'))]
-        })
-      }
-    })
-  }
-})
+        deathDate: d.date({
+          rules: [d.after(d.ref("$.birthDate.[2]"))],
+        }),
+      },
+    }),
+  },
+});
 
-console.log(d.validate(schemaTwo, undefined, {
-  birthDates: [],
-  otherFields: {
-    deathDate: new Date()
-  }
-}))
+console.log(
+  d.validate(schemaTwo, undefined, {
+    birthDates: [],
+    otherFields: {
+      deathDate: new Date(),
+    },
+  })
+);
 
 // console.log(JSON.stringify(schema, undefined, 2));
 

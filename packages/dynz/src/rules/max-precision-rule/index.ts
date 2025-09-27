@@ -1,6 +1,6 @@
 import { type Reference, unpackRef } from "../../reference";
 import type { NumberSchema } from "../../schemas/number/types";
-import type { ErrorMessageFromRule, OmitBaseErrorMessageProps, ValidateRuleContext } from "../../types";
+import type { ErrorMessageFromRule, RuleFn } from "../../types";
 
 export type MaxPrecisionRule<T extends number | Reference = number | Reference> = {
   type: "max_precision";
@@ -14,15 +14,13 @@ export function maxPrecision<T extends number | Reference>(maxPrecision: T, code
   return { maxPrecision, type: "max_precision", code };
 }
 
-export function maxPrecisionRule({
+export const maxPrecisionRule: RuleFn<NumberSchema, MaxPrecisionRule, MaxPrecisionRuleErrorMessage> = ({
   value,
   rule,
   path,
   schema,
   context,
-}: ValidateRuleContext<NumberSchema, MaxPrecisionRule>):
-  | OmitBaseErrorMessageProps<MaxPrecisionRuleErrorMessage>
-  | undefined {
+}) => {
   const { value: maxPrecision } = unpackRef(rule.maxPrecision, path, context, schema.type);
 
   if (maxPrecision === undefined) {
@@ -37,7 +35,7 @@ export function maxPrecisionRule({
         maxPrecision,
         message: `The value ${value} for schema ${path} has a precision of ${precision}, which is greater than the maximum precision of ${maxPrecision}`,
       };
-}
+};
 
 /**
  * Returns the precision of a number

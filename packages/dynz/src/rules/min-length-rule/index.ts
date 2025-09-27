@@ -1,12 +1,6 @@
 import { type Reference, unpackRef } from "../../reference";
 import type { ArraySchema, StringSchema } from "../../schemas";
-import {
-  type ErrorMessageFromRule,
-  type ExtractResolvedRules,
-  type OmitBaseErrorMessageProps,
-  SchemaType,
-  type ValidateRuleContext,
-} from "../../types";
+import { type ErrorMessageFromRule, type ExtractResolvedRules, type RuleFn, SchemaType } from "../../types";
 
 export type MinLengthRule<T extends number | Reference = number | Reference> = {
   type: "min_length";
@@ -20,14 +14,13 @@ export function minLength<T extends number | Reference>(min: T, code?: string): 
   return { min, type: "min_length", code };
 }
 
-export function minLengthRule<T extends StringSchema | ArraySchema<never>>({
-  rule,
-  value,
-  path,
-  context,
-}: ValidateRuleContext<T, Extract<ExtractResolvedRules<T>, MinLengthRule>>):
-  | OmitBaseErrorMessageProps<MinLengthRuleErrorMessage>
-  | undefined {
+type AllowedSchemas = StringSchema | ArraySchema<never>;
+
+export const minLengthRule: RuleFn<
+  AllowedSchemas,
+  Extract<ExtractResolvedRules<AllowedSchemas>, MinLengthRule>,
+  MinLengthRuleErrorMessage
+> = ({ rule, value, path, context }) => {
   const { value: min } = unpackRef(rule.min, path, context, SchemaType.NUMBER);
 
   if (min === undefined) {
@@ -41,4 +34,4 @@ export function minLengthRule<T extends StringSchema | ArraySchema<never>>({
         min: min,
         message: `The value ${value} for schema ${path} should have at least a length of ${min}`,
       };
-}
+};

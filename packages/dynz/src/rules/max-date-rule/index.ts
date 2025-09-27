@@ -1,12 +1,7 @@
 import { isBefore } from "date-fns";
 import { type Reference, unpackRef } from "../../reference";
 import type { DateSchema } from "../../schemas";
-import {
-  type ErrorMessageFromRule,
-  type OmitBaseErrorMessageProps,
-  SchemaType,
-  type ValidateRuleContext,
-} from "../../types";
+import { type ErrorMessageFromRule, type RuleFn, SchemaType } from "../../types";
 
 export type MaxDateRule<T extends Date | Reference = Date | Reference> = {
   type: "max_date";
@@ -20,12 +15,12 @@ export function maxDate<T extends Date | Reference>(max: T, code?: string): MaxD
   return { max, type: "max_date", code };
 }
 
-export function maxDateRule({
+export const maxDateRule: RuleFn<DateSchema, MaxDateRule, MaxDateRuleErrorMessage> = ({
   rule,
   value,
   path,
   context,
-}: ValidateRuleContext<DateSchema, MaxDateRule>): OmitBaseErrorMessageProps<MaxDateRuleErrorMessage> | undefined {
+}) => {
   const { value: max } = unpackRef(rule.max, path, context, SchemaType.DATE);
 
   if (max === undefined) {
@@ -39,4 +34,4 @@ export function maxDateRule({
         max,
         message: `The value ${value} for schema ${path} is after or on ${max}`,
       };
-}
+};

@@ -1,12 +1,6 @@
 import { type Reference, unpackRef } from "../../reference";
 import type { NumberSchema } from "../../schemas";
-import {
-  type ErrorMessageFromRule,
-  type ExtractResolvedRules,
-  type OmitBaseErrorMessageProps,
-  SchemaType,
-  type ValidateRuleContext,
-} from "../../types";
+import { type ErrorMessageFromRule, type ExtractResolvedRules, type RuleFn, SchemaType } from "../../types";
 
 export type MinRule<T extends number | Reference = number | Reference> = {
   type: "min";
@@ -20,14 +14,11 @@ export function min<T extends number | Reference>(min: T, code?: string): MinRul
   return { min, type: "min", code };
 }
 
-export function minRule<T extends NumberSchema>({
-  rule,
-  value,
-  path,
-  context,
-}: ValidateRuleContext<T, Extract<ExtractResolvedRules<T>, MinRule>>):
-  | OmitBaseErrorMessageProps<MinRuleErrorMessage>
-  | undefined {
+export const minRule: RuleFn<
+  NumberSchema,
+  Extract<ExtractResolvedRules<NumberSchema>, MinRule>,
+  MinRuleErrorMessage
+> = ({ rule, value, path, context }) => {
   const { value: min } = unpackRef(rule.min, path, context, SchemaType.NUMBER);
 
   if (min === undefined) {
@@ -41,4 +32,4 @@ export function minRule<T extends NumberSchema>({
         min: min,
         message: `The value ${value} for schema ${path} should be at least ${min}`,
       };
-}
+};

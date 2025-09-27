@@ -1,12 +1,6 @@
 import { type Reference, unpackRef } from "../../reference";
 import type { FileSchema } from "../../schemas";
-import {
-  type ErrorMessageFromRule,
-  type ExtractResolvedRules,
-  type OmitBaseErrorMessageProps,
-  SchemaType,
-  type ValidateRuleContext,
-} from "../../types";
+import { type ErrorMessageFromRule, type ExtractResolvedRules, type RuleFn, SchemaType } from "../../types";
 
 export type MaxSizeRule<T extends number | Reference = number | Reference> = {
   type: "max_size";
@@ -20,14 +14,11 @@ export function maxSize<T extends number | Reference>(max: T, code?: string): Ma
   return { max, type: "max_size", code };
 }
 
-export function maxSizeRule<T extends FileSchema>({
-  rule,
-  value,
-  path,
-  context,
-}: ValidateRuleContext<T, Extract<ExtractResolvedRules<T>, MaxSizeRule>>):
-  | OmitBaseErrorMessageProps<MaxSizeRuleErrorMessage>
-  | undefined {
+export const maxSizeRule: RuleFn<
+  FileSchema,
+  Extract<ExtractResolvedRules<FileSchema>, MaxSizeRule>,
+  MaxSizeRuleErrorMessage
+> = ({ rule, value, path, context }) => {
   const { value: max } = unpackRef(rule.max, path, context, SchemaType.NUMBER);
 
   if (max === undefined) {
@@ -41,4 +32,4 @@ export function maxSizeRule<T extends FileSchema>({
         max,
         message: `The value ${value} for schema ${path} should have a maximum size of ${max}`,
       };
-}
+};

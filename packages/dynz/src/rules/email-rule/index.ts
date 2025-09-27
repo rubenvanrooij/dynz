@@ -1,5 +1,5 @@
 import type { StringSchema } from "../../schemas/string/types";
-import type { ErrorMessageFromRule, OmitBaseErrorMessageProps, ValidateRuleContext } from "../../types";
+import type { ErrorMessageFromRule, RuleFn } from "../../types";
 
 export type EmailRule = {
   type: "email";
@@ -14,13 +14,11 @@ export function email(code?: string): EmailRule {
 
 const EMAIL_REGEX = /^(?!\.)(?!.*\.\.)([a-z0-9_'+\-.]*)[a-z0-9_'+-]@([a-z0-9][a-z0-9-]*\.)+[a-z]{2,}$/i;
 
-export function emailRule({
-  value,
-}: ValidateRuleContext<StringSchema, EmailRule>): OmitBaseErrorMessageProps<EmailRuleErrorMessage> | undefined {
+export const emailRule: RuleFn<StringSchema, EmailRule, EmailRuleErrorMessage> = ({ value }) => {
   return EMAIL_REGEX.test(value)
     ? undefined
     : {
         code: "email",
         message: `The value ${value} is not a valid email address`,
       };
-}
+};

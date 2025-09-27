@@ -1,6 +1,6 @@
 import { type Reference, unpackRef } from "../../reference";
 import type { FileSchema } from "../../schemas/file/types";
-import type { ErrorMessageFromRule, OmitBaseErrorMessageProps, ValidateRuleContext } from "../../types";
+import type { ErrorMessageFromRule, RuleFn } from "../../types";
 import { isArray } from "../../validate";
 
 export type MimeTypeRule<T extends string | string[] | Reference = string | string[] | Reference> = {
@@ -15,12 +15,12 @@ export function mimeType<T extends string | string[] | Reference>(mimeType: T, c
   return { mimeType, type: "mime_type", code };
 }
 
-export function mimeTypeRule({
+export const mimeTypeRule: RuleFn<FileSchema, MimeTypeRule, MimeTypeRuleErrorMessage> = ({
   rule,
   value,
   path,
   context,
-}: ValidateRuleContext<FileSchema, MimeTypeRule>): OmitBaseErrorMessageProps<MimeTypeRuleErrorMessage> | undefined {
+}) => {
   const { value: mimeType } = unpackRef(rule.mimeType, path, context);
 
   if (mimeType === undefined) {
@@ -36,4 +36,4 @@ export function mimeTypeRule({
         mimeType: value.type,
         message: `The mime type ${value.type} for schema ${path} is not equal to ${mimeType}`,
       };
-}
+};

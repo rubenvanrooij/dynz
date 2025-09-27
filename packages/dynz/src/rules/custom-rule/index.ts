@@ -1,11 +1,5 @@
 import { unpackRef, type ValueOrReference } from "../../reference";
-import type {
-  ErrorMessageFromRule,
-  ExtractResolvedRules,
-  OmitBaseErrorMessageProps,
-  Schema,
-  ValidateRuleContext,
-} from "../../types";
+import type { ErrorMessageFromRule, ExtractResolvedRules, RuleFn, Schema } from "../../types";
 
 export type CustomRule<T extends Record<string, ValueOrReference> = Record<string, ValueOrReference>> = {
   type: "custom";
@@ -24,15 +18,13 @@ export function custom<T extends Record<string, ValueOrReference>>(name: string,
   return { type: "custom", name, params: params || {} };
 }
 
-export function customRule<T extends Schema>({
+export const customRule: RuleFn<Schema, Extract<ExtractResolvedRules<Schema>, CustomRule>, CustomRuleErrorMessage> = ({
   rule,
   value,
   path,
   context,
   schema,
-}: ValidateRuleContext<T, Extract<ExtractResolvedRules<T>, CustomRule>>):
-  | OmitBaseErrorMessageProps<CustomRuleErrorMessage>
-  | undefined {
+}) => {
   const validatorFn = context.validateOptions.customRules?.[rule.name];
 
   if (validatorFn === undefined) {
@@ -64,4 +56,4 @@ export function customRule<T extends Schema>({
         params: unpackedParams,
         name: rule.name,
       };
-}
+};

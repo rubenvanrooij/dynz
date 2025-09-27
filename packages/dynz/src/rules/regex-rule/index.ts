@@ -1,5 +1,5 @@
 import type { StringSchema } from "../../schemas/string/types";
-import type { ErrorMessageFromRule, OmitBaseErrorMessageProps, ValidateRuleContext } from "../../types";
+import type { ErrorMessageFromRule, RuleFn } from "../../types";
 
 export type RegexRule = {
   type: "regex";
@@ -13,10 +13,7 @@ export function regex(regex: string, code?: string): RegexRule {
   return { type: "regex", regex, code };
 }
 
-export function regexRule({
-  rule,
-  value,
-}: ValidateRuleContext<StringSchema, RegexRule>): OmitBaseErrorMessageProps<RegexRuleErrorMessage> | undefined {
+export const regexRule: RuleFn<StringSchema, RegexRule, RegexRuleErrorMessage> = ({ rule, value }) => {
   const regex = new RegExp(rule.regex);
   return regex.test(value)
     ? undefined
@@ -25,4 +22,4 @@ export function regexRule({
         regex: rule.regex,
         message: `The value ${value} does not match the regex ${rule.regex}`,
       };
-}
+};

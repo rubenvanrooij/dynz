@@ -1,12 +1,6 @@
 import { unpackRef, type ValueOrReference } from "../../reference";
 import type { BooleanSchema, DateSchema, NumberSchema, OptionsSchema, StringSchema } from "../../schemas";
-import {
-  type ErrorMessageFromRule,
-  type ExtractResolvedRules,
-  type OmitBaseErrorMessageProps,
-  SchemaType,
-  type ValidateRuleContext,
-} from "../../types";
+import { type ErrorMessageFromRule, type ExtractResolvedRules, type RuleFn, SchemaType } from "../../types";
 
 export type EqualsRule<T extends ValueOrReference = ValueOrReference> = {
   type: "equals";
@@ -20,15 +14,13 @@ export function equals<T extends ValueOrReference>(equals: T, code?: string): Eq
   return { equals, type: "equals", code };
 }
 
-export function equalsRule<T extends StringSchema | NumberSchema | BooleanSchema | OptionsSchema>({
-  rule,
-  value,
-  path,
-  context,
-  schema,
-}: ValidateRuleContext<T, Extract<ExtractResolvedRules<T>, EqualsRule>>):
-  | OmitBaseErrorMessageProps<EqualsRuleErrorMessage>
-  | undefined {
+type AllowedSchemas = StringSchema | NumberSchema | BooleanSchema | OptionsSchema;
+
+export const equalsRule: RuleFn<
+  AllowedSchemas,
+  Extract<ExtractResolvedRules<AllowedSchemas>, EqualsRule>,
+  EqualsRuleErrorMessage
+> = ({ rule, value, path, context, schema }) => {
   const { value: equals } = unpackRef(rule.equals, path, context, schema.type);
   return equals === value
     ? undefined
@@ -37,16 +29,13 @@ export function equalsRule<T extends StringSchema | NumberSchema | BooleanSchema
         equals: equals,
         message: `The value for schema ${path} does not equal ${equals}`,
       };
-}
+};
 
-export function equalsDateRule<T extends DateSchema>({
-  rule,
-  value,
-  path,
-  context,
-}: ValidateRuleContext<T, Extract<ExtractResolvedRules<T>, EqualsRule>>):
-  | OmitBaseErrorMessageProps<EqualsRuleErrorMessage>
-  | undefined {
+export const equalsDateRule: RuleFn<
+  DateSchema,
+  Extract<ExtractResolvedRules<DateSchema>, EqualsRule>,
+  EqualsRuleErrorMessage
+> = ({ rule, value, path, context }) => {
   const { value: equals } = unpackRef(rule.equals, path, context, SchemaType.DATE);
 
   if (equals === undefined) {
@@ -60,4 +49,4 @@ export function equalsDateRule<T extends DateSchema>({
         equals,
         message: `The value for schema ${path} does not equal ${equals}`,
       };
-}
+};

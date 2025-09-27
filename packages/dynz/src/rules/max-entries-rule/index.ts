@@ -1,12 +1,6 @@
 import { type Reference, unpackRef } from "../../reference";
 import type { ObjectSchema } from "../../schemas";
-import {
-  type ErrorMessageFromRule,
-  type ExtractResolvedRules,
-  type OmitBaseErrorMessageProps,
-  SchemaType,
-  type ValidateRuleContext,
-} from "../../types";
+import { type ErrorMessageFromRule, type ExtractResolvedRules, type RuleFn, SchemaType } from "../../types";
 
 export type MaxEntriesRule<T extends number | Reference = number | Reference> = {
   type: "max_entries";
@@ -20,14 +14,13 @@ export function maxEntries<T extends number | Reference>(max: T, code?: string):
   return { max, type: "max_entries", code };
 }
 
-export function maxEntriesRule<T extends ObjectSchema<never>>({
-  rule,
-  value,
-  path,
-  context,
-}: ValidateRuleContext<T, Extract<ExtractResolvedRules<T>, MaxEntriesRule>>):
-  | OmitBaseErrorMessageProps<MaxEntriesRuleErrorMessage>
-  | undefined {
+type AllowedSchemas = ObjectSchema<never>;
+
+export const maxEntriesRule: RuleFn<
+  AllowedSchemas,
+  Extract<ExtractResolvedRules<AllowedSchemas>, MaxEntriesRule>,
+  MaxEntriesRuleErrorMessage
+> = ({ rule, value, path, context }) => {
   const { value: max } = unpackRef(rule.max, path, context, SchemaType.NUMBER);
 
   if (max === undefined) {
@@ -41,4 +34,4 @@ export function maxEntriesRule<T extends ObjectSchema<never>>({
         max: max,
         message: `The value ${value} for schema ${path} should have a maximum of ${max} entries`,
       };
-}
+};
