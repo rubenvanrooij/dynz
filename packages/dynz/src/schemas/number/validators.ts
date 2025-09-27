@@ -1,5 +1,4 @@
 import { customRule, equalsRule, maxPrecisionRule, maxRule, minRule, oneOfRule } from "../../rules";
-
 import type { ValidateRuleContextUnion } from "../../types";
 import type { NumberSchema } from "./types";
 

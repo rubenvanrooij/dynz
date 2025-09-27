@@ -1,6 +1,4 @@
-import { customRule } from "../../rules";
-import { maxLengthRule } from "../../rules/max-length-rule";
-import { minLengthRule } from "../../rules/min-length-rule";
+import { customRule, maxLengthRule, minLengthRule } from "../../rules";
 import type { ValidateRuleContextUnion } from "../../types";
 import type { ArraySchema } from "./types";
 

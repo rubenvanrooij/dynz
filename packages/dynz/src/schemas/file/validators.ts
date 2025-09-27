@@ -1,7 +1,4 @@
-import { customRule } from "../../rules";
-import { maxSizeRule } from "../../rules/max-size-rule";
-import { mimeTypeRule } from "../../rules/mime-type-rule";
-import { minSizeRule } from "../../rules/min-size-rule";
+import { customRule, maxSizeRule, mimeTypeRule, minSizeRule } from "../../rules";
 import type { ValidateRuleContextUnion } from "../../types";
 import type { FileSchema } from "./types";
 

@@ -8,7 +8,9 @@ export type Reference<T extends string = string> = {
 };
 
 export function isReference(value: unknown): value is Reference {
-  return typeof value === "object" && value !== null && "_type" in value && value._type === REFERENCE_TYPE;
+  return (
+    typeof value === "object" && value !== null && "_type" in value && value._type === REFERENCE_TYPE && "path" in value
+  );
 }
 
 /**
