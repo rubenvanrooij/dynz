@@ -1,20 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { equals, max, min } from "./rules";
+import { equals, max, maxDate, maxLength, min, minDate, minLength } from "./rules";
 import {
   array,
   boolean,
-  date,
-  // rules,
   DEFAULT_DATE_STRING_FORMAT,
+  date,
   dateString,
   file,
   number,
   object,
-  optional,
   options,
-  required,
   string,
-} from "./schema";
+} from "./schemas";
 import { SchemaType } from "./types";
 
 describe("schema", () => {
@@ -31,7 +28,7 @@ describe("schema", () => {
       const schema = string({
         required: true,
         default: "hello",
-        rules: [min(3), max(10)],
+        rules: [minLength(3), maxLength(10)],
       });
 
       expect(schema).toEqual({
@@ -39,8 +36,8 @@ describe("schema", () => {
         required: true,
         default: "hello",
         rules: [
-          { type: "min", min: 3 },
-          { type: "max", max: 10 },
+          { type: "min_length", min: 3 },
+          { type: "max_length", max: 10 },
         ],
       });
     });
@@ -101,7 +98,7 @@ describe("schema", () => {
       expect(schema.rules).toHaveLength(3);
       expect(schema.rules?.[0]).toEqual({ type: "min", min: 18 });
       expect(schema.rules?.[1]).toEqual({ type: "max", max: 65 });
-      expect(schema.rules?.[2]).toEqual({ type: "equals", value: 25 });
+      expect(schema.rules?.[2]).toEqual({ type: "equals", equals: 25 });
     });
   });
 
@@ -309,15 +306,15 @@ describe("schema", () => {
     it("should create array schema with number items", () => {
       const schema = array({
         schema: number(),
-        rules: [min(1), max(5)],
+        rules: [minLength(1), maxLength(5)],
       });
 
       expect(schema).toEqual({
         type: SchemaType.ARRAY,
         schema: { type: SchemaType.NUMBER },
         rules: [
-          { type: "min", min: 1 },
-          { type: "max", max: 5 },
+          { type: "min_length", min: 1 },
+          { type: "max_length", max: 5 },
         ],
       });
     });
@@ -412,19 +409,19 @@ describe("schema", () => {
     });
 
     it("should create date schema with validation rules", () => {
-      const minDate = new Date("2020-01-01");
-      const maxDate = new Date("2030-12-31");
+      const minimumDate = new Date("2020-01-01");
+      const maximumDate = new Date("2030-12-31");
       const equalDate = new Date("2024-06-15");
 
       const schema = date({
-        rules: [min(minDate), max(maxDate), equals(equalDate)],
+        rules: [minDate(minimumDate), maxDate(maximumDate), equals(equalDate)],
       });
 
       expect(schema.type).toBe(SchemaType.DATE);
       expect(schema.rules).toHaveLength(3);
-      expect(schema.rules?.[0]).toEqual({ type: "min", min: minDate });
-      expect(schema.rules?.[1]).toEqual({ type: "max", max: maxDate });
-      expect(schema.rules?.[2]).toEqual({ type: "equals", value: equalDate });
+      expect(schema.rules?.[0]).toEqual({ type: "min_date", min: minimumDate });
+      expect(schema.rules?.[1]).toEqual({ type: "max_date", max: maximumDate });
+      expect(schema.rules?.[2]).toEqual({ type: "equals", equals: equalDate });
     });
   });
 
@@ -477,61 +474,13 @@ describe("schema", () => {
     });
   });
 
-  describe("helper functions", () => {
-    describe("optional", () => {
-      it("should make schema optional", () => {
-        const baseSchema = string({ required: true });
-        const optionalSchema = optional(baseSchema);
-
-        expect(optionalSchema).toEqual({
-          type: SchemaType.STRING,
-          required: false,
-        });
-      });
-
-      it("should override required property", () => {
-        const baseSchema = number({ required: true, default: 0 });
-        const optionalSchema = optional(baseSchema);
-
-        expect(optionalSchema).toEqual({
-          type: SchemaType.NUMBER,
-          required: false,
-          default: 0,
-        });
-      });
-    });
-
-    describe("required", () => {
-      it("should make schema required", () => {
-        const baseSchema = string({ required: false });
-        const requiredSchema = required(baseSchema);
-
-        expect(requiredSchema).toEqual({
-          type: SchemaType.STRING,
-          required: true,
-        });
-      });
-
-      it("should override required property", () => {
-        const baseSchema = number({ required: false, mutable: true });
-        const requiredSchema = required(baseSchema);
-
-        expect(requiredSchema).toEqual({
-          type: SchemaType.NUMBER,
-          required: true,
-          mutable: true,
-        });
-      });
-    });
-  });
-
   describe("complex schema compositions", () => {
     it("should create complex nested schema structure", () => {
       const userSchema = object({
         fields: {
           id: number({ required: true }),
-          name: string({ required: true, rules: [min(2), max(50)] }),
-          email: optional(string({ rules: [{ type: "regex", regex: "^[^@]+@[^@]+$" }] })),
+          name: string({ required: true, rules: [minLength(2), maxLength(50)] }),
+          email: string({ rules: [{ type: "regex", regex: "^[^@]+@[^@]+$" }], required: false }),
           addresses: array({
             schema: object({
               fields: {
@@ -540,7 +489,7 @@ describe("schema", () => {
                 country: string({ default: "US" }),
               },
             }),
-            rules: [max(3)],
+            rules: [maxLength(3)],
           }),
           createdAt: dateString({
             format: "yyyy-MM-dd",

@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rm:*)",
+      "Bash(pnpm test:*)",
+      "Bash(find:*)"
+    ],
+    "deny": []
+  }
+}

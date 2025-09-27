@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mask, plain } from "./private";
-import type { MaskedPrivateValue, PlainPrivateValue } from "./types";
+import { type MaskedPrivateValue, mask, type PlainPrivateValue, plain } from "./private";
 
 describe("private", () => {
   describe("plain", () => {

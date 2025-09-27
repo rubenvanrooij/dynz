@@ -1,22 +1,20 @@
 import { describe, expect, it } from "vitest";
-import { eq } from "./conditions";
 import {
-  findSchemaByPath,
-  getNested,
+  type Condition,
+  ConditionType,
+  eq,
   isIncluded,
   isMutable,
-  isReference,
   isRequired,
-  type ResolveContext,
   resolveCondition,
   resolveProperty,
   resolveRules,
-  unpackRef,
-  unpackRefValue,
-} from "./resolve";
-import { conditional, equals, max, min, ref } from "./rules";
-import { array, number, object, string } from "./schema";
-import { type Condition, ConditionType, type Reference, RuleType, SchemaType } from "./types";
+} from "./conditions";
+import { isReference, REFERENCE_TYPE, type Reference } from "./reference";
+import { conditional, equals, maxLength, minLength } from "./rules";
+import { array, number, object, string } from "./schemas";
+import { type ResolveContext, SchemaType } from "./types";
+import { findSchemaByPath, getNested } from "./utils";
 
 describe("resolve", () => {
   describe("isRequired", () => {
@@ -325,7 +323,7 @@ describe("resolve", () => {
   describe("resolveRules", () => {
     it("should return all rules when no conditions", () => {
       const schema = string({
-        rules: [min(3), max(10), equals("test")],
+        rules: [minLength(3), maxLength(10), equals("test")],
       });
 
       const context: ResolveContext = {
@@ -335,9 +333,9 @@ describe("resolve", () => {
 
       const rules = resolveRules(schema, "$", context);
       expect(rules).toHaveLength(3);
-      expect(rules[0].type).toBe(RuleType.MIN);
-      expect(rules[1].type).toBe(RuleType.MAX);
-      expect(rules[2].type).toBe(RuleType.EQUALS);
+      expect(rules[0].type).toBe("min_length");
+      expect(rules[1].type).toBe("max_length");
+      expect(rules[2].type).toBe("equals");
     });
 
     it("should filter conditional rules based on condition result", () => {
@@ -347,11 +345,11 @@ describe("resolve", () => {
           path: "$.type",
           value: "email",
         },
-        then: min(5),
+        then: minLength(5),
       });
 
       const schema = string({
-        rules: [max(10), conditionalRule],
+        rules: [maxLength(10), conditionalRule],
       });
 
       const rootSchema = object({
@@ -368,8 +366,8 @@ describe("resolve", () => {
 
       const rules = resolveRules(schema, "$.value", context);
       expect(rules).toHaveLength(2);
-      expect(rules[0].type).toBe(RuleType.MAX);
-      expect(rules[1].type).toBe(RuleType.MIN);
+      expect(rules[0].type).toBe("max_length");
+      expect(rules[1].type).toBe("min_length");
     });
 
     it("should exclude conditional rules when condition is false", () => {
@@ -379,11 +377,11 @@ describe("resolve", () => {
           path: "$.type",
           value: "email",
         },
-        then: min(5),
+        then: minLength(5),
       });
 
       const schema = string({
-        rules: [max(10), conditionalRule],
+        rules: [maxLength(10), conditionalRule],
       });
 
       const rootSchema = object({
@@ -400,14 +398,14 @@ describe("resolve", () => {
 
       const rules = resolveRules(schema, "$.value", context);
       expect(rules).toHaveLength(1);
-      expect(rules[0].type).toBe(RuleType.MAX);
+      expect(rules[0].type).toBe("max_length");
     });
   });
 
   describe("isReference", () => {
     it("should return true for reference object", () => {
       const reference: Reference = {
-        type: "__reference",
+        _type: REFERENCE_TYPE,
         path: "$.other",
       };
 
@@ -419,50 +417,6 @@ describe("resolve", () => {
       expect(isReference(42)).toBe(false);
       expect(isReference({ type: "other" })).toBe(false);
       expect(isReference(null)).toBe(false);
-    });
-  });
-
-  describe("unpackRefValue and unpackRef", () => {
-    const schema = object({
-      fields: {
-        min: number(),
-        value: string(),
-      },
-    });
-
-    const context: ResolveContext = {
-      schema,
-      values: { new: { min: 5, value: "hello" } },
-    };
-
-    it("should return static value for non-reference", () => {
-      const result = unpackRefValue("static", "$.value", context);
-      expect(result).toBe("static");
-
-      const refResult = unpackRef("static", "$.value", context);
-      expect(refResult).toEqual({
-        value: "static",
-        static: true,
-      });
-    });
-
-    it("should resolve reference to actual value", () => {
-      const reference = ref("min");
-      const result = unpackRefValue(reference, "$.value", context);
-      expect(result).toBe(5);
-
-      const refResult = unpackRef(reference, "$.value", context);
-      expect(refResult).toEqual({
-        schema: expect.objectContaining({ type: SchemaType.NUMBER }),
-        value: 5,
-        static: false,
-      });
-    });
-
-    it("should resolve absolute path reference", () => {
-      const reference = ref("$.min");
-      const result = unpackRefValue(reference, "$.value", context);
-      expect(result).toBe(5);
     });
   });
 

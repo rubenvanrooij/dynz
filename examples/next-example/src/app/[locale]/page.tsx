@@ -1,7 +1,7 @@
 "use client";
 
 import type { SchemaValues } from "dynz";
-import { boolean, conditional, email, eq, equals, min, object, options, or, string } from "dynz";
+import { boolean, conditional, email, eq, equals, minLength, object, options, or, string } from "dynz";
 import { PopcornIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { DynzBoolean, DynzForm, DynzIncludedWrapper, DynzSelect, DynzTextInput } from "@/components/dynz/dynz-form";
@@ -9,13 +9,13 @@ import { Alert, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-const stringRequiredRule = min(1, "required");
+const stringRequiredRule = minLength(1, "required");
 
 const schema = object({
   private: false,
   fields: {
     name: string({
-      rules: [stringRequiredRule, min(3)],
+      rules: [stringRequiredRule, minLength(3)],
     }),
     email: string({
       rules: [stringRequiredRule, email()],
