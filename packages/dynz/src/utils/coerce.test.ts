@@ -238,6 +238,7 @@ describe("coerce", () => {
 
   describe("unknown schema type", () => {
     it("should return original value for unknown schema type", () => {
+      // biome-ignore lint/suspicious/noExplicitAny: unit test
       const schema = { type: "unknown" as any, coerce: true };
       const value = "test";
 

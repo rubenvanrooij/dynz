@@ -9,7 +9,7 @@ export type CustomRule<T extends Record<string, ValueOrReference> = Record<strin
 };
 
 export type CustomRuleErrorMessage = ErrorMessageFromRule<
-  Omit<CustomRule, "params"> & { params: Record<string, unknown> }
+  Omit<CustomRule, "params"> & { params: Record<string, unknown>; result: Record<string, unknown> }
 >;
 
 export function custom(name: string): CustomRule;
@@ -51,9 +51,9 @@ export const customRule: RuleFn<Schema, Extract<ExtractResolvedRules<Schema>, Cu
     ? undefined
     : {
         message: `The value for schema ${path} did not pass the custom validation rule "${rule.name}"`, // Message can be overridden by custom function
-        ...(typeof result !== "boolean" ? { ...result, success: undefined } : {}),
         code: "custom",
         params: unpackedParams,
+        result: typeof result !== "boolean" ? { ...result, success: undefined } : {},
         name: rule.name,
       };
 };

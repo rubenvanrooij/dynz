@@ -1,11 +1,6 @@
 import { unpackRef, type ValueOrReference } from "../../reference";
 import type { NumberSchema, StringSchema } from "../../schemas";
-import type {
-  ErrorMessageFromRule,
-  ExtractResolvedRules,
-  OmitBaseErrorMessageProps,
-  ValidateRuleContext,
-} from "../../types";
+import type { ErrorMessageFromRule, ExtractResolvedRules, RuleFn } from "../../types";
 
 export type OneOfRule<T extends ValueOrReference[] = ValueOrReference[]> = {
   type: "one_of";
@@ -15,19 +10,17 @@ export type OneOfRule<T extends ValueOrReference[] = ValueOrReference[]> = {
 
 export type OneOfRuleErrorMessage = ErrorMessageFromRule<OneOfRule>;
 
-export function oneOf<T extends (string | number)[]>(values: T, code?: string): OneOfRule<T> {
+export function oneOf<T extends ValueOrReference[]>(values: T, code?: string): OneOfRule<T> {
   return { values, type: "one_of", code };
 }
 
-export function oneOfRule<T extends StringSchema | NumberSchema>({
-  value,
-  rule,
-  path,
-  schema,
-  context,
-}: ValidateRuleContext<T, Extract<ExtractResolvedRules<T>, OneOfRule>>):
-  | OmitBaseErrorMessageProps<OneOfRuleErrorMessage>
-  | undefined {
+type AllowedSchemas = StringSchema | NumberSchema;
+
+export const oneOfRule: RuleFn<
+  AllowedSchemas,
+  Extract<ExtractResolvedRules<AllowedSchemas>, OneOfRule>,
+  OneOfRuleErrorMessage
+> = ({ value, rule, path, schema, context }) => {
   const unpackedValues = rule.values.map((valueOrRef) => unpackRef(valueOrRef, path, context, schema.type).value);
 
   return unpackedValues.some((v) => v === value)
@@ -37,4 +30,4 @@ export function oneOfRule<T extends StringSchema | NumberSchema>({
         values: rule.values,
         message: `The value ${value} is not a one of ${rule.values}`,
       };
-}
+};

@@ -52,16 +52,3 @@ describe("maxSize rule", () => {
     });
   });
 });
-
-/* 
-maxSizeRule validator function handles these scenarios:
-- Returns undefined when file.size <= maxSize (validation passes)
-- Returns error object when file.size > maxSize (validation fails)
-- Returns undefined when reference value is undefined (no validation)
-- Resolves numeric references from context values
-- Throws error when reference resolves to non-number value
-- Handles edge cases like zero-sized files and large size limits
-
-The validator function is complex to unit test due to API requirements
-and is better covered by integration tests that test the full validation flow.
-*/

@@ -129,7 +129,7 @@ export type CustomRuleFunction<
 export type CustomRuleMap = Record<string, CustomRuleFunction>;
 
 export type ValidateOptions<TCustomRuleMap extends CustomRuleMap = CustomRuleMap> = {
-  customRules?: TCustomRuleMap;
+  customRules?: TCustomRuleMap | undefined;
 
   /**
    * Whether or not to strip not included fields.
