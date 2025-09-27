@@ -228,7 +228,7 @@ describe("minEntriesRule validator", () => {
 
   it("should handle large objects correctly", async () => {
     const rule = minEntries(10);
-    const testObject: Record<string, any> = {};
+    const testObject: Record<string, unknown> = {};
     for (let i = 0; i < 15; i++) {
       testObject[`field${i}`] = `value${i}`;
     }

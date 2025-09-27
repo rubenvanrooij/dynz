@@ -116,7 +116,7 @@ describe("maxPrecisionRule validator", () => {
 
     const result = maxPrecisionRule({
       rule,
-      value: 3.1415,
+      value: Math.PI,
       path: "piValue",
       schema: mockSchema,
       context: mockContext,
@@ -132,7 +132,7 @@ describe("maxPrecisionRule validator", () => {
 
     const result = maxPrecisionRule({
       rule,
-      value: 3.14159,
+      value: Math.PI,
       path: "$.price",
       schema: mockSchema,
       context: mockContext,

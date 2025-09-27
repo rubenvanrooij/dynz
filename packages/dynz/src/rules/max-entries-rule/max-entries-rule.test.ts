@@ -244,7 +244,7 @@ describe("maxEntriesRule validator", () => {
 
   it("should handle large objects correctly", async () => {
     const rule = maxEntries(5);
-    const testObject: Record<string, any> = {};
+    const testObject: Record<string, unknown> = {};
     for (let i = 0; i < 10; i++) {
       testObject[`field${i}`] = `value${i}`;
     }
