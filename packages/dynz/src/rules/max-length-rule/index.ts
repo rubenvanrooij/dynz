@@ -1,12 +1,12 @@
-import { type Reference, unpackRefValue } from "../../reference";
+import { type Reference, unpackRef } from "../../reference";
 import type { ArraySchema, StringSchema } from "../../schemas";
-import type {
-  ErrorMessageFromRule,
-  ExtractResolvedRules,
-  OmitBaseErrorMessageProps,
-  ValidateRuleContext,
+import {
+  type ErrorMessageFromRule,
+  type ExtractResolvedRules,
+  type OmitBaseErrorMessageProps,
+  SchemaType,
+  type ValidateRuleContext,
 } from "../../types";
-import { assertNumber } from "../../validate";
 
 export type MaxLengthRule<T extends number | Reference = number | Reference> = {
   type: "max_length";
@@ -28,18 +28,17 @@ export function maxLengthRule<T extends StringSchema | ArraySchema<never>>({
 }: ValidateRuleContext<T, Extract<ExtractResolvedRules<T>, MaxLengthRule>>):
   | OmitBaseErrorMessageProps<MaxLengthRuleErrorMessage>
   | undefined {
-  const max = unpackRefValue(rule.max, path, context);
+  const { value: max } = unpackRef(rule.max, path, context, SchemaType.NUMBER);
 
   if (max === undefined) {
     return undefined;
   }
 
-  const compareTo = assertNumber(max);
-  return value.length <= compareTo
+  return value.length <= max
     ? undefined
     : {
         code: "max_length",
-        max: compareTo,
-        message: `The value ${value} for schema ${path} should have a maximum length of ${compareTo}`,
+        max,
+        message: `The value ${value} for schema ${path} should have a maximum length of ${max}`,
       };
 }

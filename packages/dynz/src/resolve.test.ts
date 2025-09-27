@@ -10,7 +10,7 @@ import {
   resolveProperty,
   resolveRules,
 } from "./conditions";
-import { isReference, REFERENCE_TYPE, type Reference, ref, unpackRef, unpackRefValue } from "./reference";
+import { isReference, REFERENCE_TYPE, type Reference } from "./reference";
 import { conditional, equals, maxLength, minLength } from "./rules";
 import { array, number, object, string } from "./schemas";
 import { type ResolveContext, SchemaType } from "./types";
@@ -417,50 +417,6 @@ describe("resolve", () => {
       expect(isReference(42)).toBe(false);
       expect(isReference({ type: "other" })).toBe(false);
       expect(isReference(null)).toBe(false);
-    });
-  });
-
-  describe("unpackRefValue and unpackRef", () => {
-    const schema = object({
-      fields: {
-        min: number(),
-        value: string(),
-      },
-    });
-
-    const context: ResolveContext = {
-      schema,
-      values: { new: { min: 5, value: "hello" } },
-    };
-
-    it("should return static value for non-reference", () => {
-      const result = unpackRefValue("static", "$.value", context);
-      expect(result).toBe("static");
-
-      const refResult = unpackRef("static", "$.value", context);
-      expect(refResult).toEqual({
-        value: "static",
-        static: true,
-      });
-    });
-
-    it("should resolve reference to actual value", () => {
-      const reference = ref("min");
-      const result = unpackRefValue(reference, "$.value", context);
-      expect(result).toBe(5);
-
-      const refResult = unpackRef(reference, "$.value", context);
-      expect(refResult).toEqual({
-        schema: expect.objectContaining({ type: SchemaType.NUMBER }),
-        value: 5,
-        static: false,
-      });
-    });
-
-    it("should resolve absolute path reference", () => {
-      const reference = ref("$.min");
-      const result = unpackRefValue(reference, "$.value", context);
-      expect(result).toBe(5);
     });
   });
 

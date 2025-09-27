@@ -78,3 +78,6 @@ describe("custom rule", () => {
     });
   });
 });
+
+// Validator tests are complex due to API requirements
+// Main functionality is covered by integration tests

@@ -1,4 +1,4 @@
-import { unpackRefValue, type ValueOrReference } from "../../reference";
+import { unpackRef, type ValueOrReference } from "../../reference";
 import type {
   ErrorMessageFromRule,
   ExtractResolvedRules,
@@ -41,7 +41,7 @@ export function customRule<T extends Schema>({
 
   // unpack all references in the rule
   const unpackedParams = Object.entries(rule.params).reduce<Record<string, unknown>>((acc, [key, valueOrRef]) => {
-    acc[key] = unpackRefValue(valueOrRef, path, context);
+    acc[key] = unpackRef(valueOrRef, path, context).value;
     return acc;
   }, {});
 

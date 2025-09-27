@@ -1,8 +1,12 @@
 import { isAfter } from "date-fns";
-import { type Reference, unpackRefValue } from "../../reference";
+import { type Reference, unpackRef } from "../../reference";
 import type { DateSchema } from "../../schemas";
-import type { ErrorMessageFromRule, OmitBaseErrorMessageProps, ValidateRuleContext } from "../../types";
-import { assertDate } from "../../validate";
+import {
+  type ErrorMessageFromRule,
+  type OmitBaseErrorMessageProps,
+  SchemaType,
+  type ValidateRuleContext,
+} from "../../types";
 
 export type MinDateRule<T extends Date | Reference = Date | Reference> = {
   type: "min_date";
@@ -22,14 +26,17 @@ export function minDateRule({
   path,
   context,
 }: ValidateRuleContext<DateSchema, MinDateRule>): OmitBaseErrorMessageProps<MinDateRuleErrorMessage> | undefined {
-  const min = unpackRefValue(rule.min, path, context);
-  // TODO: make assertion part of unpacking a ref; because assertion is only required if it is a reference
-  const compareTo = assertDate(min);
-  return isAfter(value, compareTo) || value.getTime() === compareTo.getTime()
+  const { value: min } = unpackRef(rule.min, path, context, SchemaType.DATE);
+
+  if (min === undefined) {
+    return undefined;
+  }
+
+  return isAfter(value, min) || value.getTime() === min.getTime()
     ? undefined
     : {
         code: "min_date",
-        min: compareTo,
+        min,
         message: `The value ${value} for schema ${path} is before or on ${min}`,
       };
 }

@@ -1,12 +1,12 @@
-import { type Reference, unpackRefValue } from "../../reference";
+import { type Reference, unpackRef } from "../../reference";
 import type { NumberSchema } from "../../schemas";
-import type {
-  ErrorMessageFromRule,
-  ExtractResolvedRules,
-  OmitBaseErrorMessageProps,
-  ValidateRuleContext,
+import {
+  type ErrorMessageFromRule,
+  type ExtractResolvedRules,
+  type OmitBaseErrorMessageProps,
+  SchemaType,
+  type ValidateRuleContext,
 } from "../../types";
-import { assertNumber } from "../../validate";
 
 export type MinRule<T extends number | Reference = number | Reference> = {
   type: "min";
@@ -28,18 +28,17 @@ export function minRule<T extends NumberSchema>({
 }: ValidateRuleContext<T, Extract<ExtractResolvedRules<T>, MinRule>>):
   | OmitBaseErrorMessageProps<MinRuleErrorMessage>
   | undefined {
-  const min = unpackRefValue(rule.min, path, context);
+  const { value: min } = unpackRef(rule.min, path, context, SchemaType.NUMBER);
 
   if (min === undefined) {
     return undefined;
   }
 
-  const compareTo = assertNumber(min);
-  return value >= compareTo
+  return value >= min
     ? undefined
     : {
         code: "min",
-        min: compareTo,
-        message: `The value ${value} for schema ${path} should be at least ${compareTo}`,
+        min: min,
+        message: `The value ${value} for schema ${path} should be at least ${min}`,
       };
 }

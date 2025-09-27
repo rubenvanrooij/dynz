@@ -1,13 +1,12 @@
-import { unpackRefValue, type ValueOrReference } from "../../reference";
+import { unpackRef, type ValueOrReference } from "../../reference";
 import type { BooleanSchema, DateSchema, NumberSchema, OptionsSchema, StringSchema } from "../../schemas";
-import type {
-  ErrorMessageFromRule,
-  ExtractResolvedRules,
-  OmitBaseErrorMessageProps,
-  ValidateRuleContext,
+import {
+  type ErrorMessageFromRule,
+  type ExtractResolvedRules,
+  type OmitBaseErrorMessageProps,
+  SchemaType,
+  type ValidateRuleContext,
 } from "../../types";
-import { coerce } from "../../utils";
-import { assertDate } from "../../validate";
 
 export type EqualsRule<T extends ValueOrReference = ValueOrReference> = {
   type: "equals";
@@ -26,16 +25,17 @@ export function equalsRule<T extends StringSchema | NumberSchema | BooleanSchema
   value,
   path,
   context,
+  schema,
 }: ValidateRuleContext<T, Extract<ExtractResolvedRules<T>, EqualsRule>>):
   | OmitBaseErrorMessageProps<EqualsRuleErrorMessage>
   | undefined {
-  const refOrValue = unpackRefValue(rule.equals, path, context);
-  return refOrValue === value
+  const { value: equals } = unpackRef(rule.equals, path, context, schema.type);
+  return equals === value
     ? undefined
     : {
         code: "equals",
-        equals: refOrValue,
-        message: `The value for schema ${path} does not equal ${refOrValue}`,
+        equals: equals,
+        message: `The value for schema ${path} does not equal ${equals}`,
       };
 }
 
@@ -43,17 +43,21 @@ export function equalsDateRule<T extends DateSchema>({
   rule,
   value,
   path,
-  schema,
   context,
 }: ValidateRuleContext<T, Extract<ExtractResolvedRules<T>, EqualsRule>>):
   | OmitBaseErrorMessageProps<EqualsRuleErrorMessage>
   | undefined {
-  const compareTo = assertDate(coerce(schema, unpackRefValue(rule.equals, path, context)));
-  return compareTo.getTime() === value.getTime()
+  const { value: equals } = unpackRef(rule.equals, path, context, SchemaType.DATE);
+
+  if (equals === undefined) {
+    return undefined;
+  }
+
+  return equals.getTime() === value.getTime()
     ? undefined
     : {
         code: "equals",
-        equals: compareTo,
-        message: `The value for schema ${path} does not equal ${compareTo}`,
+        equals,
+        message: `The value for schema ${path} does not equal ${equals}`,
       };
 }

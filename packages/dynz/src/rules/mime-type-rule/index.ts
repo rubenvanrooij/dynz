@@ -1,4 +1,4 @@
-import { type Reference, unpackRefValue } from "../../reference";
+import { type Reference, unpackRef } from "../../reference";
 import type { FileSchema } from "../../schemas/file/types";
 import type { ErrorMessageFromRule, OmitBaseErrorMessageProps, ValidateRuleContext } from "../../types";
 import { isArray } from "../../validate";
@@ -21,7 +21,12 @@ export function mimeTypeRule({
   path,
   context,
 }: ValidateRuleContext<FileSchema, MimeTypeRule>): OmitBaseErrorMessageProps<MimeTypeRuleErrorMessage> | undefined {
-  const mimeType = unpackRefValue(rule.mimeType, path, context);
+  const { value: mimeType } = unpackRef(rule.mimeType, path, context);
+
+  if (mimeType === undefined) {
+    return undefined;
+  }
+
   const mimeTypes = isArray(mimeType) ? mimeType : [mimeType];
 
   return mimeTypes.includes(value.type)

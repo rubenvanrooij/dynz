@@ -8,17 +8,21 @@ import { isBoolean, isIterable, isNumber, isString } from "../validate/validate"
  * or
  * true -> "true", 12 -> "12"
  */
-export function coerce<T extends Schema>(schema: T, value: unknown): unknown {
-  if (value === undefined || value === null) {
-    return value;
-  }
-
+export function coerceSchema<T extends Schema>(schema: T, value: unknown): unknown {
   // Only 'coerce' when requestd
   if (!("coerce" in schema && schema.coerce === true)) {
     return value;
   }
 
-  switch (schema.type) {
+  return coerce(schema.type, value);
+}
+
+export function coerce<T extends SchemaType>(type: T, value: unknown): unknown {
+  if (value === undefined || value === null) {
+    return value;
+  }
+
+  switch (type) {
     case SchemaType.DATE: {
       if (isNumber(value) || isString(value)) {
         return new Date(value);

@@ -1,9 +1,7 @@
 import { isAfter } from "date-fns";
-import { type Reference, unpackRefValue } from "../../reference";
+import { type Reference, unpackRef } from "../../reference";
 import type { DateSchema } from "../../schemas";
-import type { ErrorMessageFromRule, OmitBaseErrorMessageProps, ValidateRuleContext } from "../../types";
-import { coerce } from "../../utils";
-import { assertDate } from "../../validate";
+import type { ErrorMessageFromRule, RuleFn } from "../../types";
 
 export type AfterRule<T extends Date | Reference = Date | Reference> = {
   type: "after";
@@ -17,22 +15,24 @@ export function after<T extends Date | Reference>(after: T, code?: string): Afte
   return { after, type: "after", code };
 }
 
-export function afterRule({
+export const afterRule: RuleFn<DateSchema, AfterRule, AfterRuleErrorMessage> = ({
   rule,
   value,
   path,
   schema,
   context,
-}: ValidateRuleContext<DateSchema, AfterRule<Date | Reference>>):
-  | OmitBaseErrorMessageProps<AfterRuleErrorMessage>
-  | undefined {
-  const after = unpackRefValue(rule.after, path, context);
-  const compareTo = assertDate(coerce(schema, after));
-  return isAfter(value, compareTo)
+}) => {
+  const { value: after } = unpackRef(rule.after, path, context, schema.type);
+
+  if (after === undefined) {
+    return undefined;
+  }
+
+  return isAfter(value, after)
     ? undefined
     : {
         code: "after",
-        after: compareTo,
+        after: after,
         message: `The value ${value} for schema ${path} is before ${after}`,
       };
-}
+};

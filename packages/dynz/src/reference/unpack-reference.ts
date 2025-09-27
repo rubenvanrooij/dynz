@@ -1,38 +1,52 @@
-import type { ResolveContext, Schema } from "../types";
-import { coerce, ensureAbsolutePath, getNested } from "../utils";
+import type { ResolveContext, Schema, SchemaType, ValueType } from "../types";
+import { coerce, coerceSchema, ensureAbsolutePath, getNested } from "../utils";
 import { validateType } from "../validate/validate";
-import { isReference, type ValueOrReference } from "./reference";
+import { isReference, type Reference, type ValueOrReference } from "./reference";
 
-export function unpackRefValue<T extends ValueOrReference>(
-  valueOrRef: T,
+export function unpackRef<V extends ValueOrReference>(
+  valueOrRef: V,
   path: string,
   context: ResolveContext
-): unknown {
-  return unpackRef(valueOrRef, path, context).value;
-}
-
-export function unpackRef<T extends ValueOrReference>(
-  valueOrRef: T,
+): { value: unknown; static: true } | { schema: Schema; value: ValueType | undefined; static: false };
+export function unpackRef<V extends ValueType, T extends SchemaType>(
+  valueOrRef: V | Reference,
   path: string,
-  context: ResolveContext
-): { value: unknown; static: true } | { schema: Schema; value: unknown; static: false } {
+  context: ResolveContext,
+  expected: T
+): { value: V; static: true } | { schema: Schema; value: ValueType<T> | undefined; static: false };
+export function unpackRef<V extends ValueType, T extends SchemaType>(
+  valueOrRef: V | Reference,
+  path: string,
+  context: ResolveContext,
+  expected?: T | undefined
+): { value: V; static: true } | { schema: Schema; value: ValueType | undefined; static: false } {
   if (isReference(valueOrRef)) {
     const { schema, value } = getNested(ensureAbsolutePath(valueOrRef.path, path), context.schema, context.values.new);
 
-    const val = coerce(schema, value);
+    if (expected) {
+      const val = coerce(expected, value);
+      if (validateType(expected, val)) {
+        return {
+          schema,
+          value: val,
+          static: false,
+        };
+      }
+    } else {
+      const val = coerceSchema(schema, value);
 
-    // If the referenced value is not in the correct type return undefined as the value
-    if (!validateType(schema.type, val)) {
-      return {
-        schema,
-        value: undefined,
-        static: false,
-      };
+      if (validateType(schema.type, val)) {
+        return {
+          schema,
+          value: val,
+          static: false,
+        };
+      }
     }
 
     return {
       schema,
-      value: coerce(schema, value),
+      value: undefined,
       static: false,
     };
   }

@@ -1,12 +1,12 @@
-import { type Reference, unpackRefValue } from "../../reference";
+import { type Reference, unpackRef } from "../../reference";
 import type { ArraySchema, StringSchema } from "../../schemas";
-import type {
-  ErrorMessageFromRule,
-  ExtractResolvedRules,
-  OmitBaseErrorMessageProps,
-  ValidateRuleContext,
+import {
+  type ErrorMessageFromRule,
+  type ExtractResolvedRules,
+  type OmitBaseErrorMessageProps,
+  SchemaType,
+  type ValidateRuleContext,
 } from "../../types";
-import { assertNumber } from "../../validate";
 
 export type MinLengthRule<T extends number | Reference = number | Reference> = {
   type: "min_length";
@@ -28,18 +28,17 @@ export function minLengthRule<T extends StringSchema | ArraySchema<never>>({
 }: ValidateRuleContext<T, Extract<ExtractResolvedRules<T>, MinLengthRule>>):
   | OmitBaseErrorMessageProps<MinLengthRuleErrorMessage>
   | undefined {
-  const min = unpackRefValue(rule.min, path, context);
+  const { value: min } = unpackRef(rule.min, path, context, SchemaType.NUMBER);
 
   if (min === undefined) {
     return undefined;
   }
 
-  const compareTo = assertNumber(min);
-  return value.length >= compareTo
+  return value.length >= min
     ? undefined
     : {
         code: "min_length",
-        min: compareTo,
-        message: `The value ${value} for schema ${path} should have at least a length of ${compareTo}`,
+        min: min,
+        message: `The value ${value} for schema ${path} should have at least a length of ${min}`,
       };
 }

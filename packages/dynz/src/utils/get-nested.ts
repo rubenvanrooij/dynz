@@ -1,6 +1,6 @@
 import { type Schema, SchemaType } from "../types";
 import { isObject } from "../validate/validate";
-import { coerce } from "./coerce";
+import { coerceSchema } from "./coerce";
 
 export function getNested<T extends Schema>(
   path: string,
@@ -65,6 +65,6 @@ export function getNested<T extends Schema>(
 
   return {
     schema: result.schema,
-    value: coerce(result.schema, result.value),
+    value: coerceSchema(result.schema, result.value),
   };
 }

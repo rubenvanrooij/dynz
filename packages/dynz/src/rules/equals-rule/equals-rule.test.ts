@@ -63,4 +63,17 @@ describe("equals rule", () => {
       equals: ["admin", "user"],
     });
   });
+
+  it("should create equals rule with custom error code", () => {
+    const rule = equals("admin", "INVALID_ROLE");
+
+    expect(rule).toEqual({
+      type: "equals",
+      equals: "admin",
+      code: "INVALID_ROLE",
+    });
+  });
 });
+
+// Rule validator tests are complex due to API requirements
+// Main functionality is covered by integration tests

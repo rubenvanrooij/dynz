@@ -24,7 +24,7 @@ import {
   type ValidationResult,
   type ValueType,
 } from "../types";
-import { coerce } from "../utils";
+import { coerceSchema } from "../utils";
 
 export function validate<T extends Schema>(
   schema: T,
@@ -92,7 +92,7 @@ export function _validate<T extends Schema>(
     };
   }
 
-  const newValue = coerce(schema, getValue(schema, path, values.new));
+  const newValue = coerceSchema(schema, getValue(schema, path, values.new));
   const currentValue = getValue(schema, path, values.current);
 
   /**
@@ -182,7 +182,7 @@ export function _validate<T extends Schema>(
         rule,
         value: newValue,
         context,
-      } as ValidateRuleContextUnion<T>);
+      } as unknown as ValidateRuleContextUnion<T>);
 
       if (result !== undefined) {
         return {

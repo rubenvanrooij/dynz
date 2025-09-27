@@ -1,4 +1,4 @@
-import type { ValueOrReference } from "../../reference";
+import { unpackRef, type ValueOrReference } from "../../reference";
 import type { NumberSchema, StringSchema } from "../../schemas";
 import type {
   ErrorMessageFromRule,
@@ -22,10 +22,15 @@ export function oneOf<T extends (string | number)[]>(values: T, code?: string): 
 export function oneOfRule<T extends StringSchema | NumberSchema>({
   value,
   rule,
+  path,
+  schema,
+  context,
 }: ValidateRuleContext<T, Extract<ExtractResolvedRules<T>, OneOfRule>>):
   | OmitBaseErrorMessageProps<OneOfRuleErrorMessage>
   | undefined {
-  return rule.values.some((v) => v === value)
+  const unpackedValues = rule.values.map((valueOrRef) => unpackRef(valueOrRef, path, context, schema.type).value);
+
+  return unpackedValues.some((v) => v === value)
     ? undefined
     : {
         code: "one_of",

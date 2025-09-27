@@ -1,12 +1,12 @@
-import { type Reference, unpackRefValue } from "../../reference";
+import { type Reference, unpackRef } from "../../reference";
 import type { NumberSchema } from "../../schemas";
-import type {
-  ErrorMessageFromRule,
-  ExtractResolvedRules,
-  OmitBaseErrorMessageProps,
-  ValidateRuleContext,
+import {
+  type ErrorMessageFromRule,
+  type ExtractResolvedRules,
+  type OmitBaseErrorMessageProps,
+  SchemaType,
+  type ValidateRuleContext,
 } from "../../types";
-import { assertNumber } from "../../validate";
 
 export type MaxRule<T extends number | Reference = number | Reference> = {
   type: "max";
@@ -28,18 +28,17 @@ export function maxRule<T extends NumberSchema>({
 }: ValidateRuleContext<T, Extract<ExtractResolvedRules<T>, MaxRule>>):
   | OmitBaseErrorMessageProps<MaxRuleErrorMessage>
   | undefined {
-  const max = unpackRefValue(rule.max, path, context);
+  const { value: max } = unpackRef(rule.max, path, context, SchemaType.NUMBER);
 
   if (max === undefined) {
     return undefined;
   }
 
-  const compareTo = assertNumber(max);
-  return value <= compareTo
+  return value <= max
     ? undefined
     : {
         code: "max",
-        max: compareTo,
-        message: `The value ${value} for schema ${path} should have a maximum of ${compareTo}`,
+        max,
+        message: `The value ${value} for schema ${path} should have a maximum of ${max}`,
       };
 }

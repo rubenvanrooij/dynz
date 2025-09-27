@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { SchemaType } from "../types";
-import { coerce } from "./coerce";
+import { coerceSchema } from "./coerce";
 
 describe("coerce", () => {
   describe("when coerce is false or not set", () => {
     it("should return original value for string schema without coerce", () => {
       const schema = { type: SchemaType.STRING };
       const value = 123;
-      const result = coerce(schema, value);
+      const result = coerceSchema(schema, value);
 
       expect(result).toBe(123);
     });
@@ -16,7 +16,7 @@ describe("coerce", () => {
       const schema = { type: SchemaType.STRING, coerce: false };
       const value = 123;
 
-      const result = coerce(schema, value);
+      const result = coerceSchema(schema, value);
 
       expect(result).toBe(123);
     });
@@ -26,7 +26,7 @@ describe("coerce", () => {
     it("should return null when value is null", () => {
       const schema = { type: SchemaType.STRING, coerce: true };
 
-      const result = coerce(schema, null);
+      const result = coerceSchema(schema, null);
 
       expect(result).toBe(null);
     });
@@ -34,7 +34,7 @@ describe("coerce", () => {
     it("should return undefined when value is undefined", () => {
       const schema = { type: SchemaType.STRING, coerce: true };
 
-      const result = coerce(schema, undefined);
+      const result = coerceSchema(schema, undefined);
 
       expect(result).toBe(undefined);
     });
@@ -45,7 +45,7 @@ describe("coerce", () => {
       const schema = { type: SchemaType.DATE, coerce: true };
       const value = "2024-01-01";
 
-      const result = coerce(schema, value);
+      const result = coerceSchema(schema, value);
 
       expect(result).toEqual(new Date("2024-01-01"));
     });
@@ -54,7 +54,7 @@ describe("coerce", () => {
       const schema = { type: SchemaType.DATE, coerce: true };
       const value = 1640995200000; // 2022-01-01 00:00:00 UTC
 
-      const result = coerce(schema, value);
+      const result = coerceSchema(schema, value);
 
       expect(result).toEqual(new Date(1640995200000));
     });
@@ -63,7 +63,7 @@ describe("coerce", () => {
       const schema = { type: SchemaType.DATE, coerce: true };
       const value = { custom: "object" };
 
-      const result = coerce(schema, value);
+      const result = coerceSchema(schema, value);
 
       expect(result).toBe(value);
     });
@@ -74,7 +74,7 @@ describe("coerce", () => {
       const schema = { type: SchemaType.NUMBER, coerce: true };
       const value = "123.45";
 
-      const result = coerce(schema, value);
+      const result = coerceSchema(schema, value);
 
       expect(result).toBe(123.45);
     });
@@ -84,8 +84,8 @@ describe("coerce", () => {
       const trueValue = true;
       const falseValue = false;
 
-      const trueResult = coerce(schema, trueValue);
-      const falseResult = coerce(schema, falseValue);
+      const trueResult = coerceSchema(schema, trueValue);
+      const falseResult = coerceSchema(schema, falseValue);
 
       expect(trueResult).toBe(1);
       expect(falseResult).toBe(0);
@@ -95,7 +95,7 @@ describe("coerce", () => {
       const schema = { type: SchemaType.NUMBER, coerce: true };
       const value = 42;
 
-      const result = coerce(schema, value);
+      const result = coerceSchema(schema, value);
 
       expect(result).toBe(42);
     });
@@ -104,7 +104,7 @@ describe("coerce", () => {
       const schema = { type: SchemaType.NUMBER, coerce: true };
       const value = "invalid";
 
-      const result = coerce(schema, value);
+      const result = coerceSchema(schema, value);
 
       expect(result).toBeNaN();
     });
@@ -114,8 +114,8 @@ describe("coerce", () => {
     it("should return original boolean value", () => {
       const schema = { type: SchemaType.BOOLEAN, coerce: true };
 
-      const trueResult = coerce(schema, true);
-      const falseResult = coerce(schema, false);
+      const trueResult = coerceSchema(schema, true);
+      const falseResult = coerceSchema(schema, false);
 
       expect(trueResult).toBe(true);
       expect(falseResult).toBe(false);
@@ -125,7 +125,7 @@ describe("coerce", () => {
       const schema = { type: SchemaType.BOOLEAN, coerce: true };
       const value = "true";
 
-      const result = coerce(schema, value);
+      const result = coerceSchema(schema, value);
 
       expect(result).toBe(true);
     });
@@ -134,7 +134,7 @@ describe("coerce", () => {
       const schema = { type: SchemaType.BOOLEAN, coerce: true };
       const value = "false";
 
-      const result = coerce(schema, value);
+      const result = coerceSchema(schema, value);
 
       expect(result).toBe(false);
     });
@@ -142,17 +142,17 @@ describe("coerce", () => {
     it("should coerce truthy values to true", () => {
       const schema = { type: SchemaType.BOOLEAN, coerce: true };
 
-      expect(coerce(schema, 1)).toBe(true);
-      expect(coerce(schema, "hello")).toBe(true);
-      expect(coerce(schema, {})).toBe(true);
-      expect(coerce(schema, [])).toBe(true);
+      expect(coerceSchema(schema, 1)).toBe(true);
+      expect(coerceSchema(schema, "hello")).toBe(true);
+      expect(coerceSchema(schema, {})).toBe(true);
+      expect(coerceSchema(schema, [])).toBe(true);
     });
 
     it("should coerce falsy values to false", () => {
       const schema = { type: SchemaType.BOOLEAN, coerce: true };
 
-      expect(coerce(schema, 0)).toBe(false);
-      expect(coerce(schema, "")).toBe(false);
+      expect(coerceSchema(schema, 0)).toBe(false);
+      expect(coerceSchema(schema, "")).toBe(false);
     });
   });
 
@@ -161,7 +161,7 @@ describe("coerce", () => {
       const schema = { type: SchemaType.STRING, coerce: true };
       const value = 123;
 
-      const result = coerce(schema, value);
+      const result = coerceSchema(schema, value);
 
       expect(result).toBe("123");
     });
@@ -169,8 +169,8 @@ describe("coerce", () => {
     it("should coerce boolean to string", () => {
       const schema = { type: SchemaType.STRING, coerce: true };
 
-      const trueResult = coerce(schema, true);
-      const falseResult = coerce(schema, false);
+      const trueResult = coerceSchema(schema, true);
+      const falseResult = coerceSchema(schema, false);
 
       expect(trueResult).toBe("true");
       expect(falseResult).toBe("false");
@@ -180,7 +180,7 @@ describe("coerce", () => {
       const schema = { type: SchemaType.STRING, coerce: true };
       const value = "hello";
 
-      const result = coerce(schema, value);
+      const result = coerceSchema(schema, value);
 
       expect(result).toBe("hello");
     });
@@ -189,7 +189,7 @@ describe("coerce", () => {
       const schema = { type: SchemaType.STRING, coerce: true };
       const value = { custom: "object" };
 
-      const result = coerce(schema, value);
+      const result = coerceSchema(schema, value);
 
       expect(result).toBe(value);
     });
@@ -204,7 +204,7 @@ describe("coerce", () => {
       };
       const value = "hello";
 
-      const result = coerce(schema, value);
+      const result = coerceSchema(schema, value);
 
       expect(result).toEqual(["h", "e", "l", "l", "o"]);
     });
@@ -217,7 +217,7 @@ describe("coerce", () => {
       };
       const value = new Set([1, 2, 3]);
 
-      const result = coerce(schema, value);
+      const result = coerceSchema(schema, value);
 
       expect(result).toEqual([1, 2, 3]);
     });
@@ -230,7 +230,7 @@ describe("coerce", () => {
       };
       const value = 123;
 
-      const result = coerce(schema, value);
+      const result = coerceSchema(schema, value);
 
       expect(result).toBe(value);
     });
@@ -241,7 +241,7 @@ describe("coerce", () => {
       const schema = { type: "unknown" as any, coerce: true };
       const value = "test";
 
-      const result = coerce(schema, value);
+      const result = coerceSchema(schema, value);
 
       expect(result).toBe(value);
     });

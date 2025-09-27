@@ -179,7 +179,7 @@ export type ValidateRuleContext<
       path: string;
       rule: R;
       value: ValueType<T["type"]>;
-      context: Context;
+      context: Context<T>;
     }
   : never;
 

@@ -1,12 +1,12 @@
-import { type Reference, unpackRefValue } from "../../reference";
+import { type Reference, unpackRef } from "../../reference";
 import type { FileSchema } from "../../schemas";
-import type {
-  ErrorMessageFromRule,
-  ExtractResolvedRules,
-  OmitBaseErrorMessageProps,
-  ValidateRuleContext,
+import {
+  type ErrorMessageFromRule,
+  type ExtractResolvedRules,
+  type OmitBaseErrorMessageProps,
+  SchemaType,
+  type ValidateRuleContext,
 } from "../../types";
-import { assertNumber } from "../../validate";
 
 export type MaxSizeRule<T extends number | Reference = number | Reference> = {
   type: "max_size";
@@ -28,18 +28,17 @@ export function maxSizeRule<T extends FileSchema>({
 }: ValidateRuleContext<T, Extract<ExtractResolvedRules<T>, MaxSizeRule>>):
   | OmitBaseErrorMessageProps<MaxSizeRuleErrorMessage>
   | undefined {
-  const min = unpackRefValue(rule.max, path, context);
+  const { value: max } = unpackRef(rule.max, path, context, SchemaType.NUMBER);
 
-  if (min === undefined) {
+  if (max === undefined) {
     return undefined;
   }
 
-  const compareTo = assertNumber(min);
-  return value.size <= compareTo
+  return value.size <= max
     ? undefined
     : {
         code: "max_size",
-        max: compareTo,
-        message: `The value ${value} for schema ${path} should have a maximum size of ${compareTo}`,
+        max,
+        message: `The value ${value} for schema ${path} should have a maximum size of ${max}`,
       };
 }
