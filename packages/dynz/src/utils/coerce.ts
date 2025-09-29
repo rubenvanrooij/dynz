@@ -1,5 +1,5 @@
 import { type Schema, SchemaType } from "../types";
-import { isBoolean, isIterable, isNumber, isString } from "../validate/validate";
+import { isBoolean, isIterable, isNumber, isString } from "../validate/validate-type";
 
 /**
  * Function that tries to cast a value to the correct chema type:

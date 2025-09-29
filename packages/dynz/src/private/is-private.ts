@@ -1,4 +1,4 @@
-import { isObject } from "../validate";
+import { isObject } from "../validate/validate-type";
 import type { PrivateValue } from "./types";
 
 export function isPivateValue<T>(value: unknown): value is PrivateValue<T> {

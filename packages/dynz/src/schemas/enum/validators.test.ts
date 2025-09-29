@@ -1,12 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Context } from "../../types";
 import { SchemaType } from "../../types";
-import type { EnumSchema } from "./types";
 import { validateEnum } from "./validators";
+import { enum as enumBuilder } from "./builder";
+import { equals } from "../../rules";
 
 // Mock the equals rule
 vi.mock("../../rules", () => ({
   equalsRule: vi.fn(),
+  equals: vi.fn(),
 }));
 
 import { equalsRule } from "../../rules";
@@ -16,22 +18,19 @@ describe("validateEnum", () => {
     ADMIN: "admin",
     USER: "user",
   } as const;
+  const mockSchema = enumBuilder({ enum: testEnum });
+  const mockContext = {} as unknown as Context<typeof mockSchema>;
 
   beforeEach(() => {
     vi.resetAllMocks();
   });
 
   it("should delegate to equalsRule for equals validation", () => {
-    const mockContext = {} as unknown as Context<EnumSchema<typeof testEnum>>;
-    const mockSchema: EnumSchema<typeof testEnum> = {
-      type: SchemaType.ENUM,
-      enum: testEnum,
-    };
-
+    const rule = equals("admin");
     const contextObj = {
       type: SchemaType.ENUM,
       ruleType: "equals" as const,
-      rule: { type: "equals" as const, equals: "admin" },
+      rule,
       schema: mockSchema,
       path: "$.role",
       value: "admin",
@@ -39,9 +38,7 @@ describe("validateEnum", () => {
     };
 
     vi.mocked(equalsRule).mockReturnValue(undefined);
-
     const result = validateEnum(contextObj);
-
     expect(equalsRule).toHaveBeenCalledWith(contextObj);
     expect(result).toBeUndefined();
   });

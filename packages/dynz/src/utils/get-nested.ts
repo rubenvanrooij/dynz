@@ -1,5 +1,5 @@
 import { type Schema, SchemaType } from "../types";
-import { isObject } from "../validate/validate";
+import { isObject } from "../validate/validate-type";
 import { coerceSchema } from "./coerce";
 
 export function getNested<T extends Schema>(

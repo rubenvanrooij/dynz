@@ -11,7 +11,7 @@ vi.mock("../utils", () => ({
   getNested: vi.fn(),
 }));
 
-vi.mock("../validate/validate", () => ({
+vi.mock("../validate/validate-type", () => ({
   validateType: vi.fn(),
   validateShallowType: vi.fn(),
 }));
@@ -19,7 +19,7 @@ vi.mock("../validate/validate", () => ({
 import { object, string } from "../schemas";
 // Import mocked functions
 import { coerce, coerceSchema, ensureAbsolutePath, getNested } from "../utils";
-import { validateShallowType, validateType } from "../validate/validate";
+import { validateShallowType, validateType } from "../validate/validate-type";
 
 describe("unpackRef", () => {
   const mockContext: ResolveContext = {

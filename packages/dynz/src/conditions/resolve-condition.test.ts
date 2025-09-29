@@ -10,7 +10,7 @@ vi.mock("../utils", () => ({
   getNested: vi.fn(),
 }));
 
-vi.mock("../validate/validate", () => ({
+vi.mock("../validate/validate-type", () => ({
   validateType: vi.fn(),
   isString: vi.fn(),
   parseDateString: vi.fn(),
@@ -22,7 +22,7 @@ vi.mock("../reference", () => ({
 
 import { unpackRef } from "../reference";
 import { ensureAbsolutePath, getNested } from "../utils";
-import { isString, parseDateString, validateType } from "../validate/validate";
+import { isString, parseDateString, validateType } from "../validate/validate-type";
 
 describe("resolveCondition", () => {
   const mockContext: ResolveContext = {

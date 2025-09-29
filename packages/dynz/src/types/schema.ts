@@ -55,7 +55,7 @@ export type Schema =
   | BooleanSchema
   | ArraySchema<never>
   | DateStringSchema
-  | OptionsSchema<string | number>
+  | OptionsSchema
   | FileSchema
   | DateSchema
   | EnumSchema;

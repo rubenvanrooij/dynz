@@ -1,6 +1,6 @@
 import type { ResolveContext, Schema, SchemaType, ValueType } from "../types";
 import { coerce, coerceSchema, ensureAbsolutePath, getNested } from "../utils";
-import { validateShallowType, validateType } from "../validate/validate";
+import { validateShallowType, validateType } from "../validate/validate-type";
 import { isReference, type Reference, type ValueOrReference } from "./reference";
 
 export function unpackRef<V extends ValueOrReference>(
