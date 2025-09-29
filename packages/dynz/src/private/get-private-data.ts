@@ -1,4 +1,4 @@
-import { assertString, isObject } from "../validate";
+import { isObject } from "../validate";
 import type { PrivateValue } from "./types";
 
 export function getPrivateData(value: unknown): PrivateValue<unknown> {
@@ -13,9 +13,13 @@ export function getPrivateData(value: unknown): PrivateValue<unknown> {
   }
 
   if (value.state === "masked") {
+    if (typeof value.value !== "string") {
+      throw new Error('Private value with state "masked" must have a string as value');
+    }
+
     return {
       state: "masked",
-      value: assertString(value.value),
+      value: value.value,
     };
   }
 

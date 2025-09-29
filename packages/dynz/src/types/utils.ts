@@ -1,6 +1,5 @@
 import type { BaseErrorMessage } from "./validate";
 
-export type EnumValues<T> = T[keyof T];
 export type Unpacked<T> = T extends (infer U)[] ? U : T;
 
 export type Optional<T, K extends keyof T> = Pick<Partial<T>, K> & Omit<T, K>;

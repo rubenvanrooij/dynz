@@ -20,9 +20,10 @@ import type {
   OneOfRuleErrorMessage,
   RegexRuleErrorMessage,
 } from "../rules";
+import type { EnumValues } from "../schemas";
 import type { BaseRule, ExtractResolvedRules } from "./rules";
 import type { Schema, SchemaType, ValueType } from "./schema";
-import type { EnumValues, ErrorMessageFromRule, JsonPrimitive } from "./utils";
+import type { ErrorMessageFromRule, JsonPrimitive } from "./utils";
 
 export type ValidationSuccesResult<T> = {
   success: true;

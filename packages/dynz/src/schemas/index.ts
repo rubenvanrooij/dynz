@@ -8,3 +8,4 @@ export * from "./number";
 export * from "./object";
 export * from "./options";
 export * from "./string";
+export * from "./enum";

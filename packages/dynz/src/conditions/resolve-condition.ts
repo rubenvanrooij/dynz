@@ -2,7 +2,7 @@ import { unpackRef } from "../reference";
 import type { ValueOrReference } from "../reference/reference";
 import { type ResolveContext, type Schema, SchemaType, type ValueType } from "../types";
 import { ensureAbsolutePath, getNested } from "../utils";
-import { assertArray, isString, parseDateString, validateSchema } from "../validate/validate";
+import { isString, parseDateString, validateType } from "../validate/validate";
 import {
   type Condition,
   ConditionType,
@@ -40,11 +40,11 @@ export function resolveCondition(condition: Condition, path: string, context: Re
     }
     case ConditionType.IS_IN: {
       const { left, right } = getConditionOperands(condition, path, context);
-      return assertArray(right).includes(left);
+      return (Array.isArray(right) ? right : [right]).includes(left);
     }
     case ConditionType.IS_NOT_IN: {
       const { left, right } = getConditionOperands(condition, path, context);
-      return !assertArray(right).includes(left);
+      return !(Array.isArray(right) ? right : [right]).includes(left);
     }
   }
 }
@@ -98,7 +98,7 @@ function getConditionOperands<T extends ValueType>(
 ): { left?: ValueType | undefined; right?: ValueType | undefined } {
   const nested = getNested(ensureAbsolutePath(condition.path, path), context.schema, context.values.new);
 
-  const left = validateSchema(nested.schema, nested.value) ? toCompareType(nested.schema, nested.value) : undefined;
+  const left = validateType(nested.schema, nested.value) ? toCompareType(nested.schema, nested.value) : undefined;
 
   if (Array.isArray(condition.value)) {
     return {
@@ -109,12 +109,12 @@ function getConditionOperands<T extends ValueType>(
 
         if (unpacked.static) {
           // TODO: Add dev check to ensure value is of type ValueType
-          return validateSchema(nested.schema, unpacked.value as ValueType)
+          return validateType(nested.schema, unpacked.value as ValueType)
             ? toCompareType(nested.schema, unpacked.value as ValueType)
             : undefined;
         }
 
-        return validateSchema(unpacked.schema, unpacked.value)
+        return validateType(unpacked.schema, unpacked.value)
           ? toCompareType(unpacked.schema, unpacked.value)
           : undefined;
       }),
@@ -127,7 +127,7 @@ function getConditionOperands<T extends ValueType>(
     return {
       left: left,
       // TODO: Add dev check to ensure value is of type ValueType
-      right: validateSchema(nested.schema, unpacked.value as ValueType)
+      right: validateType(nested.schema, unpacked.value as ValueType)
         ? toCompareType(nested.schema, unpacked.value as ValueType)
         : undefined,
     };
@@ -135,7 +135,7 @@ function getConditionOperands<T extends ValueType>(
 
   return {
     left: left,
-    right: validateSchema(unpacked.schema, unpacked.value) ? toCompareType(unpacked.schema, unpacked.value) : undefined,
+    right: validateType(unpacked.schema, unpacked.value) ? toCompareType(unpacked.schema, unpacked.value) : undefined,
   };
 }
 

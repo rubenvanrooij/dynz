@@ -2,10 +2,12 @@ import { parse } from "date-fns";
 import { resolveProperty, resolveRules } from "../conditions";
 import { isPivateValue, isValueMasked, type PrivateValue } from "../private";
 import {
+  type Enum,
   validateArray,
   validateBoolean,
   validateDate,
   validateDateString,
+  validateEnum,
   validateFile,
   validateNumber,
   validateObject,
@@ -140,7 +142,7 @@ export function _validate<T extends Schema>(
   /**
    * Type check
    */
-  if (newValue !== undefined && validateSchema(schema, newValue) === false) {
+  if (newValue !== undefined && validateType(schema, newValue) === false) {
     const error = {
       path,
       schema,
@@ -226,17 +228,24 @@ export function _validate<T extends Schema>(
           context
         );
 
-        if (acc.success && result.success) {
+        if (acc.success) {
+          if (result.success) {
+            acc.values[key] = result.values;
+            return acc;
+          }
+
           return {
-            success: true,
-            values: result.values !== undefined ? { ...acc.values, [key]: result.values } : acc.values,
+            success: false,
+            errors: result.errors,
           };
         }
 
-        return {
-          success: false,
-          errors: [...(acc.success === true ? [] : acc.errors), ...(result.success === true ? [] : result.errors)],
-        };
+        if (result.success) {
+          return acc;
+        }
+
+        acc.errors.push(...result.errors);
+        return acc;
       },
       { success: true, values: {} }
     );
@@ -272,15 +281,24 @@ export function _validate<T extends Schema>(
           newContext
         );
 
-        if (acc.success && result.success) {
-          acc.values.push(result.values);
+        if (acc.success) {
+          if (result.success) {
+            acc.values.push(result.values);
+            return acc;
+          }
+
+          return {
+            success: false,
+            errors: result.errors,
+          };
+        }
+
+        if (result.success) {
           return acc;
         }
 
-        return {
-          success: false,
-          errors: [...(acc.success === true ? [] : acc.errors), ...(result.success === true ? [] : result.errors)],
-        };
+        acc.errors.push(...result.errors);
+        return acc;
       },
       { success: true, values: [] }
     );
@@ -312,6 +330,8 @@ function validateRule<T extends Schema>(context: ValidateRuleContextUnion<T>) {
       return validateObject(context);
     case SchemaType.OPTIONS:
       return validateOptions(context);
+    case SchemaType.ENUM:
+      return validateEnum(context);
   }
 }
 
@@ -322,34 +342,51 @@ function validateRule<T extends Schema>(context: ValidateRuleContextUnion<T>) {
  * @param value the value to be validated
  * @returns true if the type is correct, false if not
  */
-export function validateSchema<T extends Schema>(schema: T, value: unknown): value is ValueType<T["type"]> {
-  return schema.type === SchemaType.DATE_STRING
-    ? validateType(schema.type, value, schema.format)
-    : validateType(schema.type, value);
+export function validateType<T extends Schema>(
+  schema: T,
+  value: unknown,
+  dateFormat?: string
+): value is ValueType<T["type"]> {
+  switch (schema.type) {
+    case SchemaType.NUMBER:
+      return isNumber(value);
+    case SchemaType.OBJECT:
+      return isObject(value);
+    case SchemaType.STRING:
+      return isString(value);
+    case SchemaType.BOOLEAN:
+      return isBoolean(value);
+    case SchemaType.DATE:
+      return isDate(value);
+    case SchemaType.ARRAY:
+      return isArray(value);
+    case SchemaType.FILE:
+      return isFile(value);
+    case SchemaType.ENUM:
+      return isEnum(schema.enum, value);
+    case SchemaType.DATE_STRING: {
+      if (dateFormat === undefined) {
+        throw new Error("No date format supplied for date string type");
+      }
+
+      return isDateString(value, dateFormat);
+    }
+    case SchemaType.OPTIONS:
+      // TODO: Validate if value is actually one of the options in the schema
+      return isNumber(value) || isString(value) || isBoolean(value);
+  }
 }
 
 /**
- * Validates whether the value is of the correct type
+ * Shallow validation whether the value is of the correct type
+ *
+ * It only checks the primitive type and does not validate e.g. if an enum value is actually part of the enum
  *
  * @param type the expected type of the value
  * @param value the value to be validated
  * @returns true if the type is correct, false if not
  */
-export function validateType<T extends Exclude<SchemaType, typeof SchemaType.DATE_STRING>>(
-  type: T,
-  value: unknown
-): value is ValueType<T>;
-export function validateType<T extends typeof SchemaType.DATE_STRING>(
-  type: T,
-  value: unknown,
-  dateFormat: string
-): value is ValueType<T>;
-export function validateType<T extends SchemaType>(type: T, value: unknown, dateFormat?: string): value is ValueType<T>;
-export function validateType<T extends SchemaType>(
-  type: T,
-  value: unknown,
-  dateFormat?: string
-): value is ValueType<T> {
+export function validateShallowType<T extends SchemaType>(type: T, value: unknown): value is ValueType<T> {
   switch (type) {
     case SchemaType.NUMBER:
       return isNumber(value);
@@ -365,54 +402,23 @@ export function validateType<T extends SchemaType>(
       return isArray(value);
     case SchemaType.FILE:
       return isFile(value);
-    case SchemaType.DATE_STRING: {
-      if (dateFormat === undefined) {
-        throw new Error("No date format supplied for date string type");
-      }
-
-      return isDateString(value, dateFormat);
-    }
+    case SchemaType.ENUM:
+      return isString(value) || isNumber(value);
+    case SchemaType.DATE_STRING:
+      return isString(value);
     case SchemaType.OPTIONS:
-      // TODO: Validate if value is actually one of the options in the schema
       return isNumber(value) || isString(value) || isBoolean(value);
   }
 }
 
 /**
- * Makes sure that a value is of a certain type; if not it throws an error
+ * Validates whether a value is an enum value
  *
- * @param type the expected type of the value
  * @param value the value to be validated
+ * @returns true if the value is correct, false if not
  */
-export function assertSchema<T extends Schema>(schema: T, value: unknown): ValueType<T["type"]> {
-  if (validateSchema(schema, value)) {
-    return value;
-  }
-
-  throw new Error(`Invalid value: ${value} for schema type: ${schema.type}`);
-}
-
-/**
- * Makes sure that a value is of a certain type; if not it throws an error
- *
- * @param type the expected type of the value
- * @param value the value to be validated
- */
-export function assertType<T extends Exclude<SchemaType, typeof SchemaType.DATE_STRING>>(
-  type: T,
-  value: unknown
-): ValueType<T>;
-export function assertType<T extends typeof SchemaType.DATE_STRING>(
-  type: T,
-  value: unknown,
-  dateFormat: string
-): ValueType<T>;
-export function assertType<T extends SchemaType>(type: T, value: unknown, dateFormat?: string): ValueType<T> {
-  if (validateType(type, value, dateFormat)) {
-    return value;
-  }
-
-  throw new Error(`Invalid type: ${typeof value} with ${value} for schema type: ${type}`);
+export function isEnum<T extends Enum>(enum_: T, value: unknown): value is T {
+  return Object.values(enum_).some((v) => v === value);
 }
 
 /**
@@ -494,30 +500,6 @@ export function isObject(value: unknown): value is Record<string | number, unkno
  */
 export function isArray(value: unknown): value is unknown[] {
   return Array.isArray(value);
-}
-
-export function assertNumber(value: unknown): number {
-  return assertType(SchemaType.NUMBER, value);
-}
-
-export function assertObject(value: unknown): Record<string | number, unknown> {
-  return assertType(SchemaType.OBJECT, value);
-}
-
-export function assertArray(value: unknown): unknown[] {
-  return assertType(SchemaType.ARRAY, value);
-}
-
-export function assertString(value: unknown): string {
-  return assertType(SchemaType.STRING, value);
-}
-
-export function assertDate(value: unknown): Date {
-  return assertType(SchemaType.DATE, value);
-}
-
-export function assertDateString(value: unknown, format: string): DateString {
-  return assertType(SchemaType.DATE_STRING, value, format);
 }
 
 /**

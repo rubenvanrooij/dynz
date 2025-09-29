@@ -12,7 +12,7 @@ import {
   isObject,
   isString,
   validate,
-  validateType,
+  validateShallowType,
 } from "./validate";
 
 describe("validate", () => {
@@ -320,93 +320,85 @@ describe("validate", () => {
     });
   });
 
-  describe("validateType function", () => {
+  describe("validateShallowType function", () => {
     describe("string validation", () => {
       it("should validate string type", () => {
-        expect(validateType(SchemaType.STRING, "hello")).toBe(true);
-        expect(validateType(SchemaType.STRING, 123)).toBe(false);
-        expect(validateType(SchemaType.STRING, null)).toBe(false);
-        expect(validateType(SchemaType.STRING, undefined)).toBe(false);
+        expect(validateShallowType(SchemaType.STRING, "hello")).toBe(true);
+        expect(validateShallowType(SchemaType.STRING, 123)).toBe(false);
+        expect(validateShallowType(SchemaType.STRING, null)).toBe(false);
+        expect(validateShallowType(SchemaType.STRING, undefined)).toBe(false);
       });
     });
 
     describe("number validation", () => {
       it("should validate number type", () => {
-        expect(validateType(SchemaType.NUMBER, 123)).toBe(true);
-        expect(validateType(SchemaType.NUMBER, 123.45)).toBe(true);
-        expect(validateType(SchemaType.NUMBER, "123")).toBe(false);
-        expect(validateType(SchemaType.NUMBER, NaN)).toBe(false);
-        expect(validateType(SchemaType.NUMBER, Infinity)).toBe(false);
+        expect(validateShallowType(SchemaType.NUMBER, 123)).toBe(true);
+        expect(validateShallowType(SchemaType.NUMBER, 123.45)).toBe(true);
+        expect(validateShallowType(SchemaType.NUMBER, "123")).toBe(false);
+        expect(validateShallowType(SchemaType.NUMBER, NaN)).toBe(false);
+        expect(validateShallowType(SchemaType.NUMBER, Infinity)).toBe(false);
       });
     });
 
     describe("boolean validation", () => {
       it("should validate boolean type", () => {
-        expect(validateType(SchemaType.BOOLEAN, true)).toBe(true);
-        expect(validateType(SchemaType.BOOLEAN, false)).toBe(true);
-        expect(validateType(SchemaType.BOOLEAN, "true")).toBe(false);
-        expect(validateType(SchemaType.BOOLEAN, 1)).toBe(false);
+        expect(validateShallowType(SchemaType.BOOLEAN, true)).toBe(true);
+        expect(validateShallowType(SchemaType.BOOLEAN, false)).toBe(true);
+        expect(validateShallowType(SchemaType.BOOLEAN, "true")).toBe(false);
+        expect(validateShallowType(SchemaType.BOOLEAN, 1)).toBe(false);
       });
     });
 
     describe("object validation", () => {
       it("should validate object type", () => {
-        expect(validateType(SchemaType.OBJECT, {})).toBe(true);
-        expect(validateType(SchemaType.OBJECT, { key: "value" })).toBe(true);
-        expect(validateType(SchemaType.OBJECT, [])).toBe(false);
-        expect(validateType(SchemaType.OBJECT, null)).toBe(false);
+        expect(validateShallowType(SchemaType.OBJECT, {})).toBe(true);
+        expect(validateShallowType(SchemaType.OBJECT, { key: "value" })).toBe(true);
+        expect(validateShallowType(SchemaType.OBJECT, [])).toBe(false);
+        expect(validateShallowType(SchemaType.OBJECT, null)).toBe(false);
       });
     });
 
     describe("array validation", () => {
       it("should validate array type", () => {
-        expect(validateType(SchemaType.ARRAY, [])).toBe(true);
-        expect(validateType(SchemaType.ARRAY, [1, 2, 3])).toBe(true);
-        expect(validateType(SchemaType.ARRAY, {})).toBe(false);
-        expect(validateType(SchemaType.ARRAY, "array")).toBe(false);
+        expect(validateShallowType(SchemaType.ARRAY, [])).toBe(true);
+        expect(validateShallowType(SchemaType.ARRAY, [1, 2, 3])).toBe(true);
+        expect(validateShallowType(SchemaType.ARRAY, {})).toBe(false);
+        expect(validateShallowType(SchemaType.ARRAY, "array")).toBe(false);
       });
     });
 
     describe("date validation", () => {
       it("should validate date type", () => {
-        expect(validateType(SchemaType.DATE, new Date())).toBe(true);
-        expect(validateType(SchemaType.DATE, new Date("2023-01-01"))).toBe(true);
-        expect(validateType(SchemaType.DATE, new Date("invalid"))).toBe(false);
-        expect(validateType(SchemaType.DATE, "2023-01-01")).toBe(false);
+        expect(validateShallowType(SchemaType.DATE, new Date())).toBe(true);
+        expect(validateShallowType(SchemaType.DATE, new Date("2023-01-01"))).toBe(true);
+        expect(validateShallowType(SchemaType.DATE, new Date("invalid"))).toBe(false);
+        expect(validateShallowType(SchemaType.DATE, "2023-01-01")).toBe(false);
       });
     });
 
     describe("file validation", () => {
       it("should validate file type", () => {
         const file = new File(["content"], "test.txt", { type: "text/plain" });
-        expect(validateType(SchemaType.FILE, file)).toBe(true);
-        expect(validateType(SchemaType.FILE, {})).toBe(false);
-        expect(validateType(SchemaType.FILE, "file")).toBe(false);
+        expect(validateShallowType(SchemaType.FILE, file)).toBe(true);
+        expect(validateShallowType(SchemaType.FILE, {})).toBe(false);
+        expect(validateShallowType(SchemaType.FILE, "file")).toBe(false);
       });
     });
 
     describe("date string validation", () => {
       it("should validate date string type", () => {
-        expect(validateType(SchemaType.DATE_STRING, "2023-01-01", "yyyy-MM-dd")).toBe(true);
-        expect(validateType(SchemaType.DATE_STRING, "01/01/2023", "MM/dd/yyyy")).toBe(true);
-        expect(validateType(SchemaType.DATE_STRING, "invalid-date", "yyyy-MM-dd")).toBe(false);
-        expect(validateType(SchemaType.DATE_STRING, "2023-01-01", "MM/dd/yyyy")).toBe(false);
-      });
-
-      it("should throw error when no date format is provided", () => {
-        expect(() => {
-          validateType(SchemaType.DATE_STRING, "2023-01-01");
-        }).toThrow("No date format supplied for date string type");
+        expect(validateShallowType(SchemaType.DATE_STRING, "2023-01-01")).toBe(true);
+        expect(validateShallowType(SchemaType.DATE_STRING, "01/01/2023")).toBe(true);
       });
     });
 
     describe("options validation", () => {
       it("should validate options type", () => {
-        expect(validateType(SchemaType.OPTIONS, "option1")).toBe(true);
-        expect(validateType(SchemaType.OPTIONS, 1)).toBe(true);
-        expect(validateType(SchemaType.OPTIONS, true)).toBe(true);
-        expect(validateType(SchemaType.OPTIONS, {})).toBe(false);
-        expect(validateType(SchemaType.OPTIONS, [])).toBe(false);
+        expect(validateShallowType(SchemaType.OPTIONS, "option1")).toBe(true);
+        expect(validateShallowType(SchemaType.OPTIONS, 1)).toBe(true);
+        expect(validateShallowType(SchemaType.OPTIONS, true)).toBe(true);
+        expect(validateShallowType(SchemaType.OPTIONS, {})).toBe(false);
+        expect(validateShallowType(SchemaType.OPTIONS, [])).toBe(false);
       });
     });
   });

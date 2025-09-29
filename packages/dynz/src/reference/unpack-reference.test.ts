@@ -13,12 +13,13 @@ vi.mock("../utils", () => ({
 
 vi.mock("../validate/validate", () => ({
   validateType: vi.fn(),
+  validateShallowType: vi.fn(),
 }));
 
 import { object, string } from "../schemas";
 // Import mocked functions
 import { coerce, coerceSchema, ensureAbsolutePath, getNested } from "../utils";
-import { validateType } from "../validate/validate";
+import { validateShallowType, validateType } from "../validate/validate";
 
 describe("unpackRef", () => {
   const mockContext: ResolveContext = {
@@ -100,7 +101,7 @@ describe("unpackRef", () => {
       expect(ensureAbsolutePath).toHaveBeenCalledWith("user.name", "current.path");
       expect(getNested).toHaveBeenCalledWith("$.resolved.path", mockContext.schema, mockContext.values.new);
       expect(coerceSchema).toHaveBeenCalledWith({ type: "string" }, "resolved value");
-      expect(validateType).toHaveBeenCalledWith("string", "coerced value");
+      expect(validateType).toHaveBeenCalledWith({ type: "string" }, "coerced value");
 
       expect(result).toEqual({
         schema: { type: "string" },
@@ -140,6 +141,7 @@ describe("unpackRef", () => {
       });
       vi.mocked(coerce).mockReturnValue(123);
       vi.mocked(validateType).mockReturnValue(true);
+      vi.mocked(validateShallowType).mockReturnValue(true);
     });
 
     it("should resolve reference with type coercion", () => {
@@ -150,7 +152,7 @@ describe("unpackRef", () => {
       expect(ensureAbsolutePath).toHaveBeenCalledWith("user.age", "current.path");
       expect(getNested).toHaveBeenCalledWith("$.resolved.path", mockContext.schema, mockContext.values.new);
       expect(coerce).toHaveBeenCalledWith(SchemaType.NUMBER, "123");
-      expect(validateType).toHaveBeenCalledWith(SchemaType.NUMBER, 123);
+      expect(validateShallowType).toHaveBeenCalledWith(SchemaType.NUMBER, 123);
 
       expect(result).toEqual({
         schema: { type: "number" },
@@ -162,11 +164,16 @@ describe("unpackRef", () => {
     it("should return undefined when type validation fails", () => {
       const reference = ref("user.invalidField");
       vi.mocked(validateType).mockReturnValue(false);
+      vi.mocked(validateShallowType).mockReturnValue(false);
+      vi.mocked(getNested).mockReturnValue({
+        schema: { type: "string" },
+        value: "invalid",
+      });
 
       const result = unpackRef(reference, "current.path", mockContext, SchemaType.STRING);
 
       expect(result).toEqual({
-        schema: { type: "number" },
+        schema: { type: "string" },
         value: undefined,
         static: false,
       });
@@ -341,7 +348,7 @@ describe("unpackRef", () => {
         value: "123",
       });
       vi.mocked(coerce).mockReturnValue(123);
-      vi.mocked(validateType).mockReturnValue(true);
+      vi.mocked(validateShallowType).mockReturnValue(true);
 
       const result = unpackRef(reference, "path", mockContext, SchemaType.NUMBER);
 
@@ -349,7 +356,7 @@ describe("unpackRef", () => {
       expect(ensureAbsolutePath).toHaveBeenCalledWith("user.stringifiedNumber", "path");
       expect(getNested).toHaveBeenCalledWith("$.user.stringifiedNumber", mockContext.schema, mockContext.values.new);
       expect(coerce).toHaveBeenCalledWith(SchemaType.NUMBER, "123");
-      expect(validateType).toHaveBeenCalledWith(SchemaType.NUMBER, 123);
+      expect(validateShallowType).toHaveBeenCalledWith(SchemaType.NUMBER, 123);
 
       expect(result).toEqual({
         schema: { type: "string" },

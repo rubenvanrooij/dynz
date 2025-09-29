@@ -1,5 +1,6 @@
 import { unpackRef, type ValueOrReference } from "../../reference";
 import type { BooleanSchema, DateSchema, NumberSchema, OptionsSchema, StringSchema } from "../../schemas";
+import type { EnumSchema } from "../../schemas/enum";
 import { type ErrorMessageFromRule, type ExtractResolvedRules, type RuleFn, SchemaType } from "../../types";
 
 export type EqualsRule<T extends ValueOrReference = ValueOrReference> = {
@@ -14,7 +15,7 @@ export function equals<T extends ValueOrReference>(equals: T, code?: string): Eq
   return { equals, type: "equals", code };
 }
 
-type AllowedSchemas = StringSchema | NumberSchema | BooleanSchema | OptionsSchema;
+type AllowedSchemas = StringSchema | NumberSchema | BooleanSchema | OptionsSchema | EnumSchema;
 
 export const equalsRule: RuleFn<
   AllowedSchemas,

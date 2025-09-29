@@ -1,6 +1,6 @@
 import type { ResolveContext, Schema, SchemaType, ValueType } from "../types";
 import { coerce, coerceSchema, ensureAbsolutePath, getNested } from "../utils";
-import { validateType } from "../validate/validate";
+import { validateShallowType, validateType } from "../validate/validate";
 import { isReference, type Reference, type ValueOrReference } from "./reference";
 
 export function unpackRef<V extends ValueOrReference>(
@@ -25,7 +25,7 @@ export function unpackRef<V extends ValueType, T extends SchemaType>(
 
     if (expected) {
       const val = coerce(expected, value);
-      if (validateType(expected, val)) {
+      if (validateShallowType(expected, val)) {
         return {
           schema,
           value: val,
@@ -35,7 +35,7 @@ export function unpackRef<V extends ValueType, T extends SchemaType>(
     } else {
       const val = coerceSchema(schema, value);
 
-      if (validateType(schema.type, val)) {
+      if (validateType(schema, val)) {
         return {
           schema,
           value: val,
