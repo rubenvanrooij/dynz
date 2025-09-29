@@ -1,6 +1,6 @@
 {
   "name": "@dynz/react-hook-form-resolver",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "private": false,
   "license": "MIT",
   "type": "module",
@@ -47,7 +47,7 @@
     "test:watch": "vitest run --watch"
   },
   "peerDependencies": {
-    "dynz": "^0.0.4",
+    "dynz": "^0.0.5",
     "@hookform/resolvers": "^5.0.0",
     "react-hook-form": "^7.0.0"
   },
