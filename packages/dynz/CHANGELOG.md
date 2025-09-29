@@ -1,5 +1,13 @@
 # dynz
 
+## 0.0.5
+
+### Patch Changes
+
+- d8b5c94: Added option type validation
+- 955bef4: Added enum schema
+- d863166: Added schema unit tests
+
 ## 0.0.4
 
 ### Patch Changes
