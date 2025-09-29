@@ -44,8 +44,8 @@ const z_user = z.object({
 });
 
 const o = d.options({
-      options: ['fo', 'bar']
-})
+  options: ["fo", "bar"],
+});
 
 const d_user = d.object({
   fields: {
@@ -55,7 +55,7 @@ const d_user = d.object({
       }),
     }),
     aa: d.options({
-      options: ['fo', 'bar']
+      options: ["fo", "bar"],
     }),
     name: d.string({
       rules: [d.minLength(2), d.maxLength(100)],
