@@ -72,7 +72,7 @@ export function dynzResolver<T extends ObjectSchema<never>, O extends SchemaValu
 
     return {
       errors: {},
-      values: result.values,
+      values: result.values as O,
     };
   };
 }

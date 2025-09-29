@@ -89,6 +89,6 @@ describe("getPrivateData", () => {
   it("should throw error for masked value with non-string mask", () => {
     expect(() => {
       getPrivateData({ state: "masked", value: 123 });
-    }).toThrow("Invalid type: number with 123 for schema type: string");
+    }).toThrow('Private value with state "masked" must have a string as value');
   });
 });

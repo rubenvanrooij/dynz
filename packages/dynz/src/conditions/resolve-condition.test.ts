@@ -11,9 +11,8 @@ vi.mock("../utils", () => ({
 }));
 
 vi.mock("../validate/validate", () => ({
-  validateSchema: vi.fn(),
+  validateType: vi.fn(),
   isString: vi.fn(),
-  assertArray: vi.fn(),
   parseDateString: vi.fn(),
 }));
 
@@ -273,11 +272,16 @@ describe("resolveCondition", () => {
         schema: string(),
         value: "admin",
       });
-
-      vi.mocked(unpackRef).mockReturnValue({
-        static: true,
-        value: ["admin", "moderator"],
-      });
+      // Need to mock the unpackRef for each array element
+      vi.mocked(unpackRef)
+        .mockReturnValueOnce({
+          static: true,
+          value: "admin",
+        })
+        .mockReturnValueOnce({
+          static: true,
+          value: "moderator",
+        });
 
       const result = resolveCondition(condition, "$.test", mockContext);
 
@@ -291,10 +295,16 @@ describe("resolveCondition", () => {
         schema: string(),
         value: "admin",
       });
-      vi.mocked(unpackRef).mockReturnValue({
-        static: true,
-        value: ["banned", "suspended"],
-      });
+      // Need to mock the unpackRef for each array element
+      vi.mocked(unpackRef)
+        .mockReturnValueOnce({
+          static: true,
+          value: "banned",
+        })
+        .mockReturnValueOnce({
+          static: true,
+          value: "suspended",
+        });
 
       const result = resolveCondition(condition, "$.test", mockContext);
 

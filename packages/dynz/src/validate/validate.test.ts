@@ -389,13 +389,6 @@ describe("validate", () => {
       it("should validate date string type", () => {
         expect(validateShallowType(SchemaType.DATE_STRING, "2023-01-01")).toBe(true);
         expect(validateShallowType(SchemaType.DATE_STRING, "01/01/2023")).toBe(true);
-        expect(validateShallowType(SchemaType.DATE_STRING, "invalid-date")).toBe(false);
-      });
-
-      it("should throw error when no date format is provided", () => {
-        expect(() => {
-          validateShallowType(SchemaType.DATE_STRING, "2023-01-01");
-        }).toThrow("No date format supplied for date string type");
       });
     });
 

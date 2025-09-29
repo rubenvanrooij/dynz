@@ -1,5 +1,5 @@
 import * as d from "dynz";
-import * as z from 'zod';
+import * as z from "zod";
 
 // const foo = object({
 //   fields: {
@@ -35,65 +35,62 @@ const UserRoles = {
   MAINTAINER: "maintainer",
 } as const;
 
-
 const z_user = z.object({
   role: z.array(z.nativeEnum(UserRoles)),
   email: z.string().email(),
   name: z.string().min(2).max(100),
   age: z.number().min(0).max(150).optional(),
   isActive: z.boolean(),
-})
+});
 
 const d_user = d.object({
   fields: {
     role: d.array({
       schema: d.enum({
-        enum: UserRoles
-      })
+        enum: UserRoles,
+      }),
     }),
     name: d.string({
-      rules: [d.minLength(2), d.maxLength(100)]
+      rules: [d.minLength(2), d.maxLength(100)],
     }),
     email: d.string({
-      rules: [d.email()]
+      rules: [d.email()],
     }),
     age: d.number({
       rules: [d.min(0), d.max(150)],
       required: false,
     }),
-    isActive: d.boolean()
-  }
-})
+    isActive: d.boolean(),
+  },
+});
 
 const DATA = {
   role: ["admin", "maintainer"],
   name: "Jan",
   email: "jan@jan.nl",
   age: 23,
-  isActive: false
-}
+  isActive: false,
+};
 
+console.log(z_user.safeParse(DATA));
 
-console.log(z_user.safeParse(DATA))
-
-console.time('perf_z')
-
-for (let i = 0; i < 1_000_000; i++) {
-  z_user.safeParse(DATA)
-}
-
-console.timeEnd('perf_z')
-
-console.time('perf_d')
-
-console.log(d.validate(d_user, undefined, DATA))
+console.time("perf_z");
 
 for (let i = 0; i < 1_000_000; i++) {
-  d.validate(d_user, undefined, DATA)
+  z_user.safeParse(DATA);
 }
 
-console.timeEnd('perf_d')
+console.timeEnd("perf_z");
 
+console.time("perf_d");
+
+console.log(d.validate(d_user, undefined, DATA));
+
+for (let i = 0; i < 1_000_000; i++) {
+  d.validate(d_user, undefined, DATA);
+}
+
+console.timeEnd("perf_d");
 
 // const schema = d.object({
 //   fields: {
