@@ -6,14 +6,17 @@ import type {
   BooleanSchema,
   DateSchema,
   DateStringSchema,
+  EnumValue,
+  EnumValues,
   FileSchema,
   NumberSchema,
   ObjectSchema,
   OptionsSchema,
   StringSchema,
 } from "../schemas";
+import type { EnumSchema } from "../schemas/enum";
 import type { BaseRule } from "./rules";
-import type { DateString, EnumValues, Prettify } from "./utils";
+import type { DateString, Prettify } from "./utils";
 
 export const SchemaType = {
   STRING: "string",
@@ -24,6 +27,7 @@ export const SchemaType = {
   ARRAY: "array",
   OPTIONS: "options",
   BOOLEAN: "boolean",
+  ENUM: "enum",
   FILE: "file",
 } as const;
 
@@ -53,7 +57,8 @@ export type Schema =
   | DateStringSchema
   | OptionsSchema<string | number>
   | FileSchema
-  | DateSchema;
+  | DateSchema
+  | EnumSchema;
 
 export type IsIncluded<T extends Schema> = T extends { included: true }
   ? true
@@ -103,7 +108,9 @@ export type ValueType<T extends SchemaType = SchemaType> = T extends typeof Sche
                 ? string | number
                 : T extends typeof SchemaType.FILE
                   ? File
-                  : never;
+                  : T extends typeof SchemaType.ENUM
+                    ? EnumValue
+                    : never;
 
 type OptionalFields<T extends ObjectSchema<never>> = {
   [K in keyof T["fields"] as IsOptionalField<T["fields"][K]> extends true ? K : never]?: SchemaValuesInternal<
@@ -123,6 +130,8 @@ export type SchemaValuesInternal<T extends Schema> = T extends ObjectSchema<neve
   ? Prettify<ObjectValue<T>>
   : T extends ArraySchema<never>
     ? MakeOptional<T, Array<SchemaValuesInternal<T["schema"]>>>
-    : MakeOptional<T, ValueType<T["type"]>>;
+    : T extends EnumSchema
+      ? EnumValues<T["enum"]>
+      : MakeOptional<T, ValueType<T["type"]>>;
 
 export type SchemaValues<T extends Schema> = Prettify<ApplyPrivacyMask<T, SchemaValuesInternal<T>>>;

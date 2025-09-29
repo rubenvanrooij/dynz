@@ -23,7 +23,7 @@ vi.mock("../reference", () => ({
 
 import { unpackRef } from "../reference";
 import { ensureAbsolutePath, getNested } from "../utils";
-import { assertArray, isString, parseDateString, validateSchema } from "../validate/validate";
+import { isString, parseDateString, validateType } from "../validate/validate";
 
 describe("resolveCondition", () => {
   const mockContext: ResolveContext = {
@@ -38,7 +38,7 @@ describe("resolveCondition", () => {
 
     // Default mocks
     vi.mocked(ensureAbsolutePath).mockImplementation((path) => path);
-    vi.mocked(validateSchema).mockReturnValue(true);
+    vi.mocked(validateType).mockReturnValue(true);
   });
 
   describe("logical operators", () => {
@@ -273,7 +273,7 @@ describe("resolveCondition", () => {
         schema: string(),
         value: "admin",
       });
-      vi.mocked(assertArray).mockReturnValue(["admin", "moderator"]);
+
       vi.mocked(unpackRef).mockReturnValue({
         static: true,
         value: ["admin", "moderator"],
@@ -291,7 +291,6 @@ describe("resolveCondition", () => {
         schema: string(),
         value: "admin",
       });
-      vi.mocked(assertArray).mockReturnValue(["banned", "suspended"]);
       vi.mocked(unpackRef).mockReturnValue({
         static: true,
         value: ["banned", "suspended"],
@@ -333,7 +332,7 @@ describe("resolveCondition", () => {
         schema: string(),
         value: "John",
       });
-      vi.mocked(validateSchema).mockReturnValue(false);
+      vi.mocked(validateType).mockReturnValue(false);
       vi.mocked(unpackRef).mockReturnValue({
         static: true,
         value: "John",
