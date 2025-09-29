@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { isValueMasked, mask, plain } from "../private";
 import { array, date, number, object, string } from "../schemas";
 import { ErrorCode, SchemaType } from "../types";
+import { validate } from "./validate";
 import {
   isArray,
   isBoolean,
@@ -11,9 +12,8 @@ import {
   isNumber,
   isObject,
   isString,
-  validate,
   validateShallowType,
-} from "./validate";
+} from "./validate-type";
 
 describe("validate", () => {
   beforeEach(() => {

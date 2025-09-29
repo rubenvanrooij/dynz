@@ -1,4 +1,4 @@
-import { isObject } from "../validate";
+import { isObject } from "../validate/validate-type";
 import type { PrivateValue } from "./types";
 
 export function getPrivateData(value: unknown): PrivateValue<unknown> {

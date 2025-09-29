@@ -43,12 +43,19 @@ const z_user = z.object({
   isActive: z.boolean(),
 });
 
+const o = d.options({
+      options: ['fo', 'bar']
+})
+
 const d_user = d.object({
   fields: {
     role: d.array({
       schema: d.enum({
         enum: UserRoles,
       }),
+    }),
+    aa: d.options({
+      options: ['fo', 'bar']
     }),
     name: d.string({
       rules: [d.minLength(2), d.maxLength(100)],

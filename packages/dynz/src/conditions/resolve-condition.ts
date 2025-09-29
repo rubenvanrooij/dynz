@@ -2,7 +2,7 @@ import { unpackRef } from "../reference";
 import type { ValueOrReference } from "../reference/reference";
 import { type ResolveContext, type Schema, SchemaType, type ValueType } from "../types";
 import { ensureAbsolutePath, getNested } from "../utils";
-import { isString, parseDateString, validateType } from "../validate/validate";
+import { isString, parseDateString, validateType } from "../validate/validate-type";
 import {
   type Condition,
   ConditionType,
