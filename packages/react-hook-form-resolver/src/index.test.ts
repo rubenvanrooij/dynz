@@ -1,4 +1,4 @@
-import { boolean, min, number, object, regex, string } from "dynz";
+import { boolean, minLength, number, object, regex, string } from "dynz";
 import { describe, expect, it, vi } from "vitest";
 import { dynzResolver } from "./index";
 
@@ -47,7 +47,7 @@ describe("dynzResolver", () => {
       fields: {
         value: string({
           required: true,
-          rules: [min(10), regex("^[A-Z]")],
+          rules: [minLength(10), regex("^[A-Z]")],
         }),
       },
     });
@@ -71,7 +71,7 @@ describe("dynzResolver", () => {
       fields: {
         value: string({
           required: true,
-          rules: [min(10), regex("^[A-Z]")],
+          rules: [minLength(10), regex("^[A-Z]")],
         }),
       },
     });

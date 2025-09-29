@@ -1,4 +1,4 @@
-import { conditional, email, eq, matches, min, object, options, regex, string } from "dynz";
+import * as d from "dynz";
 
 // const foo = object({
 //   fields: {
@@ -29,41 +29,69 @@ import { conditional, email, eq, matches, min, object, options, regex, string } 
 //   console.log(result.values); // ✅ Type-safe access
 // }
 
-const schema = object({
+const schema = d.object({
   fields: {
-    accountType: options({
+    accountType: d.options({
       options: ["personal", "business"],
     }),
 
+    minLength: d.number(),
+
     // Only included if accountType is 'business'
-    companyName: string({
-      rules: [min(2)],
-      required: matches("email", "@gmail.com$"),
-      included: eq("accountType", "business"),
+    companyName: d.string({
+      rules: [d.minLength(d.ref("minLength"))],
+      required: d.matches("email", "@gmail.com$"),
+      included: d.eq("accountType", "business"),
     }),
 
-    email: string({
+    email: d.string({
       rules: [
-        email(),
-        conditional({
+        d.email(),
+        d.conditional({
           // Different validation rules based on account type
-          when: eq("accountType", "business"),
-          then: regex("@company.com$", "Business accounts must use company email"),
+          when: d.eq("accountType", "business"),
+          then: d.regex("@company.com$", "Business accounts must use company email"),
         }),
       ],
     }),
   },
 });
 
-console.log(JSON.stringify(schema, undefined, 2));
+const schemaTwo = d.object({
+  fields: {
+    birthDates: d.array({
+      schema: d.date(),
+    }),
+    otherFields: d.object({
+      fields: {
+        deathDate: d.date({
+          rules: [d.after(d.ref("$.birthDate.[2]"))],
+        }),
+      },
+    }),
+  },
+});
+
+console.log(
+  d.validate(schemaTwo, undefined, {
+    birthDates: [],
+    otherFields: {
+      deathDate: new Date(),
+    },
+  })
+);
+
+// console.log(JSON.stringify(schema, undefined, 2));
 
 // // Validate data
-// const result = validate(schema, undefined, {
-//   accountType: 'business',
-//   companyName: 'test',
-//   email: 'foo@company.com'
-// })
+const result = d.validate(schema, undefined, {
+  accountType: "business",
+  minLength: 10,
+  companyName: "test",
+  email: "foo@company.com",
+});
 
+console.log(result);
 /**
  * new interface?
 object({

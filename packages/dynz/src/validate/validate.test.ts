@@ -1,0 +1,588 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { isValueMasked, mask, plain } from "../private";
+import { array, date, number, object, string } from "../schemas";
+import { ErrorCode, SchemaType } from "../types";
+import {
+  isArray,
+  isBoolean,
+  isDate,
+  isDateString,
+  isFile,
+  isNumber,
+  isObject,
+  isString,
+  validate,
+  validateType,
+} from "./validate";
+
+describe("validate", () => {
+  beforeEach(() => {
+    vi.stubEnv("TZ", "UTC");
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  describe("basic validation", () => {
+    it("should validate a simple string schema", () => {
+      const schema = string();
+      const result = validate(schema, undefined, "hello");
+
+      expect(result).toEqual({
+        success: true,
+        values: "hello",
+      });
+    });
+
+    it("should validate a simple number schema", () => {
+      const schema = number();
+      const result = validate(schema, undefined, 42);
+
+      expect(result).toEqual({
+        success: true,
+        values: 42,
+      });
+    });
+
+    it("should validate an object schema", () => {
+      const schema = object({
+        fields: {
+          name: string(),
+          age: number(),
+        },
+      });
+      const result = validate(schema, undefined, { name: "John", age: 30 });
+
+      expect(result).toEqual({
+        success: true,
+        values: { name: "John", age: 30 },
+      });
+    });
+
+    it("should validate an array schema", () => {
+      const schema = array({ schema: string() });
+      const result = validate(schema, undefined, ["hello", "world"]);
+
+      expect(result).toEqual({
+        success: true,
+        values: ["hello", "world"],
+      });
+    });
+
+    it("should handle undefined values for optional schemas", () => {
+      const schema = string({ required: false });
+      const result = validate(schema, undefined, undefined);
+
+      expect(result).toEqual({
+        success: true,
+        values: undefined,
+      });
+    });
+  });
+
+  describe("required validation", () => {
+    it("should fail when required field is missing", () => {
+      const schema = string({ required: true });
+      const result = validate(schema, undefined, undefined);
+
+      expect(result).toEqual({
+        success: false,
+        errors: [
+          expect.objectContaining({
+            code: ErrorCode.REQRUIED,
+            path: "$",
+          }),
+        ],
+      });
+    });
+
+    it("should pass when required field is present", () => {
+      const schema = string({ required: true });
+      const result = validate(schema, undefined, "hello");
+
+      expect(result.success).toBe(true);
+    });
+
+    it("should pass when optional field is missing", () => {
+      const schema = string({ required: false });
+      const result = validate(schema, undefined, undefined);
+
+      expect(result.success).toBe(true);
+    });
+  });
+
+  describe("type validation", () => {
+    it("should fail when string value is not a string", () => {
+      const schema = string();
+      const result = validate(schema, undefined, 42);
+
+      expect(result).toEqual({
+        success: false,
+        errors: [
+          expect.objectContaining({
+            code: ErrorCode.TYPE,
+            expectedType: SchemaType.STRING,
+          }),
+        ],
+      });
+    });
+
+    it("should fail when number value is not a number", () => {
+      const schema = number();
+      const result = validate(schema, undefined, "not a number");
+
+      expect(result).toEqual({
+        success: false,
+        errors: [
+          expect.objectContaining({
+            code: ErrorCode.TYPE,
+            expectedType: SchemaType.NUMBER,
+          }),
+        ],
+      });
+    });
+
+    it("should fail when object value is not an object", () => {
+      const schema = object({ fields: {} });
+      const result = validate(schema, undefined, "not an object");
+
+      expect(result).toEqual({
+        success: false,
+        errors: [
+          expect.objectContaining({
+            code: ErrorCode.TYPE,
+            expectedType: SchemaType.OBJECT,
+          }),
+        ],
+      });
+    });
+
+    it("should fail when array value is not an array", () => {
+      const schema = array({ schema: string() });
+      const result = validate(schema, undefined, "not an array");
+
+      expect(result).toEqual({
+        success: false,
+        errors: [
+          expect.objectContaining({
+            code: ErrorCode.TYPE,
+            expectedType: SchemaType.ARRAY,
+          }),
+        ],
+      });
+    });
+  });
+
+  describe("included validation", () => {
+    it("should fail when value is provided for non-included schema", () => {
+      const schema = string({ included: false });
+      const result = validate(schema, undefined, "hello");
+
+      expect(result).toEqual({
+        success: false,
+        errors: [
+          expect.objectContaining({
+            code: ErrorCode.INCLUDED,
+          }),
+        ],
+      });
+    });
+
+    it("should succeed when value is undefined for non-included schema", () => {
+      const schema = string({ included: false });
+      const result = validate(schema, undefined, undefined);
+
+      expect(result.success).toBe(true);
+    });
+
+    it("should strip non-included values when stripNotIncludedValues is true", () => {
+      const schema = string({ included: false });
+      const result = validate(schema, undefined, "hello", { stripNotIncludedValues: true });
+
+      expect(result).toEqual({
+        success: true,
+        values: undefined,
+      });
+    });
+  });
+
+  describe("mutability validation", () => {
+    it("should fail when non-mutable field changes", () => {
+      const schema = string({ mutable: false });
+      const result = validate(schema, "original", "changed");
+
+      expect(result).toEqual({
+        success: false,
+        errors: [
+          expect.objectContaining({
+            code: ErrorCode.IMMUTABLE,
+          }),
+        ],
+      });
+    });
+
+    it("should pass when non-mutable field stays the same", () => {
+      const schema = string({ mutable: false });
+      const result = validate(schema, "same", "same");
+
+      expect(result.success).toBe(true);
+    });
+  });
+
+  describe("nested object validation", () => {
+    it("should validate nested object fields", () => {
+      const schema = object({
+        fields: {
+          user: object({
+            fields: {
+              name: string({ required: true }),
+              age: number({ required: false }),
+            },
+          }),
+        },
+      });
+
+      const validResult = validate(schema, undefined, {
+        user: { name: "John", age: 30 },
+      });
+      expect(validResult.success).toBe(true);
+
+      const invalidResult = validate(schema, undefined, {
+        user: { age: 30 },
+      });
+      expect(invalidResult).toEqual({
+        success: false,
+        errors: [
+          expect.objectContaining({
+            code: ErrorCode.REQRUIED,
+            path: "$.user.name",
+          }),
+        ],
+      });
+    });
+  });
+
+  describe("array validation", () => {
+    it("should validate array elements", () => {
+      const schema = array({ schema: number() });
+
+      const validResult = validate(schema, undefined, [1, 2, 3]);
+      expect(validResult.success).toBe(true);
+
+      const invalidResult = validate(schema, undefined, [1, "not a number", 3]);
+      expect(invalidResult).toEqual({
+        success: false,
+        errors: [
+          expect.objectContaining({
+            code: ErrorCode.TYPE,
+            expectedType: SchemaType.NUMBER,
+            path: "$.[1]",
+          }),
+        ],
+      });
+    });
+  });
+
+  describe("private field validation", () => {
+    it("should handle private fields with plain values", () => {
+      const schema = string({ private: true });
+      const result = validate(schema, undefined, plain("secret"));
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.values).toBe("secret");
+      }
+    });
+
+    it("should handle private fields with masked values", () => {
+      const schema = string({ private: true });
+      const result = validate(schema, undefined, mask());
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.values).toEqual(mask());
+      }
+    });
+
+    it("should validate mutability of private fields", () => {
+      const schema = string({ private: true, mutable: false });
+      const result = validate(schema, plain("original"), plain("changed"));
+
+      expect(result).toEqual({
+        success: false,
+        errors: [
+          expect.objectContaining({
+            code: ErrorCode.IMMUTABLE,
+          }),
+        ],
+      });
+    });
+  });
+
+  describe("validateType function", () => {
+    describe("string validation", () => {
+      it("should validate string type", () => {
+        expect(validateType(SchemaType.STRING, "hello")).toBe(true);
+        expect(validateType(SchemaType.STRING, 123)).toBe(false);
+        expect(validateType(SchemaType.STRING, null)).toBe(false);
+        expect(validateType(SchemaType.STRING, undefined)).toBe(false);
+      });
+    });
+
+    describe("number validation", () => {
+      it("should validate number type", () => {
+        expect(validateType(SchemaType.NUMBER, 123)).toBe(true);
+        expect(validateType(SchemaType.NUMBER, 123.45)).toBe(true);
+        expect(validateType(SchemaType.NUMBER, "123")).toBe(false);
+        expect(validateType(SchemaType.NUMBER, NaN)).toBe(false);
+        expect(validateType(SchemaType.NUMBER, Infinity)).toBe(false);
+      });
+    });
+
+    describe("boolean validation", () => {
+      it("should validate boolean type", () => {
+        expect(validateType(SchemaType.BOOLEAN, true)).toBe(true);
+        expect(validateType(SchemaType.BOOLEAN, false)).toBe(true);
+        expect(validateType(SchemaType.BOOLEAN, "true")).toBe(false);
+        expect(validateType(SchemaType.BOOLEAN, 1)).toBe(false);
+      });
+    });
+
+    describe("object validation", () => {
+      it("should validate object type", () => {
+        expect(validateType(SchemaType.OBJECT, {})).toBe(true);
+        expect(validateType(SchemaType.OBJECT, { key: "value" })).toBe(true);
+        expect(validateType(SchemaType.OBJECT, [])).toBe(false);
+        expect(validateType(SchemaType.OBJECT, null)).toBe(false);
+      });
+    });
+
+    describe("array validation", () => {
+      it("should validate array type", () => {
+        expect(validateType(SchemaType.ARRAY, [])).toBe(true);
+        expect(validateType(SchemaType.ARRAY, [1, 2, 3])).toBe(true);
+        expect(validateType(SchemaType.ARRAY, {})).toBe(false);
+        expect(validateType(SchemaType.ARRAY, "array")).toBe(false);
+      });
+    });
+
+    describe("date validation", () => {
+      it("should validate date type", () => {
+        expect(validateType(SchemaType.DATE, new Date())).toBe(true);
+        expect(validateType(SchemaType.DATE, new Date("2023-01-01"))).toBe(true);
+        expect(validateType(SchemaType.DATE, new Date("invalid"))).toBe(false);
+        expect(validateType(SchemaType.DATE, "2023-01-01")).toBe(false);
+      });
+    });
+
+    describe("file validation", () => {
+      it("should validate file type", () => {
+        const file = new File(["content"], "test.txt", { type: "text/plain" });
+        expect(validateType(SchemaType.FILE, file)).toBe(true);
+        expect(validateType(SchemaType.FILE, {})).toBe(false);
+        expect(validateType(SchemaType.FILE, "file")).toBe(false);
+      });
+    });
+
+    describe("date string validation", () => {
+      it("should validate date string type", () => {
+        expect(validateType(SchemaType.DATE_STRING, "2023-01-01", "yyyy-MM-dd")).toBe(true);
+        expect(validateType(SchemaType.DATE_STRING, "01/01/2023", "MM/dd/yyyy")).toBe(true);
+        expect(validateType(SchemaType.DATE_STRING, "invalid-date", "yyyy-MM-dd")).toBe(false);
+        expect(validateType(SchemaType.DATE_STRING, "2023-01-01", "MM/dd/yyyy")).toBe(false);
+      });
+
+      it("should throw error when no date format is provided", () => {
+        expect(() => {
+          validateType(SchemaType.DATE_STRING, "2023-01-01");
+        }).toThrow("No date format supplied for date string type");
+      });
+    });
+
+    describe("options validation", () => {
+      it("should validate options type", () => {
+        expect(validateType(SchemaType.OPTIONS, "option1")).toBe(true);
+        expect(validateType(SchemaType.OPTIONS, 1)).toBe(true);
+        expect(validateType(SchemaType.OPTIONS, true)).toBe(true);
+        expect(validateType(SchemaType.OPTIONS, {})).toBe(false);
+        expect(validateType(SchemaType.OPTIONS, [])).toBe(false);
+      });
+    });
+  });
+
+  describe("type checking functions", () => {
+    describe("isString", () => {
+      it("should return true for strings", () => {
+        expect(isString("hello")).toBe(true);
+        expect(isString("")).toBe(true);
+      });
+
+      it("should return false for non-strings", () => {
+        expect(isString(123)).toBe(false);
+        expect(isString(true)).toBe(false);
+        expect(isString(null)).toBe(false);
+        expect(isString(undefined)).toBe(false);
+        expect(isString({})).toBe(false);
+        expect(isString([])).toBe(false);
+      });
+    });
+
+    describe("isNumber", () => {
+      it("should return true for valid numbers", () => {
+        expect(isNumber(123)).toBe(true);
+        expect(isNumber(123.45)).toBe(true);
+        expect(isNumber(0)).toBe(true);
+        expect(isNumber(-123)).toBe(true);
+      });
+
+      it("should return false for invalid numbers", () => {
+        expect(isNumber(NaN)).toBe(false);
+        expect(isNumber(Infinity)).toBe(false);
+        expect(isNumber(-Infinity)).toBe(false);
+        expect(isNumber("123")).toBe(false);
+        expect(isNumber(null)).toBe(false);
+        expect(isNumber(undefined)).toBe(false);
+      });
+    });
+
+    describe("isBoolean", () => {
+      it("should return true for booleans", () => {
+        expect(isBoolean(true)).toBe(true);
+        expect(isBoolean(false)).toBe(true);
+      });
+
+      it("should return false for non-booleans", () => {
+        expect(isBoolean("true")).toBe(false);
+        expect(isBoolean(1)).toBe(false);
+        expect(isBoolean(0)).toBe(false);
+        expect(isBoolean(null)).toBe(false);
+        expect(isBoolean(undefined)).toBe(false);
+      });
+    });
+
+    describe("isArray", () => {
+      it("should return true for arrays", () => {
+        expect(isArray([])).toBe(true);
+        expect(isArray([1, 2, 3])).toBe(true);
+        expect(isArray([])).toBe(true);
+      });
+
+      it("should return false for non-arrays", () => {
+        expect(isArray({})).toBe(false);
+        expect(isArray("array")).toBe(false);
+        expect(isArray(null)).toBe(false);
+        expect(isArray(undefined)).toBe(false);
+      });
+    });
+
+    describe("isObject", () => {
+      it("should return true for objects", () => {
+        expect(isObject({})).toBe(true);
+        expect(isObject({ key: "value" })).toBe(true);
+        expect(isObject(new Object())).toBe(true);
+      });
+
+      it("should return false for arrays and other types", () => {
+        expect(isObject([])).toBe(false);
+        expect(isObject(null)).toBe(false);
+        expect(isObject("object")).toBe(false);
+        expect(isObject(123)).toBe(false);
+        expect(isObject(undefined)).toBe(false);
+      });
+    });
+
+    describe("isDate", () => {
+      it("should return true for valid dates", () => {
+        expect(isDate(new Date())).toBe(true);
+        expect(isDate(new Date("2023-01-01"))).toBe(true);
+        expect(isDate(new Date(0))).toBe(true);
+      });
+
+      it("should return false for invalid dates", () => {
+        expect(isDate(new Date("invalid"))).toBe(false);
+        expect(isDate("2023-01-01")).toBe(false);
+        expect(isDate(1640995200000)).toBe(false);
+        expect(isDate(null)).toBe(false);
+        expect(isDate(undefined)).toBe(false);
+      });
+    });
+
+    describe("isFile", () => {
+      it("should return true for File objects", () => {
+        const file = new File(["content"], "test.txt", { type: "text/plain" });
+        expect(isFile(file)).toBe(true);
+      });
+
+      it("should return false for non-File objects", () => {
+        expect(isFile({})).toBe(false);
+        expect(isFile("file")).toBe(false);
+        expect(isFile(null)).toBe(false);
+        expect(isFile(undefined)).toBe(false);
+      });
+    });
+
+    describe("isDateString", () => {
+      it("should return true for valid date strings", () => {
+        expect(isDateString("2023-01-01", "yyyy-MM-dd")).toBe(true);
+        expect(isDateString("01/01/2023", "MM/dd/yyyy")).toBe(true);
+        expect(isDateString("2023-12-25T10:30:00", "yyyy-MM-dd'T'HH:mm:ss")).toBe(true);
+      });
+
+      it("should return false for invalid date strings", () => {
+        expect(isDateString("invalid-date", "yyyy-MM-dd")).toBe(false);
+        expect(isDateString("2023-01-01", "MM/dd/yyyy")).toBe(false);
+        expect(isDateString("13/32/2023", "MM/dd/yyyy")).toBe(false);
+        expect(isDateString(123, "yyyy-MM-dd")).toBe(false);
+        expect(isDateString(null, "yyyy-MM-dd")).toBe(false);
+      });
+    });
+  });
+
+  describe("isValueMasked", () => {
+    it("should return true for masked private values", () => {
+      const schema = string({ private: true });
+      const maskedValue = mask();
+
+      expect(isValueMasked(schema, maskedValue)).toBe(true);
+    });
+
+    it("should return false for plain private values", () => {
+      const schema = string({ private: true });
+      const plainValue = plain("secret");
+
+      expect(isValueMasked(schema, plainValue)).toBe(false);
+    });
+
+    it("should return false for non-private schemas", () => {
+      const schema = string({ private: false });
+      const value = "regular value";
+
+      expect(isValueMasked(schema, value)).toBe(false);
+    });
+  });
+
+  describe("error handling", () => {
+    it("should handle edge cases with date validation", () => {
+      const schema = date();
+
+      // Test with various invalid date scenarios
+      expect(validate(schema, undefined, "not-a-date").success).toBe(false);
+      expect(validate(schema, undefined, 123).success).toBe(false);
+      expect(validate(schema, undefined, {}).success).toBe(false);
+      expect(validate(schema, undefined, []).success).toBe(false);
+    });
+
+    it("should handle Date object mutations correctly", () => {
+      const schema = date({ mutable: false });
+      const originalDate = new Date("2023-01-01");
+      const newDate = new Date("2023-01-02");
+
+      const result = validate(schema, originalDate, newDate);
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.errors[0]?.code).toBe(ErrorCode.IMMUTABLE);
+      }
+    });
+  });
+});

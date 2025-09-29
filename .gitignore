@@ -3,6 +3,9 @@ dist
 node_modules
 coverage
 
+# Next
+.next
+
 # Logs
 logs
 *.log
