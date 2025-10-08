@@ -6,6 +6,9 @@ coverage
 # Next
 .next
 
+# AI
+.claude
+
 # Logs
 logs
 *.log
