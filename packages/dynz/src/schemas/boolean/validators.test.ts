@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { custom, equals } from "../../rules";
 import type { Context } from "../../types";
 import { SchemaType } from "../../types";
-import { validateBoolean } from "./validators";
 import { boolean } from "./builder";
-import { equals, custom } from "../../rules";
+import { validateBoolean } from "./validators";
 
 // Mock the rules
 vi.mock("../../rules", () => ({
@@ -13,7 +13,7 @@ vi.mock("../../rules", () => ({
   custom: vi.fn(),
 }));
 
-import { equalsRule, customRule } from "../../rules";
+import { customRule, equalsRule } from "../../rules";
 
 describe("validateBoolean", () => {
   const mockSchema = boolean();

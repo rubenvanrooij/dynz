@@ -243,6 +243,25 @@ function buildSchema(user: { role: "admin" | "user" }) {
 }
 ```
 
+#### Mutability on array schemas
+
+You can also control mutability on inner schemas of an array. This allows you to add new elements or remove elements, but not to mutate elements on the same index.
+
+```typescript
+const schema = array({
+  // The array is mutable
+  schema: string({
+    mutable: false, // The inner schema is immutable
+  }),
+});
+
+validate(schema, [], ["foo"]); // Validates successfully, because it's a new entry
+
+validate(schema, ["foo"], []); // Validates successfully, because an entry is removed
+
+validate(schema, ["foo"], ["bar"]); // Returns an error since 'foo' is mutated into 'bar'
+```
+
 ### Field Inclusion
 
 Dynamically include or exclude fields:
