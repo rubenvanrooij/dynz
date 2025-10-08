@@ -52,14 +52,6 @@ describe("min rule", () => {
     });
   });
 
-  it.skip("should create min rule with date string", () => {
-    // const rule = minDate("2024-01-01");
-    // expect(rule).toEqual({
-    //   type: 'min'_DATE,
-    //   min: "2024-01-01",
-    // });
-  });
-
   it("should create min rule with reference", () => {
     const reference = ref("minimumValue");
     const rule = min(reference);

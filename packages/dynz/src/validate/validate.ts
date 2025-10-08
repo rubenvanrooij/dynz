@@ -260,22 +260,27 @@ export function _validate<T extends Schema>(
       throw new Error(`current value is not an array: ${currentValue}`);
     }
 
-    const newContext = {
-      ...context,
-      // We do not validate mutable values in arrays, as they are always mutable
-      validateMutable: false,
-    };
-
     return newValue.reduce<ValidationResult<unknown[]>>(
       (acc, cur, index) => {
+        const current = currentValue?.[index];
+
+        /**
+         * Consider the following change:
+         * from: ['foo']
+         * to:   ['foo', 'bar']
+         * the `to` has a new entry 'bar'. In these cases we do not want to validate mutabability because the current
+         * value will always defer from undefined.
+         */
+        context.validateMutable = current !== undefined;
+
         const result = _validate(
           schema.schema,
           {
-            current: currentValue?.[index],
+            current,
             new: cur,
           },
           `${path}.[${index}]`,
-          newContext
+          context
         );
 
         if (acc.success) {
