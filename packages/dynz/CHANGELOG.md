@@ -1,5 +1,15 @@
 # dynz
 
+## 0.0.5
+
+### Patch Changes
+
+- d8b5c94: Added option type validation
+- 955bef4: Added enum schema
+- 17c9e07: added correct logic for array inner schema mutability
+- 982b034: fixed issue with absolute path determination
+- d863166: Added schema unit tests
+
 ## 0.0.4
 
 ### Patch Changes
