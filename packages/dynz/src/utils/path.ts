@@ -7,5 +7,5 @@ export function ensureAbsolutePath(fieldPath: string, path: string): string {
 }
 
 function getParent(path: string): string {
-  return path.split(".").slice(0, -1).join(".");
+  return path === "$" ? "$" : path.split(".").slice(0, -1).join(".");
 }

@@ -47,7 +47,7 @@ describe("ensureAbsolutePath", () => {
 
       const result = ensureAbsolutePath(fieldPath, currentPath);
 
-      expect(result).toBe(".username");
+      expect(result).toBe("$.username");
     });
 
     it("should handle relative path from nested location", () => {
@@ -123,7 +123,7 @@ describe("ensureAbsolutePath", () => {
 
       const result = ensureAbsolutePath(fieldPath, currentPath);
 
-      expect(result).toBe(".field");
+      expect(result).toBe("$.field");
     });
 
     it("should extract correct parent from deep path", () => {
