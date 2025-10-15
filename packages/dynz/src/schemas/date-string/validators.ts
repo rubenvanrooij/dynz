@@ -1,20 +1,26 @@
-import { afterRule, beforeRule, customRule, equalsDateRule, maxDateRule, minDateRule } from "../../rules";
+import {
+  afterDateStringRule,
+  beforeDateStringRule,
+  customRule,
+  equalsDateStringRule,
+  maxDateStringRule,
+  minDateStringRule,
+} from "../../rules";
 import type { ValidateRuleContextUnion } from "../../types";
 import type { DateStringSchema } from "./types";
 
-// @ts-expect-error - tmp
 export function validateDateString(context: ValidateRuleContextUnion<DateStringSchema>) {
   switch (context.ruleType) {
     case "equals":
-      return equalsDateRule(context);
+      return equalsDateStringRule(context);
     case "before":
-      return beforeRule(context);
+      return beforeDateStringRule(context);
     case "after":
-      return afterRule(context);
+      return afterDateStringRule(context);
     case "min_date":
-      return minDateRule(context);
+      return minDateStringRule(context);
     case "max_date":
-      return maxDateRule(context);
+      return maxDateStringRule(context);
     case "custom":
       return customRule(context);
   }

@@ -41,11 +41,11 @@ export const equalsRule: RuleFn<
 };
 
 export const equalsDateRule: RuleFn<
-  DateSchema | DateStringSchema,
-  Extract<ExtractResolvedRules<DateSchema | DateStringSchema>, EqualsRule>,
+  DateSchema,
+  Extract<ExtractResolvedRules<DateSchema>, EqualsRule>,
   EqualsRuleErrorMessage
 > = ({ rule, value, path, context }) => {
-  const { value: equals } = unpackRef(rule.equals, path, context, SchemaType.DATE, SchemaType.DATE_STRING);
+  const { value: equals } = unpackRef(rule.equals, path, context, SchemaType.DATE);
 
   if (equals === undefined) {
     return undefined;

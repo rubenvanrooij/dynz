@@ -3,8 +3,8 @@ import type { AfterRule, BeforeRule, CustomRule, EqualsRule, MaxDateRule, MinDat
 import type { BaseSchema, SchemaType } from "../../types";
 
 export type DateRules =
-  | MinDateRule
-  | MaxDateRule
+  | MinDateRule<Date | Reference>
+  | MaxDateRule<Date | Reference>
   | AfterRule<Date | Reference>
   | BeforeRule<Date | Reference>
   | EqualsRule<Date | Reference>
