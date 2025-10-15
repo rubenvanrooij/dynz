@@ -12,25 +12,34 @@ export function unpackRef<V extends ValueType, T extends SchemaType>(
   valueOrRef: V | Reference,
   path: string,
   context: ResolveContext,
-  expected: T
+  expected: T | T[]
 ): { value: V; static: true } | { schema: Schema; value: ValueType<T> | undefined; static: false };
 export function unpackRef<V extends ValueType, T extends SchemaType>(
   valueOrRef: V | Reference,
   path: string,
   context: ResolveContext,
-  expected?: T | undefined
+  ...expected: T[]
+): { value: V; static: true } | { schema: Schema; value: ValueType<T> | undefined; static: false };
+export function unpackRef<V extends ValueType, T extends SchemaType>(
+  valueOrRef: V | Reference,
+  path: string,
+  context: ResolveContext,
+  expected?: T | T[] | undefined
 ): { value: V; static: true } | { schema: Schema; value: ValueType | undefined; static: false } {
   if (isReference(valueOrRef)) {
     const { schema, value } = getNested(ensureAbsolutePath(valueOrRef.path, path), context.schema, context.values.new);
 
     if (expected) {
-      const val = coerce(expected, value);
-      if (validateShallowType(expected, val)) {
-        return {
-          schema,
-          value: val,
-          static: false,
-        };
+      for (const expect of Array.isArray(expected) ? expected : [expected]) {
+        const val = coerce(expect, value);
+
+        if (validateShallowType(expect, val)) {
+          return {
+            schema,
+            value: val,
+            static: false,
+          };
+        }
       }
     } else {
       const val = coerceSchema(schema, value);

@@ -43,10 +43,6 @@ const z_user = z.object({
   isActive: z.boolean(),
 });
 
-const o = d.options({
-  options: ["fo", "bar"],
-});
-
 const d_user = d.object({
   fields: {
     role: d.array({
@@ -79,8 +75,6 @@ const DATA = {
   isActive: false,
 };
 
-console.log(z_user.safeParse(DATA));
-
 console.time("perf_z");
 
 for (let i = 0; i < 1_000_000; i++) {
@@ -90,8 +84,6 @@ for (let i = 0; i < 1_000_000; i++) {
 console.timeEnd("perf_z");
 
 console.time("perf_d");
-
-console.log(d.validate(d_user, undefined, DATA));
 
 for (let i = 0; i < 1_000_000; i++) {
   d.validate(d_user, undefined, DATA);

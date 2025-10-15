@@ -1,7 +1,7 @@
-import type { CustomRule } from "../../rules";
+import type { CustomRule, EqualsRule } from "../../rules";
 import type { BaseSchema, DateString, PrivateSchema, SchemaType } from "../../types";
 
-export type DateStringRules = CustomRule;
+export type DateStringRules = CustomRule | EqualsRule<DateString>;
 
 export type DateStringSchema<
   TFormat extends string = string,
