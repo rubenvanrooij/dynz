@@ -1,4 +1,4 @@
-import { type Reference, unpackRef } from "../../reference";
+import { type Reference, UnpackedReferenceReturnValue, UnpackedReferenceValue, unpackRef } from "../../reference";
 import type { DateSchema, DateStringSchema } from "../../schemas";
 import {
   type DateString,
@@ -9,6 +9,7 @@ import {
 } from "../../types";
 import { parseDateString } from "../../validate/validate-type";
 import { isAfter } from "../after-rule";
+import { getDateFromDateOrDateStringRefeference } from "../utils/reference";
 
 export type MinDateRule<T extends Date | DateString | Reference = Date | DateString | Reference> = {
   type: "min_date";
@@ -18,7 +19,7 @@ export type MinDateRule<T extends Date | DateString | Reference = Date | DateStr
 
 export type MinDateRuleErrorMessage = ErrorMessageFromRule<MinDateRule>;
 
-export function minDate<T extends Date | Reference>(min: T, code?: string): MinDateRule<T> {
+export function minDate<T extends Date | DateString | Reference>(min: T, code?: string): MinDateRule<T> {
   return { min, type: "min_date", code };
 }
 
@@ -27,7 +28,8 @@ export const minDateRule: RuleFn<
   Extract<ExtractResolvedRules<DateSchema>, MinDateRule>,
   MinDateRuleErrorMessage
 > = ({ rule, value, path, context }) => {
-  const { value: min } = unpackRef(rule.min, path, context, SchemaType.DATE);
+  const unpackedRef = unpackRef(rule.min, path, context, SchemaType.DATE_STRING, SchemaType.DATE);
+  const min = unpackedRef.static ? unpackedRef.value : getDateFromDateOrDateStringRefeference(unpackedRef);
 
   if (min === undefined) {
     return undefined;
@@ -37,8 +39,8 @@ export const minDateRule: RuleFn<
     ? undefined
     : {
         code: "min_date",
-        min,
-        message: `The value ${value} for schema ${path} is before or on ${min}`,
+        min: unpackedRef.value!,
+        message: `The value ${value} for schema ${path} is before or on ${unpackedRef.value}`,
       };
 };
 
@@ -47,20 +49,22 @@ export const minDateStringRule: RuleFn<
   Extract<ExtractResolvedRules<DateStringSchema>, MinDateRule>,
   MinDateRuleErrorMessage
 > = ({ rule, value, path, context, schema }) => {
-  const { value: min } = unpackRef(rule.min, path, context, SchemaType.DATE_STRING);
+  const unpackedRef = unpackRef(rule.min, path, context, SchemaType.DATE_STRING, SchemaType.DATE);
+  const minDate = unpackedRef.static
+    ? parseDateString(unpackedRef.value, schema.format)
+    : getDateFromDateOrDateStringRefeference(unpackedRef);
 
-  if (min === undefined) {
+  if (minDate === undefined) {
     return undefined;
   }
 
-  const minDate = parseDateString(min, schema.format);
   const valueDate = parseDateString(value, schema.format);
 
   return isAfter(valueDate, minDate) || valueDate.getTime() === minDate.getTime()
     ? undefined
     : {
         code: "min_date",
-        min,
-        message: `The value ${value} for schema ${path} is before or on ${min}`,
+        min: unpackedRef.value!,
+        message: `The value ${value} for schema ${path} is before or on ${unpackedRef.value}`,
       };
 };

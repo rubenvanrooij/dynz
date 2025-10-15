@@ -9,6 +9,7 @@ import {
   SchemaType,
 } from "../../types";
 import { parseDateString } from "../../validate/validate-type";
+import { getDateFromDateOrDateStringRefeference } from "../utils/reference";
 
 export type MaxDateRule<T extends Date | DateString | Reference = Date | DateString | Reference> = {
   type: "max_date";
@@ -18,7 +19,7 @@ export type MaxDateRule<T extends Date | DateString | Reference = Date | DateStr
 
 export type MaxDateRuleErrorMessage = ErrorMessageFromRule<MaxDateRule>;
 
-export function maxDate<T extends Date | Reference>(max: T, code?: string): MaxDateRule<T> {
+export function maxDate<T extends Date | DateString | Reference>(max: T, code?: string): MaxDateRule<T> {
   return { max, type: "max_date", code };
 }
 
@@ -27,7 +28,8 @@ export const maxDateRule: RuleFn<
   Extract<ExtractResolvedRules<DateSchema>, MaxDateRule>,
   MaxDateRuleErrorMessage
 > = ({ rule, value, path, context }) => {
-  const { value: max } = unpackRef(rule.max, path, context, SchemaType.DATE);
+  const unpackedRef = unpackRef(rule.max, path, context, SchemaType.DATE, SchemaType.DATE_STRING);
+  const max = unpackedRef.static ? unpackedRef.value : getDateFromDateOrDateStringRefeference(unpackedRef);
 
   if (max === undefined) {
     return undefined;
@@ -47,16 +49,18 @@ export const maxDateStringRule: RuleFn<
   Extract<ExtractResolvedRules<DateStringSchema>, MaxDateRule>,
   MaxDateRuleErrorMessage
 > = ({ rule, value, path, context, schema }) => {
-  const { value: max } = unpackRef(rule.max, path, context, SchemaType.DATE_STRING);
+  const unpackedRef = unpackRef(rule.max, path, context, SchemaType.DATE, SchemaType.DATE_STRING);
+  const max = unpackedRef.static
+    ? parseDateString(unpackedRef.value, schema.format)
+    : getDateFromDateOrDateStringRefeference(unpackedRef);
 
   if (max === undefined) {
     return undefined;
   }
 
-  const maxDate = parseDateString(max, schema.format);
   const valueDate = parseDateString(value, schema.format);
 
-  return isBefore(valueDate, maxDate) || valueDate.getTime() === maxDate.getTime()
+  return isBefore(valueDate, max) || valueDate.getTime() === max.getTime()
     ? undefined
     : {
         code: "max_date",

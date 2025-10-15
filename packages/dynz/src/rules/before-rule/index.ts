@@ -8,6 +8,7 @@ import {
   SchemaType,
 } from "../../types";
 import { parseDateString } from "../../validate/validate-type";
+import { getDateFromDateOrDateStringRefeference } from "../utils/reference";
 
 export type BeforeRule<T extends Date | DateString | Reference = Date | DateString | Reference> = {
   type: "before";
@@ -17,7 +18,7 @@ export type BeforeRule<T extends Date | DateString | Reference = Date | DateStri
 
 export type BeforeRuleErrorMessage = ErrorMessageFromRule<BeforeRule>;
 
-export function before<T extends Date | Reference>(before: T, code?: string): BeforeRule<T> {
+export function before<T extends Date | DateString | Reference>(before: T, code?: string): BeforeRule<T> {
   return { before, type: "before", code };
 }
 
@@ -30,7 +31,8 @@ export const beforeRule: RuleFn<
   Extract<ExtractResolvedRules<DateSchema>, BeforeRule>,
   BeforeRuleErrorMessage
 > = ({ rule, value, path, context }) => {
-  const { value: before } = unpackRef(rule.before, path, context, SchemaType.DATE);
+  const unpackedRef = unpackRef(rule.before, path, context, SchemaType.DATE, SchemaType.DATE_STRING);
+  const before = unpackedRef.static ? unpackedRef.value : getDateFromDateOrDateStringRefeference(unpackedRef);
 
   if (before === undefined) {
     return undefined;
@@ -40,8 +42,8 @@ export const beforeRule: RuleFn<
     ? undefined
     : {
         code: "before",
-        before: before,
-        message: `The value ${value} for schema ${path} is after ${before}`,
+        before: unpackedRef.value!,
+        message: `The value ${value} for schema ${path} is after ${unpackedRef.value}`,
       };
 };
 
@@ -50,17 +52,20 @@ export const beforeDateStringRule: RuleFn<
   Extract<ExtractResolvedRules<DateStringSchema>, BeforeRule>,
   BeforeRuleErrorMessage
 > = ({ rule, value, path, context, schema }) => {
-  const { value: before } = unpackRef(rule.before, path, context, SchemaType.DATE_STRING);
+  const unpackedRef = unpackRef(rule.before, path, context, SchemaType.DATE, SchemaType.DATE_STRING);
+  const before = unpackedRef.static
+    ? parseDateString(unpackedRef.value, schema.format)
+    : getDateFromDateOrDateStringRefeference(unpackedRef);
 
   if (before === undefined) {
     return undefined;
   }
 
-  return isBefore(parseDateString(value, schema.format), parseDateString(before, schema.format))
+  return isBefore(parseDateString(value, schema.format), before)
     ? undefined
     : {
         code: "before",
-        before: before,
-        message: `The value ${value} for schema ${path} is after ${before}`,
+        before: unpackedRef.value!,
+        message: `The value ${value} for schema ${path} is after ${unpackedRef.value}`,
       };
 };

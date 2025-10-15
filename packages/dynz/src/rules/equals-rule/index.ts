@@ -10,6 +10,7 @@ import type {
 import type { EnumSchema } from "../../schemas/enum";
 import { type ErrorMessageFromRule, type ExtractResolvedRules, type RuleFn, SchemaType } from "../../types";
 import { parseDateString } from "../../validate/validate-type";
+import { getDateFromDateOrDateStringRefeference } from "../utils/reference";
 
 export type EqualsRule<T extends ValueOrReference = ValueOrReference> = {
   type: "equals";
@@ -45,7 +46,8 @@ export const equalsDateRule: RuleFn<
   Extract<ExtractResolvedRules<DateSchema>, EqualsRule>,
   EqualsRuleErrorMessage
 > = ({ rule, value, path, context }) => {
-  const { value: equals } = unpackRef(rule.equals, path, context, SchemaType.DATE);
+  const unpackedRef = unpackRef(rule.equals, path, context, SchemaType.DATE, SchemaType.DATE_STRING);
+  const equals = unpackedRef.static ? unpackedRef.value : getDateFromDateOrDateStringRefeference(unpackedRef);
 
   if (equals === undefined) {
     return undefined;
@@ -55,8 +57,8 @@ export const equalsDateRule: RuleFn<
     ? undefined
     : {
         code: "equals",
-        equals,
-        message: `The value for schema ${path} does not equal ${equals}`,
+        equals: unpackedRef.value,
+        message: `The value for schema ${path} does not equal ${unpackedRef.value}`,
       };
 };
 
@@ -65,17 +67,20 @@ export const equalsDateStringRule: RuleFn<
   Extract<ExtractResolvedRules<DateStringSchema>, EqualsRule>,
   EqualsRuleErrorMessage
 > = ({ rule, value, path, context, schema }) => {
-  const { value: equals } = unpackRef(rule.equals, path, context, SchemaType.DATE_STRING);
+  const unpackedRef = unpackRef(rule.equals, path, context, SchemaType.DATE, SchemaType.DATE_STRING);
+  const equals = unpackedRef.static
+    ? parseDateString(unpackedRef.value, schema.format)
+    : getDateFromDateOrDateStringRefeference(unpackedRef);
 
   if (equals === undefined) {
     return undefined;
   }
 
-  return parseDateString(equals, schema.format).getTime() === parseDateString(value, schema.format).getTime()
+  return equals.getTime() === parseDateString(value, schema.format).getTime()
     ? undefined
     : {
         code: "equals",
-        equals,
-        message: `The value for schema ${path} does not equal ${equals}`,
+        equals: unpackedRef.value,
+        message: `The value for schema ${path} does not equal ${unpackedRef.value}`,
       };
 };

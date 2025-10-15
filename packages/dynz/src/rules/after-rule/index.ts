@@ -1,7 +1,14 @@
 import { type Reference, unpackRef } from "../../reference";
 import type { DateSchema, DateStringSchema } from "../../schemas";
-import type { DateString, ErrorMessageFromRule, ExtractResolvedRules, RuleFn } from "../../types";
+import {
+  SchemaType,
+  type DateString,
+  type ErrorMessageFromRule,
+  type ExtractResolvedRules,
+  type RuleFn,
+} from "../../types";
 import { parseDateString } from "../../validate/validate-type";
+import { getDateFromDateOrDateStringRefeference } from "../utils/reference";
 
 export type AfterRule<T extends Date | DateString | Reference = Date | DateString | Reference> = {
   type: "after";
@@ -11,7 +18,7 @@ export type AfterRule<T extends Date | DateString | Reference = Date | DateStrin
 
 export type AfterRuleErrorMessage = ErrorMessageFromRule<AfterRule>;
 
-export function after<T extends Date | Reference>(after: T, code?: string): AfterRule<T> {
+export function after<T extends Date | DateString | Reference>(after: T, code?: string): AfterRule<T> {
   return { after, type: "after", code };
 }
 
@@ -23,8 +30,9 @@ export const afterRule: RuleFn<
   DateSchema,
   Extract<ExtractResolvedRules<DateSchema>, AfterRule>,
   AfterRuleErrorMessage
-> = ({ rule, value, path, schema, context }) => {
-  const { value: after } = unpackRef(rule.after, path, context, schema.type);
+> = ({ rule, value, path, context }) => {
+  const unpackedRef = unpackRef(rule.after, path, context, SchemaType.DATE, SchemaType.DATE_STRING);
+  const after = unpackedRef.static ? unpackedRef.value : getDateFromDateOrDateStringRefeference(unpackedRef);
 
   if (after === undefined) {
     return undefined;
@@ -34,8 +42,8 @@ export const afterRule: RuleFn<
     ? undefined
     : {
         code: "after",
-        after: after,
-        message: `The value ${value} for schema ${path} is before ${after}`,
+        after: unpackedRef.value!,
+        message: `The value ${value} for schema ${path} is before ${unpackedRef.value}`,
       };
 };
 
@@ -44,17 +52,20 @@ export const afterDateStringRule: RuleFn<
   Extract<ExtractResolvedRules<DateStringSchema>, AfterRule>,
   AfterRuleErrorMessage
 > = ({ rule, value, path, schema, context }) => {
-  const { value: after } = unpackRef(rule.after, path, context, schema.type);
+  const unpackedRef = unpackRef(rule.after, path, context, SchemaType.DATE, SchemaType.DATE_STRING);
+  const after = unpackedRef.static
+    ? parseDateString(unpackedRef.value, schema.format)
+    : getDateFromDateOrDateStringRefeference(unpackedRef);
 
   if (after === undefined) {
     return undefined;
   }
 
-  return isAfter(parseDateString(value, schema.format), parseDateString(after, schema.format))
+  return isAfter(parseDateString(value, schema.format), after)
     ? undefined
     : {
         code: "after",
-        after: after,
-        message: `The value ${value} for schema ${path} is before ${after}`,
+        after: unpackedRef.value!,
+        message: `The value ${value} for schema ${path} is before ${unpackedRef.value}`,
       };
 };
