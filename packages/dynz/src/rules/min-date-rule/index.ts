@@ -1,4 +1,4 @@
-import { type Reference, UnpackedReferenceReturnValue, UnpackedReferenceValue, unpackRef } from "../../reference";
+import { type Reference, unpackRef } from "../../reference";
 import type { DateSchema, DateStringSchema } from "../../schemas";
 import {
   type DateString,
@@ -39,7 +39,7 @@ export const minDateRule: RuleFn<
     ? undefined
     : {
         code: "min_date",
-        min: unpackedRef.value!,
+        min,
         message: `The value ${value} for schema ${path} is before or on ${unpackedRef.value}`,
       };
 };
@@ -64,7 +64,7 @@ export const minDateStringRule: RuleFn<
     ? undefined
     : {
         code: "min_date",
-        min: unpackedRef.value!,
+        min: minDate,
         message: `The value ${value} for schema ${path} is before or on ${unpackedRef.value}`,
       };
 };

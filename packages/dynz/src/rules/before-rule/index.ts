@@ -42,7 +42,7 @@ export const beforeRule: RuleFn<
     ? undefined
     : {
         code: "before",
-        before: unpackedRef.value!,
+        before,
         message: `The value ${value} for schema ${path} is after ${unpackedRef.value}`,
       };
 };
@@ -65,7 +65,7 @@ export const beforeDateStringRule: RuleFn<
     ? undefined
     : {
         code: "before",
-        before: unpackedRef.value!,
+        before,
         message: `The value ${value} for schema ${path} is after ${unpackedRef.value}`,
       };
 };
