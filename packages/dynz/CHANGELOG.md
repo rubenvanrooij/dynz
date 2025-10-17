@@ -1,5 +1,11 @@
 # dynz
 
+## 0.0.6
+
+### Patch Changes
+
+- 74fce85: Date string schema added
+
 ## 0.0.5
 
 ### Patch Changes
