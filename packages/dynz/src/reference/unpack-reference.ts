@@ -33,7 +33,7 @@ export function unpackRef<V extends ValueType, T extends SchemaType>(
     const { schema, value } = getNested(ensureAbsolutePath(valueOrRef.path, path), context.schema, context.values.new);
 
     if (expected) {
-      for (const expect of Array.isArray(expected) ? expected : [expected]) {
+      for (const expect of expected) {
         if (schema.type !== expect) {
           continue;
         }

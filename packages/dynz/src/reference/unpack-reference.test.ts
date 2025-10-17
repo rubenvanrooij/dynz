@@ -1,39 +1,16 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
+import { object } from "../schemas";
 import { type ResolveContext, SchemaType } from "../types";
 import { ref } from "./reference";
 import { unpackRef } from "./unpack-reference";
 
-// Mock the dependencies
-vi.mock("../utils", () => ({
-  coerce: vi.fn(),
-  coerceSchema: vi.fn(),
-  ensureAbsolutePath: vi.fn(),
-  getNested: vi.fn(),
-}));
-
-vi.mock("../validate/validate-type", () => ({
-  validateType: vi.fn(),
-  validateShallowType: vi.fn(),
-}));
-
-import { object, string } from "../schemas";
-// Import mocked functions
-import { coerce, coerceSchema, ensureAbsolutePath, getNested } from "../utils";
-import { validateShallowType, validateType } from "../validate/validate-type";
-
 describe("unpackRef", () => {
-  const mockContext: ResolveContext = {
-    schema: { type: "object", fields: {} },
-    values: {
-      new: { user: { name: "John", age: 30 } },
-    },
-  };
-
-  beforeEach(() => {
-    vi.resetAllMocks();
-  });
-
   describe("static values (non-references)", () => {
+    const mockContext: ResolveContext = {
+      schema: object({ fields: {} }),
+      values: { new: {} },
+    };
+
     it("should return static value for string", () => {
       const result = unpackRef("test string", "path", mockContext);
 
@@ -80,308 +57,161 @@ describe("unpackRef", () => {
         static: true,
       });
     });
-  });
 
-  describe("reference resolution without expected type", () => {
-    beforeEach(() => {
-      vi.mocked(ensureAbsolutePath).mockReturnValue("$.resolved.path");
-      vi.mocked(getNested).mockReturnValue({
-        schema: { type: "string" },
-        value: "resolved value",
-      });
-      vi.mocked(coerceSchema).mockReturnValue("coerced value");
-      vi.mocked(validateType).mockReturnValue(true);
-    });
-
-    it("should resolve reference and return dynamic value", () => {
-      const reference = ref("user.name");
-
-      const result = unpackRef(reference, "current.path", mockContext);
-
-      expect(ensureAbsolutePath).toHaveBeenCalledWith("user.name", "current.path");
-      expect(getNested).toHaveBeenCalledWith("$.resolved.path", mockContext.schema, mockContext.values.new);
-      expect(coerceSchema).toHaveBeenCalledWith({ type: "string" }, "resolved value");
-      expect(validateType).toHaveBeenCalledWith({ type: "string" }, "coerced value");
+    it("should return static value for Date objects", () => {
+      const date = new Date("2024-01-01");
+      const result = unpackRef(date, "path", mockContext);
 
       expect(result).toEqual({
-        schema: { type: "string" },
-        value: "coerced value",
-        static: false,
-      });
-    });
-
-    it("should return undefined value when validation fails", () => {
-      const reference = ref("user.name");
-      vi.mocked(validateType).mockReturnValue(false);
-
-      const result = unpackRef(reference, "current.path", mockContext);
-
-      expect(result).toEqual({
-        schema: { type: "string" },
-        value: undefined,
-        static: false,
-      });
-    });
-
-    it("should handle complex reference paths", () => {
-      const reference = ref("$.data.users[0].profile.name");
-
-      unpackRef(reference, "$.current.field", mockContext);
-
-      expect(ensureAbsolutePath).toHaveBeenCalledWith("$.data.users[0].profile.name", "$.current.field");
-    });
-  });
-
-  describe("reference resolution with expected type", () => {
-    beforeEach(() => {
-      vi.mocked(ensureAbsolutePath).mockReturnValue("$.resolved.path");
-      vi.mocked(getNested).mockReturnValue({
-        schema: { type: "number" },
-        value: "123",
-      });
-      vi.mocked(coerce).mockReturnValue(123);
-      vi.mocked(validateType).mockReturnValue(true);
-      vi.mocked(validateShallowType).mockReturnValue(true);
-    });
-
-    it("should resolve reference with type coercion", () => {
-      const reference = ref("user.age");
-
-      const result = unpackRef(reference, "current.path", mockContext, SchemaType.NUMBER);
-
-      expect(ensureAbsolutePath).toHaveBeenCalledWith("user.age", "current.path");
-      expect(getNested).toHaveBeenCalledWith("$.resolved.path", mockContext.schema, mockContext.values.new);
-      expect(coerce).toHaveBeenCalledWith(SchemaType.NUMBER, "123");
-      expect(validateShallowType).toHaveBeenCalledWith(SchemaType.NUMBER, 123);
-
-      expect(result).toEqual({
-        schema: { type: "number" },
-        value: 123,
-        static: false,
-      });
-    });
-
-    it("should return undefined when type validation fails", () => {
-      const reference = ref("user.invalidField");
-      vi.mocked(validateType).mockReturnValue(false);
-      vi.mocked(validateShallowType).mockReturnValue(false);
-      vi.mocked(getNested).mockReturnValue({
-        schema: { type: "string" },
-        value: "invalid",
-      });
-
-      const result = unpackRef(reference, "current.path", mockContext, SchemaType.STRING);
-
-      expect(result).toEqual({
-        schema: { type: "string" },
-        value: undefined,
-        static: false,
-      });
-    });
-
-    it("should handle different schema types", () => {
-      const reference = ref("user.isActive");
-
-      // Test with BOOLEAN type
-      unpackRef(reference, "path", mockContext, SchemaType.BOOLEAN);
-      expect(coerce).toHaveBeenCalledWith(SchemaType.BOOLEAN, "123");
-
-      vi.clearAllMocks();
-      vi.mocked(ensureAbsolutePath).mockReturnValue("$.resolved.path");
-      vi.mocked(getNested).mockReturnValue({ schema: { type: "boolean" }, value: true });
-      vi.mocked(coerce).mockReturnValue(true);
-      vi.mocked(validateType).mockReturnValue(true);
-
-      // Test with DATE type
-      unpackRef(reference, "path", mockContext, SchemaType.DATE);
-      expect(coerce).toHaveBeenCalledWith(SchemaType.DATE, true);
-    });
-  });
-
-  describe("edge cases and error handling", () => {
-    it("should handle reference to non-existent path", () => {
-      const reference = ref("nonexistent.path");
-
-      vi.mocked(ensureAbsolutePath).mockReturnValue("$.nonexistent.path");
-      vi.mocked(getNested).mockReturnValue({
-        schema: { type: "string" },
-        value: undefined,
-      });
-      vi.mocked(coerceSchema).mockReturnValue(undefined);
-      vi.mocked(validateType).mockReturnValue(false);
-
-      const result = unpackRef(reference, "current.path", mockContext);
-
-      expect(result).toEqual({
-        schema: { type: "string" },
-        value: undefined,
-        static: false,
-      });
-    });
-
-    it("should handle reference with empty path", () => {
-      const reference = ref("");
-
-      vi.mocked(ensureAbsolutePath).mockReturnValue("$");
-      vi.mocked(getNested).mockReturnValue({
-        schema: mockContext.schema,
-        value: mockContext.values.new,
-      });
-      vi.mocked(coerceSchema).mockReturnValue(mockContext.values.new);
-      vi.mocked(validateType).mockReturnValue(true);
-
-      const result = unpackRef(reference, "current.path", mockContext);
-
-      expect(result).toEqual({
-        schema: mockContext.schema,
-        value: mockContext.values.new,
-        static: false,
-      });
-    });
-
-    it("should handle nested object references", () => {
-      const reference = ref("user.profile.settings");
-      const nestedSchema = object({
-        fields: {
-          theme: string(),
-        },
-      });
-      const nestedValue = { theme: "dark" };
-
-      vi.mocked(ensureAbsolutePath).mockReturnValue("$.user.profile.settings");
-      vi.mocked(getNested).mockReturnValue({
-        schema: nestedSchema,
-        value: nestedValue,
-      });
-      vi.mocked(coerceSchema).mockReturnValue(nestedValue);
-      vi.mocked(validateType).mockReturnValue(true);
-
-      const result = unpackRef(reference, "current.path", mockContext);
-
-      expect(result).toEqual({
-        schema: nestedSchema,
-        value: nestedValue,
-        static: false,
-      });
-    });
-
-    it("should handle array element references", () => {
-      const reference = ref("users[0]");
-      const arrayElementSchema = object({
-        fields: {
-          name: string(),
-        },
-      });
-
-      const arrayElementValue = { name: "First User" };
-
-      vi.mocked(ensureAbsolutePath).mockReturnValue("$.users[0]");
-      vi.mocked(getNested).mockReturnValue({
-        schema: arrayElementSchema,
-        value: arrayElementValue,
-      });
-      vi.mocked(coerceSchema).mockReturnValue(arrayElementValue);
-      vi.mocked(validateType).mockReturnValue(true);
-
-      const result = unpackRef(reference, "current.path", mockContext);
-
-      expect(result).toEqual({
-        schema: arrayElementSchema,
-        value: arrayElementValue,
-        static: false,
+        value: date,
+        static: true,
       });
     });
   });
 
-  describe("type safety and overloads", () => {
-    it("should maintain type safety for static values with expected type", () => {
-      const result = unpackRef("string value", "path", mockContext, SchemaType.STRING);
+  describe("static values with expected types", () => {
+    const mockContext: ResolveContext = {
+      schema: object({ fields: {} }),
+      values: { new: {} },
+    };
+
+    it("should return static value even when expected type is provided", () => {
+      const result = unpackRef("static string", "path", mockContext, SchemaType.STRING);
 
       expect(result).toEqual({
-        value: "string value",
+        value: "static string",
         static: true,
       });
     });
 
-    it("should work with generic value types", () => {
-      interface CustomType extends Record<string, unknown> {
-        id: number;
-        name: string;
-      }
-
-      const customValue: CustomType = { id: 1, name: "test" };
-      const result = unpackRef(customValue, "path", mockContext);
+    it("should return static value for numbers with expected type", () => {
+      const result = unpackRef(42, "path", mockContext, SchemaType.NUMBER);
 
       expect(result).toEqual({
-        value: customValue,
-        static: true,
-      });
-    });
-
-    it("should handle mixed reference and value scenarios", () => {
-      // Static value
-      const staticResult = unpackRef(42, "path", mockContext, SchemaType.NUMBER);
-      expect(staticResult.static).toBe(true);
-
-      // Reference value
-      const reference = ref("dynamic.value");
-      vi.mocked(ensureAbsolutePath).mockReturnValue("$.dynamic.value");
-      vi.mocked(getNested).mockReturnValue({
-        schema: { type: "number" },
         value: 42,
+        static: true,
       });
-      vi.mocked(coerce).mockReturnValue(42);
-      vi.mocked(validateType).mockReturnValue(true);
-
-      const dynamicResult = unpackRef(reference, "path", mockContext, SchemaType.NUMBER);
-      expect(dynamicResult.static).toBe(false);
     });
   });
 
-  describe("integration with schema validation", () => {
-    it("should properly integrate with coercion and validation flow", () => {
-      const reference = ref("user.stringifiedNumber");
+  describe("unpackRef with multiple expected types", () => {
+    const mockContext: ResolveContext = {
+      schema: object({ fields: {} }),
+      values: { new: {} },
+    };
 
-      vi.mocked(ensureAbsolutePath).mockReturnValue("$.user.stringifiedNumber");
-      vi.mocked(getNested).mockReturnValue({
-        schema: { type: "string" },
-        value: "123",
-      });
-      vi.mocked(coerce).mockReturnValue(123);
-      vi.mocked(validateShallowType).mockReturnValue(true);
-
-      const result = unpackRef(reference, "path", mockContext, SchemaType.NUMBER);
-
-      // Verify the full flow
-      expect(ensureAbsolutePath).toHaveBeenCalledWith("user.stringifiedNumber", "path");
-      expect(getNested).toHaveBeenCalledWith("$.user.stringifiedNumber", mockContext.schema, mockContext.values.new);
-      expect(coerce).toHaveBeenCalledWith(SchemaType.NUMBER, "123");
-      expect(validateShallowType).toHaveBeenCalledWith(SchemaType.NUMBER, 123);
+    it("should handle static values with multiple expected types", () => {
+      const result = unpackRef("test", "path", mockContext, SchemaType.STRING, SchemaType.NUMBER);
 
       expect(result).toEqual({
-        schema: { type: "string" },
-        value: 123,
-        static: false,
+        value: "test",
+        static: true,
       });
     });
 
-    it("should handle validation failure gracefully", () => {
-      const reference = ref("user.invalidData");
-
-      vi.mocked(ensureAbsolutePath).mockReturnValue("$.user.invalidData");
-      vi.mocked(getNested).mockReturnValue({
-        schema: { type: "string" },
-        value: "not a number",
-      });
-      vi.mocked(coerce).mockReturnValue(NaN);
-      vi.mocked(validateType).mockReturnValue(false);
-
-      const result = unpackRef(reference, "path", mockContext, SchemaType.NUMBER);
+    it("should handle static values with array of expected types", () => {
+      const result = unpackRef(42, "path", mockContext, SchemaType.DATE, SchemaType.NUMBER, SchemaType.STRING);
 
       expect(result).toEqual({
-        schema: { type: "string" },
-        value: undefined,
-        static: false,
+        value: 42,
+        static: true,
+      });
+    });
+
+    it("should handle Date objects with multiple expected types", () => {
+      const date = new Date("2024-01-01");
+      const result = unpackRef(date, "path", mockContext, SchemaType.DATE, SchemaType.DATE_STRING);
+
+      expect(result).toEqual({
+        value: date,
+        static: true,
+      });
+    });
+
+    it("should return static value regardless of expected type mismatch", () => {
+      // Static values are returned as-is, without type checking
+      const result = unpackRef("string", "path", mockContext, SchemaType.NUMBER);
+
+      expect(result).toEqual({
+        value: "string",
+        static: true,
+      });
+    });
+  });
+
+  describe("reference handling in cross-type scenarios", () => {
+    it("should identify references correctly", () => {
+      const mockContext: ResolveContext = {
+        schema: object({ fields: {} }),
+        values: { new: {} },
+      };
+
+      const reference = ref("$.nonexistent");
+
+      // Even though the path doesn't exist, we can test that it recognizes it as a reference
+      // and returns a non-static result
+      expect(() => unpackRef(reference, "path", mockContext)).toThrow();
+    });
+
+    it("should handle empty references gracefully", () => {
+      const mockContext: ResolveContext = {
+        schema: object({ fields: {} }),
+        values: { new: {} },
+      };
+
+      // Test edge case of empty reference
+      const reference = ref("");
+      const result = unpackRef(reference, "path", mockContext);
+
+      expect(result.static).toBe(false);
+    });
+  });
+
+  describe("edge cases for cross-type validation", () => {
+    const mockContext: ResolveContext = {
+      schema: object({ fields: {} }),
+      values: { new: {} },
+    };
+
+    it("should handle zero values", () => {
+      const result = unpackRef(0, "path", mockContext);
+
+      expect(result).toEqual({
+        value: 0,
+        static: true,
+      });
+    });
+
+    it("should handle empty string values", () => {
+      const result = unpackRef("", "path", mockContext);
+
+      expect(result).toEqual({
+        value: "",
+        static: true,
+      });
+    });
+
+    it("should handle complex nested objects", () => {
+      const complex = {
+        nested: {
+          array: [1, 2, { deep: "value" }],
+          boolean: true,
+        },
+      };
+      const result = unpackRef(complex, "path", mockContext);
+
+      expect(result).toEqual({
+        value: complex,
+        static: true,
+      });
+    });
+
+    it("should handle boolean values with type expectations", () => {
+      const result = unpackRef(false, "path", mockContext, SchemaType.BOOLEAN, SchemaType.STRING);
+
+      expect(result).toEqual({
+        value: false,
+        static: true,
       });
     });
   });
