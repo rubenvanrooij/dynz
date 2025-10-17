@@ -204,7 +204,7 @@ importers:
         specifier: ^5.0.0
         version: 5.2.2(react-hook-form@7.63.0(react@19.1.1))
       dynz:
-        specifier: ^0.0.5
+        specifier: ^0.0.6
         version: link:../dynz
       react-hook-form:
         specifier: ^7.0.0
