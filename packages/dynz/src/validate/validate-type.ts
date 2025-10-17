@@ -1,5 +1,5 @@
 import { parse } from "date-fns";
-import type { Enum, OptionValue } from "../schemas";
+import { DEFAULT_DATE_STRING_FORMAT, type Enum, type OptionValue } from "../schemas";
 import { type DateString, type Schema, SchemaType, type ValueType } from "../types";
 
 /**
@@ -182,6 +182,6 @@ export function isDateString(value: unknown, format: string): value is DateStrin
   return date instanceof Date && !Number.isNaN(date.getTime());
 }
 
-export function parseDateString(value: DateString, format: string): Date {
+export function parseDateString(value: DateString, format: string = DEFAULT_DATE_STRING_FORMAT): Date {
   return parse(value, format, new Date());
 }

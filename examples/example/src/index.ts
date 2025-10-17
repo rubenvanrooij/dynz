@@ -30,74 +30,84 @@ import * as z from "zod";
 //   console.log(result.values); // ✅ Type-safe access
 // }
 
-const UserRoles = {
-  ADMIN: "admin",
-  MAINTAINER: "maintainer",
-} as const;
-
-const z_user = z.object({
-  role: z.array(z.nativeEnum(UserRoles)),
-  email: z.string().email(),
-  name: z.string().min(2).max(100),
-  age: z.number().min(0).max(150).optional(),
-  isActive: z.boolean(),
-});
-
-const o = d.options({
-  options: ["fo", "bar"],
-});
-
-const d_user = d.object({
+const s = d.object({
   fields: {
-    role: d.array({
-      schema: d.enum({
-        enum: UserRoles,
-      }),
+    one: d.dateString({
+      format: "yyyy",
+      rules: [d.after(d.ref("two"))],
     }),
-    aa: d.options({
-      options: ["fo", "bar"],
+    two: d.date({
+      rules: [d.after(d.ref("one"))],
     }),
-    name: d.string({
-      rules: [d.minLength(2), d.maxLength(100)],
-    }),
-    email: d.string({
-      rules: [d.email()],
-    }),
-    age: d.number({
-      rules: [d.min(0), d.max(150)],
-      required: false,
-    }),
-    isActive: d.boolean(),
   },
 });
+console.log(
+  d.validate(s, undefined, {
+    one: "2026",
+    two: new Date(),
+  })
+);
 
-const DATA = {
-  role: ["admin", "maintainer"],
-  name: "Jan",
-  email: "jan@jan.nl",
-  age: 23,
-  isActive: false,
-};
+// const UserRoles = {
+//   ADMIN: "admin",
+//   MAINTAINER: "maintainer",
+// } as const;
 
-console.log(z_user.safeParse(DATA));
+// const z_user = z.object({
+//   role: z.array(z.nativeEnum(UserRoles)),
+//   email: z.string().email(),
+//   name: z.string().min(2).max(100),
+//   age: z.number().min(0).max(150).optional(),
+//   isActive: z.boolean(),
+// });
 
-console.time("perf_z");
+// const d_user = d.object({
+//   fields: {
+//     role: d.array({
+//       schema: d.enum({
+//         enum: UserRoles,
+//       }),
+//     }),
+//     aa: d.options({
+//       options: ["fo", "bar"],
+//     }),
+//     name: d.string({
+//       rules: [d.minLength(2), d.maxLength(100)],
+//     }),
+//     email: d.string({
+//       rules: [d.email()],
+//     }),
+//     age: d.number({
+//       rules: [d.min(0), d.max(150)],
+//       required: false,
+//     }),
+//     isActive: d.boolean(),
+//   },
+// });
 
-for (let i = 0; i < 1_000_000; i++) {
-  z_user.safeParse(DATA);
-}
+// const DATA = {
+//   role: ["admin", "maintainer"],
+//   name: "Jan",
+//   email: "jan@jan.nl",
+//   age: 23,
+//   isActive: false,
+// };
 
-console.timeEnd("perf_z");
+// console.time("perf_z");
 
-console.time("perf_d");
+// for (let i = 0; i < 1_000_000; i++) {
+//   z_user.safeParse(DATA);
+// }
 
-console.log(d.validate(d_user, undefined, DATA));
+// console.timeEnd("perf_z");
 
-for (let i = 0; i < 1_000_000; i++) {
-  d.validate(d_user, undefined, DATA);
-}
+// console.time("perf_d");
 
-console.timeEnd("perf_d");
+// for (let i = 0; i < 1_000_000; i++) {
+//   d.validate(d_user, undefined, DATA);
+// }
+
+// console.timeEnd("perf_d");
 
 // const schema = d.object({
 //   fields: {

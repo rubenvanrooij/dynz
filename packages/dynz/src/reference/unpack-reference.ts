@@ -1,36 +1,53 @@
-import type { ResolveContext, Schema, SchemaType, ValueType } from "../types";
+import type { ResolveContext, Schema, SchemaType, Unpacked, ValueType } from "../types";
 import { coerce, coerceSchema, ensureAbsolutePath, getNested } from "../utils";
 import { validateShallowType, validateType } from "../validate/validate-type";
 import { isReference, type Reference, type ValueOrReference } from "./reference";
+
+export type UnpackedReferenceValue<T extends SchemaType> = T extends SchemaType
+  ? {
+      schema: Extract<Schema, { type: T }>;
+      type: T;
+      value: ValueType<T> | undefined;
+      static: false;
+    }
+  : never;
 
 export function unpackRef<V extends ValueOrReference>(
   valueOrRef: V,
   path: string,
   context: ResolveContext
-): { value: unknown; static: true } | { schema: Schema; value: ValueType | undefined; static: false };
+): { value: unknown; static: true } | { schema: Schema; type: SchemaType; value: ValueType | undefined; static: false };
 export function unpackRef<V extends ValueType, T extends SchemaType>(
   valueOrRef: V | Reference,
   path: string,
   context: ResolveContext,
-  expected: T
-): { value: V; static: true } | { schema: Schema; value: ValueType<T> | undefined; static: false };
+  ...expected: T[]
+): { value: V; static: true } | UnpackedReferenceValue<T extends Array<never> ? Unpacked<T> : T>;
 export function unpackRef<V extends ValueType, T extends SchemaType>(
   valueOrRef: V | Reference,
   path: string,
   context: ResolveContext,
-  expected?: T | undefined
-): { value: V; static: true } | { schema: Schema; value: ValueType | undefined; static: false } {
+  ...expected: T[]
+): { value: V; static: true } | { schema: Schema; type: SchemaType; value: ValueType | undefined; static: false } {
   if (isReference(valueOrRef)) {
     const { schema, value } = getNested(ensureAbsolutePath(valueOrRef.path, path), context.schema, context.values.new);
 
     if (expected) {
-      const val = coerce(expected, value);
-      if (validateShallowType(expected, val)) {
-        return {
-          schema,
-          value: val,
-          static: false,
-        };
+      for (const expect of expected) {
+        if (schema.type !== expect) {
+          continue;
+        }
+
+        const val = coerce(expect, value);
+
+        if (validateShallowType(expect, val)) {
+          return {
+            schema,
+            type: schema.type,
+            value: val,
+            static: false,
+          };
+        }
       }
     } else {
       const val = coerceSchema(schema, value);
@@ -38,6 +55,7 @@ export function unpackRef<V extends ValueType, T extends SchemaType>(
       if (validateType(schema, val)) {
         return {
           schema,
+          type: schema.type,
           value: val,
           static: false,
         };
@@ -46,6 +64,7 @@ export function unpackRef<V extends ValueType, T extends SchemaType>(
 
     return {
       schema,
+      type: schema.type,
       value: undefined,
       static: false,
     };
