@@ -34,17 +34,19 @@ const s = d.object({
   fields: {
     one: d.dateString({
       format: "yyyy",
-      rules: [d.after(d.ref('two'))],
+      rules: [d.after(d.ref("two"))],
     }),
     two: d.date({
-      rules: [d.after(d.ref('one'))],
-    })
-  }
-})
-console.log(d.validate(s, undefined, {
-  one: "2026",
-  two: new Date()
-}))
+      rules: [d.after(d.ref("one"))],
+    }),
+  },
+});
+console.log(
+  d.validate(s, undefined, {
+    one: "2026",
+    two: new Date(),
+  })
+);
 
 // const UserRoles = {
 //   ADMIN: "admin",
