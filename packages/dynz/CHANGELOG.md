@@ -1,5 +1,11 @@
 # dynz
 
+## 0.0.7
+
+### Patch Changes
+
+- 6332c4c: fixed issue with not equals condition
+
 ## 0.0.6
 
 ### Patch Changes
