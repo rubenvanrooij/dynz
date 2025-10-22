@@ -53,7 +53,7 @@ const OPERATORS = {
   [ConditionType.EQUALS]: (a: ValueType, b: ValueType) => {
     return a === b;
   },
-  [ConditionType.NOT_EQUALS]: (a: ValueType, b: ValueType) => a === b,
+  [ConditionType.NOT_EQUALS]: (a: ValueType, b: ValueType) => a !== b,
   [ConditionType.GREATHER_THAN]: (a: ValueType, b: ValueType) => a > b,
   [ConditionType.GREATHER_THAN_OR_EQUAL]: (a: ValueType, b: ValueType) => a >= b,
   [ConditionType.LOWER_THAN]: (a: ValueType, b: ValueType) => a < b,

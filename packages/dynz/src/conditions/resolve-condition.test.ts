@@ -145,7 +145,7 @@ describe("resolveCondition", () => {
 
       const result = resolveCondition(condition, "$.test", mockContext);
 
-      expect(result).toBe(false); // NOT_EQUALS operator incorrectly returns a === b instead of a !== b
+      expect(result).toBe(true);
     });
 
     it("should handle GREATER_THAN condition", () => {
