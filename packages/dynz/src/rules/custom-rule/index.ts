@@ -1,12 +1,5 @@
 import { unpackRef, type ValueOrReference } from "../../reference";
-import type {
-  CustomRuleContext,
-  CustomRuleFunction,
-  ErrorMessageFromRule,
-  ExtractResolvedRules,
-  RuleFn,
-  Schema,
-} from "../../types";
+import type { ErrorMessageFromRule, ExtractResolvedRules, RuleFn, Schema } from "../../types";
 
 export type CustomRule<T extends Record<string, ValueOrReference> = Record<string, ValueOrReference>> = {
   type: "custom";
@@ -23,12 +16,6 @@ export function custom(name: string): CustomRule;
 export function custom<T extends Record<string, ValueOrReference>>(name: string, params: T): CustomRule<T>;
 export function custom<T extends Record<string, ValueOrReference>>(name: string, params?: T): CustomRule {
   return { type: "custom", name, params: params || {} };
-}
-
-export function customRuleFn<T extends Schema = Schema, P extends Record<string, unknown> = Record<string, unknown>>(
-  fn: CustomRuleFunction<T, P>
-): CustomRuleFunction<T, P> {
-  return fn;
 }
 
 export const customRule: RuleFn<Schema, Extract<ExtractResolvedRules<Schema>, CustomRule>, CustomRuleErrorMessage> = ({
