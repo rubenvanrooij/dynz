@@ -18,19 +18,19 @@ const schema = object({
       rules: [stringRequiredRule, minLength(3)],
     }),
     company: string({
-      rules: [stringRequiredRule]
+      rules: [stringRequiredRule],
     }),
     email: string({
       rules: [
         stringRequiredRule,
         email(),
         conditional({
-          when: matches("company", "\\bapple\\b", 'i'),
-          then: regex("@apple.com$", 'useCompanyMail'),
+          when: matches("company", "\\bapple\\b", "i"),
+          then: regex("@apple.com$", "useCompanyMail"),
         }),
         conditional({
-          when: matches("company",  "\\microsoft\\b", 'i'),
-          then: regex("@microsoft.com$", 'useCompanyMail'),
+          when: matches("company", "\\microsoft\\b", "i"),
+          then: regex("@microsoft.com$", "useCompanyMail"),
         }),
       ],
     }),
@@ -74,10 +74,10 @@ const schema = object({
 });
 
 const DEFAULT_VALUES = {
-            name: "",
-            email: "",
-            company: ''
-          }
+  name: "",
+  email: "",
+  company: "",
+};
 
 export default function Home() {
   const t = useTranslations();
@@ -86,7 +86,7 @@ export default function Home() {
     alert(JSON.stringify(data));
   };
 
-  console.log('huh?..')
+  console.log("huh?..");
   return (
     <Card className="flex flex-col gap-4 max-w-100">
       <CardHeader>
@@ -101,8 +101,8 @@ export default function Home() {
         >
           <div className="flex flex-col gap-4">
             <DynzTextInput name="name" />
-            <DynzTextInput name="company" /> 
-             <DynzTextInput name="email" />
+            <DynzTextInput name="company" />
+            <DynzTextInput name="email" />
             <DynzSelect name="attendanceType" />
             <DynzBoolean name="accomidationRequired" />
             {/* <DynzSelect name="workshopPreferences" />

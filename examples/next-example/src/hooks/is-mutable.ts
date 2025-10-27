@@ -13,6 +13,6 @@ export function useIsMutable(schema: Schema, path: string) {
 
   // Watch is just here to trigger a rerender when a value gets updated
   watch(getConditionDependencies(innerSchema.mutable, path).map((field) => field.slice(2)));
-  
+
   return isMutable(schema, path, getValues());
 }

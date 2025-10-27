@@ -42,19 +42,23 @@ export type FormProps<T extends ObjectSchema<never>, A extends SchemaValues<T>> 
   onSubmit?: (values: SchemaValues<T>) => void;
 };
 
-function DependencyTrigger({ path, dependencies }: { path: string, dependencies: string[] }) {
-  const { watch, trigger, formState: { isSubmitted }} = useFormContext()
+function DependencyTrigger({ path, dependencies }: { path: string; dependencies: string[] }) {
+  const {
+    watch,
+    trigger,
+    formState: { isSubmitted },
+  } = useFormContext();
 
-  const value = watch(dependencies)
+  const value = watch(dependencies);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: need to watch value change
   useEffect(() => {
-    if(isSubmitted) {
-      trigger(path)
+    if (isSubmitted) {
+      trigger(path);
     }
-  }, [value, trigger, path, isSubmitted])
+  }, [value, trigger, path, isSubmitted]);
 
-  return null
+  return null;
 }
 
 export function DynzForm<T extends ObjectSchema<never>, A extends SchemaValues<T>>({
@@ -65,7 +69,7 @@ export function DynzForm<T extends ObjectSchema<never>, A extends SchemaValues<T
   name,
 }: FormProps<T, A>) {
   const t = useTranslations();
-  const deps = getRulesDependenciesMap(schema)
+  const deps = getRulesDependenciesMap(schema);
 
   const methods = useForm({
     resolver: dynzResolver(
@@ -89,14 +93,14 @@ export function DynzForm<T extends ObjectSchema<never>, A extends SchemaValues<T
 
   return (
     <FormProvider {...methods}>
-    <SchemaContext.Provider value={{ schema, i18nPath: name }}>
-      
-        {Object.entries(deps).map(([path, dependencies]) => <DependencyTrigger key={path} path={path.slice(2)} dependencies={dependencies.map((d) => d.slice(2))} />)}
+      <SchemaContext.Provider value={{ schema, i18nPath: name }}>
+        {Object.entries(deps).map(([path, dependencies]) => (
+          <DependencyTrigger key={path} path={path.slice(2)} dependencies={dependencies.map((d) => d.slice(2))} />
+        ))}
         <form id={name} onSubmit={methods.handleSubmit((values) => onSubmit?.(values))}>
           {children}
         </form>
-      
-    </SchemaContext.Provider>
+      </SchemaContext.Provider>
     </FormProvider>
   );
 }
@@ -128,7 +132,6 @@ export function DynzFormLabel({ name }: DynzFormLabelProps) {
     </FormLabel>
   );
 }
-
 
 export function DynzTextInput({ name, description }: BaseInputProps) {
   const { schema, i18nPath } = useContext(SchemaContext);

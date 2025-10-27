@@ -13,7 +13,6 @@ export function useIsRequired(schema: Schema, path: string) {
 
   // Watch is just here to trigger a rerender when a value gets updated
   watch(getConditionDependencies(innerSchema.required, path).map((field) => field.slice(2)));
-  
 
   return isRequired(schema, path, getValues());
 }

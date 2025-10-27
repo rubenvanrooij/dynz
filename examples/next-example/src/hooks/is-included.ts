@@ -13,6 +13,6 @@ export function useIsIncluded(schema: Schema, path: string) {
 
   // Watch is just here to trigger a rerender when a value gets updated
   watch(getConditionDependencies(innerSchema.included, path).map((field) => field.slice(2)));
-  
+
   return isIncluded(schema, path, getValues());
 }
