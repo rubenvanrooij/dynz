@@ -1,7 +1,7 @@
 "use client";
 
 import type { SchemaValues } from "dynz";
-import { boolean, conditional, email, eq, equals, minLength, object, options, or, string } from "dynz";
+import { array, boolean, conditional, email, eq, equals, getDependenciesMap, minLength, object, options, or, string } from "dynz";
 import { PopcornIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { DynzBoolean, DynzForm, DynzIncludedWrapper, DynzSelect, DynzTextInput } from "@/components/dynz/dynz-form";
@@ -18,7 +18,10 @@ const schema = object({
       rules: [stringRequiredRule, minLength(3)],
     }),
     email: string({
-      rules: [stringRequiredRule, email()],
+      rules: [stringRequiredRule, conditional({
+        when: eq('name', 'foo'),
+        then: email()
+      })],
     }),
     attendanceType: options({
       default: "Virtual",
@@ -56,6 +59,14 @@ const schema = object({
       rules: [stringRequiredRule],
       included: eq("professionalLevel", "Student"),
     }),
+    list: array({
+      schema: string({
+        rules: [stringRequiredRule, conditional({
+          when: eq('$.name', 'foo'),
+          then: email()
+        })],
+      })
+    })
     // image: array({
     //   schema: file({
     //     rules: [mimeType(['image/jpeg', 'text/csv'])]
@@ -66,6 +77,7 @@ const schema = object({
 });
 
 export default function Home() {
+
   const t = useTranslations();
 
   const onSubmit = (data: SchemaValues<typeof schema>) => {
@@ -84,6 +96,7 @@ export default function Home() {
           defaultValues={{
             name: "",
             email: "",
+            list: ['foo', 'bar']
           }}
           onSubmit={onSubmit}
         >
@@ -103,6 +116,8 @@ export default function Home() {
             </DynzIncludedWrapper>
             <DynzSelect name="professionalLevel" />
             <DynzTextInput name="studentInstitution" />
+            <DynzTextInput name="list.0" />
+            <DynzTextInput name="list.1" />
             <Button type="submit">Submit</Button>
           </div>
         </DynzForm>

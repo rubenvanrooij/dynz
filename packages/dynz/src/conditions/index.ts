@@ -1,4 +1,5 @@
 export * from "./builder";
+export * from "./get-condition-dependencies";
 export * from "./is-included";
 export * from "./is-mutable";
 export * from "./is-required";

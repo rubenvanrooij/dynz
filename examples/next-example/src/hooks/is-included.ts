@@ -13,7 +13,5 @@ export function useIsIncluded(schema: Schema, path: string) {
 
   const values = watch();
 
-  console.log("isIncluded: ", path, isIncluded(schema, path, values));
-
   return isIncluded(schema, path, values);
 }

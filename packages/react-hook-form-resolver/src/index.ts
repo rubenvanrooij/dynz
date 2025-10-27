@@ -50,9 +50,11 @@ export function dynzResolver<T extends ObjectSchema<never>, O extends SchemaValu
     raw?: boolean;
   } = {}
 ): Resolver<I, C, O> {
-  return async (values, _, options) => {
+  return async (values, foo, options) => {
     // @ts-expect-error -- cast to unknown
     const result = validate(schema, currentValues as unknown, values, schemaOptions);
+
+    console.log("Validating values..", result, options, foo);
 
     options.shouldUseNativeValidation && validateFieldsNatively({}, options);
 

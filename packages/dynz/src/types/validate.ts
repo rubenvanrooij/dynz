@@ -112,22 +112,20 @@ export type ValidationErrorResult = {
 
 export type ValidationResult<T> = ValidationSuccesResult<T> | ValidationErrorResult;
 
-export type SchemaWithValue<T extends Schema = Schema> = {
+export type CustomRuleContext<T extends Schema, P extends Record<string, unknown>> = {
   value: ValueType<T["type"]>;
   schema: T;
+  params: P;
+  path: string;
+  context: Context<T>;
 };
 
 export type CustomRuleFunction<
-  TSchema extends Schema = Schema,
-  TParams extends Record<string, unknown> = Record<string, unknown>,
-> = (
-  value: SchemaWithValue<TSchema>,
-  params: TParams,
-  path: string,
-  schema: Schema
-) => boolean | { success: false; [key: string]: JsonPrimitive };
+  T extends Schema = Schema,
+  P extends Record<string, unknown> = Record<string, unknown>,
+> = (context: CustomRuleContext<T, P>) => boolean | { success: false; [key: string]: JsonPrimitive };
 
-export type CustomRuleMap = Record<string, CustomRuleFunction>;
+export type CustomRuleMap<T extends CustomRuleFunction = CustomRuleFunction> = Record<string, T>;
 
 export type ValidateOptions<TCustomRuleMap extends CustomRuleMap = CustomRuleMap> = {
   customRules?: TCustomRuleMap | undefined;
