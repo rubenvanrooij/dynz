@@ -36,7 +36,7 @@ export function resolveCondition(condition: Condition, path: string, context: Re
         );
       }
 
-      return new RegExp(condition.value).test(left);
+      return new RegExp(condition.value, condition.flags).test(left);
     }
     case ConditionType.IS_IN: {
       const { left, right } = getConditionOperands(condition, path, context);

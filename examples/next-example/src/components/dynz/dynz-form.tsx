@@ -2,9 +2,7 @@ import { dynzResolver } from "@dynz/react-hook-form-resolver";
 import {
   type ErrorMessage,
   findSchemaByPath,
-  getConditionDependencies,
-  getDependenciesMap,
-  getNested,
+  getRulesDependenciesMap,
   type ObjectSchema,
   type OptionsSchema,
   type Schema,
@@ -45,14 +43,16 @@ export type FormProps<T extends ObjectSchema<never>, A extends SchemaValues<T>> 
 };
 
 function DependencyTrigger({ path, dependencies }: { path: string, dependencies: string[] }) {
-  const { watch, trigger} = useFormContext()
+  const { watch, trigger, formState: { isSubmitted }} = useFormContext()
 
   const value = watch(dependencies)
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: need to watch value change
   useEffect(() => {
-    trigger(path)
-  }, [value, trigger, path])
+    if(isSubmitted) {
+      trigger(path)
+    }
+  }, [value, trigger, path, isSubmitted])
 
   return null
 }
@@ -65,10 +65,7 @@ export function DynzForm<T extends ObjectSchema<never>, A extends SchemaValues<T
   name,
 }: FormProps<T, A>) {
   const t = useTranslations();
-
-  const deps = getDependenciesMap(schema)
-
-  console.log('deps', deps)
+  const deps = getRulesDependenciesMap(schema)
 
   const methods = useForm({
     resolver: dynzResolver(
@@ -80,6 +77,7 @@ export function DynzForm<T extends ObjectSchema<never>, A extends SchemaValues<T
       {
         messageTransformer: (error: ErrorMessage) => {
           const customErrorMessagePath = `${name}.${error.path.slice(2)}.errors.${error.customCode}`;
+
           return t.has(customErrorMessagePath)
             ? t(customErrorMessagePath, error as unknown as Record<string, string | number | Date>)
             : t(`errors.${error.customCode}`, error as unknown as Record<string, string | number | Date>);
@@ -90,14 +88,16 @@ export function DynzForm<T extends ObjectSchema<never>, A extends SchemaValues<T
   });
 
   return (
+    <FormProvider {...methods}>
     <SchemaContext.Provider value={{ schema, i18nPath: name }}>
-      <FormProvider {...methods}>
+      
         {Object.entries(deps).map(([path, dependencies]) => <DependencyTrigger key={path} path={path.slice(2)} dependencies={dependencies.map((d) => d.slice(2))} />)}
         <form id={name} onSubmit={methods.handleSubmit((values) => onSubmit?.(values))}>
           {children}
         </form>
-      </FormProvider>
+      
     </SchemaContext.Provider>
+    </FormProvider>
   );
 }
 
@@ -106,7 +106,7 @@ export function DynzIncludedWrapper({ name, children }: IncludedWrapper) {
   const isIncluded = useIsIncluded(schema, `$.${name}`);
 
   if (isIncluded === false) {
-    return;
+    return null;
   }
 
   return children;

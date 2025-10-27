@@ -96,11 +96,12 @@ export function lte<const T extends string, const V extends number | Reference>(
   };
 }
 
-export function matches<const T extends string>(path: T, value: string): MatchesCondition<T> {
+export function matches<const T extends string>(path: T, value: string, flags?: string): MatchesCondition<T> {
   return {
     type: ConditionType.MATCHES,
     path,
     value,
+    flags,
   };
 }
 
