@@ -44,6 +44,7 @@ export type MatchesCondition<T extends string = string> = {
   type: typeof ConditionType.MATCHES;
   path: T;
   value: string;
+  flags?: string | undefined;
 };
 
 export type GreaterThanCondition<

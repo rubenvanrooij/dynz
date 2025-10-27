@@ -1,8 +1,8 @@
-import { findSchemaByPath, isRequired, type Schema } from "dynz";
+import { findSchemaByPath, getConditionDependencies, isRequired, type Schema } from "dynz";
 import { useFormContext } from "react-hook-form";
 
 export function useIsRequired(schema: Schema, path: string) {
-  const { watch } = useFormContext();
+  const { watch, getValues } = useFormContext();
 
   // No need to watch for value changes if the schema has no conditions on the mutable property
   const innerSchema = findSchemaByPath(path, schema);
@@ -11,7 +11,8 @@ export function useIsRequired(schema: Schema, path: string) {
     return innerSchema.required === undefined ? true : innerSchema.required;
   }
 
-  const values = watch();
+  // Watch is just here to trigger a rerender when a value gets updated
+  watch(getConditionDependencies(innerSchema.required, path).map((field) => field.slice(2)));
 
-  return isRequired(schema, path, values);
+  return isRequired(schema, path, getValues());
 }

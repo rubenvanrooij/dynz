@@ -1,7 +1,7 @@
 "use client";
 
 import type { SchemaValues } from "dynz";
-import { boolean, conditional, email, eq, equals, minLength, object, options, or, string } from "dynz";
+import { boolean, conditional, email, eq, matches, minLength, object, options, or, regex, string } from "dynz";
 import { PopcornIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { DynzBoolean, DynzForm, DynzIncludedWrapper, DynzSelect, DynzTextInput } from "@/components/dynz/dynz-form";
@@ -17,8 +17,22 @@ const schema = object({
     name: string({
       rules: [stringRequiredRule, minLength(3)],
     }),
+    company: string({
+      rules: [stringRequiredRule],
+    }),
     email: string({
-      rules: [stringRequiredRule, email()],
+      rules: [
+        stringRequiredRule,
+        email(),
+        conditional({
+          when: matches("company", "\\bapple\\b", "i"),
+          then: regex("@apple.com$", "useCompanyMail"),
+        }),
+        conditional({
+          when: matches("company", "\\microsoft\\b", "i"),
+          then: regex("@microsoft.com$", "useCompanyMail"),
+        }),
+      ],
     }),
     attendanceType: options({
       default: "Virtual",
@@ -29,13 +43,7 @@ const schema = object({
       included: eq("attendanceType", "In-Person"),
     }),
     workshopPreferences: options({
-      options: ["AI & Machine Learning", "Web Development", "Data Science", "Cybersecurity", "PHP"],
-      rules: [
-        conditional({
-          when: eq("name", "Niek"),
-          then: equals("PHP", "nieks_php_rule"),
-        }),
-      ],
+      options: ["AI & Machine Learning", "Web Development", "Data Science", "Cybersecurity"],
       included: or(eq("attendanceType", "In-Person"), eq("attendanceType", "Hybrid")),
     }),
     dietry: object({
@@ -65,6 +73,12 @@ const schema = object({
   },
 });
 
+const DEFAULT_VALUES = {
+  name: "",
+  email: "",
+  company: "",
+};
+
 export default function Home() {
   const t = useTranslations();
 
@@ -72,6 +86,7 @@ export default function Home() {
     alert(JSON.stringify(data));
   };
 
+  console.log("huh?..");
   return (
     <Card className="flex flex-col gap-4 max-w-100">
       <CardHeader>
@@ -81,28 +96,26 @@ export default function Home() {
         <DynzForm
           name="registrationForm"
           schema={schema}
-          defaultValues={{
-            name: "",
-            email: "",
-          }}
-          onSubmit={onSubmit}
+          defaultValues={DEFAULT_VALUES}
+          // onSubmit={onSubmit}
         >
           <div className="flex flex-col gap-4">
             <DynzTextInput name="name" />
+            <DynzTextInput name="company" />
             <DynzTextInput name="email" />
             <DynzSelect name="attendanceType" />
             <DynzBoolean name="accomidationRequired" />
-            <DynzSelect name="workshopPreferences" />
+            {/* <DynzSelect name="workshopPreferences" />
             <DynzBoolean name="dietry.restrictions" />
-            <DynzTextInput name="dietry.details" />
-            <DynzIncludedWrapper name="dietry.details">
+            <DynzTextInput name="dietry.details" /> */}
+            {/* <DynzIncludedWrapper name="dietry.details">
               <Alert>
                 <PopcornIcon />
                 <AlertTitle>We will do our best to provide food from which you won&apos;t die</AlertTitle>
               </Alert>
-            </DynzIncludedWrapper>
-            <DynzSelect name="professionalLevel" />
-            <DynzTextInput name="studentInstitution" />
+            </DynzIncludedWrapper> */}
+            {/* <DynzSelect name="professionalLevel" />
+            <DynzTextInput name="studentInstitution" /> */}
             <Button type="submit">Submit</Button>
           </div>
         </DynzForm>

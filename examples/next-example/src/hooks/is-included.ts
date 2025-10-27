@@ -1,8 +1,8 @@
-import { findSchemaByPath, isIncluded, type Schema } from "dynz";
+import { findSchemaByPath, getConditionDependencies, isIncluded, type Schema } from "dynz";
 import { useFormContext } from "react-hook-form";
 
 export function useIsIncluded(schema: Schema, path: string) {
-  const { watch } = useFormContext();
+  const { watch, getValues } = useFormContext();
 
   // No need to watch for value changes if the schema has no conditions on the included property
   const innerSchema = findSchemaByPath(path, schema);
@@ -11,9 +11,8 @@ export function useIsIncluded(schema: Schema, path: string) {
     return innerSchema.included;
   }
 
-  const values = watch();
+  // Watch is just here to trigger a rerender when a value gets updated
+  watch(getConditionDependencies(innerSchema.included, path).map((field) => field.slice(2)));
 
-  console.log("isIncluded: ", path, isIncluded(schema, path, values));
-
-  return isIncluded(schema, path, values);
+  return isIncluded(schema, path, getValues());
 }

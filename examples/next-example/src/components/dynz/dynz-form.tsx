@@ -2,6 +2,7 @@ import { dynzResolver } from "@dynz/react-hook-form-resolver";
 import {
   type ErrorMessage,
   findSchemaByPath,
+  getRulesDependenciesMap,
   type ObjectSchema,
   type OptionsSchema,
   type Schema,
@@ -9,8 +10,9 @@ import {
   type SchemaValues,
 } from "dynz";
 import { useTranslations } from "next-intl";
-import { createContext, type ReactNode, useContext } from "react";
-import { type DefaultValues, FormProvider, useForm, useFormContext } from "react-hook-form";
+import { createContext, type ReactNode, useContext, useEffect } from "react";
+import { type DefaultValues, FormProvider, useController, useForm, useFormContext } from "react-hook-form";
+import { ru } from "zod/v4/locales";
 import { useIsIncluded } from "@/hooks/is-included";
 import { useIsMutable } from "@/hooks/is-mutable";
 import { useIsRequired } from "@/hooks/is-required";
@@ -40,6 +42,25 @@ export type FormProps<T extends ObjectSchema<never>, A extends SchemaValues<T>> 
   onSubmit?: (values: SchemaValues<T>) => void;
 };
 
+function DependencyTrigger({ path, dependencies }: { path: string; dependencies: string[] }) {
+  const {
+    watch,
+    trigger,
+    formState: { isSubmitted },
+  } = useFormContext();
+
+  const value = watch(dependencies);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: need to watch value change
+  useEffect(() => {
+    if (isSubmitted) {
+      trigger(path);
+    }
+  }, [value, trigger, path, isSubmitted]);
+
+  return null;
+}
+
 export function DynzForm<T extends ObjectSchema<never>, A extends SchemaValues<T>>({
   schema,
   children,
@@ -48,22 +69,7 @@ export function DynzForm<T extends ObjectSchema<never>, A extends SchemaValues<T
   name,
 }: FormProps<T, A>) {
   const t = useTranslations();
-
-  // const resolver = dynzResolver(
-  //   schema,
-  //   undefined,
-  //   {
-  //     stripNotIncludedValues: true,
-  //   },
-  //   {
-  //     messageTransformer: (error: ErrorMessage) => {
-  //       const customErrorMessagePath = `${name}.${error.path.slice(2)}.errors.${error.customCode}`;
-  //       return t.has(customErrorMessagePath)
-  //         ? t(customErrorMessagePath, error as unknown as Record<string, string | number | Date>)
-  //         : t(`errors.${error.customCode}`, error as unknown as Record<string, string | number | Date>);
-  //     },
-  //   }
-  // );
+  const deps = getRulesDependenciesMap(schema);
 
   const methods = useForm({
     resolver: dynzResolver(
@@ -75,6 +81,7 @@ export function DynzForm<T extends ObjectSchema<never>, A extends SchemaValues<T
       {
         messageTransformer: (error: ErrorMessage) => {
           const customErrorMessagePath = `${name}.${error.path.slice(2)}.errors.${error.customCode}`;
+
           return t.has(customErrorMessagePath)
             ? t(customErrorMessagePath, error as unknown as Record<string, string | number | Date>)
             : t(`errors.${error.customCode}`, error as unknown as Record<string, string | number | Date>);
@@ -85,13 +92,16 @@ export function DynzForm<T extends ObjectSchema<never>, A extends SchemaValues<T
   });
 
   return (
-    <SchemaContext.Provider value={{ schema, i18nPath: name }}>
-      <FormProvider {...methods}>
+    <FormProvider {...methods}>
+      <SchemaContext.Provider value={{ schema, i18nPath: name }}>
+        {Object.entries(deps).map(([path, dependencies]) => (
+          <DependencyTrigger key={path} path={path.slice(2)} dependencies={dependencies.map((d) => d.slice(2))} />
+        ))}
         <form id={name} onSubmit={methods.handleSubmit((values) => onSubmit?.(values))}>
           {children}
         </form>
-      </FormProvider>
-    </SchemaContext.Provider>
+      </SchemaContext.Provider>
+    </FormProvider>
   );
 }
 
@@ -100,7 +110,7 @@ export function DynzIncludedWrapper({ name, children }: IncludedWrapper) {
   const isIncluded = useIsIncluded(schema, `$.${name}`);
 
   if (isIncluded === false) {
-    return;
+    return null;
   }
 
   return children;
@@ -126,6 +136,7 @@ export function DynzFormLabel({ name }: DynzFormLabelProps) {
 export function DynzTextInput({ name, description }: BaseInputProps) {
   const { schema, i18nPath } = useContext(SchemaContext);
   const { control } = useFormContext();
+
   const t = useTranslations();
 
   const isMutable = useIsMutable(schema, `$.${name}`);
