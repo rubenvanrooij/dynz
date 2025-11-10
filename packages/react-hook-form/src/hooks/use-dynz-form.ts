@@ -1,4 +1,10 @@
-import { getRulesDependenciesMap, type ObjectSchema, type SchemaValues, type ValidateOptions } from "dynz";
+import {
+  getRulesDependenciesMap,
+  type ObjectSchema,
+  type RulesDependencyMap,
+  type SchemaValues,
+  type ValidateOptions,
+} from "dynz";
 import { type FieldValues, type UseFormProps, type UseFormReturn, useForm } from "react-hook-form";
 import { dynzResolver, type MessageTransformerFunc } from "../resolver";
 
@@ -16,10 +22,7 @@ export type UseDynzFormProps<TSchema extends ObjectSchema<never>, TFieldValues e
     TFieldValues,
     {
       schema: TSchema;
-      dependencies: {
-        dependencies: Record<string, Set<string>>;
-        reverse: Record<string, Set<string>>;
-      };
+      dependencies: RulesDependencyMap;
     },
     SchemaValues<TSchema>
   >,
@@ -32,10 +35,7 @@ export type UseDynzFormReturn<TSchema extends ObjectSchema<never>, TFieldValues 
   TFieldValues,
   {
     schema: TSchema;
-    dependencies: {
-      dependencies: Record<string, Set<string>>;
-      reverse: Record<string, Set<string>>;
-    };
+    dependencies: RulesDependencyMap;
   },
   SchemaValues<TSchema>
 >;

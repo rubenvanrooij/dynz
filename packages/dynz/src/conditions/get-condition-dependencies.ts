@@ -1,7 +1,7 @@
 import { isReference } from "../reference";
 import { type Rule, type Schema, SchemaType } from "../types";
 import { ensureAbsolutePath } from "../utils";
-import { type Condition, ConditionType } from "./types";
+import { type Condition, ConditionType, type RulesDependencyMap } from "./types";
 
 /**
  * Returns all the dependencies for a given condition
@@ -58,17 +58,8 @@ export function getRulesDependencies(schema: Schema, path: string): string[] {
  * @param path
  * @returns
  */
-export function getRulesDependenciesMap(
-  schema: Schema,
-  path: string = "$"
-): {
-  dependencies: Record<string, Set<string>>;
-  reverse: Record<string, Set<string>>;
-} {
-  const result: {
-    dependencies: Record<string, Set<string>>;
-    reverse: Record<string, Set<string>>;
-  } = {
+export function getRulesDependenciesMap(schema: Schema, path: string = "$"): RulesDependencyMap {
+  const result: RulesDependencyMap = {
     dependencies: {},
     reverse: {},
   };

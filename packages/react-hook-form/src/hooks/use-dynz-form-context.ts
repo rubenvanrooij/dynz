@@ -1,12 +1,8 @@
-import type { ObjectSchema, SchemaValues } from "dynz";
+import type { ObjectSchema, RulesDependencyMap, SchemaValues } from "dynz";
 import { type FieldValues, useFormContext } from "react-hook-form";
 
 export function useDynzFormContext<T extends ObjectSchema<never>, TFieldValues extends FieldValues>() {
-  const context = useFormContext<
-    TFieldValues,
-    { schema: T; dependencies: { dependencies: Record<string, Set<string>>; reverse: Record<string, Set<string>> } },
-    SchemaValues<T>
-  >();
+  const context = useFormContext<TFieldValues, { schema: T; dependencies: RulesDependencyMap }, SchemaValues<T>>();
 
   const schema = context.control._options.context?.schema;
   const dependencies = context.control._options.context?.dependencies;
@@ -20,9 +16,9 @@ export function useDynzFormContext<T extends ObjectSchema<never>, TFieldValues e
   }
 
   const getDependencies = (name: string) => {
-    const deps =  dependencies.reverse[`$.${name}`]
+    const deps = dependencies.reverse[`$.${name}`];
     return deps ? [...deps].map((v) => v.slice(2)) : undefined;
-  }
+  };
 
   return {
     ...context,
