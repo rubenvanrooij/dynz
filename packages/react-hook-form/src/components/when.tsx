@@ -9,5 +9,5 @@ export type WhenProps = {
 
 export function When({ cond, children }: WhenProps) {
   const result = useCondition(cond);
-  return result ? children : null
+  return result ? children : null;
 }

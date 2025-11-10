@@ -79,9 +79,5 @@ export const DynzFormProvider = <
   children,
   ...props
 }: DynzFormProviderProps<TSchema, TFieldValues>) => {
-  return (
-    <form.FormProvider {...props}>
-      {children}
-    </form.FormProvider>
-  );
+  return <form.FormProvider {...props}>{children}</form.FormProvider>;
 };

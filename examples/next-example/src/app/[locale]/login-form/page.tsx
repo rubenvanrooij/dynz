@@ -1,12 +1,10 @@
 "use client";
 
-import { DynzFormProvider, useDynzForm } from "@dynz/react-hook-form";
 import { equals, object, ref, string } from "dynz";
 import { DynzForm } from "@/components/dynz/form";
 import { DynzInput } from "@/components/dynz/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 
 const schema = object({
   fields: {

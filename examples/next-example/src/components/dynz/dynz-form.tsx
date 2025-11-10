@@ -1,14 +1,5 @@
-import {
-  IsIncluded,
-  useDynzFormContext,
-  useIsMutable,
-  useIsRequired,
-} from "@dynz/react-hook-form";
-import {
-  findSchemaByPath,
-  type OptionsSchema,
-  SchemaType,
-} from "dynz";
+import { IsIncluded, useDynzFormContext, useIsMutable, useIsRequired } from "@dynz/react-hook-form";
+import { findSchemaByPath, type OptionsSchema, SchemaType } from "dynz";
 import { useTranslations } from "next-intl";
 import { FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "../ui/form";
 import { Input } from "../ui/input";
@@ -19,7 +10,6 @@ export type BaseInputProps = {
   description?: string;
   i18nPath: string;
 };
-
 
 type DynzFormLabelProps = {
   name: string;
@@ -63,7 +53,7 @@ export function DynzTextInput({ name, description, i18nPath }: BaseInputProps) {
   );
 }
 
-export function DynzSelect({ name, description, i18nPath }: BaseInputProps) {
+export function DynzSelect({ name, i18nPath }: BaseInputProps) {
   const { schema, control } = useDynzFormContext();
 
   const innerSchema = findSchemaByPath<OptionsSchema>(`$.${name}`, schema, SchemaType.OPTIONS);
@@ -92,7 +82,9 @@ export function DynzSelect({ name, description, i18nPath }: BaseInputProps) {
                 ))}
               </SelectContent>
             </Select>
-            {t.has(`${i18nPath}.${name}.description`) && <FormDescription>{`${i18nPath}.${name}.placeholder`}</FormDescription>}
+            {t.has(`${i18nPath}.${name}.description`) && (
+              <FormDescription>{`${i18nPath}.${name}.placeholder`}</FormDescription>
+            )}
             <FormMessage />
           </FormItem>
         )}

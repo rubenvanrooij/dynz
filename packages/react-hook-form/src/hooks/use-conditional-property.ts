@@ -1,4 +1,4 @@
-import { findSchemaByPath, getConditionDependencies, getNested, isMutable, resolveProperty } from "dynz";
+import { findSchemaByPath, getConditionDependencies, getNested, resolveProperty } from "dynz";
 import { useWatch } from "react-hook-form";
 import { useDynzFormContext } from "./use-dynz-form-context";
 

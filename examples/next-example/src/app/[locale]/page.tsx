@@ -95,12 +95,7 @@ export default function Home() {
         <CardTitle>{t("HomePage.title")}</CardTitle>
       </CardHeader>
       <CardContent className="gap-2">
-        <DynzForm
-          name="registrationForm"
-          schema={schema}
-          defaultValues={DEFAULT_VALUES}
-          onSubmit={onSubmit}
-        >
+        <DynzForm name="registrationForm" schema={schema} defaultValues={DEFAULT_VALUES} onSubmit={onSubmit}>
           <div className="flex flex-col gap-4">
             <DynzTextInput i18nPath="registrationForm" name="name" />
             <DynzTextInput i18nPath="registrationForm" name="company" />
