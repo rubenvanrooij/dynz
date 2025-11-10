@@ -23,12 +23,10 @@ export function DynzForm<T extends ObjectSchema<never>, A extends SchemaValues<T
 }: FormProps<T, A>) {
   const t = useTranslations();
 
-  console.log("Rendering DynzForm for", getRulesDependenciesMap(schema));
-
   const methods = useDynzForm({
     schema,
     // mode: 'all',
-    reValidateMode: "onChange",
+    reValidateMode: "onBlur",
     defaultValues,
     schemaOptions: {
       stripNotIncludedValues: true,

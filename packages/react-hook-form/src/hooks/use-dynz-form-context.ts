@@ -19,9 +19,14 @@ export function useDynzFormContext<T extends ObjectSchema<never>, TFieldValues e
     throw new Error("No dependencies map found. Are you sure you setup your form with dynz?");
   }
 
+  const getDependencies = (name: string) => {
+    const deps =  dependencies.reverse[`$.${name}`]
+    return deps ? [...deps].map((v) => v.slice(2)) : undefined;
+  }
+
   return {
     ...context,
     schema: schema,
-    dependencies: dependencies,
+    getDependencies: getDependencies,
   };
 }

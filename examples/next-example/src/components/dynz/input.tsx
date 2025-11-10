@@ -10,8 +10,7 @@ export type DynzInputProps = {
 } & Pick<React.ComponentProps<"input">, "type">;
 
 export function DynzInput({ name, i18nPath, ...props }: DynzInputProps) {
-  const { control, dependencies } = useDynzFormContext();
-  const deps = dependencies.reverse[`$.${name}`];
+  const { control, getDependencies, } = useDynzFormContext();
   const t = useTranslations();
   const isMutable = useIsMutable(name);
 
@@ -21,7 +20,7 @@ export function DynzInput({ name, i18nPath, ...props }: DynzInputProps) {
         control={control}
         name={name}
         rules={{
-          deps: deps ? [...deps].map((v) => v.slice(2)) : undefined,
+          deps: getDependencies(name)
         }}
         render={({ field }) => (
           <FormItem>
