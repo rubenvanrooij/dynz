@@ -9,6 +9,7 @@ import { type FieldValues, type UseFormProps, type UseFormReturn, useForm } from
 import { dynzResolver, type MessageTransformerFunc } from "../resolver";
 
 export type UseDynzFormProps<TSchema extends ObjectSchema<never>, TFieldValues extends FieldValues = FieldValues> = {
+  name?: string;
   schema: TSchema;
   currentValues?: SchemaValues<TSchema>;
   schemaOptions?: ValidateOptions;
@@ -21,6 +22,7 @@ export type UseDynzFormProps<TSchema extends ObjectSchema<never>, TFieldValues e
   UseFormProps<
     TFieldValues,
     {
+      name?: string | undefined;
       schema: TSchema;
       dependencies: RulesDependencyMap;
     },
@@ -34,6 +36,7 @@ export type UseDynzFormReturn<TSchema extends ObjectSchema<never>, TFieldValues 
 } & UseFormReturn<
   TFieldValues,
   {
+    name: string | undefined;
     schema: TSchema;
     dependencies: RulesDependencyMap;
   },
@@ -42,6 +45,7 @@ export type UseDynzFormReturn<TSchema extends ObjectSchema<never>, TFieldValues 
 
 export function useDynzForm<TSchema extends ObjectSchema<never>, TFieldValues extends FieldValues = FieldValues>({
   schema,
+  name,
   currentValues,
   schemaOptions,
   resolverOptions,
@@ -52,6 +56,7 @@ export function useDynzForm<TSchema extends ObjectSchema<never>, TFieldValues ex
     resolver: dynzResolver(schema, currentValues, schemaOptions, resolverOptions),
     context: {
       schema,
+      name,
       dependencies: getRulesDependenciesMap(schema, "$"),
     },
   });

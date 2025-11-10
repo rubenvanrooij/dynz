@@ -2,7 +2,11 @@ import type { ObjectSchema, RulesDependencyMap, SchemaValues } from "dynz";
 import { type FieldValues, useFormContext } from "react-hook-form";
 
 export function useDynzFormContext<T extends ObjectSchema<never>, TFieldValues extends FieldValues>() {
-  const context = useFormContext<TFieldValues, { schema: T; dependencies: RulesDependencyMap }, SchemaValues<T>>();
+  const context = useFormContext<
+    TFieldValues,
+    { schema: T; dependencies: RulesDependencyMap; name?: string | undefined },
+    SchemaValues<T>
+  >();
 
   const schema = context.control._options.context?.schema;
   const dependencies = context.control._options.context?.dependencies;
@@ -23,6 +27,7 @@ export function useDynzFormContext<T extends ObjectSchema<never>, TFieldValues e
   return {
     ...context,
     schema: schema,
+    name: context.control._options.context?.name,
     getDependencies: getDependencies,
   };
 }
