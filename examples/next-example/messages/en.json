@@ -3,7 +3,16 @@
     "title": "Hello world!",
     "about": "Go to the about page"
   },
-
+  "loginForm": {
+    "password": {
+      "label": "Password",
+      "placeholder": "Password"
+    },
+     "confirmPassword": {
+      "label": "Confirm Password",
+      "placeholder": "Confirm Password"
+    }
+  },
   "registrationForm": {
     "name": {
       "label": "Name",
@@ -64,13 +73,13 @@
     "useCompanyMail": "Use your company mail",
     "required": "This field is required",
     "email": "E-mail address invalid",
+    "equals": "Not the same",
     "min": "This field must at least have {min} characters"
   },
   "form": {
     "errorMessages": {
         "string": {
             "required": "This field is required",
-
             "min": "This field should have at least {min} characters",
             "max": "This field can have maximum {max} characters"
         }  

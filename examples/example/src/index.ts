@@ -1,5 +1,4 @@
 import * as d from "dynz";
-import * as z from "zod";
 
 // const foo = object({
 //   fields: {
@@ -37,7 +36,13 @@ const s = d.object({
       rules: [d.after(d.ref("two"))],
     }),
     two: d.date({
-      rules: [d.after(d.ref("one"))],
+      rules: [
+        d.after(d.ref("one")),
+        d.conditional({
+          when: d.gt("one", 12),
+          then: d.after(d.ref("one")),
+        }),
+      ],
     }),
   },
 });

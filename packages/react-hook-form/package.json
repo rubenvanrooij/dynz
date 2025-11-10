@@ -1,5 +1,5 @@
 {
-  "name": "@dynz/react-hook-form-resolver",
+  "name": "@dynz/react-hook-form",
   "version": "0.0.9",
   "private": false,
   "license": "MIT",
@@ -52,6 +52,8 @@
     "react-hook-form": "^7.0.0"
   },
   "devDependencies": {
+    "@types/react": "^19.2.2",
+    "react": "^19.2.0",
     "tsdown": "^0.14.2"
   }
 }
