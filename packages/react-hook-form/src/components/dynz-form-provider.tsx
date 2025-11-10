@@ -1,6 +1,6 @@
 import type { ObjectSchema } from "dynz";
 import type { ReactNode } from "react";
-import * as form from "react-hook-form";
+import { type FieldValues, FormProvider } from "react-hook-form";
 import type { UseDynzFormReturn } from "../hooks/use-dynz-form";
 
 /**
@@ -11,7 +11,7 @@ import type { UseDynzFormReturn } from "../hooks/use-dynz-form";
  */
 export type DynzFormProviderProps<
   TSchema extends ObjectSchema<never>,
-  TFieldValues extends form.FieldValues = form.FieldValues,
+  TFieldValues extends FieldValues = FieldValues,
 > = {
   /** The form content to be wrapped by the provider */
   children: ReactNode;
@@ -72,12 +72,9 @@ export type DynzFormProviderProps<
  * @see {@link useDynzForm} for creating the form instance
  * @see {@link DependencyTrigger} for the underlying dependency validation component
  */
-export const DynzFormProvider = <
-  TSchema extends ObjectSchema<never>,
-  TFieldValues extends form.FieldValues = form.FieldValues,
->({
+export const DynzFormProvider = <TSchema extends ObjectSchema<never>, TFieldValues extends FieldValues = FieldValues>({
   children,
   ...props
 }: DynzFormProviderProps<TSchema, TFieldValues>) => {
-  return <form.FormProvider {...props}>{children}</form.FormProvider>;
+  return <FormProvider {...props}>{children}</FormProvider>;
 };

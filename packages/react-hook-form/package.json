@@ -25,35 +25,39 @@
   },
   "author": "Ruben van Rooij <ruben.van.rooij@gmail.com>",
   "description": "React hook form integration for dynz.",
-  "main": "./dist/index.js",
+  "main": "./dist/react-hook-form.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "import": {
         "types": "./dist/index.d.ts",
-        "default": "./dist/index.js"
+        "default": "./dist/react-hook-form.js"
       },
       "require": {
-        "types": "./dist/index.d.cts",
-        "default": "./dist/index.cjs"
+        "types": "./dist/index.d.ts",
+        "default": "./dist/react-hook-form.cjs"
       }
     }
   },
   "scripts": {
-    "build": "tsdown",
-    "dev": "tsdown --watch",
+    "build": "vite build",
+    "dev": "vite build --watch",
     "check-types": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest run --watch"
   },
   "peerDependencies": {
-    "dynz": "^0.0.8",
     "@hookform/resolvers": "^5.0.0",
+    "dynz": "^0.0.8",
+    "react": "^19.2.0",
     "react-hook-form": "^7.0.0"
   },
   "devDependencies": {
     "@types/react": "^19.2.2",
-    "react": "^19.2.0",
-    "tsdown": "^0.14.2"
+    "vite": "^7.2.2",
+    "vite-plugin-dts": "^4.5.4"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "^5.1.0"
   }
 }
