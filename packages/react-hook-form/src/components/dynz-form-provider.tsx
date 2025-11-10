@@ -72,7 +72,10 @@ export type DynzFormProviderProps<
  * @see {@link useDynzForm} for creating the form instance
  * @see {@link DependencyTrigger} for the underlying dependency validation component
  */
-export const DynzFormProvider = <TSchema extends ObjectSchema<never>, TFieldValues extends FieldValues = FieldValues>({
+export const DynzFormProvider = <
+  TSchema extends ObjectSchema<never>,
+  TFieldValues extends FieldValues = FieldValues,
+>({
   children,
   ...props
 }: DynzFormProviderProps<TSchema, TFieldValues>) => {

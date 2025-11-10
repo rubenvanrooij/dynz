@@ -1,6 +1,6 @@
 {
   "name": "@dynz/react-hook-form",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "private": false,
   "license": "MIT",
   "type": "module",
@@ -47,8 +47,8 @@
     "test:watch": "vitest run --watch"
   },
   "peerDependencies": {
+    "dynz": "^0.0.9",
     "@hookform/resolvers": "^5.0.0",
-    "dynz": "^0.0.8",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
     "react-hook-form": "^7.0.0"
@@ -58,9 +58,7 @@
     "react": "^19.2.0",
     "react-hook-form": "^7.63.0",
     "vite": "^7.2.2",
-    "vite-plugin-dts": "^4.5.4"
-  },
-  "dependencies": {
+    "vite-plugin-dts": "^4.5.4",
     "@vitejs/plugin-react": "^5.1.0"
-  }
+  },
 }
