@@ -1,5 +1,13 @@
 # @dynz/react-hook-form-resolver
 
+## 0.0.10
+
+### Patch Changes
+
+- 494ea14: added extra react helpers for managing dependencies + utility components/hooks for easier integration
+- Updated dependencies [494ea14]
+  - dynz@0.0.9
+
 ## 0.0.9
 
 ### Patch Changes
