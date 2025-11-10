@@ -11,5 +11,5 @@ export default defineConfig({
       name: "DYNZ",
     },
   },
-  plugins: [dts({ rollupTypes: true })]
+  plugins: [dts({ rollupTypes: true })],
 });

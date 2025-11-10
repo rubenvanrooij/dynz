@@ -24,7 +24,10 @@ export default defineConfig({
       },
     },
   },
-  plugins: [react({
-    jsxRuntime: 'automatic'
-  }), dts({ rollupTypes: true })],
+  plugins: [
+    react({
+      jsxRuntime: "automatic",
+    }),
+    dts({ rollupTypes: true }),
+  ],
 });
