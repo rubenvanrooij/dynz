@@ -48,6 +48,15 @@ console.log(
   })
 );
 
+const schema = object({
+  fields: {
+    password: string(),
+    confirmPassword: string({
+     rules: [equals(ref('password'))]
+    })
+  }
+});
+
 // const UserRoles = {
 //   ADMIN: "admin",
 //   MAINTAINER: "maintainer",

@@ -1,3 +1,4 @@
+import { isReference } from "../reference";
 import { type Schema, SchemaType } from "../types";
 import { ensureAbsolutePath } from "../utils";
 import { type Condition, ConditionType } from "./types";
@@ -26,7 +27,14 @@ function getRulesDependencies(schema: Schema, path: string): string[] {
     ? schema.rules.reduce<string[]>((acc, cur) => {
         if (cur.type === "conditional") {
           acc.push(...getConditionDependencies(cur.when, path));
+          return acc;
         }
+
+        if (cur.type === "equals" && isReference(cur.equals)) {
+          acc.push(ensureAbsolutePath(cur.equals.path, path));
+          return acc;
+        }
+
         return acc;
       }, [])
     : [];
