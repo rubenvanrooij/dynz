@@ -26,9 +26,7 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/environment
       - name: Publish dynz library
-        run: pnpx pkg-pr-new publish --comment=update --pnpm './packages/dynz'
-      - name: Publish @dynz/react-hook-form library
-        run: pnpx pkg-pr-new publish --comment=update --pnpm './packages/react-hook-form'
+        run: pnpx pkg-pr-new publish --comment=update --pnpm './packages/dynz' './packages/react-hook-form'
 
   format_check:
     name: Run format in library
