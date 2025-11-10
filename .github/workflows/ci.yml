@@ -17,7 +17,7 @@ jobs:
         uses: ./.github/actions/environment
       
   library_preview:
-    name: Publish dynz library via pkg.pr.new
+    name: Publish library via pkg.pr.new
     runs-on: ubuntu-latest
     needs: setup_environment
     steps:
