@@ -1,5 +1,5 @@
 import { isReference } from "../reference";
-import { type Schema, SchemaType } from "../types";
+import { type Rule, type Schema, SchemaType } from "../types";
 import { ensureAbsolutePath } from "../utils";
 import { type Condition, ConditionType } from "./types";
 
@@ -22,20 +22,28 @@ export function getConditionDependencies(condition: Condition, path: string): st
   }
 }
 
-function getRulesDependencies(schema: Schema, path: string): string[] {
+function getRuleDependencies(rule: Rule, path: string): string[] {
+  if (rule.type === "conditional") {
+    return [...getConditionDependencies(rule.when, path), ...getRuleDependencies(rule.then, path)];
+  }
+
+  // TODO: Add extra unit tests for custom rules with references in params
+  if (rule.type === "custom") {
+    return Object.values(rule.params)
+      .filter((v) => isReference(v))
+      .map((v) => ensureAbsolutePath(v.path, path));
+  }
+
+  // TODO: Add extra unit tests for other rules with references in params
+  return Object.values(rule)
+    .filter((v) => isReference(v))
+    .map((v) => ensureAbsolutePath(v.path, path));
+}
+
+export function getRulesDependencies(schema: Schema, path: string): string[] {
   return schema.rules
     ? schema.rules.reduce<string[]>((acc, cur) => {
-        if (cur.type === "conditional") {
-          acc.push(...getConditionDependencies(cur.when, path));
-          return acc;
-        }
-
-        // TODO: Add all different rule types
-        if (cur.type === "equals" && isReference(cur.equals)) {
-          acc.push(ensureAbsolutePath(cur.equals.path, path));
-          return acc;
-        }
-
+        acc.push(...getRuleDependencies(cur, path));
         return acc;
       }, [])
     : [];
@@ -47,11 +55,30 @@ function getRulesDependencies(schema: Schema, path: string): string[] {
  * @param path
  * @returns
  */
-export function getRulesDependenciesMap(schema: Schema, path: string = "$"): Record<string, string[]> {
-  const result: Record<string, string[]> = {};
+export function getRulesDependenciesMap(
+  schema: Schema,
+  path: string = "$"
+): {
+  dependencies: Record<string, Set<string>>;
+  reverse: Record<string, Set<string>>;
+} {
+  const result: {
+    dependencies: Record<string, Set<string>>;
+    reverse: Record<string, Set<string>>;
+  } = {
+    dependencies: {},
+    reverse: {},
+  };
   const addDependencies = (path: string, deps: string[]) => {
     if (deps.length > 0) {
-      result[path] = deps;
+      result.dependencies[path] = new Set(deps);
+    }
+
+    for (const dep of deps) {
+      if (!result.reverse[dep]) {
+        result.reverse[dep] = new Set();
+      }
+      result.reverse[dep].add(path);
     }
   };
 

@@ -1,4 +1,4 @@
-import type { ObjectSchema, SchemaValues, ValidateOptions } from "dynz";
+import { getRulesDependenciesMap, type ObjectSchema, type SchemaValues, type ValidateOptions } from "dynz";
 import { type FieldValues, type UseFormProps, type UseFormReturn, useForm } from "react-hook-form";
 import { dynzResolver, type MessageTransformerFunc } from "../resolver";
 
@@ -11,11 +11,34 @@ export type UseDynzFormProps<TSchema extends ObjectSchema<never>, TFieldValues e
     mode?: "async" | "sync";
     raw?: boolean;
   };
-} & Omit<UseFormProps<TFieldValues, { schema: TSchema }, SchemaValues<TSchema>>, "resolver">;
+} & Omit<
+  UseFormProps<
+    TFieldValues,
+    {
+      schema: TSchema;
+      dependencies: {
+        dependencies: Record<string, Set<string>>;
+        reverse: Record<string, Set<string>>;
+      };
+    },
+    SchemaValues<TSchema>
+  >,
+  "resolver"
+>;
 
 export type UseDynzFormReturn<TSchema extends ObjectSchema<never>, TFieldValues extends FieldValues = FieldValues> = {
   schema: TSchema;
-} & UseFormReturn<TFieldValues, { schema: TSchema }, SchemaValues<TSchema>>;
+} & UseFormReturn<
+  TFieldValues,
+  {
+    schema: TSchema;
+    dependencies: {
+      dependencies: Record<string, Set<string>>;
+      reverse: Record<string, Set<string>>;
+    };
+  },
+  SchemaValues<TSchema>
+>;
 
 export function useDynzForm<TSchema extends ObjectSchema<never>, TFieldValues extends FieldValues = FieldValues>({
   schema,
@@ -29,6 +52,7 @@ export function useDynzForm<TSchema extends ObjectSchema<never>, TFieldValues ex
     resolver: dynzResolver(schema, currentValues, schemaOptions, resolverOptions),
     context: {
       schema,
+      dependencies: getRulesDependenciesMap(schema, "$"),
     },
   });
 

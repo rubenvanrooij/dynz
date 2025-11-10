@@ -16,7 +16,7 @@ import type {
 } from "../schemas";
 import type { EnumSchema } from "../schemas/enum";
 import type { BaseRule } from "./rules";
-import type { DateString, Prettify } from "./utils";
+import type { DateString, Prettify, Unpacked } from "./utils";
 
 export const SchemaType = {
   STRING: "string",
@@ -59,6 +59,11 @@ export type Schema =
   | FileSchema
   | DateSchema
   | EnumSchema;
+
+/**
+ * All possible rules that can be applied to a schema
+ */
+export type Rule = Unpacked<Exclude<Schema["rules"], undefined>>;
 
 export type IsIncluded<T extends Schema> = T extends { included: true }
   ? true

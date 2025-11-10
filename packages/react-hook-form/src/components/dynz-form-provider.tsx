@@ -1,8 +1,7 @@
-import { getRulesDependenciesMap, type ObjectSchema } from "dynz";
+import type { ObjectSchema } from "dynz";
 import type { ReactNode } from "react";
-import * as form  from "react-hook-form";
+import * as form from "react-hook-form";
 import type { UseDynzFormReturn } from "../hooks/use-dynz-form";
-import { DependencyTrigger } from "./dependency-trigger";
 
 /**
  * Props for DynzFormProvider component
@@ -73,23 +72,16 @@ export type DynzFormProviderProps<
  * @see {@link useDynzForm} for creating the form instance
  * @see {@link DependencyTrigger} for the underlying dependency validation component
  */
-export const DynzFormProvider = <TSchema extends ObjectSchema<never>, TFieldValues extends form.FieldValues = form.FieldValues,>(
-  { children, ...props}: DynzFormProviderProps<TSchema, TFieldValues>
-) => {
-
-  const deps = getRulesDependenciesMap(props.schema);
-
-  console.log('deps', deps)
-
-  return (<form.FormProvider {...props}>
-    {Object.entries(deps).map(([path, dependencies]) => (
-        <DependencyTrigger mode={props.control._options.mode} key={path} path={path.slice(2)} dependencies={dependencies.map((d) => d.slice(2))} />
-    ))}
-    <form onBlur={(e) => {
-      const nodeName = e.target?.attributes.getNamedItem('name')?.nodeValue
-      console.log('blur:',nodeName)
-    }}>
-    {children}
-    </form>
-  </form.FormProvider>);
-}
+export const DynzFormProvider = <
+  TSchema extends ObjectSchema<never>,
+  TFieldValues extends form.FieldValues = form.FieldValues,
+>({
+  children,
+  ...props
+}: DynzFormProviderProps<TSchema, TFieldValues>) => {
+  return (
+    <form.FormProvider {...props}>
+      {children}
+    </form.FormProvider>
+  );
+};
