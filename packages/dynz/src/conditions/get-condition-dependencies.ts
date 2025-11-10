@@ -30,6 +30,7 @@ function getRulesDependencies(schema: Schema, path: string): string[] {
           return acc;
         }
 
+        // TODO: Add all different rule types
         if (cur.type === "equals" && isReference(cur.equals)) {
           acc.push(ensureAbsolutePath(cur.equals.path, path));
           return acc;

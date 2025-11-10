@@ -88,6 +88,7 @@ export default function Home() {
     alert(JSON.stringify(data));
   };
 
+  console.log("huh?..");
   return (
     <Card className="flex flex-col gap-4 max-w-100">
       <CardHeader>

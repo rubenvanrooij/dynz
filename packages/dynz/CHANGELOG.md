@@ -1,5 +1,11 @@
 # dynz
 
+## 0.0.8
+
+### Patch Changes
+
+- 6b5db9c: added dependency map generation to use in form libraries for optimizing triggers / re-renders
+
 ## 0.0.7
 
 ### Patch Changes

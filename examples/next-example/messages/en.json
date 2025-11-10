@@ -80,8 +80,6 @@
     "errorMessages": {
         "string": {
             "required": "This field is required",
-
-
             "min": "This field should have at least {min} characters",
             "max": "This field can have maximum {max} characters"
         }  
