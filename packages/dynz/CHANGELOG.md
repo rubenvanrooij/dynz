@@ -1,5 +1,11 @@
 # dynz
 
+## 0.0.9
+
+### Patch Changes
+
+- 494ea14: added extra react helpers for managing dependencies + utility components/hooks for easier integration
+
 ## 0.0.8
 
 ### Patch Changes
