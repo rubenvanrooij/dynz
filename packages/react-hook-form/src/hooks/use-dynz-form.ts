@@ -33,10 +33,11 @@ export type UseDynzFormProps<TSchema extends ObjectSchema<never>, TFieldValues e
 
 export type UseDynzFormReturn<TSchema extends ObjectSchema<never>, TFieldValues extends FieldValues = FieldValues> = {
   schema: TSchema;
+  name?: string | undefined;
 } & UseFormReturn<
   TFieldValues,
   {
-    name: string | undefined;
+    name?: string | undefined;
     schema: TSchema;
     dependencies: RulesDependencyMap;
   },
@@ -63,6 +64,7 @@ export function useDynzForm<TSchema extends ObjectSchema<never>, TFieldValues ex
 
   return {
     ...methods,
+    name,
     schema,
   };
 }
