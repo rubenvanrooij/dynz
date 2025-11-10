@@ -27,14 +27,17 @@ function getRuleDependencies(rule: Rule, path: string): string[] {
     return [...getConditionDependencies(rule.when, path), ...getRuleDependencies(rule.then, path)];
   }
 
-  // TODO: Add extra unit tests for custom rules with references in params
   if (rule.type === "custom") {
     return Object.values(rule.params)
       .filter((v) => isReference(v))
       .map((v) => ensureAbsolutePath(v.path, path));
   }
 
-  // TODO: Add extra unit tests for other rules with references in params
+  if (rule.type === "one_of") {
+    return rule.values.filter((v) => isReference(v)).map((v) => ensureAbsolutePath(v.path, path));
+  }
+
+  // Handle other rules with references in their properties
   return Object.values(rule)
     .filter((v) => isReference(v))
     .map((v) => ensureAbsolutePath(v.path, path));
@@ -94,7 +97,17 @@ export function getRulesDependenciesMap(
     case SchemaType.OBJECT: {
       for (const [fieldKey, fieldSchema] of Object.entries(schema.fields)) {
         const childDependencies = getRulesDependenciesMap(fieldSchema, `${path}.${fieldKey}`);
-        Object.assign(result, childDependencies);
+        // Merge dependencies
+        Object.assign(result.dependencies, childDependencies.dependencies);
+        // Merge reverse dependencies
+        for (const [dep, dependents] of Object.entries(childDependencies.reverse)) {
+          if (!result.reverse[dep]) {
+            result.reverse[dep] = new Set();
+          }
+          for (const dependent of dependents) {
+            result.reverse[dep].add(dependent);
+          }
+        }
       }
       break;
     }
