@@ -1,5 +1,12 @@
 # @dynz/react-hook-form-resolver
 
+## 0.0.11
+
+### Patch Changes
+
+- 1852e28: fixed formatting issue
+- 54d0ceb: fixed transpiling issue
+
 ## 0.0.10
 
 ### Patch Changes
