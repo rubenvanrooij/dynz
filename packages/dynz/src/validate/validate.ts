@@ -119,7 +119,8 @@ export function _validate<T extends Schema>(
   /**
    * Validate required
    */
-  if (resolveProperty(schema, "required", path, true, context) && newValue === undefined) {
+  const isRequired = resolveProperty(schema, "required", path, true, context);
+  if (isRequired && newValue === undefined) {
     return {
       success: false,
       errors: [
@@ -133,6 +134,16 @@ export function _validate<T extends Schema>(
           message: `A required value is missing for schema: ${path}`,
         },
       ],
+    };
+  }
+
+  /**
+   * Early opt-out if not required and value is undefined; else we'll get validation errors later on
+   */
+  if (!isRequired && newValue === undefined) {
+    return {
+      success: true,
+      values: undefined,
     };
   }
 
