@@ -1,8 +1,9 @@
+import { isDate } from "date-fns";
 import { unpackRef } from "../reference";
 import type { ValueOrReference } from "../reference/reference";
 import { type ResolveContext, type Schema, SchemaType, type ValueType } from "../types";
 import { ensureAbsolutePath, getNested } from "../utils";
-import { isString, parseDateString, validateType } from "../validate/validate-type";
+import { isArray, isFile, isNumber, isString, parseDateString, validateType } from "../validate/validate-type";
 import {
   type Condition,
   ConditionType,
@@ -49,15 +50,36 @@ export function resolveCondition(condition: Condition, path: string, context: Re
   }
 }
 
+function getSizeCompareValue(value: ValueType): ValueType | number {
+  if (isNumber(value)) {
+    return value;
+  }
+
+  if (isString(value) || isArray(value)) {
+    return value.length;
+  }
+
+  if (isDate(value)) {
+    return value.getTime();
+  }
+
+  if (isFile(value)) {
+    return value.size;
+  }
+
+  return value;
+}
+
 const OPERATORS = {
   [ConditionType.EQUALS]: (a: ValueType, b: ValueType) => {
     return a === b;
   },
   [ConditionType.NOT_EQUALS]: (a: ValueType, b: ValueType) => a !== b,
-  [ConditionType.GREATHER_THAN]: (a: ValueType, b: ValueType) => a > b,
-  [ConditionType.GREATHER_THAN_OR_EQUAL]: (a: ValueType, b: ValueType) => a >= b,
-  [ConditionType.LOWER_THAN]: (a: ValueType, b: ValueType) => a < b,
-  [ConditionType.LOWER_THAN_OR_EQUAL]: (a: ValueType, b: ValueType) => a <= b,
+  [ConditionType.GREATHER_THAN]: (a: ValueType, b: ValueType) => getSizeCompareValue(a) > getSizeCompareValue(b),
+  [ConditionType.GREATHER_THAN_OR_EQUAL]: (a: ValueType, b: ValueType) =>
+    getSizeCompareValue(a) >= getSizeCompareValue(b),
+  [ConditionType.LOWER_THAN]: (a: ValueType, b: ValueType) => getSizeCompareValue(a) < getSizeCompareValue(b),
+  [ConditionType.LOWER_THAN_OR_EQUAL]: (a: ValueType, b: ValueType) => getSizeCompareValue(a) <= getSizeCompareValue(b),
 } as const;
 
 function validateWithOperator(
@@ -92,7 +114,7 @@ function validateWithOperator(
  * @returns
  */
 function getConditionOperands<T extends ValueType>(
-  condition: { path: string; value: ValueOrReference<T> | ValueOrReference<T>[] },
+  condition: { path: string; value: ValueOrReference<T> | ValueOrReference<T>[] | undefined },
   path: string,
   context: ResolveContext
 ): { left?: ValueType | undefined; right?: ValueType | undefined } {

@@ -28,13 +28,19 @@ export type OrCondition<T extends Condition[] = never> = {
   conditions: [T] extends [never] ? Condition[] : T;
 };
 
-export type EqualsCondition<T extends string = string, V extends ValueType | Reference = ValueType | Reference> = {
+export type EqualsCondition<
+  T extends string = string,
+  V extends ValueType | undefined | Reference = ValueType | undefined | Reference,
+> = {
   type: typeof ConditionType.EQUALS;
   path: T;
   value: V;
 };
 
-export type NotEqualsCondition<T extends string = string, V extends ValueType | Reference = ValueType | Reference> = {
+export type NotEqualsCondition<
+  T extends string = string,
+  V extends ValueType | undefined | Reference = ValueType | undefined | Reference,
+> = {
   type: typeof ConditionType.NOT_EQUALS;
   path: T;
   value: V;
