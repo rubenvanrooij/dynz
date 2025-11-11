@@ -1,8 +1,9 @@
+import { isDate } from "date-fns";
 import { unpackRef } from "../reference";
 import type { ValueOrReference } from "../reference/reference";
-import { type ResolveContext, type Schema, SchemaType, type ValueType } from "../types";
+import type { ResolveContext, ValueType } from "../types";
 import { ensureAbsolutePath, getNested } from "../utils";
-import { isString, parseDateString, validateType } from "../validate/validate-type";
+import { isArray, isFile, isNumber, isString, validateType } from "../validate/validate-type";
 import {
   type Condition,
   ConditionType,
@@ -49,15 +50,36 @@ export function resolveCondition(condition: Condition, path: string, context: Re
   }
 }
 
+function getSizeCompareValue(value: ValueType): ValueType | number {
+  if (isNumber(value)) {
+    return value;
+  }
+
+  if (isString(value) || isArray(value)) {
+    return value.length;
+  }
+
+  if (isDate(value)) {
+    return value.getTime();
+  }
+
+  if (isFile(value)) {
+    return value.size;
+  }
+
+  return value;
+}
+
 const OPERATORS = {
   [ConditionType.EQUALS]: (a: ValueType, b: ValueType) => {
     return a === b;
   },
   [ConditionType.NOT_EQUALS]: (a: ValueType, b: ValueType) => a !== b,
-  [ConditionType.GREATHER_THAN]: (a: ValueType, b: ValueType) => a > b,
-  [ConditionType.GREATHER_THAN_OR_EQUAL]: (a: ValueType, b: ValueType) => a >= b,
-  [ConditionType.LOWER_THAN]: (a: ValueType, b: ValueType) => a < b,
-  [ConditionType.LOWER_THAN_OR_EQUAL]: (a: ValueType, b: ValueType) => a <= b,
+  [ConditionType.GREATHER_THAN]: (a: ValueType, b: ValueType) => getSizeCompareValue(a) > getSizeCompareValue(b),
+  [ConditionType.GREATHER_THAN_OR_EQUAL]: (a: ValueType, b: ValueType) =>
+    getSizeCompareValue(a) >= getSizeCompareValue(b),
+  [ConditionType.LOWER_THAN]: (a: ValueType, b: ValueType) => getSizeCompareValue(a) < getSizeCompareValue(b),
+  [ConditionType.LOWER_THAN_OR_EQUAL]: (a: ValueType, b: ValueType) => getSizeCompareValue(a) <= getSizeCompareValue(b),
 } as const;
 
 function validateWithOperator(
@@ -92,13 +114,13 @@ function validateWithOperator(
  * @returns
  */
 function getConditionOperands<T extends ValueType>(
-  condition: { path: string; value: ValueOrReference<T> | ValueOrReference<T>[] },
+  condition: { path: string; value: ValueOrReference<T> | ValueOrReference<T>[] | undefined },
   path: string,
   context: ResolveContext
 ): { left?: ValueType | undefined; right?: ValueType | undefined } {
   const nested = getNested(ensureAbsolutePath(condition.path, path), context.schema, context.values.new);
 
-  const left = validateType(nested.schema, nested.value) ? toCompareType(nested.schema, nested.value) : undefined;
+  const left = validateType(nested.schema, nested.value) ? nested.value : undefined;
 
   if (Array.isArray(condition.value)) {
     return {
@@ -108,15 +130,10 @@ function getConditionOperands<T extends ValueType>(
         const unpacked = unpackRef(val as ValueType, path, context);
 
         if (unpacked.static) {
-          // TODO: Add dev check to ensure value is of type ValueType
-          return validateType(nested.schema, unpacked.value as ValueType)
-            ? toCompareType(nested.schema, unpacked.value as ValueType)
-            : undefined;
+          return unpacked.value as ValueType;
         }
 
-        return validateType(unpacked.schema, unpacked.value)
-          ? toCompareType(unpacked.schema, unpacked.value)
-          : undefined;
+        return unpacked.value as ValueType;
       }),
     };
   }
@@ -126,28 +143,12 @@ function getConditionOperands<T extends ValueType>(
   if (unpacked.static) {
     return {
       left: left,
-      // TODO: Add dev check to ensure value is of type ValueType
-      right: validateType(nested.schema, unpacked.value as ValueType)
-        ? toCompareType(nested.schema, unpacked.value as ValueType)
-        : undefined,
+      right: unpacked.value as ValueType,
     };
   }
 
   return {
     left: left,
-    right: validateType(unpacked.schema, unpacked.value) ? toCompareType(unpacked.schema, unpacked.value) : undefined,
+    right: unpacked.value as ValueType,
   };
-}
-
-/**
- * Converts a value to a comparable type based on the schema.
- * For date strings, converts to milliseconds for proper comparison.                                                                                                                                                                 
-│* For other types, returns the value unchanged.
- */
-function toCompareType<T extends Schema>(schema: T, value: ValueType): ValueType | number {
-  if (schema.type === SchemaType.DATE_STRING) {
-    return parseDateString(`${value}`, schema.format).getTime();
-  }
-
-  return value;
 }

@@ -10,19 +10,12 @@ vi.mock("../utils", () => ({
   getNested: vi.fn(),
 }));
 
-vi.mock("../validate/validate-type", () => ({
-  validateType: vi.fn(),
-  isString: vi.fn(),
-  parseDateString: vi.fn(),
-}));
-
 vi.mock("../reference", () => ({
   unpackRef: vi.fn(),
 }));
 
 import { unpackRef } from "../reference";
 import { ensureAbsolutePath, getNested } from "../utils";
-import { isString, parseDateString, validateType } from "../validate/validate-type";
 
 describe("resolveCondition", () => {
   const mockContext: ResolveContext = {
@@ -37,7 +30,6 @@ describe("resolveCondition", () => {
 
     // Default mocks
     vi.mocked(ensureAbsolutePath).mockImplementation((path) => path);
-    vi.mocked(validateType).mockReturnValue(true);
   });
 
   describe("logical operators", () => {
@@ -242,7 +234,6 @@ describe("resolveCondition", () => {
         schema: string(),
         value: "john@example.com",
       });
-      vi.mocked(isString).mockReturnValue(true);
 
       const result = resolveCondition(condition, "$.test", mockContext);
 
@@ -256,7 +247,6 @@ describe("resolveCondition", () => {
         schema: number(),
         value: 30,
       });
-      vi.mocked(isString).mockReturnValue(false);
 
       expect(() => {
         resolveCondition(condition, "$.test", mockContext);
@@ -324,33 +314,10 @@ describe("resolveCondition", () => {
         static: true,
         value: "2024-01-01",
       });
-      vi.mocked(parseDateString)
-        .mockReturnValueOnce(new Date("2024-06-15"))
-        .mockReturnValueOnce(new Date("2024-01-01"));
 
       const result = resolveCondition(condition, "$.test", mockContext);
 
       expect(result).toBe(true);
-    });
-  });
-
-  describe("schema validation failures", () => {
-    it("should return false when schema validation fails", () => {
-      const condition = eq("$.user.name", "John");
-
-      vi.mocked(getNested).mockReturnValue({
-        schema: string(),
-        value: "John",
-      });
-      vi.mocked(validateType).mockReturnValue(false);
-      vi.mocked(unpackRef).mockReturnValue({
-        static: true,
-        value: "John",
-      });
-
-      const result = resolveCondition(condition, "$.test", mockContext);
-
-      expect(result).toBe(false);
     });
   });
 

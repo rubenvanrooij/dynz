@@ -39,7 +39,7 @@ const s = d.object({
       rules: [
         d.after(d.ref("one")),
         d.conditional({
-          when: d.gt("one", 12),
+          when: d.and(d.gt("one", 12), d.neq("one", undefined)),
           then: d.after(d.ref("one")),
         }),
       ],
