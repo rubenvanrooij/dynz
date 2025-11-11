@@ -120,7 +120,7 @@ function getConditionOperands<T extends ValueType>(
 ): { left?: ValueType | undefined; right?: ValueType | undefined } {
   const nested = getNested(ensureAbsolutePath(condition.path, path), context.schema, context.values.new);
 
-  const left = validateType(nested.schema, nested.value) ? toCompareType(nested.schema, nested.value) : undefined;
+  const left = validateType(nested.schema, nested.value) ? nested.value : undefined;
 
   if (Array.isArray(condition.value)) {
     return {
@@ -130,15 +130,10 @@ function getConditionOperands<T extends ValueType>(
         const unpacked = unpackRef(val as ValueType, path, context);
 
         if (unpacked.static) {
-          // TODO: Add dev check to ensure value is of type ValueType
-          return validateType(nested.schema, unpacked.value as ValueType)
-            ? toCompareType(nested.schema, unpacked.value as ValueType)
-            : undefined;
+          return unpacked.value as ValueType;
         }
 
-        return validateType(unpacked.schema, unpacked.value)
-          ? toCompareType(unpacked.schema, unpacked.value)
-          : undefined;
+        return unpacked.value as ValueType;
       }),
     };
   }
@@ -148,28 +143,12 @@ function getConditionOperands<T extends ValueType>(
   if (unpacked.static) {
     return {
       left: left,
-      // TODO: Add dev check to ensure value is of type ValueType
-      right: validateType(nested.schema, unpacked.value as ValueType)
-        ? toCompareType(nested.schema, unpacked.value as ValueType)
-        : undefined,
+      right: unpacked.value as ValueType,
     };
   }
 
   return {
     left: left,
-    right: validateType(unpacked.schema, unpacked.value) ? toCompareType(unpacked.schema, unpacked.value) : undefined,
+    right: unpacked.value as ValueType,
   };
-}
-
-/**
- * Converts a value to a comparable type based on the schema.
- * For date strings, converts to milliseconds for proper comparison.                                                                                                                                                                 
-│* For other types, returns the value unchanged.
- */
-function toCompareType<T extends Schema>(schema: T, value: ValueType): ValueType | number {
-  if (schema.type === SchemaType.DATE_STRING) {
-    return parseDateString(`${value}`, schema.format).getTime();
-  }
-
-  return value;
 }
