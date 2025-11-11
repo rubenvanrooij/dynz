@@ -30,7 +30,7 @@ export function or<const T extends Condition[]>(...conditions: T): Pick<OrCondit
   };
 }
 
-export function eq<const T extends string, const V extends ValueType | Reference>(
+export function eq<const T extends string, const V extends ValueType | undefined | Reference>(
   path: T,
   value: V
 ): EqualsCondition<T, V> {
@@ -41,7 +41,7 @@ export function eq<const T extends string, const V extends ValueType | Reference
   };
 }
 
-export function neq<const T extends string, const V extends ValueType | Reference>(
+export function neq<const T extends string, const V extends ValueType | undefined | Reference>(
   path: T,
   value: V
 ): NotEqualsCondition<T, V> {
