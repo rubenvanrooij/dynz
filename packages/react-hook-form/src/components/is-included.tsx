@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { memo, type ReactNode } from "react";
 import { useIsIncluded } from "../hooks";
 
 type IsIncludedProps = {
@@ -6,7 +6,9 @@ type IsIncludedProps = {
   children?: ReactNode;
 };
 
-export function IsIncluded({ name, children }: IsIncludedProps) {
+export const IsIncluded = memo(({ name, children }: IsIncludedProps) => {
   const isIncluded = useIsIncluded(name);
   return isIncluded ? children : null;
-}
+})
+
+IsIncluded.displayName = 'IsIncluded'

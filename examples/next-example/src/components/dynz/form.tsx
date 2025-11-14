@@ -24,8 +24,9 @@ export function DynzForm<T extends ObjectSchema<never>, A extends SchemaValues<T
   const t = useTranslations();
 
   const methods = useDynzForm({
+    name: name,
     schema,
-    // mode: 'all',
+    mode: 'all',
     reValidateMode: "onBlur",
     defaultValues,
     schemaOptions: {

@@ -1,45 +1,35 @@
-import { IsIncluded, useDynzFormContext, useIsMutable } from "@dynz/react-hook-form";
-import { useTranslations } from "next-intl";
-import { FormControl, FormDescription, FormField, FormItem, FormMessage } from "../ui/form";
+import { FormControl, FormDescription, FormItem, FormLabel, FormMessage } from "../ui/form";
 import { Input } from "../ui/input";
-import { DynzFormLabel } from "./dynz-form";
+import { DynzFormField } from "./dynz-form-field";
 
 export type DynzInputProps = {
   name: string;
-  i18nPath: string;
 } & Pick<React.ComponentProps<"input">, "type">;
 
-export function DynzInput({ name, i18nPath, ...props }: DynzInputProps) {
-  const { control, getDependencies } = useDynzFormContext();
-  const t = useTranslations();
-  const isMutable = useIsMutable(name);
-
+export function DynzInput({ name,...props }: DynzInputProps) {
   return (
-    <IsIncluded name={name}>
-      <FormField
-        control={control}
-        name={name}
-        rules={{
-          deps: getDependencies(name),
-        }}
-        render={({ field }) => (
-          <FormItem>
-            <DynzFormLabel i18nPath={i18nPath} name={name} />
-            <FormControl>
-              <Input
-                placeholder={t(`${i18nPath}.${name}.placeholder`)}
-                {...props}
-                {...field}
-                readOnly={isMutable === false}
-              />
-            </FormControl>
-            {t.has(`${i18nPath}.${name}.description`) && (
-              <FormDescription>{`${i18nPath}.${name}.description`}</FormDescription>
-            )}
-            <FormMessage />
-          </FormItem>
+    <DynzFormField name={name} render={({ field, translations, required, readOnly }) => (
+       <FormItem>
+        <FormLabel>
+          {translations.label}
+          {required && " *"}
+        </FormLabel>
+        <FormControl>
+          <Input
+            placeholder={translations.placeholder}
+            {...props}
+            {...field}
+            value={field.value || ''}
+            onChange={((e) => field.onChange(e.target.value || undefined))}
+            readOnly={readOnly}
+          />
+        </FormControl>
+        {translations.description && (
+          <FormDescription>{translations.description}</FormDescription>
         )}
-      />
-    </IsIncluded>
+        <FormMessage />
+      </FormItem>
+    )} />
+
   );
 }

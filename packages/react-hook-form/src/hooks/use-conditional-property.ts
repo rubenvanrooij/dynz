@@ -1,4 +1,5 @@
 import { findSchemaByPath, getConditionDependencies, getNested, resolveProperty } from "dynz";
+import { useMemo } from "react";
 import { useWatch } from "react-hook-form";
 import { useDynzFormContext } from "./use-dynz-form-context";
 
@@ -15,30 +16,32 @@ export function useConditionalProperty(
 
   const propertyValue = innerSchema[property];
 
+  const dependencies =
+    propertyValue === undefined || typeof propertyValue === "boolean"
+      ? []
+      : getConditionDependencies(propertyValue, path).map((field) => field.slice(2));
+
   // Watch is just here to trigger a rerender when a value gets updated
-  useWatch({
-    name:
-      propertyValue === undefined || typeof propertyValue === "boolean"
-        ? []
-        : getConditionDependencies(propertyValue, path).map((field) => field.slice(2)),
+  const watchedValues = useWatch({
+    name: dependencies,
     control,
+    // useWatch does not correctly respect dependencies after form submission; that's
+    // why we need to stringify the value and use useMemo in order to prevent costly re-renders
+    // When this is fixed in react-hook-form this optimization could be removed.
+    compute: (val) => JSON.stringify(val),
+    disabled: dependencies.length === 0,
   });
 
-  if (innerSchema[property] === undefined) {
-    return true;
-  }
+  // biome-ignore lint/correctness/useExhaustiveDependencies: watchedValues triggers the re evealuation
+  return useMemo(() => {
+    const values = getValues();
+    const nested = getNested(path, schema, values);
 
-  if (typeof innerSchema[property] === "boolean") {
-    return innerSchema[property];
-  }
-
-  const values = getValues();
-  const nested = getNested(path, schema, values);
-
-  return resolveProperty(nested.schema, property, path, true, {
-    schema,
-    values: {
-      new: values,
-    },
-  });
+    return resolveProperty(nested.schema, property, path, true, {
+      schema,
+      values: {
+        new: values,
+      },
+    });
+  }, [innerSchema, property, path, schema, watchedValues]);
 }
