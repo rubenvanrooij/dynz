@@ -6,30 +6,30 @@ export type DynzInputProps = {
   name: string;
 } & Pick<React.ComponentProps<"input">, "type">;
 
-export function DynzInput({ name,...props }: DynzInputProps) {
+export function DynzInput({ name, ...props }: DynzInputProps) {
   return (
-    <DynzFormField name={name} render={({ field, translations, required, readOnly }) => (
-       <FormItem>
-        <FormLabel>
-          {translations.label}
-          {required && " *"}
-        </FormLabel>
-        <FormControl>
-          <Input
-            placeholder={translations.placeholder}
-            {...props}
-            {...field}
-            value={field.value || ''}
-            onChange={((e) => field.onChange(e.target.value || undefined))}
-            readOnly={readOnly}
-          />
-        </FormControl>
-        {translations.description && (
-          <FormDescription>{translations.description}</FormDescription>
-        )}
-        <FormMessage />
-      </FormItem>
-    )} />
-
+    <DynzFormField
+      name={name}
+      render={({ field, translations, required, readOnly }) => (
+        <FormItem>
+          <FormLabel>
+            {translations.label}
+            {required && " *"}
+          </FormLabel>
+          <FormControl>
+            <Input
+              placeholder={translations.placeholder}
+              {...props}
+              {...field}
+              value={field.value || ""}
+              onChange={(e) => field.onChange(e.target.value || undefined)}
+              readOnly={readOnly}
+            />
+          </FormControl>
+          {translations.description && <FormDescription>{translations.description}</FormDescription>}
+          <FormMessage />
+        </FormItem>
+      )}
+    />
   );
 }

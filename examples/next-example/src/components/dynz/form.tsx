@@ -1,7 +1,7 @@
 "use client";
 
 import { DynzFormProvider, useDynzForm } from "@dynz/react-hook-form";
-import { type ErrorMessage, getRulesDependenciesMap, type ObjectSchema, type SchemaValues } from "dynz";
+import type { ErrorMessage, ObjectSchema, SchemaValues } from "dynz";
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import type { DefaultValues } from "react-hook-form";
@@ -26,7 +26,7 @@ export function DynzForm<T extends ObjectSchema<never>, A extends SchemaValues<T
   const methods = useDynzForm({
     name: name,
     schema,
-    mode: 'all',
+    mode: "all",
     reValidateMode: "onBlur",
     defaultValues,
     schemaOptions: {
