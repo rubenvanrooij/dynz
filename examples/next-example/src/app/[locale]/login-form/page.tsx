@@ -20,8 +20,8 @@ export default function Home() {
     <Card className="flex flex-col gap-4 max-w-100">
       <CardContent className="gap-2">
         <DynzForm name="loginForm" schema={schema}>
-          <DynzInput i18nPath="loginForm" name="password" type="text" />
-          <DynzInput i18nPath="loginForm" name="confirmPassword" type="text" />
+          <DynzInput name="password" type="text" />
+          <DynzInput name="confirmPassword" type="text" />
           <Button type="submit">Submit</Button>
         </DynzForm>
       </CardContent>
