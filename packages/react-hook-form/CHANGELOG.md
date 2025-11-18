@@ -1,5 +1,13 @@
 # @dynz/react-hook-form-resolver
 
+## 0.0.14
+
+### Patch Changes
+
+- cfb915a: fixed build issues
+- Updated dependencies [cfb915a]
+  - dynz@0.0.11
+
 ## 0.0.13
 
 ### Patch Changes

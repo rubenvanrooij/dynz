@@ -1,5 +1,11 @@
 # dynz
 
+## 0.0.11
+
+### Patch Changes
+
+- cfb915a: fixed build issues
+
 ## 0.0.10
 
 ### Patch Changes
