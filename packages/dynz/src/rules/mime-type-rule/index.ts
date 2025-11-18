@@ -32,7 +32,7 @@ export const mimeTypeRule: RuleFn<FileSchema, MimeTypeRule, MimeTypeRuleErrorMes
     ? undefined
     : {
         code: "mime_type",
-        mimeType: value.type,
+        mimeType: mimeTypes,
         message: `The mime type ${value.type} for schema ${path} is not equal to ${mimeType}`,
       };
 };

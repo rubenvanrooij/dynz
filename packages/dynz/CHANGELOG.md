@@ -1,5 +1,11 @@
 # dynz
 
+## 0.0.10
+
+### Patch Changes
+
+- 93e08c7: fixed issue where non required undefined values caused type check issues
+
 ## 0.0.9
 
 ### Patch Changes
