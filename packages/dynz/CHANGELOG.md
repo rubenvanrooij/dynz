@@ -1,5 +1,11 @@
 # dynz
 
+## 0.0.13
+
+### Patch Changes
+
+- 6bdc69e: Added sophisiticated gte/lte/gt/lt condition validation for arrays/files/dates
+
 ## 0.0.12
 
 ### Patch Changes
