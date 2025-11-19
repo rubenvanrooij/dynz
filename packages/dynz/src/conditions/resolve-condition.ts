@@ -136,7 +136,6 @@ function getConditionOperands<T extends ValueType>(
       left,
       schema: nested.schema,
       right: condition.value.map((val) => {
-        // TODO: Fix this!
         const unpacked = unpackRef(val as ValueType, path, context);
 
         if (unpacked.static) {
