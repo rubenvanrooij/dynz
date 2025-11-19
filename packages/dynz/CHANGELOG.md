@@ -1,5 +1,11 @@
 # dynz
 
+## 0.0.12
+
+### Patch Changes
+
+- 03a0ce1: Added null support
+
 ## 0.0.11
 
 ### Patch Changes
