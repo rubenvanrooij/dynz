@@ -1,6 +1,6 @@
 {
   "name": "@dynz/react-hook-form",
-  "version": "0.0.11",
+  "version": "0.0.15",
   "private": false,
   "license": "MIT",
   "type": "module",
@@ -25,13 +25,13 @@
   },
   "author": "Ruben van Rooij <ruben.van.rooij@gmail.com>",
   "description": "React hook form integration for dynz.",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
   "exports": {
     ".": {
       "import": {
-        "types": "./dist/index.d.ts",
-        "default": "./dist/index.js"
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
       },
       "require": {
         "types": "./dist/index.d.cts",
@@ -47,13 +47,13 @@
     "test:watch": "vitest run --watch"
   },
   "peerDependencies": {
-    "dynz": "^0.0.9",
+    "dynz": "^0.0.12",
     "@hookform/resolvers": "^5.0.0",
     "react-hook-form": "^7.0.0"
   },
   "devDependencies": {
     "@types/react": "^19.2.2",
     "react": "^19.2.0",
-    "tsdown": "^0.14.2"
+    "tsdown": "^0.16.5"
   }
 }

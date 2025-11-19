@@ -554,6 +554,318 @@ describe("validate", () => {
     });
   });
 
+  describe("null value support", () => {
+    describe("null values treated as undefined", () => {
+      it("should handle null values for optional string fields", () => {
+        const schema = string({ required: false });
+        const result = validate(schema, undefined, null);
+
+        expect(result).toEqual({
+          success: true,
+          values: undefined,
+        });
+      });
+
+      it("should handle null values for optional number fields", () => {
+        const schema = number({ required: false });
+        const result = validate(schema, undefined, null);
+
+        expect(result).toEqual({
+          success: true,
+          values: undefined,
+        });
+      });
+
+      it("should fail when null value provided for required field", () => {
+        const schema = string({ required: true });
+        const result = validate(schema, undefined, null);
+
+        expect(result).toEqual({
+          success: false,
+          errors: [
+            expect.objectContaining({
+              code: ErrorCode.REQRUIED,
+              path: "$",
+            }),
+          ],
+        });
+      });
+
+      it("should skip type validation for null values", () => {
+        const schema = string({ required: false });
+        const result = validate(schema, undefined, null);
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.values).toBe(undefined);
+        }
+      });
+
+      it("should skip rule validation for null values", () => {
+        const schema = string({
+          required: false,
+          rules: [
+            {
+              type: "min_length",
+              min: 5,
+              message: "Must be at least 5 characters",
+            },
+          ],
+        });
+        const result = validate(schema, undefined, null);
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.values).toBe(undefined);
+        }
+      });
+    });
+
+    describe("null values in objects", () => {
+      it("should handle null values in object fields", () => {
+        const schema = object({
+          fields: {
+            name: string({ required: false }),
+            age: number({ required: false }),
+          },
+        });
+        const result = validate(schema, undefined, { name: null, age: null });
+
+        expect(result).toEqual({
+          success: true,
+          values: { name: undefined, age: undefined },
+        });
+      });
+
+      it("should handle null current values in object validation", () => {
+        const schema = object({
+          fields: {
+            name: string({ required: true }),
+          },
+        });
+        const result = validate(schema, undefined, { name: "John" });
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.values).toEqual({ name: "John" });
+        }
+      });
+
+      it("should validate nested objects with null values", () => {
+        const schema = object({
+          fields: {
+            user: object({
+              fields: {
+                name: string({ required: false }),
+                email: string({ required: true }),
+              },
+            }),
+          },
+        });
+
+        const result = validate(schema, undefined, {
+          user: { name: null, email: "john@example.com" },
+        });
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.values).toEqual({
+            user: { name: undefined, email: "john@example.com" },
+          });
+        }
+      });
+    });
+
+    describe("null values in arrays", () => {
+      it("should handle null current values in array validation", () => {
+        const schema = array({ schema: string() });
+        const result = validate(schema, undefined, ["hello", "world"]);
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.values).toEqual(["hello", "world"]);
+        }
+      });
+
+      it("should handle null elements in arrays with optional items", () => {
+        const schema = array({ schema: string({ required: false }) });
+        const result = validate(schema, undefined, ["hello", null, "world"]);
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.values).toEqual(["hello", undefined, "world"]);
+        }
+      });
+
+      it("should fail for null elements in arrays with required items", () => {
+        const schema = array({ schema: string({ required: true }) });
+        const result = validate(schema, undefined, ["hello", null, "world"]);
+
+        expect(result).toEqual({
+          success: false,
+          errors: [
+            expect.objectContaining({
+              code: ErrorCode.REQRUIED,
+              path: "$.[1]",
+            }),
+          ],
+        });
+      });
+    });
+
+    describe("null values with private fields", () => {
+      it("should handle null values for optional private fields by treating as plain null", () => {
+        const schema = string({ private: true, required: false });
+        const result = validate(schema, undefined, plain(undefined));
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.values).toBe(undefined);
+        }
+      });
+
+      it("should fail when null provided for required private field", () => {
+        const schema = string({ private: true, required: true });
+        const result = validate(schema, undefined, plain(undefined));
+
+        expect(result).toEqual({
+          success: false,
+          errors: [
+            expect.objectContaining({
+              code: ErrorCode.REQRUIED,
+              path: "$",
+            }),
+          ],
+        });
+      });
+    });
+
+    describe("null values with included/excluded fields", () => {
+      it("should succeed when null provided for non-included optional field", () => {
+        const schema = string({ included: false, required: false });
+        const result = validate(schema, undefined, null);
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.values).toBe(undefined);
+        }
+      });
+
+      it("should strip null values when stripNotIncludedValues is true", () => {
+        const schema = string({ included: false, required: false });
+        const result = validate(schema, undefined, null, { stripNotIncludedValues: true });
+
+        expect(result).toEqual({
+          success: true,
+          values: undefined,
+        });
+      });
+    });
+
+    describe("null values with mutability", () => {
+      it("should pass when changing from undefined to null in non-mutable field", () => {
+        const schema = string({ mutable: false, required: false });
+        const result = validate(schema, undefined, null);
+
+        expect(result.success).toBe(true);
+      });
+
+      it("should fail when changing from value to null in non-mutable field", () => {
+        const schema = string({ mutable: false, required: false });
+        const result = validate(schema, "original", null);
+
+        expect(result).toEqual({
+          success: false,
+          errors: [
+            expect.objectContaining({
+              code: ErrorCode.IMMUTABLE,
+            }),
+          ],
+        });
+      });
+    });
+
+    describe("mixed null and undefined scenarios", () => {
+      it("should handle mixed null and undefined in object fields", () => {
+        const schema = object({
+          fields: {
+            nullField: string({ required: false }),
+            undefinedField: string({ required: false }),
+            valueField: string({ required: false }),
+          },
+        });
+        const result = validate(schema, undefined, {
+          nullField: null,
+          undefinedField: undefined,
+          valueField: "value",
+        });
+
+        expect(result).toEqual({
+          success: true,
+          values: {
+            nullField: undefined,
+            undefinedField: undefined,
+            valueField: "value",
+          },
+        });
+      });
+
+      it("should handle complex nested scenarios with null values", () => {
+        const schema = object({
+          fields: {
+            user: object({
+              fields: {
+                profile: object({
+                  fields: {
+                    name: string({ required: false }),
+                    bio: string({ required: false }),
+                  },
+                }),
+                settings: array({
+                  schema: object({
+                    fields: {
+                      key: string({ required: true }),
+                      value: string({ required: false }),
+                    },
+                  }),
+                }),
+              },
+            }),
+          },
+        });
+
+        const result = validate(schema, undefined, {
+          user: {
+            profile: {
+              name: "John",
+              bio: null,
+            },
+            settings: [
+              { key: "theme", value: "dark" },
+              { key: "notifications", value: null },
+            ],
+          },
+        });
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.values).toEqual({
+            user: {
+              profile: {
+                name: "John",
+                bio: undefined,
+              },
+              settings: [
+                { key: "theme", value: "dark" },
+                { key: "notifications", value: undefined },
+              ],
+            },
+          });
+        }
+      });
+    });
+  });
+
   describe("error handling", () => {
     it("should handle edge cases with date validation", () => {
       const schema = date();

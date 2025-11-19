@@ -1,5 +1,23 @@
 # dynz
 
+## 0.0.12
+
+### Patch Changes
+
+- 03a0ce1: Added null support
+
+## 0.0.11
+
+### Patch Changes
+
+- cfb915a: fixed build issues
+
+## 0.0.10
+
+### Patch Changes
+
+- 93e08c7: fixed issue where non required undefined values caused type check issues
+
 ## 0.0.9
 
 ### Patch Changes

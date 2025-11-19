@@ -60,7 +60,7 @@ export function _validate<T extends Schema>(
       };
     }
 
-    if (values.new !== undefined) {
+    if (isDefined(values.new)) {
       return {
         success: false,
         errors: [
@@ -116,11 +116,12 @@ export function _validate<T extends Schema>(
     }
   }
 
+  const isRequired = resolveProperty(schema, "required", path, true, context);
+
   /**
    * Validate required
    */
-  const isRequired = resolveProperty(schema, "required", path, true, context);
-  if (isRequired && newValue === undefined) {
+  if (isRequired && !isDefined(newValue)) {
     return {
       success: false,
       errors: [
@@ -140,7 +141,7 @@ export function _validate<T extends Schema>(
   /**
    * Early opt-out if not required and value is undefined; else we'll get validation errors later on
    */
-  if (!isRequired && newValue === undefined) {
+  if (isRequired === false && !isDefined(newValue)) {
     return {
       success: true,
       values: undefined,
@@ -150,7 +151,7 @@ export function _validate<T extends Schema>(
   /**
    * Type check
    */
-  if (newValue !== undefined && validateType(schema, newValue) === false) {
+  if (isDefined(newValue) && validateType(schema, newValue) === false) {
     const error = {
       path,
       schema,
@@ -182,7 +183,7 @@ export function _validate<T extends Schema>(
   /**
    * Check rules
    */
-  if (newValue !== undefined) {
+  if (isDefined(newValue)) {
     for (const rule of resolveRules(schema, path, context)) {
       const result = validateRule({
         type: schema.type,
@@ -220,7 +221,7 @@ export function _validate<T extends Schema>(
       throw new Error(`new value is not an object: ${newValue}`);
     }
 
-    if (currentValue !== undefined && !isObject(currentValue)) {
+    if (isDefined(currentValue) && !isObject(currentValue)) {
       throw new Error(`current value is not an object: ${currentValue}`);
     }
 
@@ -267,7 +268,7 @@ export function _validate<T extends Schema>(
       throw new Error(`new value is not an array: ${newValue}`);
     }
 
-    if (currentValue !== undefined && !isArray(currentValue)) {
+    if (isDefined(currentValue) && !isArray(currentValue)) {
       throw new Error(`current value is not an array: ${currentValue}`);
     }
 
@@ -387,7 +388,7 @@ function valueChanged<T>(
 
 function getValue(schema: Schema, path: string, value: unknown): unknown {
   if (schema.private) {
-    if (value === undefined) {
+    if (!isDefined(value)) {
       return undefined;
     }
 
@@ -398,4 +399,8 @@ function getValue(schema: Schema, path: string, value: unknown): unknown {
   }
 
   return value;
+}
+
+function isDefined<T>(value: T | undefined | null): value is T {
+  return value !== undefined && value !== null;
 }

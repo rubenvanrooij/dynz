@@ -1,5 +1,33 @@
 # @dynz/react-hook-form-resolver
 
+## 0.0.15
+
+### Patch Changes
+
+- Updated dependencies [03a0ce1]
+  - dynz@0.0.12
+
+## 0.0.14
+
+### Patch Changes
+
+- cfb915a: fixed build issues
+- Updated dependencies [cfb915a]
+  - dynz@0.0.11
+
+## 0.0.13
+
+### Patch Changes
+
+- Updated dependencies [93e08c7]
+  - dynz@0.0.10
+
+## 0.0.12
+
+### Patch Changes
+
+- 0552506: improved performance upgrades related to react form hooks
+
 ## 0.0.11
 
 ### Patch Changes
