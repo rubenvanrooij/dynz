@@ -304,7 +304,7 @@ describe("resolveCondition", () => {
 
   describe("date string handling", () => {
     it("should convert date strings to milliseconds for comparison", () => {
-      const condition = gt("$.user.lastLogin", "2024-01-01");
+      const condition = gt("$.user.lastLogin", "2024-01-02");
 
       vi.mocked(getNested).mockReturnValue({
         schema: dateString({ format: "yyyy-MM-dd" }),
