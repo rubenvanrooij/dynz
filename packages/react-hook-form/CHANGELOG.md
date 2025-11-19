@@ -1,5 +1,12 @@
 # @dynz/react-hook-form-resolver
 
+## 0.0.16
+
+### Patch Changes
+
+- Updated dependencies [6bdc69e]
+  - dynz@0.0.13
+
 ## 0.0.15
 
 ### Patch Changes
