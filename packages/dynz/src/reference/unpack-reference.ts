@@ -12,18 +12,18 @@ export type UnpackedReferenceValue<T extends SchemaType> = T extends SchemaType
     }
   : never;
 
-export function unpackRef<V extends ValueOrReference>(
+export function unpackRef<V extends ValueOrReference | undefined>(
   valueOrRef: V,
   path: string,
   context: ResolveContext
 ): { value: unknown; static: true } | { schema: Schema; type: SchemaType; value: ValueType | undefined; static: false };
-export function unpackRef<V extends ValueType, T extends SchemaType>(
+export function unpackRef<V extends ValueType | undefined, T extends SchemaType>(
   valueOrRef: V | Reference,
   path: string,
   context: ResolveContext,
   ...expected: T[]
 ): { value: V; static: true } | UnpackedReferenceValue<T extends Array<never> ? Unpacked<T> : T>;
-export function unpackRef<V extends ValueType, T extends SchemaType>(
+export function unpackRef<V extends ValueType | undefined, T extends SchemaType>(
   valueOrRef: V | Reference,
   path: string,
   context: ResolveContext,
