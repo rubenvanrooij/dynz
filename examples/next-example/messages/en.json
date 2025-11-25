@@ -3,11 +3,24 @@
     "title": "Hello world!",
     "about": "Go to the about page"
   },
-
+  "loginForm": {
+    "password": {
+      "label": "Password",
+      "placeholder": "Password"
+    },
+     "confirmPassword": {
+      "label": "Confirm Password",
+      "placeholder": "Confirm Password"
+    }
+  },
   "registrationForm": {
     "name": {
       "label": "Name",
       "placeholder": "Fill in your name"
+    },
+    "company": {
+      "label": "Company",
+      "placeholder": "Fill in the company you work for"
     },
     "email": {
       "label": "Email",
@@ -57,8 +70,10 @@
     }
   },
   "errors": {
+    "useCompanyMail": "Use your company mail",
     "required": "This field is required",
     "email": "E-mail address invalid",
+    "equals": "Not the same",
     "min": "This field must at least have {min} characters"
   },
   "form": {

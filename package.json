@@ -7,11 +7,13 @@
     "format": "biome format --write",
     "check-types": "pnpm -r run check-types",
     "build": "pnpm -r run build",
+    "build:packages": "pnpm  --filter './packages/**' -r run build",
     "dev": "pnpm -r --parallel run dev",
     "lint": "biome lint --write",
     "lint:check": "biome lint .",
     "prepare": "husky",
-    "ci:publish": "pnpm publish -r"
+    "ci:version": "pnpm changeset version && pnpm install --no-frozen-lockfile && git add .",
+    "ci:publish": "pnpm publish -r --access=public"
   },
   "repository": {
     "type": "git",
@@ -39,7 +41,7 @@
     ]
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.2.2",
+    "@biomejs/biome": "^2.2.4",
     "@changesets/cli": "^2.29.6",
     "@eslint/js": "^9.29.0",
     "@vitest/coverage-v8": "3.2.4",

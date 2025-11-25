@@ -1,118 +1,23 @@
-import { dynzResolver } from "@dynz/react-hook-form-resolver";
-import {
-  type ErrorMessage,
-  findSchemaByPath,
-  type ObjectSchema,
-  type OptionsSchema,
-  type Schema,
-  SchemaType,
-  type SchemaValues,
-} from "dynz";
+import { IsIncluded, useDynzFormContext, useIsMutable, useIsRequired } from "@dynz/react-hook-form";
+import { findSchemaByPath, type OptionsSchema, SchemaType } from "dynz";
 import { useTranslations } from "next-intl";
-import { createContext, type ReactNode, useContext } from "react";
-import { type DefaultValues, FormProvider, useForm, useFormContext } from "react-hook-form";
-import { useIsIncluded } from "@/hooks/is-included";
-import { useIsMutable } from "@/hooks/is-mutable";
-import { useIsRequired } from "@/hooks/is-required";
 import { FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "../ui/form";
 import { Input } from "../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 
-const SchemaContext = createContext<{ schema: Schema; i18nPath?: string }>(
-  {} as unknown as { schema: Schema; i18nPath: string }
-);
-
 export type BaseInputProps = {
   name: string;
   description?: string;
+  i18nPath: string;
 };
-
-type IncludedWrapper = {
-  children?: ReactNode;
-  name: string;
-};
-
-export type FormProps<T extends ObjectSchema<never>, A extends SchemaValues<T>> = {
-  name: string;
-  schema: T;
-  children?: ReactNode;
-  defaultValues?: DefaultValues<A>;
-  onSubmit?: (values: SchemaValues<T>) => void;
-};
-
-export function DynzForm<T extends ObjectSchema<never>, A extends SchemaValues<T>>({
-  schema,
-  children,
-  onSubmit,
-  defaultValues,
-  name,
-}: FormProps<T, A>) {
-  const t = useTranslations();
-
-  // const resolver = dynzResolver(
-  //   schema,
-  //   undefined,
-  //   {
-  //     stripNotIncludedValues: true,
-  //   },
-  //   {
-  //     messageTransformer: (error: ErrorMessage) => {
-  //       const customErrorMessagePath = `${name}.${error.path.slice(2)}.errors.${error.customCode}`;
-  //       return t.has(customErrorMessagePath)
-  //         ? t(customErrorMessagePath, error as unknown as Record<string, string | number | Date>)
-  //         : t(`errors.${error.customCode}`, error as unknown as Record<string, string | number | Date>);
-  //     },
-  //   }
-  // );
-
-  const methods = useForm({
-    resolver: dynzResolver(
-      schema,
-      undefined,
-      {
-        stripNotIncludedValues: true,
-      },
-      {
-        messageTransformer: (error: ErrorMessage) => {
-          const customErrorMessagePath = `${name}.${error.path.slice(2)}.errors.${error.customCode}`;
-          return t.has(customErrorMessagePath)
-            ? t(customErrorMessagePath, error as unknown as Record<string, string | number | Date>)
-            : t(`errors.${error.customCode}`, error as unknown as Record<string, string | number | Date>);
-        },
-      }
-    ),
-    defaultValues,
-  });
-
-  return (
-    <SchemaContext.Provider value={{ schema, i18nPath: name }}>
-      <FormProvider {...methods}>
-        <form id={name} onSubmit={methods.handleSubmit((values) => onSubmit?.(values))}>
-          {children}
-        </form>
-      </FormProvider>
-    </SchemaContext.Provider>
-  );
-}
-
-export function DynzIncludedWrapper({ name, children }: IncludedWrapper) {
-  const { schema } = useContext(SchemaContext);
-  const isIncluded = useIsIncluded(schema, `$.${name}`);
-
-  if (isIncluded === false) {
-    return;
-  }
-
-  return children;
-}
 
 type DynzFormLabelProps = {
   name: string;
+  i18nPath: string;
 };
 
-export function DynzFormLabel({ name }: DynzFormLabelProps) {
-  const { schema, i18nPath } = useContext(SchemaContext);
-  const isRequired = useIsRequired(schema, `$.${name}`);
+export function DynzFormLabel({ name, i18nPath }: DynzFormLabelProps) {
+  const isRequired = useIsRequired(name);
   const t = useTranslations();
 
   return (
@@ -123,21 +28,19 @@ export function DynzFormLabel({ name }: DynzFormLabelProps) {
   );
 }
 
-export function DynzTextInput({ name, description }: BaseInputProps) {
-  const { schema, i18nPath } = useContext(SchemaContext);
-  const { control } = useFormContext();
+export function DynzTextInput({ name, description, i18nPath }: BaseInputProps) {
+  const { control } = useDynzFormContext();
   const t = useTranslations();
-
-  const isMutable = useIsMutable(schema, `$.${name}`);
+  const isMutable = useIsMutable(name);
 
   return (
-    <DynzIncludedWrapper name={name}>
+    <IsIncluded name={name}>
       <FormField
         control={control}
         name={name}
         render={({ field }) => (
           <FormItem>
-            <DynzFormLabel name={name} />
+            <DynzFormLabel i18nPath={i18nPath} name={name} />
             <FormControl>
               <Input placeholder={t(`${i18nPath}.${name}.placeholder`)} {...field} readOnly={isMutable === false} />
             </FormControl>
@@ -146,26 +49,25 @@ export function DynzTextInput({ name, description }: BaseInputProps) {
           </FormItem>
         )}
       />
-    </DynzIncludedWrapper>
+    </IsIncluded>
   );
 }
 
-export function DynzSelect({ name, description }: BaseInputProps) {
-  const { schema, i18nPath } = useContext(SchemaContext);
-  const { control } = useFormContext();
+export function DynzSelect({ name, i18nPath }: BaseInputProps) {
+  const { schema, control } = useDynzFormContext();
 
   const innerSchema = findSchemaByPath<OptionsSchema>(`$.${name}`, schema, SchemaType.OPTIONS);
-  const isMutable = useIsMutable(schema, `$.${name}`);
+  const isMutable = useIsMutable(name);
   const t = useTranslations();
 
   return (
-    <DynzIncludedWrapper name={name}>
+    <IsIncluded name={name}>
       <FormField
         control={control}
         name={name}
         render={({ field }) => (
           <FormItem>
-            <DynzFormLabel name={name} />
+            <DynzFormLabel i18nPath={i18nPath} name={name} />
             <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isMutable === false}>
               <FormControl>
                 <SelectTrigger className="w-full">
@@ -180,30 +82,31 @@ export function DynzSelect({ name, description }: BaseInputProps) {
                 ))}
               </SelectContent>
             </Select>
-            {description && <FormDescription>{description}</FormDescription>}
+            {t.has(`${i18nPath}.${name}.description`) && (
+              <FormDescription>{`${i18nPath}.${name}.placeholder`}</FormDescription>
+            )}
             <FormMessage />
           </FormItem>
         )}
       />
-    </DynzIncludedWrapper>
+    </IsIncluded>
   );
 }
 
-export function DynzBoolean({ name, description }: BaseInputProps) {
-  const { schema, i18nPath } = useContext(SchemaContext);
-  const { control } = useFormContext();
+export function DynzBoolean({ name, description, i18nPath }: BaseInputProps) {
+  const { control } = useDynzFormContext();
 
-  const isMutable = useIsMutable(schema, `$.${name}`);
+  const isMutable = useIsMutable(name);
   const t = useTranslations();
 
   return (
-    <DynzIncludedWrapper name={name}>
+    <IsIncluded name={name}>
       <FormField
         control={control}
         name={name}
         render={({ field }) => (
           <FormItem>
-            <DynzFormLabel name={name} />
+            <DynzFormLabel i18nPath={i18nPath} name={name} />
             <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isMutable === false}>
               <FormControl>
                 <SelectTrigger className="w-full">
@@ -220,6 +123,6 @@ export function DynzBoolean({ name, description }: BaseInputProps) {
           </FormItem>
         )}
       />
-    </DynzIncludedWrapper>
+    </IsIncluded>
   );
 }

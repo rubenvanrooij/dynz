@@ -7,7 +7,7 @@ on:
 
 jobs:
 
-  install:
+  setup_environment:
     name: Install packages
     runs-on: ubuntu-latest
     steps:
@@ -17,28 +17,20 @@ jobs:
         uses: ./.github/actions/environment
       
   library_preview:
-    name: Publish dynz library via pkg.pr.new
+    name: Publish library via pkg.pr.new
     runs-on: ubuntu-latest
+    needs: setup_environment
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          run_install: false
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          registry-url: 'https://registry.npmjs.org'
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - name: Publish library
-        run: pnpx pkg-pr-new publish --comment=update --pnpm './packages/dynz'
+      - name: Setup environment
+        uses: ./.github/actions/environment
+      - name: Publish dynz library
+        run: pnpx pkg-pr-new publish --comment=update --pnpm './packages/dynz' './packages/react-hook-form'
 
   format_check:
     name: Run format in library
-    needs: install
+    needs: setup_environment
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -50,7 +42,7 @@ jobs:
   
   lint:
     name: Run lint in library
-    needs: install
+    needs: setup_environment
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -61,8 +53,8 @@ jobs:
         run: pnpm lint:check
 
   test:
-    name: Run lint in library
-    needs: install
+    name: Test
+    needs: setup_environment
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository

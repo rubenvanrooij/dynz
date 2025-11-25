@@ -1,4 +1,4 @@
-import { conditional, email, eq, matches, min, object, options, regex, string } from "dynz";
+import * as d from "dynz";
 
 // const foo = object({
 //   fields: {
@@ -29,41 +29,154 @@ import { conditional, email, eq, matches, min, object, options, regex, string } 
 //   console.log(result.values); // ✅ Type-safe access
 // }
 
-const schema = object({
+const s = d.object({
   fields: {
-    accountType: options({
-      options: ["personal", "business"],
+    one: d.dateString({
+      format: "yyyy",
+      rules: [d.after(d.ref("two"))],
     }),
-
-    // Only included if accountType is 'business'
-    companyName: string({
-      rules: [min(2)],
-      required: matches("email", "@gmail.com$"),
-      included: eq("accountType", "business"),
-    }),
-
-    email: string({
+    two: d.date({
       rules: [
-        email(),
-        conditional({
-          // Different validation rules based on account type
-          when: eq("accountType", "business"),
-          then: regex("@company.com$", "Business accounts must use company email"),
+        d.after(d.ref("one")),
+        d.conditional({
+          when: d.and(d.gt("one", 12), d.neq("one", undefined)),
+          then: d.after(d.ref("one")),
         }),
       ],
     }),
   },
 });
+console.log(
+  d.validate(s, undefined, {
+    one: "2026",
+    two: new Date(),
+  })
+);
 
-console.log(JSON.stringify(schema, undefined, 2));
+// const UserRoles = {
+//   ADMIN: "admin",
+//   MAINTAINER: "maintainer",
+// } as const;
 
-// // Validate data
-// const result = validate(schema, undefined, {
-//   accountType: 'business',
-//   companyName: 'test',
-//   email: 'foo@company.com'
-// })
+// const z_user = z.object({
+//   role: z.array(z.nativeEnum(UserRoles)),
+//   email: z.string().email(),
+//   name: z.string().min(2).max(100),
+//   age: z.number().min(0).max(150).optional(),
+//   isActive: z.boolean(),
+// });
 
+// const d_user = d.object({
+//   fields: {
+//     role: d.array({
+//       schema: d.enum({
+//         enum: UserRoles,
+//       }),
+//     }),
+//     aa: d.options({
+//       options: ["fo", "bar"],
+//     }),
+//     name: d.string({
+//       rules: [d.minLength(2), d.maxLength(100)],
+//     }),
+//     email: d.string({
+//       rules: [d.email()],
+//     }),
+//     age: d.number({
+//       rules: [d.min(0), d.max(150)],
+//       required: false,
+//     }),
+//     isActive: d.boolean(),
+//   },
+// });
+
+// const DATA = {
+//   role: ["admin", "maintainer"],
+//   name: "Jan",
+//   email: "jan@jan.nl",
+//   age: 23,
+//   isActive: false,
+// };
+
+// console.time("perf_z");
+
+// for (let i = 0; i < 1_000_000; i++) {
+//   z_user.safeParse(DATA);
+// }
+
+// console.timeEnd("perf_z");
+
+// console.time("perf_d");
+
+// for (let i = 0; i < 1_000_000; i++) {
+//   d.validate(d_user, undefined, DATA);
+// }
+
+// console.timeEnd("perf_d");
+
+// const schema = d.object({
+//   fields: {
+//     accountType: d.options({
+//       options: ["personal", "business"],
+//     }),
+
+//     minLength: d.number(),
+
+//     // Only included if accountType is 'business'
+//     companyName: d.string({
+//       rules: [d.minLength(d.ref("minLength"))],
+//       required: d.matches("email", "@gmail.com$"),
+//       included: d.eq("accountType", "business"),
+//     }),
+
+//     email: d.string({
+//       rules: [
+//         d.email(),
+//         d.conditional({
+//           // Different validation rules based on account type
+//           when: d.eq("accountType", "business"),
+//           then: d.regex("@company.com$", "Business accounts must use company email"),
+//         }),
+//       ],
+//     }),
+//   },
+// });
+
+// const schemaTwo = d.object({
+//   fields: {
+//     birthDates: d.array({
+//       schema: d.date(),
+//     }),
+//     otherFields: d.object({
+//       fields: {
+//         deathDate: d.date({
+//           rules: [d.after(d.ref("$.birthDate.[2]"))],
+//         }),
+//       },
+//     }),
+//   },
+// });
+
+// console.log(
+//   d.validate(schemaTwo, undefined, {
+//     birthDates: [],
+//     otherFields: {
+//       deathDate: new Date(),
+//     },
+//   })
+// );
+
+// // console.log(JSON.stringify(schema, undefined, 2));
+
+// // // Validate data
+// const result = d.validate(schema, undefined, {
+//   accountType: "business",
+//   minLength: 10,
+//   companyName: "test",
+//   email: "foo@company.com",
+// });
+
+// console.log(result);
 /**
  * new interface?
 object({

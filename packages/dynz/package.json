@@ -1,6 +1,6 @@
 {
   "name": "dynz",
-  "version": "0.0.2",
+  "version": "0.0.13",
   "private": false,
   "license": "MIT",
   "type": "module",
@@ -25,13 +25,13 @@
   },
   "author": "Ruben van Rooij <ruben.van.rooij@gmail.com>",
   "description": "A powerful TypeScript schema validation with advanced conditional logic, cross-field validation, and static type inference.",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
   "exports": {
     ".": {
       "import": {
-        "types": "./dist/index.d.ts",
-        "default": "./dist/index.js"
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
       },
       "require": {
         "types": "./dist/index.d.cts",
@@ -50,6 +50,6 @@
     "date-fns": "^4.1.0"
   },
   "devDependencies": {
-    "tsdown": "^0.14.2"
+    "tsdown": "^0.16.5"
   }
 }
