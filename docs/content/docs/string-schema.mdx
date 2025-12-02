@@ -1,0 +1,37 @@
+---
+title: String Schema
+description: Validates a string value
+---
+
+import Playground from "@/components/playground";
+
+A string schema validates whether or not the input is a valid string value.
+
+```ts
+
+const schema = string({
+
+})
+
+validate(schema, "hello world") // passes
+
+```
+
+<Playground template="vanilla-ts" files={{
+  "schema.ts": `
+import { string, validate } from "dynz"; 
+
+const schema = string({})
+
+console.log('I am the schema')
+
+validate(schema, undefined, "hello world") // passes
+
+` }} />
+
+## What is Next?
+
+<Cards>
+  <Card title="Learn more about Next.js" href="https://nextjs.org/docs" />
+  <Card title="Learn more about Fumadocs" href="https://fumadocs.vercel.app" />
+</Cards>
