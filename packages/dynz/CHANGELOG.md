@@ -1,5 +1,11 @@
 # dynz
 
+## 0.0.14
+
+### Patch Changes
+
+- 8cbba32: fixed issue where options of an option schema were not properly infered by the SchemaValues utility
+
 ## 0.0.13
 
 ### Patch Changes
