@@ -138,7 +138,7 @@ export type SchemaValuesInternal<T extends Schema> = T extends ObjectSchema<neve
     : T extends EnumSchema
       ? MakeOptional<T, EnumValues<T["enum"]>>
       : T extends OptionsSchema
-        ? T["options"]
+        ? Unpacked<T["options"]>
         : MakeOptional<T, ValueType<T["type"]>>;
 
 export type SchemaValues<T extends Schema> = Prettify<ApplyPrivacyMask<T, SchemaValuesInternal<T>>>;
