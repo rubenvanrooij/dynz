@@ -29,21 +29,14 @@ import * as d from "dynz";
 //   console.log(result.values); // ✅ Type-safe access
 // }
 
+
+const f = d.add(1, 2)
+
 const s = d.object({
   fields: {
-    one: d.dateString({
-      format: "yyyy",
-      rules: [d.after(d.ref("two"))],
-    }),
-    two: d.date({
-      rules: [
-        d.after(d.ref("one")),
-        d.conditional({
-          when: d.and(d.gt("one", 12), d.neq("one", undefined)),
-          then: d.after(d.ref("one")),
-        }),
-      ],
-    }),
+    one: d.string({
+      included: d.gte(f, 2),
+    })
   },
 });
 console.log(

@@ -1,3 +1,4 @@
+import { OperatorType } from "./../../../../examples/example/node_modules/dynz/src/conditions/types";
 import type { Reference } from "../reference/reference";
 import type { ValueType } from "../types";
 import {
@@ -13,6 +14,7 @@ import {
   type LowerThanOrEqualCondition,
   type MatchesCondition,
   type NotEqualsCondition,
+  type Operator,
   type OrCondition,
 } from "./types";
 
@@ -63,7 +65,7 @@ export function gt<const T extends string, const V extends number | string | Ref
   };
 }
 
-export function gte<const T extends string, const V extends number | Reference>(
+export function gte<const T extends string | Operator, const V extends number | Reference>(
   path: T,
   value: V
 ): GreaterThanOrEqualCondition<T, V> {
@@ -124,5 +126,66 @@ export function isNotIn<const T extends string, const V extends Array<ValueType 
     type: ConditionType.IS_NOT_IN,
     path,
     value,
+  };
+}
+
+/** Operators */
+export function multipl<
+  const T extends ValueType | Reference | Operator,
+  const A extends ValueType | Reference | Operator,
+>(left: T, right: A): Operator<T, A> {
+  return {
+    _type: "__dop",
+    type: OperatorType.MULTIPLY,
+    left,
+    right,
+  };
+}
+
+export function add<const T extends ValueType | Reference | Operator, const A extends ValueType | Reference | Operator>(
+  left: T,
+  right: A
+): Operator<T, A> {
+  return {
+    _type: "__dop",
+    type: OperatorType.PLUS,
+    left,
+    right,
+  };
+}
+
+export function sub<const T extends ValueType | Reference | Operator, const A extends ValueType | Reference | Operator>(
+  left: T,
+  right: A
+): Operator<T, A> {
+  return {
+    _type: "__dop",
+    type: OperatorType.MINUS,
+    left,
+    right,
+  };
+}
+
+export function div<const T extends ValueType | Reference | Operator, const A extends ValueType | Reference | Operator>(
+  left: T,
+  right: A
+): Operator<T, A> {
+  return {
+    _type: "__dop",
+    type: OperatorType.DIVIDE,
+    left,
+    right,
+  };
+}
+
+export function mod<const T extends ValueType | Reference | Operator, const A extends ValueType | Reference | Operator>(
+  left: T,
+  right: A
+): Operator<T, A> {
+  return {
+    _type: "__dop",
+    type: OperatorType.MODULO,
+    left,
+    right,
   };
 }
