@@ -1,10 +1,12 @@
-import type { Reference } from "../reference/reference";
-import type { ValueType } from "../types";
 import {
   type AndCondition,
   type Condition,
   ConditionType,
+  type ConditionValue,
   type EqualsCondition,
+  type Func,
+  type FunctionType,
+  type FunctionValue,
   type GreaterThanCondition,
   type GreaterThanOrEqualCondition,
   type IsInCondition,
@@ -30,99 +32,127 @@ export function or<const T extends Condition[]>(...conditions: T): Pick<OrCondit
   };
 }
 
-export function eq<const T extends string, const V extends ValueType | undefined | Reference>(
-  path: T,
-  value: V
+export function eq<const T extends ConditionValue, const V extends ConditionValue>(
+  left: T,
+  right: V
 ): EqualsCondition<T, V> {
   return {
     type: ConditionType.EQUALS,
-    path,
-    value,
+    left,
+    right,
   };
 }
 
-export function neq<const T extends string, const V extends ValueType | undefined | Reference>(
-  path: T,
-  value: V
+export function neq<const T extends ConditionValue, const V extends ConditionValue>(
+  left: T,
+  right: V
 ): NotEqualsCondition<T, V> {
   return {
     type: ConditionType.NOT_EQUALS,
-    path,
-    value,
+    left,
+    right,
   };
 }
 
-export function gt<const T extends string, const V extends number | string | Reference>(
-  path: T,
-  value: V
+export function gt<const T extends ConditionValue, const V extends ConditionValue>(
+  left: T,
+  right: V
 ): GreaterThanCondition<T, V> {
   return {
     type: ConditionType.GREATHER_THAN,
-    path,
-    value,
+    left,
+    right,
   };
 }
 
-export function gte<const T extends string, const V extends number | Reference>(
-  path: T,
-  value: V
+export function gte<const T extends ConditionValue, const V extends ConditionValue>(
+  left: T,
+  right: V
 ): GreaterThanOrEqualCondition<T, V> {
   return {
     type: ConditionType.GREATHER_THAN_OR_EQUAL,
-    path,
-    value,
+    left,
+    right,
   };
 }
 
-export function lt<const T extends string, const V extends number | Reference>(
-  path: T,
-  value: V
+export function lt<const T extends ConditionValue, const V extends ConditionValue>(
+  left: T,
+  right: V
 ): LowerThanCondition<T, V> {
   return {
     type: ConditionType.LOWER_THAN,
-    path,
-    value,
+    left,
+    right,
   };
 }
 
-export function lte<const T extends string, const V extends number | Reference>(
-  path: T,
-  value: V
+export function lte<const T extends ConditionValue, const V extends ConditionValue>(
+  left: T,
+  right: V
 ): LowerThanOrEqualCondition<T, V> {
   return {
     type: ConditionType.LOWER_THAN_OR_EQUAL,
-    path,
-    value,
+    left,
+    right,
   };
 }
 
-export function matches<const T extends string>(path: T, value: string, flags?: string): MatchesCondition<T> {
+export function matches<const T extends ConditionValue>(left: T, right: string, flags?: string): MatchesCondition<T> {
   return {
     type: ConditionType.MATCHES,
-    path,
-    value,
+    left,
+    right,
     flags,
   };
 }
 
-export function isIn<const T extends string, const V extends Array<ValueType | Reference>>(
-  path: T,
-  value: V
+export function isIn<const T extends ConditionValue, const V extends Array<ConditionValue>>(
+  left: T,
+  right: V
 ): IsInCondition<T, V> {
   return {
     type: ConditionType.IS_IN,
-    path,
-    value,
+    left,
+    right,
   };
 }
 
-export function isNotIn<const T extends string, const V extends Array<ValueType | Reference>>(
-  path: T,
-  value: V
+export function isNotIn<const T extends ConditionValue, const V extends Array<ConditionValue>>(
+  left: T,
+  right: V
 ): IsNotInCondition<T, V> {
   return {
     type: ConditionType.IS_NOT_IN,
-    path,
-    value,
+    left,
+    right,
+  };
+}
+
+/**
+ * FUNCTIONS
+ */
+
+export function add<const T extends FunctionValue, const V extends FunctionValue>(
+  left: T,
+  right: V
+): Func<typeof FunctionType.ADD, T, V> {
+  return {
+    _type: "__func__",
+    type: "add",
+    left,
+    right,
+  };
+}
+
+export function min<const T extends FunctionValue, const V extends FunctionValue>(
+  left: T,
+  right: V
+): Func<typeof FunctionType.MIN, T, V> {
+  return {
+    _type: "__func__",
+    type: "min",
+    left,
+    right,
   };
 }

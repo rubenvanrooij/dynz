@@ -1,19 +1,58 @@
 import { isDate } from "date-fns";
-import { unpackRef } from "../reference";
+import { isReference, unpackRef } from "../reference";
 import type { ValueOrReference } from "../reference/reference";
 import { type ResolveContext, type Schema, SchemaType, type ValueType } from "../types";
 import { ensureAbsolutePath, getNested } from "../utils";
 import { isArray, isFile, isNumber, isString, parseDateString, validateType } from "../validate/validate-type";
 import {
+  type AndCondition,
   type Condition,
   ConditionType,
+  type ConditionValue,
   type EqualsCondition,
+  type Func,
+  FunctionType,
   type GreaterThanCondition,
   type GreaterThanOrEqualCondition,
   type LowerThanCondition,
   type LowerThanOrEqualCondition,
   type NotEqualsCondition,
+  type OrCondition,
 } from "./types";
+
+export function isFunction(value: ConditionValue): value is Func {
+  if (typeof value === "object" && value !== null && "_type" in value && value._type === "__func__") {
+    return true;
+  }
+  return false;
+}
+
+export function resolve(value: ConditionValue, path: string, context: ResolveContext): ValueType | undefined {
+  if (isFunction(value)) {
+    const left = resolve(value.left, path, context);
+    const right = resolve(value.right, path, context);
+
+    switch (value.type) {
+      case FunctionType.ADD: {
+        if (left === undefined || right === undefined) {
+          return undefined;
+        }
+        return +left + +right;
+      }
+
+      case FunctionType.MIN: {
+        if (left === undefined || right === undefined) {
+          return undefined;
+        }
+        return Math.min(+left, +right);
+      }
+      default:
+        throw new Error(`Unknown function type: ${value.type}`);
+    }
+  }
+
+  return unpackRef(value, path, context);
+}
 
 export function resolveCondition(condition: Condition, path: string, context: ResolveContext): boolean {
   switch (condition.type) {
@@ -29,7 +68,7 @@ export function resolveCondition(condition: Condition, path: string, context: Re
     case ConditionType.LOWER_THAN_OR_EQUAL:
       return validateWithOperator(condition, path, context);
     case ConditionType.MATCHES: {
-      const { value: left } = getNested(ensureAbsolutePath(condition.path, path), context.schema, context.values.new);
+      const left = resolve(condition.left, path, context);
 
       if (!isString(left)) {
         throw new Error(
@@ -37,7 +76,7 @@ export function resolveCondition(condition: Condition, path: string, context: Re
         );
       }
 
-      return new RegExp(condition.value, condition.flags).test(left);
+      return new RegExp(condition.right, condition.flags).test(left);
     }
     case ConditionType.IS_IN: {
       const { left, right } = getConditionOperands(condition, path, context);
@@ -123,20 +162,17 @@ function validateWithOperator(
  * @returns
  */
 function getConditionOperands<T extends ValueType>(
-  condition: { path: string; value: ValueOrReference<T> | ValueOrReference<T>[] | undefined },
+  condition: Exclude<Condition, AndCondition | OrCondition>,
   path: string,
   context: ResolveContext
 ): { left?: ValueType | undefined; schema: Schema; right?: ValueType | undefined } {
-  const nested = getNested(ensureAbsolutePath(condition.path, path), context.schema, context.values.new);
+  const left = resolve(condition.left, path, context);
 
-  const left = validateType(nested.schema, nested.value) ? nested.value : undefined;
-
-  if (Array.isArray(condition.value)) {
+  if (Array.isArray(condition.right)) {
     return {
       left,
-      schema: nested.schema,
-      right: condition.value.map((val) => {
-        const unpacked = unpackRef(val as ValueType, path, context);
+      right: condition.right.map((val) => {
+        const unpacked = resolve(val, path, context);
 
         if (unpacked.static) {
           return unpacked.value as ValueType;
@@ -147,12 +183,11 @@ function getConditionOperands<T extends ValueType>(
     };
   }
 
-  const unpacked = unpackRef(condition.value, path, context);
+  const unpacked = unpackRef(condition.right, path, context);
 
   if (unpacked.static) {
     return {
       left: left,
-      schema: nested.schema,
       right: unpacked.value as ValueType,
     };
   }
