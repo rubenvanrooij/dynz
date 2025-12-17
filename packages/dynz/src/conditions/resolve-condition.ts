@@ -1,4 +1,4 @@
-import { isDate } from "date-fns";
+import { differenceInCalendarDays, differenceInCalendarYears, isDate } from "date-fns";
 import { UnpackedReferenceValue, unpackRef } from "../reference";
 import type { ResolveContext, SchemaType, Unpacked, ValueType, ValueTypeOrUndefined } from "../types";
 import { isArray, isFile, isNumber, isString, validateShallowType } from "../validate/validate-type";
@@ -26,25 +26,62 @@ export function isFunction(value: unknown): value is Func {
 }
 
 function resolveFunction(value: Func, path: string, context: ResolveContext): ValueType | undefined {
-  const left = resolve(value.left, path, context);
-  const right = resolve(value.right, path, context);
+  console.log("resolving function:", path, value);
 
   switch (value.type) {
-    case FunctionType.ADD: {
+    case FunctionType.AGE: {
+      const left = resolve(value.left, path, context);
+
+      if (left === undefined) {
+        return undefined;
+      }
+
+      const date = isDate(left) ? left : new Date(left.toString());
+      return differenceInCalendarYears(new Date(), date);
+    }
+    case FunctionType.SUM: {
+      const left = resolve(value.left, path, context);
+      const right = resolve(value.right, path, context);
+
       if (left === undefined || right === undefined) {
         return undefined;
       }
       return +left + +right;
     }
+    case FunctionType.SUB: {
+      const left = resolve(value.left, path, context);
+      const right = resolve(value.right, path, context);
 
+      if (left === undefined || right === undefined) {
+        return undefined;
+      }
+      return +left - +right;
+    }
+    case FunctionType.DIV: {
+      const left = resolve(value.left, path, context);
+      const right = resolve(value.right, path, context);
+
+      if (left === undefined || right === undefined) {
+        return undefined;
+      }
+      return +left / +right;
+    }
+    case FunctionType.MUL: {
+      const left = resolve(value.left, path, context);
+      const right = resolve(value.right, path, context);
+      if (left === undefined || right === undefined) {
+        return undefined;
+      }
+      return +left * +right;
+    }
     case FunctionType.MIN: {
+      const left = resolve(value.left, path, context);
+      const right = resolve(value.right, path, context);
       if (left === undefined || right === undefined) {
         return undefined;
       }
       return Math.min(+left, +right);
     }
-    default:
-      throw new Error(`Unknown function type: ${value.type}`);
   }
 }
 

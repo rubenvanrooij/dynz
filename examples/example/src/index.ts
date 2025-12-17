@@ -29,17 +29,17 @@ import * as d from "dynz";
 //   console.log(result.values); // ✅ Type-safe access
 // }
 
-const s = d.object({
+const priceExample = d.object({
   fields: {
     price: d.number({
-      rules: [d.min(10), d.min(
-        d.add(
-          d.ref('margin'), 
-          d.ref('commission')
+      rules: [d.min(
+        d.sum(
+            d.ref('margin'),
+            d.ref('commission')
         )
       )]
     }),
-    margin: d.string({
+    margin: d.number({
       rules: [],
     }),
     commission: d.number({
@@ -48,12 +48,44 @@ const s = d.object({
   }
 })
 
+/** SUCCESS */
 console.log(
-  d.validate(s, undefined, {
-    price: 20,
-    margin: '15',
+  d.validate(priceExample, undefined, {
+    price: 3123,
+    margin: 15,
     commission: 5,
-    // note: undefined,
+  })
+);
+
+/** FAILS */
+console.log(
+  d.validate(priceExample, undefined, {
+    price: 3123,
+    margin: 15,
+    commission: 5,
+  })
+);
+
+const parentalApprovalExample = d.object({
+  fields: {
+    birthDate: d.date(),
+    parentalApproval: d.boolean({
+      rules: [
+        d.conditional({
+          when: d.lte(d.age(d.ref('birthDate')), 18),
+          then: d.equals(true, 'Parental approval is required for minors')
+        })
+      ]
+    }),
+  },
+}) 
+
+console.log(JSON.stringify(parentalApprovalExample))
+
+console.log(
+  d.validate(parentalApprovalExample, undefined, {
+    birthDate: new Date('2010-04-22'),
+    parentalApproval: false
   })
 );
 

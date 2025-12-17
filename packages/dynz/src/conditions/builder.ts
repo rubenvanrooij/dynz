@@ -1,5 +1,7 @@
 import {
+  type AgeFunc,
   type AndCondition,
+  type BaseFunc,
   type Condition,
   ConditionType,
   type ConditionValue,
@@ -133,18 +135,61 @@ export function isNotIn<const T extends ConditionValue, const V extends Array<Co
  * FUNCTIONS
  */
 
-export function add<const T extends FunctionValue, const V extends FunctionValue>(
+export function sum<const T extends FunctionValue, const V extends FunctionValue>(
   left: T,
   right: V
-): Func<typeof FunctionType.ADD, T, V> {
+): BaseFunc<typeof FunctionType.SUM, T, V> {
   return {
     _type: "__func__",
-    type: "add",
+    type: "sum",
     left,
     right,
   };
 }
 
+export function sub<const T extends FunctionValue, const V extends FunctionValue>(
+  left: T,
+  right: V
+): BaseFunc<typeof FunctionType.SUB, T, V> {
+  return {
+    _type: "__func__",
+    type: "sub",
+    left,
+    right,
+  };
+}
+
+export function mul<const T extends FunctionValue, const V extends FunctionValue>(
+  left: T,
+  right: V
+): BaseFunc<typeof FunctionType.MUL, T, V> {
+  return {
+    _type: "__func__",
+    type: "mul",
+    left,
+    right,
+  };
+}
+
+export function div<const T extends FunctionValue, const V extends FunctionValue>(
+  left: T,
+  right: V
+): BaseFunc<typeof FunctionType.DIV, T, V> {
+  return {
+    _type: "__func__",
+    type: "div",
+    left,
+    right,
+  };
+}
+
+export function age<const T extends FunctionValue>(left: T): AgeFunc<T> {
+  return {
+    _type: "__func__",
+    type: "age",
+    left,
+  };
+}
 // export function min<const T extends FunctionValue, const V extends FunctionValue>(
 //   left: T,
 //   right: V

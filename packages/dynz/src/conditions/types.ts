@@ -119,16 +119,20 @@ export type RulesDependencyMap = {
 };
 
 export const FunctionType = {
-  ADD: "add",
+  SUM: "sum",
+  SUB: "sub",
+  MUL: "mul",
+  DIV: "div",
   MIN: "min",
+  AGE: "age",
 } as const;
 
 export type FunctionType = EnumValues<typeof FunctionType>;
 
 export type FunctionValue = ValueType | undefined | Reference | Func;
 
-export type Func<
-  T extends FunctionType = FunctionType,
+export type BaseFunc<
+  T extends Exclude<FunctionType, typeof FunctionType.AGE> = Exclude<FunctionType, typeof FunctionType.AGE>,
   V extends FunctionValue = never,
   A extends FunctionValue = never,
 > = {
@@ -137,3 +141,11 @@ export type Func<
   left: [V] extends [never] ? FunctionValue : V;
   right: [A] extends [never] ? FunctionValue : A;
 };
+
+export type AgeFunc<T extends FunctionValue = never> = {
+  _type: "__func__";
+  type: typeof FunctionType.AGE;
+  left: [T] extends [never] ? FunctionValue : T;
+};
+
+export type Func = BaseFunc | AgeFunc;
