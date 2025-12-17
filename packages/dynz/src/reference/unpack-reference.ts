@@ -16,7 +16,9 @@ export function unpackRef<V extends ValueOrReference | undefined>(
   valueOrRef: V,
   path: string,
   context: ResolveContext
-): { value: unknown; static: true } | { schema: Schema; type: SchemaType; value: ValueType | undefined; static: false };
+):
+  | { value: ValueType | undefined; static: true }
+  | { schema: Schema; type: SchemaType; value: ValueType | undefined; static: false };
 export function unpackRef<V extends ValueType | undefined, T extends SchemaType>(
   valueOrRef: V | Reference,
   path: string,
@@ -32,7 +34,7 @@ export function unpackRef<V extends ValueType | undefined, T extends SchemaType>
   if (isReference(valueOrRef)) {
     const { schema, value } = getNested(ensureAbsolutePath(valueOrRef.path, path), context.schema, context.values.new);
 
-    if (expected) {
+    if (expected.length > 0) {
       for (const expect of expected) {
         if (schema.type !== expect) {
           continue;

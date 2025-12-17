@@ -1,9 +1,7 @@
 import { isDate } from "date-fns";
-import { isReference, unpackRef } from "../reference";
-import type { ValueOrReference } from "../reference/reference";
-import { type ResolveContext, type Schema, SchemaType, type ValueType } from "../types";
-import { ensureAbsolutePath, getNested } from "../utils";
-import { isArray, isFile, isNumber, isString, parseDateString, validateType } from "../validate/validate-type";
+import { UnpackedReferenceValue, unpackRef } from "../reference";
+import type { ResolveContext, SchemaType, Unpacked, ValueType, ValueTypeOrUndefined } from "../types";
+import { isArray, isFile, isNumber, isString, validateShallowType } from "../validate/validate-type";
 import {
   type AndCondition,
   type Condition,
@@ -20,38 +18,65 @@ import {
   type OrCondition,
 } from "./types";
 
-export function isFunction(value: ConditionValue): value is Func {
+export function isFunction(value: unknown): value is Func {
   if (typeof value === "object" && value !== null && "_type" in value && value._type === "__func__") {
     return true;
   }
   return false;
 }
 
-export function resolve(value: ConditionValue, path: string, context: ResolveContext): ValueType | undefined {
-  if (isFunction(value)) {
-    const left = resolve(value.left, path, context);
-    const right = resolve(value.right, path, context);
+function resolveFunction(value: Func, path: string, context: ResolveContext): ValueType | undefined {
+  const left = resolve(value.left, path, context);
+  const right = resolve(value.right, path, context);
 
-    switch (value.type) {
-      case FunctionType.ADD: {
-        if (left === undefined || right === undefined) {
-          return undefined;
-        }
-        return +left + +right;
+  switch (value.type) {
+    case FunctionType.ADD: {
+      if (left === undefined || right === undefined) {
+        return undefined;
       }
-
-      case FunctionType.MIN: {
-        if (left === undefined || right === undefined) {
-          return undefined;
-        }
-        return Math.min(+left, +right);
-      }
-      default:
-        throw new Error(`Unknown function type: ${value.type}`);
+      return +left + +right;
     }
+
+    case FunctionType.MIN: {
+      if (left === undefined || right === undefined) {
+        return undefined;
+      }
+      return Math.min(+left, +right);
+    }
+    default:
+      throw new Error(`Unknown function type: ${value.type}`);
+  }
+}
+
+export function resolve(value: ConditionValue, path: string, context: ResolveContext): ValueType | undefined;
+export function resolve<T extends SchemaType>(
+  value: ConditionValue,
+  path: string,
+  context: ResolveContext,
+  ...expected: T[]
+): ValueType<Unpacked<T>> | undefined;
+export function resolve<T extends SchemaType = SchemaType>(
+  value: ConditionValue,
+  path: string,
+  context: ResolveContext,
+  ...expected: T[]
+): ValueType | undefined {
+  if (isFunction(value)) {
+    const ret = resolveFunction(value, path, context);
+
+    if (ret === undefined) {
+      return ret;
+    }
+
+    if (expected.length > 0 && expected.some((type) => !validateShallowType(type, ret))) {
+      console.warn(`Expected type ${expected.join(", ")} but got ${typeof ret}`);
+      return undefined;
+    }
+
+    return ret;
   }
 
-  return unpackRef(value, path, context);
+  return unpackRef(value, path, context, ...expected).value;
 }
 
 export function resolveCondition(condition: Condition, path: string, context: ResolveContext): boolean {
@@ -72,7 +97,7 @@ export function resolveCondition(condition: Condition, path: string, context: Re
 
       if (!isString(left)) {
         throw new Error(
-          `Condition ${condition.type} expects a string value at path ${condition.path}, but got ${typeof left}`
+          `Condition ${condition.type} expects a string value at path ${condition.left}, but got ${typeof left}`
         );
       }
 
@@ -89,11 +114,11 @@ export function resolveCondition(condition: Condition, path: string, context: Re
   }
 }
 
-function getSizeCompareValue(value: ValueType, schema: Schema): ValueType | number {
+function getSizeCompareValue(value: ValueType | Array<ValueTypeOrUndefined>): ValueType {
   // Handle special case where the schema type is a date string
-  if (schema.type === SchemaType.DATE_STRING && isString(value)) {
-    return parseDateString(value, schema.format).getTime();
-  }
+  // if (schema.type === SchemaType.DATE_STRING && isString(value)) {
+  //   return parseDateString(value, schema.format).getTime();
+  // }
 
   if (isNumber(value)) {
     return value;
@@ -116,18 +141,18 @@ function getSizeCompareValue(value: ValueType, schema: Schema): ValueType | numb
 }
 
 const OPERATORS = {
-  [ConditionType.EQUALS]: (a: ValueType, b: ValueType) => {
+  [ConditionType.EQUALS]: (a: ValueType, b: ValueType | Array<ValueTypeOrUndefined>) => {
     return a === b;
   },
-  [ConditionType.NOT_EQUALS]: (a: ValueType, b: ValueType, _: Schema) => a !== b,
-  [ConditionType.GREATHER_THAN]: (a: ValueType, b: ValueType, schema: Schema) =>
-    getSizeCompareValue(a, schema) > getSizeCompareValue(b, schema),
-  [ConditionType.GREATHER_THAN_OR_EQUAL]: (a: ValueType, b: ValueType, schema: Schema) =>
-    getSizeCompareValue(a, schema) >= getSizeCompareValue(b, schema),
-  [ConditionType.LOWER_THAN]: (a: ValueType, b: ValueType, schema: Schema) =>
-    getSizeCompareValue(a, schema) < getSizeCompareValue(b, schema),
-  [ConditionType.LOWER_THAN_OR_EQUAL]: (a: ValueType, b: ValueType, schema: Schema) =>
-    getSizeCompareValue(a, schema) <= getSizeCompareValue(b, schema),
+  [ConditionType.NOT_EQUALS]: (a: ValueType, b: ValueType | Array<ValueTypeOrUndefined>) => a !== b,
+  [ConditionType.GREATHER_THAN]: (a: ValueType, b: ValueType | Array<ValueTypeOrUndefined>) =>
+    getSizeCompareValue(a) > getSizeCompareValue(b),
+  [ConditionType.GREATHER_THAN_OR_EQUAL]: (a: ValueType, b: ValueType | Array<ValueTypeOrUndefined>) =>
+    getSizeCompareValue(a) >= getSizeCompareValue(b),
+  [ConditionType.LOWER_THAN]: (a: ValueType, b: ValueType | Array<ValueTypeOrUndefined>) =>
+    getSizeCompareValue(a) < getSizeCompareValue(b),
+  [ConditionType.LOWER_THAN_OR_EQUAL]: (a: ValueType, b: ValueType | Array<ValueTypeOrUndefined>) =>
+    getSizeCompareValue(a) <= getSizeCompareValue(b),
 } as const;
 
 function validateWithOperator(
@@ -141,14 +166,16 @@ function validateWithOperator(
   path: string,
   context: ResolveContext
 ): boolean {
-  const { left, right, schema } = getConditionOperands(condition, path, context);
+  const { left, right } = getConditionOperands(condition, path, context);
+
+  console.log(`validateWithOperator: ${condition.type}`, left, right);
 
   // Both operands must be defined for comparison
   if (left === undefined || right === undefined) {
     return false;
   }
 
-  return OPERATORS[condition.type](left, right, schema);
+  return OPERATORS[condition.type](left, right);
 }
 
 /**
@@ -165,36 +192,32 @@ function getConditionOperands<T extends ValueType>(
   condition: Exclude<Condition, AndCondition | OrCondition>,
   path: string,
   context: ResolveContext
-): { left?: ValueType | undefined; schema: Schema; right?: ValueType | undefined } {
+): { left?: ValueType | undefined; right?: ValueType | undefined | Array<ValueType | undefined> } {
   const left = resolve(condition.left, path, context);
 
   if (Array.isArray(condition.right)) {
     return {
       left,
       right: condition.right.map((val) => {
-        const unpacked = resolve(val, path, context);
-
-        if (unpacked.static) {
-          return unpacked.value as ValueType;
+        if (isFunction(val)) {
+          return resolve(val, path, context);
         }
 
-        return unpacked.value as ValueType;
+        const unpacked = unpackRef(val, path, context);
+
+        if (unpacked.static) {
+          return unpacked.value;
+        }
+
+        return unpacked.value;
       }),
     };
   }
 
-  const unpacked = unpackRef(condition.right, path, context);
-
-  if (unpacked.static) {
-    return {
-      left: left,
-      right: unpacked.value as ValueType,
-    };
-  }
+  const right = resolve(condition.right, path, context); // unpackRef(condition.right, path, context);
 
   return {
-    left: left,
-    schema: nested.schema,
-    right: unpacked.value as ValueType,
+    left,
+    right,
   };
 }

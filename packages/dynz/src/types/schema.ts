@@ -106,7 +106,7 @@ export type ValueType<T extends SchemaType = SchemaType> = T extends typeof Sche
         : T extends typeof SchemaType.OBJECT
           ? Record<string, unknown>
           : T extends typeof SchemaType.ARRAY
-            ? unknown[]
+            ? ValueType[]
             : T extends typeof SchemaType.BOOLEAN
               ? boolean
               : T extends typeof SchemaType.OPTIONS
@@ -116,6 +116,8 @@ export type ValueType<T extends SchemaType = SchemaType> = T extends typeof Sche
                   : T extends typeof SchemaType.ENUM
                     ? EnumValue
                     : never;
+
+export type ValueTypeOrUndefined = ValueType | undefined | Array<ValueType | undefined>;
 
 type OptionalFields<T extends ObjectSchema<never>> = {
   [K in keyof T["fields"] as IsOptionalField<T["fields"][K]> extends true ? K : never]?: SchemaValuesInternal<

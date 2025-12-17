@@ -145,14 +145,14 @@ export function add<const T extends FunctionValue, const V extends FunctionValue
   };
 }
 
-export function min<const T extends FunctionValue, const V extends FunctionValue>(
-  left: T,
-  right: V
-): Func<typeof FunctionType.MIN, T, V> {
-  return {
-    _type: "__func__",
-    type: "min",
-    left,
-    right,
-  };
-}
+// export function min<const T extends FunctionValue, const V extends FunctionValue>(
+//   left: T,
+//   right: V
+// ): Func<typeof FunctionType.MIN, T, V> {
+//   return {
+//     _type: "__func__",
+//     type: "min",
+//     left,
+//     right,
+//   };
+// }

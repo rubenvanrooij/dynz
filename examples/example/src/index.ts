@@ -31,25 +31,29 @@ import * as d from "dynz";
 
 const s = d.object({
   fields: {
-    one: d.dateString({
-      format: "yyyy",
-      rules: [d.after(d.ref("two"))],
+    price: d.number({
+      rules: [d.min(10), d.min(
+        d.add(
+          d.ref('margin'), 
+          d.ref('commission')
+        )
+      )]
     }),
-    two: d.date({
-      rules: [
-        d.after(d.ref("one")),
-        d.conditional({
-          when: d.and(d.gt("one", 12), d.neq("one", undefined)),
-          then: d.after(d.ref("one")),
-        }),
-      ],
+    margin: d.string({
+      rules: [],
     }),
-  },
-});
+    commission: d.number({
+      rules: [d.min(0)],
+    }),
+  }
+})
+
 console.log(
   d.validate(s, undefined, {
-    one: "2026",
-    two: new Date(),
+    price: 20,
+    margin: '15',
+    commission: 5,
+    // note: undefined,
   })
 );
 

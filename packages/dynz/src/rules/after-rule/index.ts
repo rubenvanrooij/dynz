@@ -1,11 +1,11 @@
 import { type Reference, unpackRef } from "../../reference";
 import type { DateSchema, DateStringSchema } from "../../schemas";
 import {
-  SchemaType,
   type DateString,
   type ErrorMessageFromRule,
   type ExtractResolvedRules,
   type RuleFn,
+  SchemaType,
 } from "../../types";
 import { parseDateString } from "../../validate/validate-type";
 import { getDateFromDateOrDateStringRefeference } from "../utils/reference";
