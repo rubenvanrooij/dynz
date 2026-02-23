@@ -2,7 +2,7 @@ import { isDate } from "date-fns";
 import type { ResolveContext, SchemaType, Unpacked, ValueType } from "../types";
 import { coerce, coerceSchema, ensureAbsolutePath, getNested } from "../utils";
 import { isArray, isFile, isNumber, isString, validateShallowType, validateType } from "../validate/validate-type";
-import type { ParamaterValue, Reference } from "./types";
+import { type ParamaterValue, PredicateType, type Reference } from "./types";
 
 export function unpackRef<T extends SchemaType = SchemaType>(
   ref: Reference,
@@ -42,9 +42,9 @@ export function resolve(input: ParamaterValue, path: string, context: ResolveCon
   }
 
   switch (input.type) {
-    case "ref":
+    case "_dref":
       return unpackRef(input, path, context);
-    case "static":
+    case "st":
       return input.value;
     case "and":
       return input.predicates.every((cond) => resolve(cond, path, context));
@@ -60,13 +60,18 @@ export function resolve(input: ParamaterValue, path: string, context: ResolveCon
       const right = resolve(input.right, path, context);
       return left !== right;
     }
-    case "gt": {
+    case PredicateType.GREATHER_THAN: {
       const left = resolve(input.left, path, context);
       const right = resolve(input.right, path, context);
       if (left === undefined || right === undefined) {
         return undefined;
       }
       return +left > +right;
+    }
+    case PredicateType.CUSTOM: {
+      const inputs = input.inputs.map((val) => resolve(val, path, context));
+
+      return input.name === "isDate" ? isDate(resolvedInput) : undefined;
     }
     case "gte": {
       const left = resolve(input.left, path, context);
@@ -150,16 +155,5 @@ export function resolve(input: ParamaterValue, path: string, context: ResolveCon
 
       return val;
     }
-  }
-
-  switch (func.type) {
-    case "sum":
-      return ((resolve(func.left) as number) + resolve(func.right)) as number;
-    case "sub":
-      return ((resolve(func.left) as number) - resolve(func.right)) as number;
-    case "multiply":
-      return ((resolve(func.left) as number) * resolve(func.right)) as number;
-    case "divide":
-      return ((resolve(func.left) as number) / resolve(func.right)) as number;
   }
 }

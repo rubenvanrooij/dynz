@@ -1,10 +1,10 @@
+import type { Reference } from "../reference";
 import type { ValueType } from "../types";
 import {
   type DefaultPredicate,
   type LeftRightTransformer,
   type ParamaterValue,
   PredicateType,
-  type Reference,
   type Static,
   TransformerType,
 } from "./types";
@@ -15,16 +15,16 @@ import {
  * @param right
  * @returns
  */
-export function _<const T extends ValueType>(val: T): Static<T> {
+export function val<const T extends ValueType>(val: T): Static<T> {
   return {
-    type: "static",
+    type: "st",
     value: val,
   };
 }
 
-export function ref<const T extends string>(val: T): Reference<T> {
+export function r<const T extends string>(val: T): Reference<T> {
   return {
-    type: "ref",
+    type: "_dref",
     path: val,
   };
 }

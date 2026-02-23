@@ -1,3 +1,4 @@
-import * as d from "./builder";
+import { ref } from "../reference";
+import { gte, multiply, val } from "./builder";
 
-const foo = d.gte(d._(5), d.multiply(d.ref("pricePerItem"), d.ref("quantity")));
+const fsoo = gte(val(5), multiply(ref("pricePerItem"), val(3)));

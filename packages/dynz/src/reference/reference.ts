@@ -1,15 +1,15 @@
 import type { ValueType } from "..";
 
-export const REFERENCE_TYPE = "__dref" as const;
+export const REFERENCE_TYPE = "_dref" as const;
 
 export type Reference<T extends string = string> = {
-  readonly _type: typeof REFERENCE_TYPE;
+  readonly type: typeof REFERENCE_TYPE;
   readonly path: T;
 };
 
 export function isReference(value: unknown): value is Reference {
   return (
-    typeof value === "object" && value !== null && "_type" in value && value._type === REFERENCE_TYPE && "path" in value
+    typeof value === "object" && value !== null && "type" in value && value.type === REFERENCE_TYPE && "path" in value
   );
 }
 
@@ -20,7 +20,7 @@ export type ValueOrReference<T extends ValueType = ValueType> = T | Reference;
 
 export function ref<const T extends string>(path: T): Reference<T> {
   return {
-    _type: REFERENCE_TYPE,
+    type: REFERENCE_TYPE,
     path,
   };
 }

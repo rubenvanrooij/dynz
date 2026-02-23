@@ -1,17 +1,12 @@
 // import type { Reference } from "../reference";
+import type { Reference } from "../reference";
 import type { EnumValues } from "../schemas";
 import type { ValueType } from "../types";
 
 export type Static<T extends ValueType = ValueType> = {
-  type: "static";
+  type: "st";
   value: T;
 };
-
-export type Reference<T extends string = string> = {
-  type: "ref";
-  path: T;
-};
-
 export type ParamaterValue = Static | undefined | Reference | Predicate | Transformer;
 
 /**
@@ -29,13 +24,14 @@ export const PredicateType = {
   MATCHES: "matches",
   IS_IN: "in",
   IS_NOT_IN: "nin",
+  CUSTOM: "custom",
 } as const;
 
 export type PredicateType = EnumValues<typeof PredicateType>;
 
 export type DefaultPredicateType = Exclude<
   PredicateType,
-  typeof PredicateType.OR | typeof PredicateType.AND | typeof PredicateType.MATCHES
+  typeof PredicateType.OR | typeof PredicateType.AND | typeof PredicateType.MATCHES | typeof PredicateType.CUSTOM
 >;
 
 export type DefaultPredicate<
@@ -65,7 +61,13 @@ export type MatchesPredicate<TLeft extends ParamaterValue = never, TRight extend
   flags?: string | undefined;
 };
 
-export type Predicate = DefaultPredicate | CombinatorPredicate | MatchesPredicate;
+export type CustomPredicate<T extends ParamaterValue = never> = {
+  type: typeof PredicateType.CUSTOM;
+  name: string;
+  inputs: [T] extends [never] ? ParamaterValue[] : T;
+};
+
+export type Predicate = DefaultPredicate | CombinatorPredicate | MatchesPredicate | CustomPredicate;
 
 /**
  * Functions available in dynz
