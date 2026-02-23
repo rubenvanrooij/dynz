@@ -2,7 +2,7 @@ import { isDate } from "date-fns";
 import type { ResolveContext, SchemaType, Unpacked, ValueType } from "../types";
 import { coerce, coerceSchema, ensureAbsolutePath, getNested } from "../utils";
 import { isArray, isFile, isNumber, isString, validateShallowType, validateType } from "../validate/validate-type";
-import { type ParamaterValue, PredicateType, type Reference } from "./types";
+import { type ParamaterValue, PredicateType, type Reference, TransformerType } from "./types";
 
 export function unpackRef<T extends SchemaType = SchemaType>(
   ref: Reference,
@@ -46,16 +46,16 @@ export function resolve(input: ParamaterValue, path: string, context: ResolveCon
       return unpackRef(input, path, context);
     case "st":
       return input.value;
-    case "and":
+    case PredicateType.AND:
       return input.predicates.every((cond) => resolve(cond, path, context));
-    case "or":
+    case PredicateType.OR:
       return input.predicates.some((cond) => resolve(cond, path, context));
-    case "eq": {
+    case PredicateType.EQUALS: {
       const left = resolve(input.left, path, context);
       const right = resolve(input.right, path, context);
       return left === right;
     }
-    case "neq": {
+    case PredicateType.NOT_EQUALS: {
       const left = resolve(input.left, path, context);
       const right = resolve(input.right, path, context);
       return left !== right;
@@ -68,12 +68,12 @@ export function resolve(input: ParamaterValue, path: string, context: ResolveCon
       }
       return +left > +right;
     }
-    case PredicateType.CUSTOM: {
-      const inputs = input.inputs.map((val) => resolve(val, path, context));
+    // case PredicateType.CUSTOM: {
+    //   const inputs = input.inputs.map((val) => resolve(val, path, context));
 
-      return input.name === "isDate" ? isDate(resolvedInput) : undefined;
-    }
-    case "gte": {
+    //   return input.name === "isDate" ? isDate(resolvedInput) : undefined;
+    // }
+    case PredicateType.GREATHER_THAN_OR_EQUAL: {
       const left = resolve(input.left, path, context);
       const right = resolve(input.right, path, context);
       if (left === undefined || right === undefined) {
@@ -81,7 +81,7 @@ export function resolve(input: ParamaterValue, path: string, context: ResolveCon
       }
       return +left >= +right;
     }
-    case "lt": {
+    case PredicateType.LOWER_THAN: {
       const left = resolve(input.left, path, context);
       const right = resolve(input.right, path, context);
       if (left === undefined || right === undefined) {
@@ -89,7 +89,7 @@ export function resolve(input: ParamaterValue, path: string, context: ResolveCon
       }
       return +left < +right;
     }
-    case "lte": {
+    case PredicateType.LOWER_THAN_OR_EQUAL: {
       const left = resolve(input.left, path, context);
       const right = resolve(input.right, path, context);
       if (left === undefined || right === undefined) {
@@ -97,7 +97,7 @@ export function resolve(input: ParamaterValue, path: string, context: ResolveCon
       }
       return +left <= +right;
     }
-    case "matches": {
+    case PredicateType.MATCHES: {
       const left = resolve(input.left, path, context);
       const right = resolve(input.right, path, context);
       if (left === undefined || isString(right) === false) {
@@ -105,7 +105,7 @@ export function resolve(input: ParamaterValue, path: string, context: ResolveCon
       }
       return new RegExp(right, input.flags).test(left.toString());
     }
-    case "sum": {
+    case TransformerType.SUM: {
       const left = resolve(input.left, path, context);
       const right = resolve(input.right, path, context);
       if (left === undefined || right === undefined) {
@@ -113,7 +113,7 @@ export function resolve(input: ParamaterValue, path: string, context: ResolveCon
       }
       return +left + +right;
     }
-    case "sub": {
+    case TransformerType.SUB: {
       const left = resolve(input.left, path, context);
       const right = resolve(input.right, path, context);
       if (left === undefined || right === undefined) {
@@ -121,7 +121,7 @@ export function resolve(input: ParamaterValue, path: string, context: ResolveCon
       }
       return +left - +right;
     }
-    case "multiply": {
+    case TransformerType.MULTIPLY: {
       const left = resolve(input.left, path, context);
       const right = resolve(input.right, path, context);
       if (left === undefined || right === undefined) {
@@ -129,7 +129,7 @@ export function resolve(input: ParamaterValue, path: string, context: ResolveCon
       }
       return +left * +right;
     }
-    case "divide": {
+    case TransformerType.DIVIDE: {
       const left = resolve(input.left, path, context);
       const right = resolve(input.right, path, context);
       if (left === undefined || right === undefined) {
@@ -137,7 +137,7 @@ export function resolve(input: ParamaterValue, path: string, context: ResolveCon
       }
       return +left / +right;
     }
-    case "size": {
+    case TransformerType.SIZE: {
       const val = resolve(input.value, path, context);
 
       if (isString(val) || isArray(val)) {
