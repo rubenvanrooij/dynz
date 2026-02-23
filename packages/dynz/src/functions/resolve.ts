@@ -1,8 +1,9 @@
 import { isDate } from "date-fns";
-import type { ResolveContext, SchemaType, Unpacked, ValueType } from "../types";
+import type { Reference } from "../reference";
+import type { ResolveContext, SchemaType, ValueType } from "../types";
 import { coerce, coerceSchema, ensureAbsolutePath, getNested } from "../utils";
-import { isArray, isFile, isNumber, isString, validateShallowType, validateType } from "../validate/validate-type";
-import { type ParamaterValue, PredicateType, type Reference, TransformerType } from "./types";
+import { isArray, isFile, isString, validateShallowType, validateType } from "../validate/validate-type";
+import { type ParamaterValue, PredicateType, TransformerType } from "./types";
 
 export function unpackRef<T extends SchemaType = SchemaType>(
   ref: Reference,
