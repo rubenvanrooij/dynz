@@ -8,7 +8,7 @@ export type OptionsValue = OptionValue[];
 /**
  * ENUM SCHEMA
  */
-export type OptionsRules = EqualsRule<OptionValue> | CustomRule;
+export type OptionsRules = EqualsRule | CustomRule;
 export type OptionsSchema<TOptions extends OptionsValue = OptionsValue> = BaseSchema<
   Unpacked<TOptions>,
   typeof SchemaType.OPTIONS,

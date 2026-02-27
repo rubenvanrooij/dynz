@@ -7,7 +7,12 @@ export type Static<T extends ValueType = ValueType> = {
   type: "st";
   value: T;
 };
-export type ParamaterValue = Static | undefined | Reference | Predicate | Transformer;
+export type ParamaterValue<T extends ValueType = ValueType> =
+  | Static<T>
+  | undefined
+  | Reference
+  | Predicate
+  | Transformer;
 
 /**
  * Predicate types available in Dynz
@@ -70,15 +75,15 @@ export type CustomPredicate<T extends ParamaterValue = never> = {
 export type Predicate = DefaultPredicate | CombinatorPredicate | MatchesPredicate | CustomPredicate;
 
 /**
- * Functions available in dynz
+ * Transformation / functions available in dynz
  */
 export const TransformerType = {
   SUM: "sum",
   SUB: "sub",
   MULTIPLY: "multiply",
   DIVIDE: "divide",
-  DAYS: "days",
   SIZE: "size",
+  AGE: "age", // returns the current age in years for a date object
 } as const;
 
 export type TransformerType = EnumValues<typeof TransformerType>;
@@ -105,6 +110,11 @@ export type SizeTransformer<TValue extends ParamaterValue = never> = {
   value: [TValue] extends [never] ? ParamaterValue : TValue;
 };
 
-export type Transformer = LeftRightTransformer | SizeTransformer;
+export type AgeTransformer<TValue extends ParamaterValue = never> = {
+  type: typeof TransformerType.AGE;
+  value: [TValue] extends [never] ? ParamaterValue : TValue;
+};
+
+export type Transformer = LeftRightTransformer | SizeTransformer | AgeTransformer;
 
 export type Func = Transformer | Predicate;

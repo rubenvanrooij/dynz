@@ -1,5 +1,5 @@
+import { resolvePredicate } from "../functions";
 import type { ResolveContext, Schema } from "../types";
-import { resolveCondition } from "./resolve-condition";
 
 /**
  * Resolves one of the following properties: required, mutable, included on a
@@ -12,9 +12,21 @@ export function resolveProperty<T extends Schema>(
   defaultValue: boolean,
   context: ResolveContext
 ): boolean {
-  if (schema[property] === undefined) {
+  const prop = schema[property];
+
+  if (prop === undefined) {
     return defaultValue;
   }
 
-  return typeof schema[property] === "boolean" ? schema[property] : resolveCondition(schema[property], path, context);
+  if (typeof prop === "boolean") {
+    return prop;
+  }
+
+  const resolved = resolvePredicate(prop, path, context);
+
+  if (resolved === undefined) {
+    return defaultValue;
+  }
+
+  return resolved;
 }

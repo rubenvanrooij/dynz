@@ -9,13 +9,7 @@ import {
   TransformerType,
 } from "./types";
 
-/**
- *
- * @param left
- * @param right
- * @returns
- */
-export function val<const T extends ValueType>(val: T): Static<T> {
+export function v<const T extends ValueType>(val: T): Static<T> {
   return {
     type: "st",
     value: val,
@@ -153,6 +147,13 @@ export function divide<const T extends ParamaterValue, const V extends Paramater
 export function size<const T extends ParamaterValue>(value: T): { type: typeof TransformerType.SIZE; value: T } {
   return {
     type: TransformerType.SIZE,
+    value,
+  };
+}
+
+export function age<const T extends ParamaterValue>(value: T): { type: typeof TransformerType.AGE; value: T } {
+  return {
+    type: TransformerType.AGE,
     value,
   };
 }

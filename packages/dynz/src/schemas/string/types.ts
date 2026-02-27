@@ -1,4 +1,3 @@
-import type { Reference } from "../../reference";
 import type {
   CustomRule,
   EmailRule,
@@ -23,7 +22,7 @@ export type StringRules =
   | IsNumericRule
   | EmailRule
   | CustomRule
-  | OneOfRule<Array<string | Reference>>;
+  | OneOfRule;
 
 export type StringSchema<TRule extends StringRules = StringRules> = BaseSchema<
   string,

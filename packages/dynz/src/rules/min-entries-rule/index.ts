@@ -1,16 +1,19 @@
-import { type Reference, unpackRef } from "../../reference";
+import { type ParamaterValue, resolveExpected } from "../../functions";
 import type { ObjectSchema } from "../../schemas";
 import { type ErrorMessageFromRule, type ExtractResolvedRules, type RuleFn, SchemaType } from "../../types";
 
-export type MinEntriesRule<T extends number | Reference = number | Reference> = {
+export type MinEntriesRule<T extends ParamaterValue<number> = ParamaterValue<number>> = {
   type: "min_entries";
   min: T;
   code?: string | undefined;
 };
 
-export type MinEntriesRuleErrorMessage = ErrorMessageFromRule<MinEntriesRule>;
+export type MinEntriesRuleErrorMessage = ErrorMessageFromRule<MinEntriesRule, number, "min">;
 
-export function minEntries<T extends number | Reference>(min: T, code?: string): MinEntriesRule<T> {
+export function minEntries<T extends ParamaterValue<number> = ParamaterValue<number>>(
+  min: T,
+  code?: string
+): MinEntriesRule<T> {
   return { min, type: "min_entries", code };
 }
 
@@ -19,7 +22,7 @@ export const minEntriesRule: RuleFn<
   Extract<ExtractResolvedRules<ObjectSchema<never>>, MinEntriesRule>,
   MinEntriesRuleErrorMessage
 > = ({ rule, value, path, context }) => {
-  const { value: min } = unpackRef(rule.min, path, context, SchemaType.NUMBER);
+  const min = resolveExpected(rule.min, path, context, SchemaType.NUMBER);
 
   if (min === undefined) {
     return undefined;

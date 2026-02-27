@@ -1,4 +1,5 @@
 import type { Condition } from "../conditions";
+import type { Predicate } from "../functions";
 import type { PrivateValue } from "../private";
 import type { ConditionalRule } from "../rules";
 import type {
@@ -37,9 +38,9 @@ export type BaseSchema<TValue, TType extends SchemaType, TRule extends BaseRule>
   type: TType;
   rules?: Array<TRule | ConditionalRule<TRule, never>>;
   default?: TValue;
-  required?: boolean | Condition;
-  mutable?: boolean | Condition;
-  included?: boolean | Condition;
+  required?: boolean | Predicate;
+  mutable?: boolean | Predicate;
+  included?: boolean | Predicate;
   private?: boolean;
 };
 

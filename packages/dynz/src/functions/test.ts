@@ -1,4 +1,7 @@
+import { isIn } from "../conditions";
 import { ref } from "../reference";
-import { gte, multiply, val } from "./builder";
+import { gte, multiply, v } from "./builder";
 
-const fsoo = gte(val(5), multiply(ref("pricePerItem"), val(3)));
+const _fsoo = gte(v(5), multiply(ref("pricePerItem"), v(3)));
+
+isIn("foo", ["foo", "bar"]);

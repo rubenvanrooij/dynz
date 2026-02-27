@@ -34,8 +34,8 @@ const priceExample = d.object({
     price: d.number({
       rules: [d.min(
         d.sum(
-            d.ref('margin'),
-            d.ref('commission')
+          d.ref('margin'),
+          d.ref('commission')
         )
       )]
     }),
@@ -43,7 +43,7 @@ const priceExample = d.object({
       rules: [],
     }),
     commission: d.number({
-      rules: [d.min(0)],
+      rules: [d.min(d.v(0))],
     }),
   }
 })
@@ -66,26 +66,30 @@ console.log(
   })
 );
 
+const underEighteen = <T extends string,>(ref: T) => d.lte(d.age(d.ref(ref)), d.v(18))
+
 const parentalApprovalExample = d.object({
   fields: {
     birthDate: d.date(),
     parentalApproval: d.boolean({
       rules: [
         d.conditional({
-          when: d.lte(d.age(d.ref('birthDate')), 18),
-          then: d.equals(true, 'Parental approval is required for minors')
+          /** when the user age is under 18 */
+          when: d.eq(d.ref('parentalApproval'), d.v(false)), // underEighteen('birthDate'),
+          /** then parental approval is required */
+          then: d.equals(d.v(true), 'Parental approval is required for minors')
         })
       ]
     }),
   },
-}) 
+})
 
-console.log(JSON.stringify(parentalApprovalExample))
+console.log(JSON.stringify(parentalApprovalExample, undefined, 2))
 
 console.log(
   d.validate(parentalApprovalExample, undefined, {
-    birthDate: new Date('2010-04-22'),
-    parentalApproval: false
+    birthDate: new Date('2008-01-22'),
+    parentalApproval: true
   })
 );
 

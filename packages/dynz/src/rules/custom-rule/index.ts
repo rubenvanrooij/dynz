@@ -1,7 +1,7 @@
-import { unpackRef, type ValueOrReference } from "../../reference";
+import { type ParamaterValue, resolve } from "../../functions";
 import type { ErrorMessageFromRule, ExtractResolvedRules, RuleFn, Schema } from "../../types";
 
-export type CustomRule<T extends Record<string, ValueOrReference> = Record<string, ValueOrReference>> = {
+export type CustomRule<T extends Record<string, ParamaterValue> = Record<string, ParamaterValue>> = {
   type: "custom";
   name: string;
   params: T;
@@ -13,8 +13,8 @@ export type CustomRuleErrorMessage = ErrorMessageFromRule<
 >;
 
 export function custom(name: string): CustomRule;
-export function custom<T extends Record<string, ValueOrReference>>(name: string, params: T): CustomRule<T>;
-export function custom<T extends Record<string, ValueOrReference>>(name: string, params?: T): CustomRule {
+export function custom<T extends Record<string, ParamaterValue>>(name: string, params: T): CustomRule<T>;
+export function custom<T extends Record<string, ParamaterValue>>(name: string, params?: T): CustomRule {
   return { type: "custom", name, params: params || {} };
 }
 
@@ -33,7 +33,7 @@ export const customRule: RuleFn<Schema, Extract<ExtractResolvedRules<Schema>, Cu
 
   // unpack all references in the rule
   const unpackedParams = Object.entries(rule.params).reduce<Record<string, unknown>>((acc, [key, valueOrRef]) => {
-    acc[key] = unpackRef(valueOrRef, path, context).value;
+    acc[key] = resolve(valueOrRef, path, context);
     return acc;
   }, {});
 

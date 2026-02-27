@@ -3,7 +3,7 @@ import type { Reference } from "../reference";
 import type { ResolveContext, SchemaType, ValueType } from "../types";
 import { coerce, coerceSchema, ensureAbsolutePath, getNested } from "../utils";
 import { isArray, isFile, isString, validateShallowType, validateType } from "../validate/validate-type";
-import { type ParamaterValue, PredicateType, TransformerType } from "./types";
+import { type ParamaterValue, type Predicate, PredicateType, type Transformer, TransformerType } from "./types";
 
 export function unpackRef<T extends SchemaType = SchemaType>(
   ref: Reference,
@@ -37,16 +37,47 @@ export function unpackRef<T extends SchemaType = SchemaType>(
   return undefined;
 }
 
+export function resolveExpected<T extends SchemaType = SchemaType>(
+  input: ParamaterValue,
+  path: string,
+  context: ResolveContext,
+  ...expected: T[]
+): ValueType<T> | undefined {
+  const value = resolve(input, path, context);
+
+  if (expected.length > 0) {
+    for (const expect of expected) {
+      const val = coerce(expect, value);
+
+      if (validateShallowType(expect, val)) {
+        return val;
+      }
+    }
+
+    return undefined;
+  }
+
+  return value as ValueType<T> | undefined;
+}
+
 export function resolve(input: ParamaterValue, path: string, context: ResolveContext): ValueType | undefined {
   if (input === undefined) {
     return undefined;
   }
 
+  if (input.type === "_dref") {
+    return unpackRef(input, path, context);
+  }
+
+  if (input.type === "st") {
+    return input.value;
+  }
+
+  return resolveFunction(input, path, context);
+}
+
+export function resolvePredicate(input: Predicate, path: string, context: ResolveContext): boolean | undefined {
   switch (input.type) {
-    case "_dref":
-      return unpackRef(input, path, context);
-    case "st":
-      return input.value;
     case PredicateType.AND:
       return input.predicates.every((cond) => resolve(cond, path, context));
     case PredicateType.OR:
@@ -55,6 +86,26 @@ export function resolve(input: ParamaterValue, path: string, context: ResolveCon
       const left = resolve(input.left, path, context);
       const right = resolve(input.right, path, context);
       return left === right;
+    }
+    case PredicateType.IS_IN: {
+      const left = resolve(input.left, path, context);
+      const right = resolve(input.right, path, context);
+
+      if (!isArray(right) || left === undefined) {
+        return undefined;
+      }
+
+      return right.includes(left);
+    }
+    case PredicateType.IS_NOT_IN: {
+      const left = resolve(input.left, path, context);
+      const right = resolve(input.right, path, context);
+
+      if (!isArray(right) || left === undefined) {
+        return undefined;
+      }
+
+      return !right.includes(left);
     }
     case PredicateType.NOT_EQUALS: {
       const left = resolve(input.left, path, context);
@@ -69,11 +120,95 @@ export function resolve(input: ParamaterValue, path: string, context: ResolveCon
       }
       return +left > +right;
     }
-    // case PredicateType.CUSTOM: {
-    //   const inputs = input.inputs.map((val) => resolve(val, path, context));
+    case PredicateType.CUSTOM: {
+      throw new Error("not yet implemented");
+    }
+    case PredicateType.GREATHER_THAN_OR_EQUAL: {
+      const left = resolve(input.left, path, context);
+      const right = resolve(input.right, path, context);
+      if (left === undefined || right === undefined) {
+        return undefined;
+      }
+      return +left >= +right;
+    }
+    case PredicateType.LOWER_THAN: {
+      const left = resolve(input.left, path, context);
+      const right = resolve(input.right, path, context);
+      if (left === undefined || right === undefined) {
+        return undefined;
+      }
+      return +left < +right;
+    }
+    case PredicateType.LOWER_THAN_OR_EQUAL: {
+      const left = resolve(input.left, path, context);
+      const right = resolve(input.right, path, context);
+      if (left === undefined || right === undefined) {
+        return undefined;
+      }
+      return +left <= +right;
+    }
+    case PredicateType.MATCHES: {
+      const left = resolve(input.left, path, context);
+      const right = resolve(input.right, path, context);
+      if (left === undefined || isString(right) === false) {
+        return undefined;
+      }
+      return new RegExp(right, input.flags).test(left.toString());
+    }
+  }
+}
 
-    //   return input.name === "isDate" ? isDate(resolvedInput) : undefined;
-    // }
+export function resolveFunction(
+  input: Predicate | Transformer,
+  path: string,
+  context: ResolveContext
+): ValueType | undefined {
+  switch (input.type) {
+    case PredicateType.AND:
+      return input.predicates.every((cond) => resolve(cond, path, context));
+    case PredicateType.OR:
+      return input.predicates.some((cond) => resolve(cond, path, context));
+    case PredicateType.EQUALS: {
+      const left = resolve(input.left, path, context);
+      const right = resolve(input.right, path, context);
+      return left === right;
+    }
+    case PredicateType.IS_IN: {
+      const left = resolve(input.left, path, context);
+      const right = resolve(input.right, path, context);
+
+      if (!isArray(right) || left === undefined) {
+        return undefined;
+      }
+
+      return right.includes(left);
+    }
+    case PredicateType.IS_NOT_IN: {
+      const left = resolve(input.left, path, context);
+      const right = resolve(input.right, path, context);
+
+      if (!isArray(right) || left === undefined) {
+        return undefined;
+      }
+
+      return !right.includes(left);
+    }
+    case PredicateType.NOT_EQUALS: {
+      const left = resolve(input.left, path, context);
+      const right = resolve(input.right, path, context);
+      return left !== right;
+    }
+    case PredicateType.GREATHER_THAN: {
+      const left = resolve(input.left, path, context);
+      const right = resolve(input.right, path, context);
+      if (left === undefined || right === undefined) {
+        return undefined;
+      }
+      return +left > +right;
+    }
+    case PredicateType.CUSTOM: {
+      throw new Error("not yet implemented");
+    }
     case PredicateType.GREATHER_THAN_OR_EQUAL: {
       const left = resolve(input.left, path, context);
       const right = resolve(input.right, path, context);
@@ -110,7 +245,7 @@ export function resolve(input: ParamaterValue, path: string, context: ResolveCon
       const left = resolve(input.left, path, context);
       const right = resolve(input.right, path, context);
       if (left === undefined || right === undefined) {
-        return undefined;
+        return NaN;
       }
       return +left + +right;
     }
@@ -118,7 +253,7 @@ export function resolve(input: ParamaterValue, path: string, context: ResolveCon
       const left = resolve(input.left, path, context);
       const right = resolve(input.right, path, context);
       if (left === undefined || right === undefined) {
-        return undefined;
+        return NaN;
       }
       return +left - +right;
     }
@@ -126,7 +261,7 @@ export function resolve(input: ParamaterValue, path: string, context: ResolveCon
       const left = resolve(input.left, path, context);
       const right = resolve(input.right, path, context);
       if (left === undefined || right === undefined) {
-        return undefined;
+        return NaN;
       }
       return +left * +right;
     }
@@ -134,7 +269,7 @@ export function resolve(input: ParamaterValue, path: string, context: ResolveCon
       const left = resolve(input.left, path, context);
       const right = resolve(input.right, path, context);
       if (left === undefined || right === undefined) {
-        return undefined;
+        return NaN;
       }
       return +left / +right;
     }
@@ -156,5 +291,24 @@ export function resolve(input: ParamaterValue, path: string, context: ResolveCon
 
       return val;
     }
+    case TransformerType.AGE: {
+      const val = resolve(input.value, path, context);
+
+      if (isDate(val)) {
+        return getAge(val);
+      }
+
+      return NaN;
+    }
   }
+}
+
+function getAge(birthDate: Date) {
+  var today = new Date();
+  var age = today.getFullYear() - birthDate.getFullYear();
+  var m = today.getMonth() - birthDate.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  return age;
 }

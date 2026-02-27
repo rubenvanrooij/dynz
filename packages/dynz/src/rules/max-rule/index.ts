@@ -1,16 +1,16 @@
-import { type Reference, unpackRef } from "../../reference";
+import { type ParamaterValue, resolveExpected } from "../../functions";
 import type { NumberSchema } from "../../schemas";
 import { type ErrorMessageFromRule, type ExtractResolvedRules, type RuleFn, SchemaType } from "../../types";
 
-export type MaxRule<T extends number | Reference = number | Reference> = {
+export type MaxRule<T extends ParamaterValue<number> = ParamaterValue<number>> = {
   type: "max";
   max: T;
   code?: string | undefined;
 };
 
-export type MaxRuleErrorMessage = ErrorMessageFromRule<MaxRule>;
+export type MaxRuleErrorMessage = ErrorMessageFromRule<MaxRule, number, "max">;
 
-export function max<T extends number | Reference>(max: T, code?: string): MaxRule<T> {
+export function max<T extends ParamaterValue<number>>(max: T, code?: string): MaxRule<T> {
   return { max, type: "max", code };
 }
 
@@ -19,7 +19,7 @@ export const maxRule: RuleFn<
   Extract<ExtractResolvedRules<NumberSchema>, MaxRule>,
   MaxRuleErrorMessage
 > = ({ rule, value, path, context }) => {
-  const { value: max } = unpackRef(rule.max, path, context, SchemaType.NUMBER);
+  const max = resolveExpected(rule.max, path, context, SchemaType.NUMBER);
 
   if (max === undefined) {
     return undefined;

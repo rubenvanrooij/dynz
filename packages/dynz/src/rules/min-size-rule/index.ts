@@ -1,16 +1,19 @@
-import { type Reference, unpackRef } from "../../reference";
+import { type ParamaterValue, resolveExpected } from "../../functions";
 import type { FileSchema } from "../../schemas";
 import { type ErrorMessageFromRule, type ExtractResolvedRules, type RuleFn, SchemaType } from "../../types";
 
-export type MinSizeRule<T extends number | Reference = number | Reference> = {
+export type MinSizeRule<T extends ParamaterValue<number> = ParamaterValue<number>> = {
   type: "min_size";
   min: T;
   code?: string | undefined;
 };
 
-export type MinSizeRuleErrorMessage = ErrorMessageFromRule<MinSizeRule>;
+export type MinSizeRuleErrorMessage = ErrorMessageFromRule<MinSizeRule, number, "min">;
 
-export function minSize<T extends number | Reference>(min: T, code?: string): MinSizeRule<T> {
+export function minSize<T extends ParamaterValue<number> = ParamaterValue<number>>(
+  min: T,
+  code?: string
+): MinSizeRule<T> {
   return { min, type: "min_size", code };
 }
 
@@ -19,7 +22,7 @@ export const minSizeRule: RuleFn<
   Extract<ExtractResolvedRules<FileSchema>, MinSizeRule>,
   MinSizeRuleErrorMessage
 > = ({ rule, value, path, context }) => {
-  const { value: min } = unpackRef(rule.min, path, context, SchemaType.NUMBER);
+  const min = resolveExpected(rule.min, path, context, SchemaType.NUMBER);
 
   if (min === undefined) {
     return undefined;

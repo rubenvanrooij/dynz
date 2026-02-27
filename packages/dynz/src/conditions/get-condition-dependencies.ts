@@ -1,7 +1,8 @@
+import { type Predicate, PredicateType } from "../functions";
 import { isReference } from "../reference";
 import { type Rule, type Schema, SchemaType } from "../types";
 import { ensureAbsolutePath } from "../utils";
-import { type Condition, ConditionType, type RulesDependencyMap } from "./types";
+import type { RulesDependencyMap } from "./types";
 
 /**
  * Returns all the dependencies for a given condition
@@ -9,16 +10,16 @@ import { type Condition, ConditionType, type RulesDependencyMap } from "./types"
  * @param path
  * @returns
  */
-export function getConditionDependencies(condition: Condition, path: string): string[] {
-  switch (condition.type) {
-    case ConditionType.AND:
-    case ConditionType.OR:
-      return condition.conditions.reduce<string[]>((acc, cur) => {
+export function getConditionDependencies(predicate: Predicate, path: string): string[] {
+  switch (predicate.type) {
+    case PredicateType.AND:
+    case PredicateType.OR:
+      return predicate.predicates.reduce<string[]>((acc, cur) => {
         acc.push(...getConditionDependencies(cur, path));
         return acc;
       }, []);
     default:
-      return [ensureAbsolutePath(condition.path, path)];
+      return [ensureAbsolutePath(predicate.path, path)];
   }
 }
 

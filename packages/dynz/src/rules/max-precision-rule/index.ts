@@ -1,16 +1,19 @@
-import { type Reference, unpackRef } from "../../reference";
+import { type ParamaterValue, resolveExpected } from "../../functions";
 import type { NumberSchema } from "../../schemas/number/types";
 import type { ErrorMessageFromRule, RuleFn } from "../../types";
 
-export type MaxPrecisionRule<T extends number | Reference = number | Reference> = {
+export type MaxPrecisionRule<T extends ParamaterValue<number> = ParamaterValue<number>> = {
   type: "max_precision";
   maxPrecision: T;
   code?: string | undefined;
 };
 
-export type MaxPrecisionRuleErrorMessage = ErrorMessageFromRule<MaxPrecisionRule>;
+export type MaxPrecisionRuleErrorMessage = ErrorMessageFromRule<MaxPrecisionRule, number, "maxPrecision">;
 
-export function maxPrecision<T extends number | Reference>(maxPrecision: T, code?: string): MaxPrecisionRule<T> {
+export function maxPrecision<T extends ParamaterValue<number> = ParamaterValue<number>>(
+  maxPrecision: T,
+  code?: string
+): MaxPrecisionRule<T> {
   return { maxPrecision, type: "max_precision", code };
 }
 
@@ -21,7 +24,7 @@ export const maxPrecisionRule: RuleFn<NumberSchema, MaxPrecisionRule, MaxPrecisi
   schema,
   context,
 }) => {
-  const { value: maxPrecision } = unpackRef(rule.maxPrecision, path, context, schema.type);
+  const maxPrecision = resolveExpected(rule.maxPrecision, path, context, schema.type);
 
   if (maxPrecision === undefined) {
     return undefined;
