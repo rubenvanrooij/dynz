@@ -32,21 +32,16 @@ import * as d from "dynz";
 const priceExample = d.object({
   fields: {
     price: d.number({
-      rules: [d.min(
-        d.sum(
-          d.ref('margin'),
-          d.ref('commission')
-        )
-      )]
+      rules: [d.min(d.sum(d.ref("margin"), d.ref("commission")))],
     }),
     margin: d.number({
-      rules: [],
+      rules: [d.age(d.v(3))],
     }),
     commission: d.number({
       rules: [d.min(d.v(0))],
     }),
-  }
-})
+  },
+});
 
 /** SUCCESS */
 console.log(
@@ -66,30 +61,42 @@ console.log(
   })
 );
 
-const underEighteen = <T extends string,>(ref: T) => d.lte(d.age(d.ref(ref)), d.v(18))
+const Countries = {
+  Netherlands: "netherlands",
+  USA: "usa",
+} as const;
+
+export const MinorAges = {
+  [Countries.Netherlands]: 18,
+  [Countries.USA]: 21,
+};
+
+const minAge = <T extends string, A extends d.ParamaterValue>(ref: T, min: A) => d.lte(d.age(d.ref(ref)), min);
 
 const parentalApprovalExample = d.object({
   fields: {
+    country: d.enum({
+      enum: Countries,
+    }),
     birthDate: d.date(),
     parentalApproval: d.boolean({
       rules: [
-        d.conditional({
-          /** when the user age is under 18 */
-          when: d.eq(d.ref('parentalApproval'), d.v(false)), // underEighteen('birthDate'),
-          /** then parental approval is required */
-          then: d.equals(d.v(true), 'Parental approval is required for minors')
-        })
+        d.conditional(...Object.entries(MinorAges).map(([country, age]) => ({
+          when: d.and(d.eq(d.ref('country'), d.v(country)), minAge('birthDate', d.v(age))),
+          then: d.equals(d.v(true), `Parental approval is required for users under ${age} from ${country}`)
+        })))
       ]
     }),
   },
-})
+});
 
-console.log(JSON.stringify(parentalApprovalExample, undefined, 2))
+console.log(JSON.stringify(parentalApprovalExample));
 
 console.log(
   d.validate(parentalApprovalExample, undefined, {
-    birthDate: new Date('2008-01-22'),
-    parentalApproval: true
+    country: Countries.USA,
+    birthDate: new Date('2007-01-22'),
+    parentalApproval: false
   })
 );
 
@@ -229,7 +236,7 @@ object({
     .email()
     .conditional({
       when: eq('accountType', 'business'),
-      then: regex('@company\.com$', "Business accounts must use company email")
+      then: regex('@company.com$', "Business accounts must use company email")
     })
 })
 */
@@ -241,7 +248,7 @@ object({
 //         mutable: user.role === 'admin',
 //       }),
 //       bsn: string({
-//         rules: [regex('^\d{8,9}$', 'bsn')],
+//         rules: [regex('^d{8,9}$', 'bsn')],
 //         private: true,
 //       })
 //     }
@@ -317,7 +324,7 @@ object({
 // console.timeEnd('validate');
 // console.log('done!');
 
-// // console.log(`is required: ${isRequired(foo, '$.[0].bsn', values)}`);
+// // console.log(`is required: $isRequired(foo, '$.[0].bsn', values)`);
 
 // console.log('starting validation...');
 
@@ -351,7 +358,7 @@ object({
 //   foo,
 //   [
 //     {
-//       name: `John ${i}`,
+//       name: `John $i`,
 //       bsn: plain('123'),
 //       contactVia: 'Foo',
 //       birthDate: '2024-01-01',

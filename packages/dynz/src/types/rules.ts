@@ -10,10 +10,10 @@ export type BaseRule = {
 
 export type ExtractRules<T extends Schema> = Unpacked<Exclude<T["rules"], undefined>>;
 
-export type ResolvedRules<TSchema extends Schema, T extends ExtractRules<TSchema> = ExtractRules<TSchema>> = Exclude<
-  T,
-  ConditionalRule<never, never>
->;
+export type ResolvedRules<
+  TSchema extends Schema = Schema,
+  T extends ExtractRules<TSchema> = ExtractRules<TSchema>,
+> = Exclude<T, ConditionalRule>;
 
 export type ExtractResolvedRules<T extends Schema> = ResolvedRules<T, ExtractRules<T>>;
 

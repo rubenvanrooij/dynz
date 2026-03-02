@@ -1,12 +1,21 @@
 import { resolvePredicate } from "../functions";
-import type { ExtractRules, ResolveContext, ResolvedRules, Schema } from "../types";
+import type { ResolveContext, ResolvedRules, Schema } from "../types";
 
-export function resolveRules<T extends Schema>(
-  schema: T,
-  path: string,
-  context: ResolveContext
-): ResolvedRules<T, ExtractRules<T>>[] {
-  return (schema.rules || [])
-    .filter((rule) => (rule.type === "conditional" ? resolvePredicate(rule.when, path, context) : true))
-    .map((rule) => (rule.type === "conditional" ? rule.then : rule) as ResolvedRules<T, ExtractRules<T>>);
+export function resolveRules<T extends Schema>(schema: T, path: string, context: ResolveContext): ResolvedRules[] {
+  return (schema.rules || []).reduce<ResolvedRules[]>((acc, rule) => {
+    if (rule.type === "conditional") {
+      const found = rule.cases.find(({ when }) => resolvePredicate(when, path, context));
+
+      if (found === undefined) {
+        // dont add any rules if no conditions are met
+        return acc;
+      }
+
+      acc.push(found.then);
+    } else {
+      acc.push(rule);
+    }
+
+    return acc;
+  }, []);
 }

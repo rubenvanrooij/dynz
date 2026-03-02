@@ -36,7 +36,7 @@ export type SchemaType = EnumValues<typeof SchemaType>;
 
 export type BaseSchema<TValue, TType extends SchemaType, TRule extends BaseRule> = {
   type: TType;
-  rules?: Array<TRule | ConditionalRule<TRule, never>>;
+  rules?: Array<TRule | ConditionalRule>;
   default?: TValue;
   required?: boolean | Predicate;
   mutable?: boolean | Predicate;

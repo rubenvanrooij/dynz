@@ -11,6 +11,42 @@ export type EqualsRule<T extends ParamaterValue = ParamaterValue> = {
 
 export type EqualsRuleErrorMessage = ErrorMessageFromRule<Omit<EqualsRule, "equals"> & { equals: unknown }>;
 
+/**
+ * Creates an equality validation rule that checks if a field equals a specific value.
+ *
+ * Rules are validation constraints that are attached to schema fields.
+ * They define what values are valid and produce validation errors when violated.
+ *
+ * **Note:** This is different from the {@link eq} predicate! This rule validates
+ * field values, while `eq()` is a boolean expression for conditional logic.
+ *
+ * @category Rule
+ * @param equals - The value the field must equal (static value or reference)
+ * @param code - Optional custom error code for this validation
+ * @returns An EqualsRule that validates value === equals
+ *
+ * @example
+ * // Field must equal a static value
+ * string({ rules: [equals(v('expected'))] })
+ *
+ * @example
+ * // Password confirmation must match password
+ * string({ rules: [equals(ref('password'))] })
+ *
+ * @example
+ * // Use in conditional rule - require true for certain conditions
+ * boolean({
+ *   rules: [
+ *     conditional({
+ *       when: eq(ref('age'), v(17)),
+ *       then: equals(v(true), 'Parental approval required')
+ *     })
+ *   ]
+ * })
+ *
+ * @see {@link eq} - Equality predicate (for conditional logic, not validation)
+ * @see {@link neq} - Not equals predicate
+ */
 export function equals<T extends ParamaterValue>(equals: T, code?: string): EqualsRule<T> {
   return { equals, type: "equals", code };
 }
