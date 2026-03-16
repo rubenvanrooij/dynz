@@ -39,9 +39,7 @@ export function useConditionalProperty(
 
     return resolveProperty(nested.schema, property, path, true, {
       schema,
-      values: {
-        new: values,
-      },
+      values,
     });
   }, [innerSchema, property, path, schema, watchedValues]);
 }

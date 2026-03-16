@@ -159,11 +159,9 @@ export type Context<T extends Schema = Schema> = {
   };
 };
 
-export type ResolveContext<T extends Schema = Schema> = {
+export type ResolveContext<T extends Schema = Schema, A = unknown> = {
   schema: T;
-  values: {
-    new: unknown;
-  };
+  values: A;
 };
 
 export type ErrorMessageForRule<T extends BaseRule> = Omit<T, "type"> & BaseErrorMessage<T["type"]>;

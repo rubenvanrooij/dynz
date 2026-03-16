@@ -49,9 +49,7 @@ describe("isIncluded", () => {
     expect(result).toBe(true);
     expect(resolveProperty).toHaveBeenCalledWith(nestedSchema, "included", path, true, {
       schema: mockSchema,
-      values: {
-        new: mockValues,
-      },
+      values: mockValues,
     });
   });
 });

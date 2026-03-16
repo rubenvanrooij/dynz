@@ -1,8 +1,8 @@
 "use client";
 
 import { IsIncluded } from "@dynz/react-hook-form";
-import type { SchemaValues } from "dynz";
-import { boolean, conditional, email, eq, matches, minLength, object, options, or, regex, string } from "dynz";
+
+import * as d from "dynz";
 import { PopcornIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { DynzBoolean, DynzSelect, DynzTextInput } from "@/components/dynz/dynz-form";
@@ -11,60 +11,60 @@ import { Alert, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-const stringRequiredRule = minLength(1, "required");
+const stringRequiredRule = d.minLength(d.v(1), "required");
 
-const schema = object({
+const schema = d.object({
   private: false,
   fields: {
-    name: string({
-      rules: [stringRequiredRule, minLength(3)],
+    name: d.string({
+      rules: [stringRequiredRule, d.minLength(d.v(3))],
     }),
-    company: string({
+    company: d.string({
       rules: [stringRequiredRule],
     }),
-    email: string({
+    email: d.string({
       rules: [
         stringRequiredRule,
-        email(),
-        conditional({
-          when: matches("company", "\\bapple\\b", "i"),
-          then: regex("@apple.com$", "useCompanyMail"),
+        d.email(),
+        d.conditional({
+          when: d.matches(d.ref("company"), d.v("\\bapple\\b"), "i"),
+          then: d.regex("@apple.com$", "useCompanyMail"),
         }),
-        conditional({
-          when: matches("company", "\\microsoft\\b", "i"),
-          then: regex("@microsoft.com$", "useCompanyMail"),
+        d.conditional({
+          when: d.matches(d.ref("company"), d.v("\\microsoft\\b"), "i"),
+          then: d.regex("@microsoft.com$", "useCompanyMail"),
         }),
       ],
     }),
-    attendanceType: options({
+    attendanceType: d.options({
       default: "Virtual",
       options: ["In-Person", "Virtual", "Hybrid"],
     }),
-    accomidationRequired: boolean({
+    accomidationRequired: d.boolean({
       coerce: true,
-      included: eq("attendanceType", "In-Person"),
+      included: d.eq(d.ref("attendanceType"), d.v("In-Person")),
     }),
-    workshopPreferences: options({
+    workshopPreferences: d.options({
       options: ["AI & Machine Learning", "Web Development", "Data Science", "Cybersecurity"],
-      included: or(eq("attendanceType", "In-Person"), eq("attendanceType", "Hybrid")),
+      included: d.or(d.eq(d.ref("attendanceType"), d.v("In-Person")), d.eq(d.ref("attendanceType"), d.v("Hybrid"))),
     }),
-    dietry: object({
+    dietry: d.object({
       fields: {
-        restrictions: boolean({
+        restrictions: d.boolean({
           coerce: true,
         }),
-        details: string({
+        details: d.string({
           rules: [stringRequiredRule],
-          included: eq("$.dietry.restrictions", true),
+          included: d.eq(d.ref("$.dietry.restrictions"), d.v(true)),
         }),
       },
     }),
-    professionalLevel: options({
+    professionalLevel: d.options({
       options: ["Student", "Junior Professional", "Senior Professional", "Executive"],
     }),
-    studentInstitution: string({
+    studentInstitution: d.string({
       rules: [stringRequiredRule],
-      included: eq("professionalLevel", "Student"),
+      included: d.eq(d.ref("professionalLevel"), d.v("Student")),
     }),
     // image: array({
     //   schema: file({
@@ -75,6 +75,8 @@ const schema = object({
   },
 });
 
+console.log(JSON.stringify(schema))
+
 const DEFAULT_VALUES = {
   name: "",
   email: "",
@@ -84,7 +86,7 @@ const DEFAULT_VALUES = {
 export default function Home() {
   const t = useTranslations();
 
-  const onSubmit = (data: SchemaValues<typeof schema>) => {
+  const onSubmit = (data: d.SchemaValues<typeof schema>) => {
     alert(JSON.stringify(data));
   };
 

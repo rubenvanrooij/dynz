@@ -28,8 +28,6 @@ export function isIncluded<T extends Schema>(schema: T, path: string, values: un
 
   return resolveProperty(nested.schema, "included", path, true, {
     schema,
-    values: {
-      new: values,
-    },
+    values,
   });
 }

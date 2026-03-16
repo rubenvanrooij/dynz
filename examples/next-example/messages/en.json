@@ -3,6 +3,75 @@
     "title": "Hello world!",
     "about": "Go to the about page"
   },
+  "pensionPersonalInfo": {
+    "firstName": {
+      "label": "Voornaam",
+      "placeholder": "Bijv. Jan"
+    },
+    "middleName": {
+      "label": "Tussenvoegsel",
+      "placeholder": "Bijv. van der"
+    },
+    "lastName": {
+      "label": "Achternaam",
+      "placeholder": "Bijv. Berg"
+    },
+    "bsn": {
+      "label": "BSN (Burgerservicenummer)",
+      "placeholder": "123456789",
+      "description": "Uw 9-cijferige burgerservicenummer"
+    },
+    "dateOfBirth": {
+      "label": "Geboortedatum",
+      "placeholder": "DD-MM-JJJJ"
+    },
+    "gender": {
+      "label": "Geslacht",
+      "placeholder": "Selecteer uw geslacht"
+    },
+    "email": {
+      "label": "E-mailadres",
+      "placeholder": "jan@voorbeeld.nl"
+    },
+    "phoneNumber": {
+      "label": "Telefoonnummer",
+      "placeholder": "+31 6 12345678",
+      "description": "Nederlands telefoonnummer"
+    },
+    "postalCode": {
+      "label": "Postcode",
+      "placeholder": "1234 AB"
+    },
+    "houseNumber": {
+      "label": "Huisnummer",
+      "placeholder": "123"
+    },
+    "houseNumberAddition": {
+      "label": "Toevoeging",
+      "placeholder": "A of bis"
+    },
+    "maritalStatus": {
+      "label": "Burgerlijke staat",
+      "placeholder": "Selecteer uw burgerlijke staat"
+    },
+    "partnerDateOfBirth": {
+      "label": "Geboortedatum partner",
+      "placeholder": "DD-MM-JJJJ"
+    },
+    "partnerBsn": {
+      "label": "BSN partner",
+      "placeholder": "123456789",
+      "description": "Voor registratie partnerpensioen"
+    },
+    "hasChildrenUnder21": {
+      "label": "Heeft u kinderen onder de 21 jaar?",
+      "placeholder": "Selecteer een optie"
+    },
+    "numberOfChildrenUnder21": {
+      "label": "Aantal kinderen onder 21",
+      "placeholder": "1"
+    }
+  },
   "loginForm": {
     "password": {
       "label": "Password",

@@ -49,9 +49,7 @@ describe("isMutable", () => {
     expect(result).toBe(true);
     expect(resolveProperty).toHaveBeenCalledWith(nestedSchema, "mutable", path, true, {
       schema: mockSchema,
-      values: {
-        new: mockValues,
-      },
+      values: mockValues,
     });
   });
 });

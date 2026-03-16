@@ -47,9 +47,7 @@ describe("isRequired", () => {
     expect(result).toBe(true);
     expect(resolveProperty).toHaveBeenCalledWith(nestedSchema, "required", path, true, {
       schema: mockSchema,
-      values: {
-        new: mockValues,
-      },
+      values: mockValues,
     });
   });
 });

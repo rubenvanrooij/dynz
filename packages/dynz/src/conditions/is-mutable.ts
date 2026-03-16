@@ -7,8 +7,6 @@ export function isMutable<T extends Schema>(schema: T, path: string, values: unk
 
   return resolveProperty(nested.schema, "mutable", path, true, {
     schema,
-    values: {
-      new: values,
-    },
+    values,
   });
 }

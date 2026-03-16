@@ -1,4 +1,4 @@
-import { type Predicate, PredicateType } from "../functions";
+import type { ParamaterValue, Predicate } from "../functions";
 import { isReference } from "../reference";
 import { type Rule, type Schema, SchemaType } from "../types";
 import { ensureAbsolutePath } from "../utils";
@@ -12,20 +12,44 @@ import type { RulesDependencyMap } from "./types";
  */
 export function getConditionDependencies(predicate: Predicate, path: string): string[] {
   switch (predicate.type) {
-    case PredicateType.AND:
-    case PredicateType.OR:
+    case "and":
+    case "or":
       return predicate.predicates.reduce<string[]>((acc, cur) => {
         acc.push(...getConditionDependencies(cur, path));
         return acc;
       }, []);
+    case "eq":
+    case "neq":
+    case "in":
+    case "nin":
+    case "gt":
+    case "gte":
+    case "lt":
+    case "lte":
+    case "matches":
+      return [...getParamaterDependencies(predicate.left, path), ...getParamaterDependencies(predicate.right, path)];
     default:
-      return [ensureAbsolutePath(predicate.path, path)];
+      return predicate.inputs.reduce<string[]>((acc, cur) => {
+        acc.push(...getParamaterDependencies(cur, path));
+        return acc;
+      }, []);
   }
+}
+
+function getParamaterDependencies(param: ParamaterValue, path: string): string[] {
+  if (isReference(param)) {
+    return [ensureAbsolutePath(param.path, path)];
+  }
+
+  return [];
 }
 
 function getRuleDependencies(rule: Rule, path: string): string[] {
   if (rule.type === "conditional") {
-    return [...getConditionDependencies(rule.when, path), ...getRuleDependencies(rule.then, path)];
+    return rule.cases.reduce<string[]>((acc, cur) => {
+      acc.push(...getConditionDependencies(cur.when, path), ...getRuleDependencies(cur.then, path));
+      return acc;
+    }, []);
   }
 
   if (rule.type === "custom") {

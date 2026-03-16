@@ -1,6 +1,6 @@
 import type { Condition } from "dynz";
 import type { ReactNode } from "react";
-import { useCondition } from "../hooks/use-condition";
+import { useCondition } from "../hooks/use-predicate";
 
 export type WhenProps = {
   cond: Condition;

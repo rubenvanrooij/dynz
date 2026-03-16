@@ -30,11 +30,7 @@ export function coerce<T extends SchemaType>(type: T, value: unknown): unknown {
       return value;
     }
     case SchemaType.NUMBER: {
-      if (!isNumber(value)) {
-        return Number(value).valueOf();
-      }
-
-      return value;
+      return coerceNumber(value);
     }
     case SchemaType.BOOLEAN:
       if (isBoolean(value)) {
@@ -66,4 +62,12 @@ export function coerce<T extends SchemaType>(type: T, value: unknown): unknown {
     default:
       return value;
   }
+}
+
+export function coerceNumber(value: unknown): number {
+  if (!isNumber(value)) {
+    return Number(value).valueOf();
+  }
+
+  return value;
 }

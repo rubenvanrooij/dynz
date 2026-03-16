@@ -15,8 +15,6 @@ export function isRequired<T extends Schema>(schema: T, path: string, values: un
 
   return resolveProperty(nested.schema, "required", path, true, {
     schema,
-    values: {
-      new: values,
-    },
+    values,
   });
 }

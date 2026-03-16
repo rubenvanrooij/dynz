@@ -1,4 +1,3 @@
-import type { Condition } from "../conditions";
 import type { Predicate } from "../functions";
 import type { PrivateValue } from "../private";
 import type { ConditionalRule } from "../rules";
