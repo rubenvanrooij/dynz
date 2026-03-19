@@ -2,10 +2,10 @@ import type { Reference } from "../reference";
 import type { ResolveContext, Schema, SchemaType, ValueType } from "../types";
 import { coerce, coerceSchema, ensureAbsolutePath, getNested } from "../utils";
 import { validateShallowType, validateType } from "../validate/validate-type";
-import { PREDICATES } from "./predicates/predicates";
-import type { Predicate } from "./predicates/types";
-import { TRANSFORMERS } from "./transformers/transformers";
-import type { Transformer } from "./transformers/types";
+import type { Predicate } from "./predicate-types";
+import { PREDICATES } from "./predicates";
+import type { Transformer } from "./transformer-types";
+import { TRANSFORMERS } from "./transformers";
 import type { ParamaterValue } from "./types";
 
 export function unpackRef<T extends SchemaType = SchemaType>(
@@ -103,7 +103,6 @@ export function resolveFunction(
   path: string,
   context: ResolveContext
 ): ValueType | undefined {
-  console.log("resolveFunction", input.type, input, path, context);
   switch (input.type) {
     case "or":
     case "and":

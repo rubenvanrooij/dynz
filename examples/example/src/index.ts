@@ -1,4 +1,7 @@
 import * as d from "dynz";
+import { runRegistrationForm } from "./registration-form";
+
+runRegistrationForm()
 
 // const foo = object({
 //   fields: {
@@ -29,128 +32,119 @@ import * as d from "dynz";
 //   console.log(result.values); // ✅ Type-safe access
 // }
 
-const MIN_ANGLE = 4
-const MAX_ANGLE = 10
+// const MIN_ANGLE = 4;
+// const MAX_ANGLE = 10;
 
-const MIN_FUNCTION = d.ceil(d.sum(d.ref('frontHeight'), d.multiply(d.ref('depth'), d.tan(d.v(MIN_ANGLE)))))
-const MAX_FUNCTION = d.ceil(d.sum(d.ref('frontHeight'), d.multiply(d.ref('depth'), d.tan(d.v(MAX_ANGLE)))))
+// const MIN_FUNCTION = d.ceil(d.sum(d.ref("frontHeight"), d.multiply(d.ref("depth"), d.tan(d.v(MIN_ANGLE)))));
+// const MAX_FUNCTION = d.ceil(d.sum(d.ref("frontHeight"), d.multiply(d.ref("depth"), d.tan(d.v(MAX_ANGLE)))));
 
-const VERANDA_SCHEMA = d.object({
-  fields: {
-    depth: d.number(),
-    frontHeight: d.number(),
-    backHeight: d.number({
-      rules: [
-        d.min(
-          MIN_FUNCTION
-        ),
-        d.max(
-          MAX_FUNCTION
-        )
-      ]
-    }),
-  }
-})
+// const VERANDA_SCHEMA = d.object({
+//   fields: {
+//     depth: d.number(),
+//     frontHeight: d.number(),
+//     backHeight: d.number({
+//       rules: [d.min(MIN_FUNCTION), d.max(MAX_FUNCTION)],
+//     }),
+//   },
+// });
 
-const a = d.getNested('depth', VERANDA_SCHEMA, {})
+// const a = d.getNested("depth", VERANDA_SCHEMA, {});
 
-console.log(a.value)
+// console.log(a.value);
 
-// resolve min value of backHeight
-console.log('---ST--')
-console.log(d.resolve(MIN_FUNCTION, '$', {
-  schema: VERANDA_SCHEMA,
-  values: {
-    depth: 2500,
-    frontHeight: 2000
-  }
-}))
-console.log('--END---')
+// // resolve min value of backHeight
+// console.log("---ST--");
+// console.log(
+//   d.resolve(MIN_FUNCTION, "$", {
+//     schema: VERANDA_SCHEMA,
+//     values: {
+//       depth: 2500,
+//       frontHeight: 2000,
+//     },
+//   })
+// );
+// console.log("--END---");
 
-console.log(
-  d.validate(VERANDA_SCHEMA, undefined, {
-    depth: 2500,
-    frontHeight: 2000,
-    backHeight: 2100
-  })
+// console.log(
+//   d.validate(VERANDA_SCHEMA, undefined, {
+//     depth: 2500,
+//     frontHeight: 2000,
+//     backHeight: 2100,
+//   })
+// );
 
-)
+// const priceExample = d.object({
+//   fields: {
+//     price: d.number({
+//       rules: [d.min(d.sum(d.ref("margin"), d.ref("commission")))],
+//     }),
+//     margin: d.number({
+//       // rules: [d.age(d.v(3))],
+//     }),
+//     commission: d.number({
+//       rules: [d.min(d.v(0))],
+//     }),
+//   },
+// });
 
-const priceExample = d.object({
-  fields: {
-    price: d.number({
-      rules: [d.min(
-        d.sum(
-          d.ref("margin"),
-          d.ref("commission")
-        )
-      )],
-    }),
-    margin: d.number({
-      // rules: [d.age(d.v(3))],
-    }),
-    commission: d.number({
-      rules: [d.min(d.v(0))],
-    }),
-  },
-});
+// /** SUCCESS */
+// console.log(
+//   d.validate(priceExample, undefined, {
+//     price: 3123,
+//     margin: 15,
+//     commission: 5,
+//   })
+// );
 
-/** SUCCESS */
-console.log(
-  d.validate(priceExample, undefined, {
-    price: 3123,
-    margin: 15,
-    commission: 5,
-  })
-);
+// /** FAILS */
+// console.log(
+//   d.validate(priceExample, undefined, {
+//     price: 3123,
+//     margin: 15,
+//     commission: 5,
+//   })
+// );
 
-/** FAILS */
-console.log(
-  d.validate(priceExample, undefined, {
-    price: 3123,
-    margin: 15,
-    commission: 5,
-  })
-);
+// const Countries = {
+//   Netherlands: "netherlands",
+//   USA: "usa",
+// } as const;
 
-const Countries = {
-  Netherlands: "netherlands",
-  USA: "usa",
-} as const;
+// export const MinorAges = {
+//   [Countries.Netherlands]: 18,
+//   [Countries.USA]: 21,
+// };
 
-export const MinorAges = {
-  [Countries.Netherlands]: 18,
-  [Countries.USA]: 21,
-};
+// const minAge = <T extends string, A extends d.ParamaterValue>(ref: T, min: A) => d.lte(d.age(d.ref(ref)), min);
 
-const minAge = <T extends string, A extends d.ParamaterValue>(ref: T, min: A) => d.lte(d.age(d.ref(ref)), min);
+// const parentalApprovalExample = d.object({
+//   fields: {
+//     country: d.enum({
+//       enum: Countries,
+//     }),
+//     birthDate: d.date(),
+//     parentalApproval: d.boolean({
+//       rules: [
+//         d.conditional(
+//           ...Object.entries(MinorAges).map(([country, age]) => ({
+//             when: d.and(d.eq(d.ref("country"), d.v(country)), minAge("birthDate", d.v(age))),
+//             then: d.equals(d.v(true), `Parental approval is required for users under ${age} from ${country}`),
+//           }))
+//         ),
+//       ],
+//     }),
+//   },
+// });
 
-const parentalApprovalExample = d.object({
-  fields: {
-    country: d.enum({
-      enum: Countries,
-    }),
-    birthDate: d.date(),
-    parentalApproval: d.boolean({
-      rules: [
-        d.conditional(...Object.entries(MinorAges).map(([country, age]) => ({
-          when: d.and(d.eq(d.ref('country'), d.v(country)), minAge('birthDate', d.v(age))),
-          then: d.equals(d.v(true), `Parental approval is required for users under ${age} from ${country}`)
-        })))
-      ]
-    }),
-  },
-});
+// console.log(JSON.stringify(parentalApprovalExample));
 
-console.log(JSON.stringify(parentalApprovalExample));
-
-console.log(
-  d.validate(parentalApprovalExample, undefined, {
-    country: Countries.USA,
-    birthDate: new Date('2007-01-22'),
-    parentalApproval: false
-  })
-);
+// console.log(
+//   d.validate(parentalApprovalExample, undefined, {
+//     country: Countries.USA,
+//     birthDate: new Date("2007-01-22"),
+//     parentalApproval: false,
+//   })
+// );
 
 // const UserRoles = {
 //   ADMIN: "admin",

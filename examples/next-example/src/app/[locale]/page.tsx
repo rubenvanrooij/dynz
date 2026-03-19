@@ -75,7 +75,7 @@ const schema = d.object({
   },
 });
 
-console.log(JSON.stringify(schema))
+console.log(JSON.stringify(schema));
 
 const DEFAULT_VALUES = {
   name: "",

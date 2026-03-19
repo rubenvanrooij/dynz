@@ -13,14 +13,16 @@ export function DynzSelect({ name, options: propOptions }: DynzSelectProps) {
   const { schema } = useDynzFormContext();
 
   // Get options from schema if not provided via props
-  const schemaOptions = propOptions ?? (() => {
-    try {
-      const innerSchema = findSchemaByPath<OptionsSchema>(`$.${name}`, schema, SchemaType.OPTIONS);
-      return innerSchema?.options ?? [];
-    } catch {
-      return [];
-    }
-  })();
+  const schemaOptions =
+    propOptions ??
+    (() => {
+      try {
+        const innerSchema = findSchemaByPath<OptionsSchema>(`$.${name}`, schema, SchemaType.OPTIONS);
+        return innerSchema?.options ?? [];
+      } catch {
+        return [];
+      }
+    })();
 
   return (
     <DynzFormField
@@ -31,11 +33,7 @@ export function DynzSelect({ name, options: propOptions }: DynzSelectProps) {
             {translations.label}
             {required && " *"}
           </FormLabel>
-          <Select
-            onValueChange={field.onChange}
-            value={field.value}
-            disabled={readOnly}
-          >
+          <Select onValueChange={field.onChange} value={field.value} disabled={readOnly}>
             <FormControl>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder={translations.placeholder} />

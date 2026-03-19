@@ -36,10 +36,8 @@ export function validate<T extends Schema>(
     schema,
     validateOptions: options,
     validateMutable: currentValues !== undefined,
-    values: {
-      current: currentValues,
-      new: newValues,
-    },
+    currentValues: currentValues,
+    values: newValues,
   }) as ValidationResult<SchemaValues<T>>;
 }
 

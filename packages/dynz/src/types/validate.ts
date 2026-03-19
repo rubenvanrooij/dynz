@@ -153,10 +153,10 @@ export type Context<T extends Schema = Schema> = {
   validateOptions: ValidateOptions;
   validateMutable: boolean;
 
-  values: {
-    current: unknown;
-    new: unknown;
-  };
+  // current values
+  currentValues: unknown;
+  // new values
+  values: unknown;
 };
 
 export type ResolveContext<T extends Schema = Schema, A = unknown> = {

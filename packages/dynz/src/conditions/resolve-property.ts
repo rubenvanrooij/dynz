@@ -1,5 +1,5 @@
 import { resolvePredicate } from "../functions";
-import type { ResolveContext, Schema } from "../types";
+import type { Context, ResolveContext, Schema } from "../types";
 
 /**
  * Resolves one of the following properties: required, mutable, included on a

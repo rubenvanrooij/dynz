@@ -21,10 +21,7 @@ export function DynzDateInput({ name }: DynzDateInputProps) {
               type="date"
               placeholder={translations.placeholder}
               {...field}
-              value={field.value instanceof Date 
-                ? field.value.toISOString().split('T')[0] 
-                : field.value || ""
-              }
+              value={field.value instanceof Date ? field.value.toISOString().split("T")[0] : field.value || ""}
               onChange={(e) => {
                 const value = e.target.value;
                 field.onChange(value ? new Date(value) : undefined);
