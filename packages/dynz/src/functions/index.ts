@@ -20,6 +20,7 @@ export * from "./predicate-types";
 export * from "./resolve";
 export * from "./sin-function";
 export * from "./size-function";
+export * from "./sub-function";
 export * from "./sum-function";
 export * from "./tan-function";
 export * from "./transformer-types";
