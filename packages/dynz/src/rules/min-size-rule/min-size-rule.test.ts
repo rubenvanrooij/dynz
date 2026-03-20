@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { val } from "../../functions";
 import { REFERENCE_TYPE, ref, unpackRef } from "../../reference";
 import { type FileSchema, file } from "../../schemas";
 import type { Context } from "../../types";
@@ -17,7 +18,7 @@ vi.mock("../../reference", () => {
 
 describe("minSize rule", () => {
   it("should create minSize rule with number value", () => {
-    const rule = minSize(1024);
+    const rule = minSize(val(1024));
 
     expect(rule).toEqual({
       type: "min_size",
@@ -39,7 +40,7 @@ describe("minSize rule", () => {
   });
 
   it("should create minSize rule with custom code", () => {
-    const rule = minSize(500, "CUSTOM_MIN_SIZE_ERROR");
+    const rule = minSize(val(500), "CUSTOM_MIN_SIZE_ERROR");
 
     expect(rule).toEqual({
       type: "min_size",
@@ -58,7 +59,7 @@ describe("minSizeRule validator", () => {
   });
 
   it("should return undefined when file meets minimum size requirement", async () => {
-    const rule = minSize(1024);
+    const rule = minSize(val(1024));
     const mockFile = { size: 2048 } as File;
 
     vi.mocked(unpackRef).mockReturnValue({ value: 1024 } as ReturnType<typeof unpackRef>);
@@ -75,7 +76,7 @@ describe("minSizeRule validator", () => {
   });
 
   it("should return error when file is below minimum size", async () => {
-    const rule = minSize(1024);
+    const rule = minSize(val(1024));
     const mockFile = { size: 512 } as File;
 
     vi.mocked(unpackRef).mockReturnValue({ value: 1024 } as ReturnType<typeof unpackRef>);
@@ -96,7 +97,7 @@ describe("minSizeRule validator", () => {
   });
 
   it("should return undefined when unpackRef returns undefined", async () => {
-    const rule = minSize(1024);
+    const rule = minSize(val(1024));
     const mockFile = { size: 512 } as File;
 
     vi.mocked(unpackRef).mockReturnValue({ value: undefined } as ReturnType<typeof unpackRef>);
@@ -130,7 +131,7 @@ describe("minSizeRule validator", () => {
   });
 
   it("should include correct error message format", async () => {
-    const rule = minSize(5000);
+    const rule = minSize(val(5000));
     const mockFile = { size: 1000 } as File;
 
     vi.mocked(unpackRef).mockReturnValue({ value: 5000 } as ReturnType<typeof unpackRef>);
@@ -149,7 +150,7 @@ describe("minSizeRule validator", () => {
   });
 
   it("should return undefined when file size equals minimum", async () => {
-    const rule = minSize(1024);
+    const rule = minSize(val(1024));
     const mockFile = { size: 1024 } as File;
 
     vi.mocked(unpackRef).mockReturnValue({ value: 1024 } as ReturnType<typeof unpackRef>);
@@ -166,7 +167,7 @@ describe("minSizeRule validator", () => {
   });
 
   it("should handle zero size file correctly", async () => {
-    const rule = minSize(1);
+    const rule = minSize(val(1));
     const mockFile = { size: 0 } as File;
 
     vi.mocked(unpackRef).mockReturnValue({ value: 1 } as ReturnType<typeof unpackRef>);

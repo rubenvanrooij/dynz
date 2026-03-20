@@ -1,6 +1,13 @@
 import { type ParamaterValue, resolveExpected } from "../../functions";
 import type { NumberSchema } from "../../schemas";
-import { type ErrorMessageFromRule, type ExtractResolvedRules, type RuleFn, SchemaType } from "../../types";
+import {
+  type ErrorMessageFromRule,
+  type ExtractResolvedRules,
+  type RuleFn,
+  type Schema,
+  SchemaType,
+} from "../../types";
+import { isNumber } from "../../validate/validate-type";
 
 export type MaxRule<T extends ParamaterValue<number> = ParamaterValue<number>> = {
   type: "max";
@@ -46,11 +53,16 @@ export function max<T extends ParamaterValue<number>>(max: T, code?: string): Ma
   return { max, type: "max", code };
 }
 
-export const maxRule: RuleFn<
-  NumberSchema,
-  Extract<ExtractResolvedRules<NumberSchema>, MaxRule>,
-  MaxRuleErrorMessage
-> = ({ rule, value, path, context }) => {
+export const maxRule: RuleFn<Schema, Extract<ExtractResolvedRules<Schema>, MaxRule>, MaxRuleErrorMessage> = ({
+  rule,
+  value,
+  path,
+  context,
+}) => {
+  if (!isNumber(value)) {
+    throw new Error("maxRule expects a number value");
+  }
+
   const max = resolveExpected(rule.max, path, context, SchemaType.NUMBER);
 
   if (max === undefined) {

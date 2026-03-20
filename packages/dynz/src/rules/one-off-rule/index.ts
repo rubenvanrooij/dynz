@@ -1,6 +1,7 @@
 import { type ParamaterValue, resolve } from "../../functions";
 import type { NumberSchema, StringSchema } from "../../schemas";
-import type { ErrorMessageFromRule, ExtractResolvedRules, RuleFn, ValueType } from "../../types";
+import type { ErrorMessageFromRule, ExtractResolvedRules, RuleFn, Schema, ValueType } from "../../types";
+import { isNumber, isString } from "../../validate/validate-type";
 
 export type OneOfRule<T extends ParamaterValue[] = ParamaterValue[]> = {
   type: "one_of";
@@ -14,13 +15,16 @@ export function oneOf<T extends ParamaterValue[]>(values: T, code?: string): One
   return { values, type: "one_of", code };
 }
 
-type AllowedSchemas = StringSchema | NumberSchema;
+export const oneOfRule: RuleFn<Schema, Extract<ExtractResolvedRules<Schema>, OneOfRule>, OneOfRuleErrorMessage> = ({
+  value,
+  rule,
+  path,
+  context,
+}) => {
+  if (!isString(value) && !isNumber(value)) {
+    throw new Error("oneOfRule expects a number or string value");
+  }
 
-export const oneOfRule: RuleFn<
-  AllowedSchemas,
-  Extract<ExtractResolvedRules<AllowedSchemas>, OneOfRule>,
-  OneOfRuleErrorMessage
-> = ({ value, rule, path, context }) => {
   const resolvedValues = rule.values.map((v) => resolve(v, path, context));
 
   return resolvedValues.some((v) => v === value)

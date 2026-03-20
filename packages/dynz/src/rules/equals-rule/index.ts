@@ -1,7 +1,7 @@
 import { type ParamaterValue, resolveExpected } from "../../functions";
 import type { BooleanSchema, NumberSchema, OptionsSchema, StringSchema } from "../../schemas";
 import type { EnumSchema } from "../../schemas/enum";
-import type { ErrorMessageFromRule, ExtractResolvedRules, RuleFn } from "../../types";
+import type { ErrorMessageFromRule, ExtractResolvedRules, RuleFn, Schema } from "../../types";
 
 export type EqualsRule<T extends ParamaterValue = ParamaterValue> = {
   type: "equals";
@@ -51,13 +51,14 @@ export function equals<T extends ParamaterValue>(equals: T, code?: string): Equa
   return { equals, type: "equals", code };
 }
 
-type AllowedSchemas = StringSchema | NumberSchema | BooleanSchema | OptionsSchema | EnumSchema;
-
-export const equalsRule: RuleFn<
-  AllowedSchemas,
-  Extract<ExtractResolvedRules<AllowedSchemas>, EqualsRule>,
-  EqualsRuleErrorMessage
-> = ({ rule, value, path, context, schema }) => {
+// TODO: verify if we need to support more complex equal checks; e.g. nested data structures or dates (maybe add it as an option??..)
+export const equalsRule: RuleFn<Schema, Extract<ExtractResolvedRules<Schema>, EqualsRule>, EqualsRuleErrorMessage> = ({
+  rule,
+  value,
+  path,
+  context,
+  schema,
+}) => {
   const equals = resolveExpected(rule.equals, path, context, schema.type);
   return equals === value
     ? undefined

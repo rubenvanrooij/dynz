@@ -1,6 +1,13 @@
 import { type ParamaterValue, resolveExpected } from "../../functions";
 import type { ArraySchema, StringSchema } from "../../schemas";
-import { type ErrorMessageFromRule, type ExtractResolvedRules, type RuleFn, SchemaType } from "../../types";
+import {
+  type ErrorMessageFromRule,
+  type ExtractResolvedRules,
+  type RuleFn,
+  type Schema,
+  SchemaType,
+} from "../../types";
+import { isArray, isString } from "../../validate/validate-type";
 
 export type MaxLengthRule<T extends ParamaterValue<number> = ParamaterValue<number>> = {
   type: "max_length";
@@ -43,13 +50,15 @@ export function maxLength<T extends ParamaterValue<number> = ParamaterValue<numb
   return { max, type: "max_length", code };
 }
 
-type AllowedSchemas = StringSchema | ArraySchema<never>;
-
 export const maxLengthRule: RuleFn<
-  AllowedSchemas,
-  Extract<ExtractResolvedRules<AllowedSchemas>, MaxLengthRule>,
+  Schema,
+  Extract<ExtractResolvedRules<Schema>, MaxLengthRule>,
   MaxLengthRuleErrorMessage
 > = ({ rule, value, path, context }) => {
+  if (!isString(value) && !isArray(value)) {
+    throw new Error("maxLengthRule expects a string or array value");
+  }
+
   const max = resolveExpected(rule.max, path, context, SchemaType.NUMBER);
 
   if (max === undefined) {

@@ -1,6 +1,13 @@
 import { type ParamaterValue, resolveExpected } from "../../functions";
 import type { DateSchema } from "../../schemas";
-import { type ErrorMessageFromRule, type ExtractResolvedRules, type RuleFn, SchemaType } from "../../types";
+import {
+  type ErrorMessageFromRule,
+  type ExtractResolvedRules,
+  type RuleFn,
+  type Schema,
+  SchemaType,
+} from "../../types";
+import { isDate } from "../../validate/validate-type";
 
 export type BeforeRule<T extends ParamaterValue<Date> = ParamaterValue<Date>> = {
   type: "before";
@@ -18,11 +25,16 @@ export function isBefore(value: Date, before: Date): boolean {
   return value.getTime() < before.getTime();
 }
 
-export const beforeRule: RuleFn<
-  DateSchema,
-  Extract<ExtractResolvedRules<DateSchema>, BeforeRule>,
-  BeforeRuleErrorMessage
-> = ({ rule, value, path, context }) => {
+export const beforeRule: RuleFn<Schema, Extract<ExtractResolvedRules<Schema>, BeforeRule>, BeforeRuleErrorMessage> = ({
+  rule,
+  value,
+  path,
+  context,
+}) => {
+  if (!isDate(value)) {
+    throw new Error("afterRule expects a date value");
+  }
+
   const before = resolveExpected(rule.before, path, context, SchemaType.DATE);
 
   if (before === undefined) {

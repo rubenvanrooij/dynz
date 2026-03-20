@@ -1,6 +1,13 @@
 import { type ParamaterValue, resolveExpected } from "../../functions";
 import type { FileSchema } from "../../schemas";
-import { type ErrorMessageFromRule, type ExtractResolvedRules, type RuleFn, SchemaType } from "../../types";
+import {
+  type ErrorMessageFromRule,
+  type ExtractResolvedRules,
+  type RuleFn,
+  type Schema,
+  SchemaType,
+} from "../../types";
+import { isFile } from "../../validate/validate-type";
 
 export type MinSizeRule<T extends ParamaterValue<number> = ParamaterValue<number>> = {
   type: "min_size";
@@ -18,10 +25,14 @@ export function minSize<T extends ParamaterValue<number> = ParamaterValue<number
 }
 
 export const minSizeRule: RuleFn<
-  FileSchema,
-  Extract<ExtractResolvedRules<FileSchema>, MinSizeRule>,
+  Schema,
+  Extract<ExtractResolvedRules<Schema>, MinSizeRule>,
   MinSizeRuleErrorMessage
 > = ({ rule, value, path, context }) => {
+  if (!isFile(value)) {
+    throw new Error("minSizeRule expects a file value");
+  }
+
   const min = resolveExpected(rule.min, path, context, SchemaType.NUMBER);
 
   if (min === undefined) {

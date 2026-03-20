@@ -1,6 +1,13 @@
 import { type ParamaterValue, resolveExpected } from "../../functions";
 import type { ObjectSchema } from "../../schemas";
-import { type ErrorMessageFromRule, type ExtractResolvedRules, type RuleFn, SchemaType } from "../../types";
+import {
+  type ErrorMessageFromRule,
+  type ExtractResolvedRules,
+  type RuleFn,
+  type Schema,
+  SchemaType,
+} from "../../types";
+import { isObject } from "../../validate/validate-type";
 
 export type MinEntriesRule<T extends ParamaterValue<number> = ParamaterValue<number>> = {
   type: "min_entries";
@@ -18,10 +25,14 @@ export function minEntries<T extends ParamaterValue<number> = ParamaterValue<num
 }
 
 export const minEntriesRule: RuleFn<
-  ObjectSchema<never>,
-  Extract<ExtractResolvedRules<ObjectSchema<never>>, MinEntriesRule>,
+  Schema,
+  Extract<ExtractResolvedRules<Schema>, MinEntriesRule>,
   MinEntriesRuleErrorMessage
 > = ({ rule, value, path, context }) => {
+  if (!isObject(value)) {
+    throw new Error("minEntriesRule expects a object value");
+  }
+
   const min = resolveExpected(rule.min, path, context, SchemaType.NUMBER);
 
   if (min === undefined) {

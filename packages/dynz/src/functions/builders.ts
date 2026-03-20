@@ -7,3 +7,5 @@ export function v<T extends ValueType>(value: T): Static<T> {
     value,
   };
 }
+
+export const val = v;

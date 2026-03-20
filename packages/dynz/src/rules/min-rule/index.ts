@@ -1,6 +1,13 @@
 import { type ParamaterValue, resolveExpected, type Transformer } from "../../functions";
 import type { NumberSchema } from "../../schemas";
-import { type ErrorMessageFromRule, type ExtractResolvedRules, type RuleFn, SchemaType } from "../../types";
+import {
+  type ErrorMessageFromRule,
+  type ExtractResolvedRules,
+  type RuleFn,
+  type Schema,
+  SchemaType,
+} from "../../types";
+import { isNumber } from "../../validate/validate-type";
 
 export type MinRule<T extends ParamaterValue<number> = ParamaterValue<number>, A extends Transformer = Transformer> = {
   type: "min";
@@ -52,11 +59,16 @@ export function min<T extends ParamaterValue<number>, A extends Transformer = Tr
   return { min, type: "min", code, tranform: transformer };
 }
 
-export const minRule: RuleFn<
-  NumberSchema,
-  Extract<ExtractResolvedRules<NumberSchema>, MinRule>,
-  MinRuleErrorMessage
-> = ({ rule, value, path, context }) => {
+export const minRule: RuleFn<Schema, Extract<ExtractResolvedRules<Schema>, MinRule>, MinRuleErrorMessage> = ({
+  rule,
+  value,
+  path,
+  context,
+}) => {
+  if (!isNumber(value)) {
+    throw new Error("minRule expects a number value");
+  }
+
   const min = resolveExpected(rule.min, path, context, SchemaType.NUMBER);
 
   if (min === undefined) {

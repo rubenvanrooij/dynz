@@ -1,10 +1,9 @@
-import type { CustomRule, EqualsRule } from "../../rules";
+import type { Rule } from "../../rules";
 import type { BaseSchema, SchemaType } from "../../types";
 
 /**
  * BOOLEAN SCHEMA
  */
-export type BooleanRules = EqualsRule | CustomRule;
-export type BooleanSchema = BaseSchema<number, typeof SchemaType.BOOLEAN, BooleanRules> & {
+export type BooleanSchema = BaseSchema<number, typeof SchemaType.BOOLEAN, Rule> & {
   coerce?: boolean;
 };

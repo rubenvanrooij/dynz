@@ -1,5 +1,6 @@
 import type { StringSchema } from "../../schemas/string/types";
-import type { ErrorMessageFromRule, RuleFn } from "../../types";
+import type { ErrorMessageFromRule, RuleFn, Schema } from "../../types";
+import { isString } from "../../validate/validate-type";
 
 export type RegexRule = {
   type: "regex";
@@ -36,7 +37,11 @@ export function regex(regex: string, code?: string): RegexRule {
   return { type: "regex", regex, code };
 }
 
-export const regexRule: RuleFn<StringSchema, RegexRule, RegexRuleErrorMessage> = ({ rule, value }) => {
+export const regexRule: RuleFn<Schema, RegexRule, RegexRuleErrorMessage> = ({ rule, value }) => {
+  if (!isString(value)) {
+    throw new Error("regexRule expects a string value");
+  }
+
   const regex = new RegExp(rule.regex);
   return regex.test(value)
     ? undefined

@@ -1,6 +1,7 @@
 import { type ParamaterValue, resolve } from "../../functions";
 import type { FileSchema } from "../../schemas";
-import type { ErrorMessageFromRule, ExtractResolvedRules, RuleFn, ValueType } from "../../types";
+import type { ErrorMessageFromRule, ExtractResolvedRules, RuleFn, Schema, ValueType } from "../../types";
+import { isFile } from "../../validate/validate-type";
 
 export type MimeTypeRule<T extends ParamaterValue<string | string[]> = ParamaterValue<string | string[]>> = {
   type: "mime_type";
@@ -15,10 +16,14 @@ export function mimeType<T extends ParamaterValue<string | string[]>>(mimeType: 
 }
 
 export const mimeTypeRule: RuleFn<
-  FileSchema,
-  Extract<ExtractResolvedRules<FileSchema>, MimeTypeRule>,
+  Schema,
+  Extract<ExtractResolvedRules<Schema>, MimeTypeRule>,
   MimeTypeRuleErrorMessage
 > = ({ rule, value, path, context }) => {
+  if (!isFile(value)) {
+    throw new Error("mimeTypeRule expects a file value");
+  }
+
   const mimeType = resolve(rule.mimeType, path, context);
 
   if (mimeType === undefined) {

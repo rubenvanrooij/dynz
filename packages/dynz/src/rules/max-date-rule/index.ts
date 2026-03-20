@@ -1,7 +1,12 @@
-import { isBefore } from "date-fns";
+import { isBefore, isDate } from "date-fns";
 import { type ParamaterValue, resolveExpected } from "../../functions";
-import type { DateSchema } from "../../schemas";
-import { type ErrorMessageFromRule, type ExtractResolvedRules, type RuleFn, SchemaType } from "../../types";
+import {
+  type ErrorMessageFromRule,
+  type ExtractResolvedRules,
+  type RuleFn,
+  type Schema,
+  SchemaType,
+} from "../../types";
 
 export type MaxDateRule<T extends ParamaterValue<Date> = ParamaterValue<Date>> = {
   type: "max_date";
@@ -16,10 +21,14 @@ export function maxDate<T extends ParamaterValue<Date>>(max: T, code?: string): 
 }
 
 export const maxDateRule: RuleFn<
-  DateSchema,
-  Extract<ExtractResolvedRules<DateSchema>, MaxDateRule>,
+  Schema,
+  Extract<ExtractResolvedRules<Schema>, MaxDateRule>,
   MaxDateRuleErrorMessage
 > = ({ rule, value, path, context }) => {
+  if (!isDate(value)) {
+    throw new Error("maxDateRule expects a date value");
+  }
+
   const max = resolveExpected(rule.max, path, context, SchemaType.DATE);
 
   if (max === undefined) {

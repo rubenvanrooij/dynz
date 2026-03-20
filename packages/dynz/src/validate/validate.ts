@@ -1,17 +1,6 @@
 import { resolveProperty, resolveRules } from "../conditions";
 import { isPivateValue, isValueMasked, type PrivateValue } from "../private";
-import {
-  validateArray,
-  validateBoolean,
-  validateDate,
-  validateDateString,
-  validateEnum,
-  validateFile,
-  validateNumber,
-  validateObject,
-  validateOptions,
-  validateString,
-} from "../schemas";
+import { validateRule } from "../rules";
 import {
   type Context,
   ErrorCode,
@@ -315,31 +304,6 @@ export function _validate<T extends Schema>(
     success: true,
     values: newValue,
   };
-}
-
-function validateRule<T extends Schema>(context: ValidateRuleContextUnion<T>) {
-  switch (context.type) {
-    case SchemaType.STRING:
-      return validateString(context);
-    case SchemaType.NUMBER:
-      return validateNumber(context);
-    case SchemaType.ARRAY:
-      return validateArray(context);
-    case SchemaType.BOOLEAN:
-      return validateBoolean(context);
-    case SchemaType.DATE:
-      return validateDate(context);
-    case SchemaType.DATE_STRING:
-      return validateDateString(context);
-    case SchemaType.FILE:
-      return validateFile(context);
-    case SchemaType.OBJECT:
-      return validateObject(context);
-    case SchemaType.OPTIONS:
-      return validateOptions(context);
-    case SchemaType.ENUM:
-      return validateEnum(context);
-  }
 }
 
 /**

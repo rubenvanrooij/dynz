@@ -1,6 +1,13 @@
 import { type ParamaterValue, resolveExpected } from "../../functions";
 import type { ObjectSchema } from "../../schemas";
-import { type ErrorMessageFromRule, type ExtractResolvedRules, type RuleFn, SchemaType } from "../../types";
+import {
+  type ErrorMessageFromRule,
+  type ExtractResolvedRules,
+  type RuleFn,
+  type Schema,
+  SchemaType,
+} from "../../types";
+import { isObject } from "../../validate/validate-type";
 
 export type MaxEntriesRule<T extends ParamaterValue<number> = ParamaterValue<number>> = {
   type: "max_entries";
@@ -17,13 +24,15 @@ export function maxEntries<T extends ParamaterValue<number> = ParamaterValue<num
   return { max, type: "max_entries", code };
 }
 
-type AllowedSchemas = ObjectSchema<never>;
-
 export const maxEntriesRule: RuleFn<
-  AllowedSchemas,
-  Extract<ExtractResolvedRules<AllowedSchemas>, MaxEntriesRule>,
+  Schema,
+  Extract<ExtractResolvedRules<Schema>, MaxEntriesRule>,
   MaxEntriesRuleErrorMessage
 > = ({ rule, value, path, context }) => {
+  if (!isObject(value)) {
+    throw new Error("maxEntriesRule expects a object value");
+  }
+
   const max = resolveExpected(rule.max, path, context, SchemaType.NUMBER);
 
   if (max === undefined) {

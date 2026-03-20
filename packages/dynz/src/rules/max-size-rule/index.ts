@@ -1,6 +1,13 @@
 import { type ParamaterValue, resolveExpected } from "../../functions";
 import type { FileSchema } from "../../schemas";
-import { type ErrorMessageFromRule, type ExtractResolvedRules, type RuleFn, SchemaType } from "../../types";
+import {
+  type ErrorMessageFromRule,
+  type ExtractResolvedRules,
+  type RuleFn,
+  type Schema,
+  SchemaType,
+} from "../../types";
+import { isFile } from "../../validate/validate-type";
 
 export type MaxSizeRule<T extends ParamaterValue<number> = ParamaterValue<number>> = {
   type: "max_size";
@@ -18,10 +25,14 @@ export function maxSize<T extends ParamaterValue<number> = ParamaterValue<number
 }
 
 export const maxSizeRule: RuleFn<
-  FileSchema,
-  Extract<ExtractResolvedRules<FileSchema>, MaxSizeRule>,
+  Schema,
+  Extract<ExtractResolvedRules<Schema>, MaxSizeRule>,
   MaxSizeRuleErrorMessage
 > = ({ rule, value, path, context }) => {
+  if (!isFile(value)) {
+    throw new Error("maxSizeRule expects a file value");
+  }
+
   const max = resolveExpected(rule.max, path, context, SchemaType.NUMBER);
 
   if (max === undefined) {

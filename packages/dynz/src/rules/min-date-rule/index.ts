@@ -1,6 +1,13 @@
+import { isDate } from "date-fns";
 import { type ParamaterValue, resolveExpected } from "../../functions";
 import type { DateSchema } from "../../schemas";
-import { type ErrorMessageFromRule, type ExtractResolvedRules, type RuleFn, SchemaType } from "../../types";
+import {
+  type ErrorMessageFromRule,
+  type ExtractResolvedRules,
+  type RuleFn,
+  type Schema,
+  SchemaType,
+} from "../../types";
 import { isAfter } from "../after-rule";
 
 export type MinDateRule<T extends ParamaterValue<Date> = ParamaterValue<Date>> = {
@@ -16,10 +23,14 @@ export function minDate<T extends ParamaterValue<Date>>(min: T, code?: string): 
 }
 
 export const minDateRule: RuleFn<
-  DateSchema,
-  Extract<ExtractResolvedRules<DateSchema>, MinDateRule>,
+  Schema,
+  Extract<ExtractResolvedRules<Schema>, MinDateRule>,
   MinDateRuleErrorMessage
 > = ({ rule, value, path, context }) => {
+  if (!isDate(value)) {
+    throw new Error("minDateRule expects a date value");
+  }
+
   const min = resolveExpected(rule.min, path, context, SchemaType.DATE);
 
   if (min === undefined) {

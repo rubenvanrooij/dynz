@@ -1,6 +1,7 @@
 import { type ParamaterValue, resolveExpected } from "../../functions";
 import type { NumberSchema } from "../../schemas/number/types";
-import type { ErrorMessageFromRule, RuleFn } from "../../types";
+import { type ErrorMessageFromRule, type RuleFn, type Schema, SchemaType } from "../../types";
+import { isNumber } from "../../validate/validate-type";
 
 export type MaxPrecisionRule<T extends ParamaterValue<number> = ParamaterValue<number>> = {
   type: "max_precision";
@@ -17,14 +18,17 @@ export function maxPrecision<T extends ParamaterValue<number> = ParamaterValue<n
   return { maxPrecision, type: "max_precision", code };
 }
 
-export const maxPrecisionRule: RuleFn<NumberSchema, MaxPrecisionRule, MaxPrecisionRuleErrorMessage> = ({
+export const maxPrecisionRule: RuleFn<Schema, MaxPrecisionRule, MaxPrecisionRuleErrorMessage> = ({
   value,
   rule,
   path,
-  schema,
   context,
 }) => {
-  const maxPrecision = resolveExpected(rule.maxPrecision, path, context, schema.type);
+  if (!isNumber(value)) {
+    throw new Error("maxPrecisionRule expects a number value");
+  }
+
+  const maxPrecision = resolveExpected(rule.maxPrecision, path, context, SchemaType.NUMBER);
 
   if (maxPrecision === undefined) {
     return undefined;
