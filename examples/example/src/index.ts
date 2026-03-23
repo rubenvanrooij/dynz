@@ -1,7 +1,29 @@
 import * as d from "dynz";
 import { runRegistrationForm } from "./registration-form";
 
-runRegistrationForm()
+// runRegistrationForm()
+
+const obj = d.object({
+
+  fields: {
+    tired: d.boolean(),
+    wantCoffee: d.options({
+      options: [{
+        enabled: true,
+        value: true,
+      }, {
+        enabled: d.eq(d.ref('tired'), d.val(false)),
+        value: false,
+      }]
+    })
+  }
+
+})
+
+console.log(JSON.stringify(d.validate(obj, undefined, {
+  tired: false,
+  wantCoffee: false
+}), undefined, 2))
 
 // const foo = object({
 //   fields: {

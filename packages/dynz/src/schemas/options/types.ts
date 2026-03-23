@@ -1,8 +1,10 @@
+import type { Predicate } from "../../functions";
 import type { Rule } from "../../rules";
 import type { Unpacked } from "./../../types";
 import type { BaseSchema, SchemaType } from "../../types";
 
-export type OptionValue = string | number;
+export type DynamicOptionValue = { enabled: Predicate | boolean; value: OptionValue };
+export type OptionValue = string | number | boolean | DynamicOptionValue;
 export type OptionsValue = OptionValue[];
 
 /**

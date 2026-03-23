@@ -138,7 +138,7 @@ export function _validate<T extends Schema>(
   /**
    * Type check
    */
-  if (isDefined(newValue) && validateType(schema, newValue) === false) {
+  if (isDefined(newValue) && validateType(schema, newValue, path, context) === false) {
     const error = {
       path,
       schema,

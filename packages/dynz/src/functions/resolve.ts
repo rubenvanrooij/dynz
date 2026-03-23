@@ -31,7 +31,7 @@ export function unpackRef<T extends SchemaType = SchemaType>(
   } else {
     const val = coerceSchema(schema, value);
 
-    if (validateType(schema, val)) {
+    if (validateType(schema, val, path, context)) {
       // TODO: fix with function overloading
       return val as ValueType<T>;
     }
