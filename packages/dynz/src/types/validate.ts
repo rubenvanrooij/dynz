@@ -20,6 +20,7 @@ import type {
   OneOfRuleErrorMessage,
   RegexRuleErrorMessage,
 } from "../rules";
+import type { NotOneOfRuleErrorMessage } from "../rules/not-one-off-rule";
 import type { EnumValues } from "../schemas";
 import type { BaseRule, ExtractResolvedRules } from "./rules";
 import type { Schema, SchemaType, ValueType } from "./schema";
@@ -103,6 +104,7 @@ export type ErrorMessage =
   | MinRuleErrorMessage
   | MinSizeRuleErrorMessage
   | OneOfRuleErrorMessage
+  | NotOneOfRuleErrorMessage
   | RegexRuleErrorMessage;
 
 export type ValidationErrorResult = {
