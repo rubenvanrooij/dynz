@@ -1,7 +1,7 @@
 import type { ParamaterValue, Predicate } from "../functions";
 import { isReference } from "../reference";
 import { type Rule, type Schema, SchemaType } from "../types";
-import { ensureAbsolutePath } from "../utils";
+import { ensureAbsolutePath, findSchemaByPath } from "../utils";
 import type { RulesDependencyMap } from "./types";
 
 /**
@@ -10,12 +10,12 @@ import type { RulesDependencyMap } from "./types";
  * @param path
  * @returns
  */
-export function getConditionDependencies(predicate: Predicate, path: string): string[] {
+export function getConditionDependencies(predicate: Predicate, path: string, schema: Schema): string[] {
   switch (predicate.type) {
     case "and":
     case "or":
       return predicate.predicates.reduce<string[]>((acc, cur) => {
-        acc.push(...getConditionDependencies(cur, path));
+        acc.push(...getConditionDependencies(cur, path, schema));
         return acc;
       }, []);
     case "eq":
@@ -27,27 +27,37 @@ export function getConditionDependencies(predicate: Predicate, path: string): st
     case "lt":
     case "lte":
     case "matches":
-      return [...getParamaterDependencies(predicate.left, path), ...getParamaterDependencies(predicate.right, path)];
+      return [
+        ...getParamaterDependencies(predicate.left, path, schema),
+        ...getParamaterDependencies(predicate.right, path, schema),
+      ];
     default:
       return predicate.inputs.reduce<string[]>((acc, cur) => {
-        acc.push(...getParamaterDependencies(cur, path));
+        acc.push(...getParamaterDependencies(cur, path, schema));
         return acc;
       }, []);
   }
 }
 
-function getParamaterDependencies(param: ParamaterValue, path: string): string[] {
+function getParamaterDependencies(param: ParamaterValue, path: string, schema: Schema): string[] {
   if (isReference(param)) {
-    return [ensureAbsolutePath(param.path, path)];
+    const referencePath = ensureAbsolutePath(param.path, path);
+    const inner = findSchemaByPath(referencePath, schema);
+
+    if (inner.included !== undefined && typeof inner.included !== "boolean") {
+      return [referencePath, ...getConditionDependencies(inner.included, path, schema)];
+    }
+
+    return [referencePath];
   }
 
   return [];
 }
 
-function getRuleDependencies(rule: Rule, path: string): string[] {
+function getRuleDependencies(rule: Rule, path: string, schema: Schema): string[] {
   if (rule.type === "conditional") {
     return rule.cases.reduce<string[]>((acc, cur) => {
-      acc.push(...getConditionDependencies(cur.when, path), ...getRuleDependencies(cur.then, path));
+      acc.push(...getConditionDependencies(cur.when, path, schema), ...getRuleDependencies(cur.then, path, schema));
       return acc;
     }, []);
   }
@@ -71,7 +81,7 @@ function getRuleDependencies(rule: Rule, path: string): string[] {
 export function getRulesDependencies(schema: Schema, path: string): string[] {
   return schema.rules
     ? schema.rules.reduce<string[]>((acc, cur) => {
-        acc.push(...getRuleDependencies(cur, path));
+        acc.push(...getRuleDependencies(cur, path, schema));
         return acc;
       }, [])
     : [];

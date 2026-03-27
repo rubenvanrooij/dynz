@@ -11,15 +11,15 @@ export function useConditionalProperty(
 
   const path = `$.${name}`;
 
-  // No need to watch for value changes if the schema has no conditions on the mutable property
   const innerSchema = findSchemaByPath(path, schema);
 
   const propertyValue = innerSchema[property];
 
   const dependencies =
+    // No need to watch for value changes if the schema has no conditions on the mutable property
     propertyValue === undefined || typeof propertyValue === "boolean"
       ? []
-      : getConditionDependencies(propertyValue, path).map((field) => field.slice(2));
+      : getConditionDependencies(propertyValue, path, schema).map((field) => field.slice(2));
 
   // Watch is just here to trigger a rerender when a value gets updated
   const watchedValues = useWatch({

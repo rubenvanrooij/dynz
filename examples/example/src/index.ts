@@ -6,24 +6,30 @@ import { runRegistrationForm } from "./registration-form";
 const obj = d.object({
 
   fields: {
-    tired: d.boolean(),
-    wantCoffee: d.options({
-      options: [{
-        enabled: true,
-        value: true,
-      }, {
-        enabled: d.eq(d.ref('tired'), d.val(false)),
-        value: false,
-      }]
+    foo: d.boolean(),
+    tired: d.boolean({
+      included: d.eq(d.ref('foo'), d.val(true)),
+    }),
+    settings: d.object({
+      included: d.eq(d.ref('tired'), d.val(true)),
+      fields: {
+        wantCoffee: d.options({
+          options: [true, {
+            enabled: d.eq(d.ref('tired'), d.val(false)),
+            value: false,
+          }]
+        })
+      }
     })
   }
 
 })
 
-console.log(JSON.stringify(d.validate(obj, undefined, {
-  tired: false,
-  wantCoffee: false
-}), undefined, 2))
+console.log(d.getConditionDependencies(obj.fields.settings.included, '$.settings', obj))
+
+// console.log('isInclluded: ', d.isIncluded(obj, '$.settings.wantCoffee', {
+//   tired: true
+// }))
 
 // const foo = object({
 //   fields: {

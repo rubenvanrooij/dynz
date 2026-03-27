@@ -1,3 +1,4 @@
+import { isIncluded } from "../conditions";
 import type { Reference } from "../reference";
 import type { ResolveContext, Schema, SchemaType, ValueType } from "../types";
 import { coerce, coerceSchema, ensureAbsolutePath, getNested } from "../utils";
@@ -14,7 +15,13 @@ export function unpackRef<T extends SchemaType = SchemaType>(
   context: ResolveContext,
   ...expected: T[]
 ): ValueType<T> | undefined {
-  const { schema, value } = getNested(ensureAbsolutePath(ref.path, path), context.schema, context.values);
+  const absolutePath = ensureAbsolutePath(ref.path, path);
+  const { schema, value } = getNested(absolutePath, context.schema, context.values);
+
+  // only return when the schema is actually included
+  if (!isIncluded(context.schema, absolutePath, context.values)) {
+    return undefined;
+  }
 
   if (expected.length > 0) {
     for (const expect of expected) {

@@ -4,7 +4,7 @@ import { useDynzFormContext } from "./use-dynz-form-context";
 
 export function usePredicate(predicate: Predicate) {
   const { control, getValues, schema } = useDynzFormContext();
-  const dependencies = getConditionDependencies(predicate, "$");
+  const dependencies = getConditionDependencies(predicate, "$", schema);
 
   // Watch is just here to trigger a rerender when a value gets updated
   useWatch({
