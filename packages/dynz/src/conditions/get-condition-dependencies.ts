@@ -45,7 +45,7 @@ function getParamaterDependencies(param: ParamaterValue, path: string, schema: S
     const inner = findSchemaByPath(referencePath, schema);
 
     if (inner.included !== undefined && typeof inner.included !== "boolean") {
-      return [referencePath, ...getConditionDependencies(inner.included, path, schema)];
+      return [referencePath, ...getConditionDependencies(inner.included, referencePath, schema)];
     }
 
     return [referencePath];
