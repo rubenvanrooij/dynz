@@ -1,5 +1,4 @@
 import type { Schema } from "../types";
-import { getNested } from "../utils";
 import { resolveProperty } from "./resolve-property";
 
 /**
@@ -11,9 +10,7 @@ import { resolveProperty } from "./resolve-property";
  * @returns boolean value whether the path is required
  */
 export function isRequired<T extends Schema>(schema: T, path: string, values: unknown): boolean {
-  const nested = getNested(path, schema, values);
-
-  return resolveProperty(nested.schema, "required", path, true, {
+  return resolveProperty(schema, "required", path, true, {
     schema,
     values,
   });

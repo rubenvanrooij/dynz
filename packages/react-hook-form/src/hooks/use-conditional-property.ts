@@ -35,9 +35,8 @@ export function useConditionalProperty(
   // biome-ignore lint/correctness/useExhaustiveDependencies: watchedValues triggers the re evealuation
   return useMemo(() => {
     const values = getValues();
-    const nested = getNested(path, schema, values);
 
-    return resolveProperty(nested.schema, property, path, true, {
+    return resolveProperty(schema, property, path, true, {
       schema,
       values,
     });

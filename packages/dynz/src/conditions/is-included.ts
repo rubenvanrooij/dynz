@@ -24,21 +24,8 @@ import { resolveProperty } from "./resolve-property";
  * @returns boolean value whether the path is included
  */
 export function isIncluded<T extends Schema>(schema: T, path: string, values: unknown): boolean {
-  const segments = ensureAbsolutePath(path, "$")
-    .split(/[.[\]]/)
-    .filter(Boolean);
-
-  // Check each ancestor path prefix (starting from first real field, skipping root "$")
-  for (let i = 1; i <= segments.length; i++) {
-    const currentPath = segments.slice(0, i).join(".");
-    const nested = getNested(currentPath, schema, values);
-    const included = resolveProperty(nested.schema, "included", currentPath, true, {
-      schema,
-      values,
-    });
-
-    if (!included) return false;
-  }
-
-  return true;
+  return resolveProperty(schema, "included", path, true, {
+    schema,
+    values,
+  });
 }
