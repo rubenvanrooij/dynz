@@ -36,7 +36,7 @@ export function useConditionalProperty(
   return useMemo(() => {
     const values = getValues();
 
-    return resolveProperty(schema, property, path, true, {
+    return resolveProperty(property, path, true, {
       schema,
       values,
     });

@@ -9,9 +9,9 @@ import { resolveProperty } from "./resolve-property";
  * @param values
  * @returns boolean value whether the path is required
  */
-export function isRequired<T extends Schema>(schema: T, path: string, values: unknown): boolean {
-  return resolveProperty(schema, "required", path, true, {
-    schema,
+export function isRequired<T extends Schema>(rootSchema: T, path: string, values: unknown): boolean {
+  return resolveProperty("required", path, true, {
+    schema: rootSchema,
     values,
   });
 }

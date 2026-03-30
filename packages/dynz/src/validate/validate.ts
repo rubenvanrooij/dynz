@@ -39,7 +39,7 @@ export function _validate<T extends Schema>(
   /**
    * If the schema is not included we do not need to validate it
    */
-  if (!resolveProperty(schema, "included", path, true, context)) {
+  if (!resolveProperty("included", path, true, context)) {
     if (context.validateOptions.stripNotIncludedValues === true) {
       return {
         success: true,
@@ -84,7 +84,7 @@ export function _validate<T extends Schema>(
   /**
    * if the schema is marked as not mutable; the value shuld still be the same
    */
-  if (context.validateMutable && resolveProperty(schema, "mutable", path, true, context) === false) {
+  if (context.validateMutable && resolveProperty("mutable", path, true, context) === false) {
     if (valueChanged(schema, path, values.current, values.new)) {
       return {
         success: false,
@@ -103,7 +103,7 @@ export function _validate<T extends Schema>(
     }
   }
 
-  const isRequired = resolveProperty(schema, "required", path, true, context);
+  const isRequired = resolveProperty("required", path, true, context);
 
   /**
    * Validate required
