@@ -1,5 +1,4 @@
 import type { Schema } from "../types";
-import { ensureAbsolutePath, getNested } from "../utils";
 import { resolveProperty } from "./resolve-property";
 
 /**
