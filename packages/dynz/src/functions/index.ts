@@ -11,6 +11,7 @@ export * from "./greater-than-function";
 export * from "./greater-than-or-equal-function";
 export * from "./is-in-function";
 export * from "./is-not-in-function";
+export * from "./lookup-function";
 export * from "./lower-than-function";
 export * from "./lower-than-or-equal-function";
 export * from "./matches-function";

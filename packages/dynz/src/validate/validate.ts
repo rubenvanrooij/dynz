@@ -1,4 +1,5 @@
 import { resolveProperty, resolveRules } from "../conditions";
+import { resolve, resolveFunction } from "../functions";
 import { isPivateValue, isValueMasked, type PrivateValue } from "../private";
 import { validateRule } from "../rules";
 import {
@@ -67,6 +68,14 @@ export function _validate<T extends Schema>(
     return {
       success: true,
       values: undefined,
+    };
+  }
+
+  // static schema types must be in front of validation
+  if (schema.type === SchemaType.EXPRESSION) {
+    return {
+      success: true,
+      values: resolve(schema.value, path, context),
     };
   }
 

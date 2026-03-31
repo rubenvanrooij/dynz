@@ -3,6 +3,7 @@ import type { CeilFunction } from "./ceil-function";
 import type { CosFunction } from "./cos-function";
 import type { DivideFunction } from "./divide-function";
 import type { FloorFunction } from "./floor-function";
+import type { LookupFunction } from "./lookup-function";
 import type { MultiplyFunction } from "./multiply-function";
 import type { SinFunction } from "./sin-function";
 import type { SizeFunction } from "./size-function";
@@ -54,4 +55,5 @@ export type Transformer =
   | AgeFunction
   | SubFunction
   | MultiplyFunction
-  | DivideFunction;
+  | DivideFunction
+  | LookupFunction;

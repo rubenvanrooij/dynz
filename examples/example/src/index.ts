@@ -1,31 +1,78 @@
 import * as d from "dynz";
+import { SchemaType } from "dynz";
+import { expect } from "vitest";
+import { expression } from "./../../../packages/dynz/src/schemas/expression/builder";
 import { runRegistrationForm } from "./registration-form";
 
 // runRegistrationForm()
 
+const ADDONS_PRICES = {
+  legalAid: 10,
+  damageToPassengers: 5,
+  roadsideAssistance: 3
+}
+
+const PRODUCT_PRICES = {
+  A: 20,
+  B: 25,
+  C: 30,
+}
+
+const PAYMENT_INTERVAL_DISCOUNT = {
+  YEARLY: 0.90, // 10%
+  MONTHLY: 1.0 // 0% 
+}
+
 const obj = d.object({
-
   fields: {
-    foo: d.boolean(),
-    tired: d.boolean({
-      included: d.eq(d.ref('foo'), d.val(true)),
+    product: d.options({
+      options: ['A', 'B', 'C']
     }),
-    settings: d.object({
-      included: d.eq(d.ref('tired'), d.val(true)),
+    paymentInterval: d.options({
+      options: ['YEARLY', 'MONTHLY']
+    }),
+    addons: d.object({
       fields: {
-        wantCoffee: d.options({
-          options: [true, {
-            enabled: d.eq(d.ref('tired'), d.val(false)),
-            value: false,
-          }]
-        })
+        legalAid: d.boolean(),
+        damageToPassengers: d.boolean(),
+        roadsideAssistance: d.boolean()
       }
-    })
-  }
+    }),
+    price: d.expression({
+      value: d.multiply(
+        d.sum(
+          d.lookup({
+            value: d.ref('$.product'),
+            lookup: d.val(PRODUCT_PRICES)
+          }),
+          d.multiply(d.size(d.ref('$.addons.legalAid')), d.val(ADDONS_PRICES.legalAid)),
+          d.multiply(d.size(d.ref('$.addons.damageToPassengers')), d.val(ADDONS_PRICES.damageToPassengers)),
+          d.multiply(d.size(d.ref('$.addons.roadsideAssistance')), d.val(ADDONS_PRICES.roadsideAssistance))
+        ),
+        d.lookup({
+          value: d.ref('$.paymentInterval'),
+          lookup: d.val(PAYMENT_INTERVAL_DISCOUNT)
+        }),
+      )
+    }),
+  },
+});
 
-})
+JSON.stringify(obj)
 
-console.log(d.getConditionDependencies(obj.fields.settings.included, '$.settings', obj))
+type Foo = d.SchemaValues<typeof obj>;
+
+console.log(
+  d.validate(obj, undefined, {
+    product: 'A',
+    paymentInterval: 'YEARLY',
+    addons: {
+      legalAid: false,
+      damageToPassengers: true,
+      roadsideAssistance: true
+    }
+  })
+);
 
 // console.log('isInclluded: ', d.isIncluded(obj, '$.settings.wantCoffee', {
 //   tired: true

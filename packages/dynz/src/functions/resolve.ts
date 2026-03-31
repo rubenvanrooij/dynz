@@ -139,6 +139,8 @@ export function resolveFunction(
     case "multiply":
       return FUNCTIONS[input.type](input.value.map((val) => resolve(val, path, context)));
     // expects single input value
+    case "lookup":
+      return FUNCTIONS[input.type](resolve(input.value, path, context), resolve(input.lookup, path, context));
     default:
       return FUNCTIONS[input.type](resolve(input.value, path, context));
   }

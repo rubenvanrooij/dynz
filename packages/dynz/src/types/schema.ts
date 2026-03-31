@@ -15,6 +15,7 @@ import type {
   StringSchema,
 } from "../schemas";
 import type { EnumSchema } from "../schemas/enum";
+import type { ExpressionSchema } from "../schemas/expression";
 import type { BaseRule } from "./rules";
 import type { DateString, Prettify, Unpacked } from "./utils";
 
@@ -29,6 +30,7 @@ export const SchemaType = {
   BOOLEAN: "boolean",
   ENUM: "enum",
   FILE: "file",
+  EXPRESSION: "expression",
 } as const;
 
 export type SchemaType = EnumValues<typeof SchemaType>;
@@ -58,7 +60,8 @@ export type Schema =
   | OptionsSchema
   | FileSchema
   | DateSchema
-  | EnumSchema;
+  | EnumSchema
+  | ExpressionSchema;
 
 /**
  * All possible rules that can be applied to a schema
@@ -115,7 +118,9 @@ export type ValueType<T extends SchemaType = SchemaType> = T extends typeof Sche
                   ? File
                   : T extends typeof SchemaType.ENUM
                     ? EnumValue
-                    : never;
+                    : T extends typeof SchemaType.STATIC
+                      ? unknown
+                      : never;
 
 export type ValueTypeOrUndefined = ValueType | undefined | Array<ValueType | undefined>;
 

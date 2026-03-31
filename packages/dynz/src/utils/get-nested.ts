@@ -37,11 +37,11 @@ export function getNested<T extends Schema>(
         }
 
         if (acc.schema.type === SchemaType.OBJECT) {
-          if (acc.value !== undefined && !isObject(acc.value)) {
+          if (acc.value !== undefined && acc.value !== null && !isObject(acc.value)) {
             throw new Error(`Expected an object at path ${path}, but got ${typeof acc.value}`);
           }
 
-          const val = acc.value === undefined ? undefined : acc.value[cur];
+          const val = acc.value === undefined || acc.value === null ? undefined : acc.value[cur];
           const childSchema = acc.schema.fields[cur];
 
           if (childSchema === undefined) {

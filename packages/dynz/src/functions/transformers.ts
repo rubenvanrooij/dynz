@@ -3,6 +3,7 @@ import { ceilFunction, ceilFunctionType } from "./ceil-function";
 import { cosFunction, cosFunctionType } from "./cos-function";
 import { divideFunction, divideFunctionType } from "./divide-function";
 import { floorFunction, floorFunctionType } from "./floor-function";
+import { lookupFunction, lookupFunctionType } from "./lookup-function";
 import { multiplyFunction, multiplyFunctionType } from "./multiply-function";
 import { sinFunction, sinFunctionType } from "./sin-function";
 import { sizeFunction, sizeFunctionType } from "./size-function";
@@ -22,4 +23,5 @@ export const TRANSFORMERS = {
   [ageFunctionType]: ageFunction,
   [subFunctionType]: subFunction,
   [multiplyFunctionType]: multiplyFunction,
+  [lookupFunctionType]: lookupFunction,
 } as const;
