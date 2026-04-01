@@ -17,6 +17,8 @@ export type ResolvedRules<
 
 export type ExtractResolvedRules<T extends Schema> = ResolvedRules<T, ExtractRules<T>>;
 
+export type MaybePromise<T> = Promise<T> | T;
+
 export type RuleFn<T extends Schema, R extends ExtractResolvedRules<T>, E extends BaseErrorMessage> = (
   context: Omit<ValidateRuleContext<T, R>, "type" | "ruleType">
-) => OmitBaseErrorMessageProps<E> | undefined;
+) => MaybePromise<OmitBaseErrorMessageProps<E> | undefined>;

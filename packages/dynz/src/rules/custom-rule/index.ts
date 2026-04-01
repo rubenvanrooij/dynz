@@ -18,13 +18,11 @@ export function custom<T extends Record<string, ParamaterValue>>(name: string, p
   return { type: "custom", name, params: params || {} };
 }
 
-export const customRule: RuleFn<Schema, Extract<ExtractResolvedRules<Schema>, CustomRule>, CustomRuleErrorMessage> = ({
-  rule,
-  value,
-  path,
-  context,
-  schema,
-}) => {
+export const customRule: RuleFn<
+  Schema,
+  Extract<ExtractResolvedRules<Schema>, CustomRule>,
+  CustomRuleErrorMessage
+> = async ({ rule, value, path, context, schema }) => {
   const validatorFn = context.validateOptions.customRules?.[rule.name];
 
   if (validatorFn === undefined) {
@@ -37,7 +35,7 @@ export const customRule: RuleFn<Schema, Extract<ExtractResolvedRules<Schema>, Cu
     return acc;
   }, {});
 
-  const result = validatorFn(
+  const result = await validatorFn(
     {
       schema: schema,
       value: value,

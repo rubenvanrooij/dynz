@@ -20,7 +20,7 @@ export function validate<T extends Schema>(
   currentValues: SchemaValues<T> | undefined,
   newValues: unknown,
   options: ValidateOptions = {}
-): ValidationResult<SchemaValues<T>> {
+): Promise<ValidationResult<SchemaValues<T>>> {
   return _validate(schema, { current: currentValues, new: newValues }, "$", {
     type: "validate",
     schema,
@@ -28,15 +28,15 @@ export function validate<T extends Schema>(
     validateMutable: currentValues !== undefined,
     currentValues: currentValues,
     values: newValues,
-  }) as ValidationResult<SchemaValues<T>>;
+  }) as Promise<ValidationResult<SchemaValues<T>>>;
 }
 
-export function _validate<T extends Schema>(
+export async function _validate<T extends Schema>(
   schema: T,
   values: { current: unknown; new: unknown },
   path: string,
   context: Context
-): ValidationResult<unknown> {
+): Promise<ValidationResult<unknown>> {
   /**
    * If the schema is not included we do not need to validate it
    */
@@ -181,7 +181,7 @@ export function _validate<T extends Schema>(
    */
   if (isDefined(newValue)) {
     for (const rule of resolveRules(schema, path, context)) {
-      const result = validateRule({
+      const result = await validateRule({
         type: schema.type,
         ruleType: rule.type,
         schema,
@@ -221,39 +221,67 @@ export function _validate<T extends Schema>(
       throw new Error(`current value is not an object: ${currentValue}`);
     }
 
-    return Object.entries(schema.fields).reduce<ValidationResult<Record<string, unknown>>>(
-      (acc, [key, innerSchema]) => {
-        const result = _validate(
+    const entries = await Promise.all(
+      Object.entries(schema.fields).map(async ([key, innerSchema]) => ({
+        key,
+        result: await _validate(
           innerSchema,
-          {
-            current: currentValue?.[key],
-            new: newValue[key],
-          },
+          { current: currentValue?.[key], new: newValue[key] },
           `${path}.${key}`,
           context
-        );
-
-        if (acc.success) {
-          if (result.success) {
-            acc.values[key] = result.values;
-            return acc;
-          }
-
-          return {
-            success: false,
-            errors: result.errors,
-          };
-        }
-
-        if (result.success) {
-          return acc;
-        }
-
-        acc.errors.push(...result.errors);
-        return acc;
-      },
-      { success: true, values: {} }
+        ),
+      }))
     );
+
+    const acc = { success: true, values: {} } as ValidationResult<Record<string, unknown>>;
+
+    for (const { key, result } of entries) {
+      if (acc.success) {
+        if (result.success) {
+          acc.values[key] = result.values;
+        } else {
+          return { success: false, errors: result.errors };
+        }
+      } else if (!result.success) {
+        acc.errors.push(...result.errors);
+      }
+    }
+
+    return acc;
+
+    // return Object.entries(schema.fields).reduce<ValidationResult<Record<string, unknown>>>(
+    //   (acc, [key, innerSchema]) => {
+    //     const result = await _validate(
+    //       innerSchema,
+    //       {
+    //         current: currentValue?.[key],
+    //         new: newValue[key],
+    //       },
+    //       `${path}.${key}`,
+    //       context
+    //     );
+
+    //     if (acc.success) {
+    //       if (result.success) {
+    //         acc.values[key] = result.values;
+    //         return acc;
+    //       }
+
+    //       return {
+    //         success: false,
+    //         errors: result.errors,
+    //       };
+    //     }
+
+    //     if (result.success) {
+    //       return acc;
+    //     }
+
+    //     acc.errors.push(...result.errors);
+    //     return acc;
+    //   },
+    //   { success: true, values: {} }
+    // );
   }
 
   /**
@@ -274,9 +302,9 @@ export function _validate<T extends Schema>(
       validateMutable: false,
     };
 
-    return newValue.reduce<ValidationResult<unknown[]>>(
-      (acc, cur, index) => {
-        const result = _validate(
+    const results = await Promise.all(
+      newValue.map((cur: unknown, index: number) =>
+        _validate(
           schema.schema,
           {
             current: currentValue?.[index],
@@ -284,30 +312,61 @@ export function _validate<T extends Schema>(
           },
           `${path}.[${index}]`,
           newContext
-        );
-
-        if (acc.success) {
-          if (result.success) {
-            acc.values.push(result.values);
-            return acc;
-          }
-
-          return {
-            success: false,
-            errors: result.errors,
-          };
-        }
-
-        if (result.success) {
-          return acc;
-        }
-
-        acc.errors.push(...result.errors);
-        return acc;
-      },
-      { success: true, values: [] }
+        )
+      )
     );
+
+    const acc = { success: true, values: [] } as ValidationResult<unknown[]>;
+
+    for (const result of results) {
+      if (acc.success) {
+        if (result.success) {
+          acc.values.push(result.values);
+        } else {
+          return { success: false, errors: result.errors };
+        }
+      } else if (!result.success) {
+        acc.errors.push(...result.errors);
+      }
+    }
+
+    return acc;
   }
+
+  //   return newValue.reduce<ValidationResult<unknown[]>>(
+  //     (acc, cur, index) => {
+  //       const result = _validate(
+  //         schema.schema,
+  //         {
+  //           current: currentValue?.[index],
+  //           new: cur,
+  //         },
+  //         `${path}.[${index}]`,
+  //         newContext
+  //       );
+
+  //       if (acc.success) {
+  //         if (result.success) {
+  //           acc.values.push(result.values);
+  //           return acc;
+  //         }
+
+  //         return {
+  //           success: false,
+  //           errors: result.errors,
+  //         };
+  //       }
+
+  //       if (result.success) {
+  //         return acc;
+  //       }
+
+  //       acc.errors.push(...result.errors);
+  //       return acc;
+  //     },
+  //     { success: true, values: [] }
+  //   );
+  // }
 
   return {
     success: true,

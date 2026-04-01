@@ -17,6 +17,7 @@ import { minEntriesRule } from "./min-entries-rule";
 import { minLengthRule } from "./min-length-rule";
 import { minRule } from "./min-rule";
 import { minSizeRule } from "./min-size-rule";
+import { notOneOfRule } from "./not-one-off-rule";
 import { oneOfRule } from "./one-off-rule";
 import { regexRule } from "./regex-rule";
 
@@ -62,5 +63,7 @@ export function validateRule(context: ValidateRuleContextUnion<Schema>) {
       return oneOfRule(context);
     case "regex":
       return regexRule(context);
+    case "not_one_of":
+      return notOneOfRule(context);
   }
 }

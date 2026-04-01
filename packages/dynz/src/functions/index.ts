@@ -3,7 +3,7 @@ export * from "./and-function";
 export * from "./builders";
 export * from "./ceil-function";
 export * from "./cos-function";
-export * from "./custom-function";
+// export * from "./custom-function";
 export * from "./divide-function";
 export * from "./equals-function";
 export * from "./floor-function";

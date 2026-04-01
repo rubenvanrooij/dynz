@@ -1,5 +1,4 @@
 import * as d from "dynz";
-import { SchemaType } from "dynz";
 import { expect } from "vitest";
 import { expression } from "./../../../packages/dynz/src/schemas/expression/builder";
 import { runRegistrationForm } from "./registration-form";
@@ -33,7 +32,12 @@ const obj = d.object({
     }),
     addons: d.object({
       fields: {
-        legalAid: d.boolean(),
+        legalAid: d.boolean({
+          included: d.gt(d.lookup({
+            value: d.ref('$.product'),
+            lookup: d.val(PRODUCT_PRICES)
+          }), d.val(2))
+        }),
         damageToPassengers: d.boolean(),
         roadsideAssistance: d.boolean()
       }
@@ -57,10 +61,8 @@ const obj = d.object({
     }),
   },
 });
-
-JSON.stringify(obj)
-
-type Foo = d.SchemaValues<typeof obj>;
+console.log(
+  JSON.stringify(obj))
 
 console.log(
   d.validate(obj, undefined, {
@@ -73,6 +75,52 @@ console.log(
     }
   })
 );
+
+const car = d.object({
+  fields: {
+    licensePlate: d.string({
+      rules: [d.custom('validLicensePlate')]
+    })
+  }
+})
+
+d.validate(car, undefined, {
+  licensePlate: 'K-157-NJ'
+}, {
+  customRules: {
+    'validLicensePlate': (value) => {
+      return new Promise((r) => {
+        setTimeout(() => {
+          if (typeof value.value === 'string' && value.value.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() === 'k157nj') {
+            return r(true);
+          } else {
+            return r({
+              success: false,
+            })
+          }
+        }, 2000)
+      })
+    }
+  }
+}).then((val) => {
+  console.log(val)
+})
+
+// console.log(
+//   d.validate(car, undefined, {
+//     licensePlate: '3'
+//   }, {
+//     customRules: {
+//       'validLicensePlate': (value) => {
+//         return new Promise((r) => {
+//           setTimeout(() => {
+//             r(true)
+//           }, 10000)
+//         })
+//       }
+//     }
+//   })
+// );
 
 // console.log('isInclluded: ', d.isIncluded(obj, '$.settings.wantCoffee', {
 //   tired: true

@@ -127,7 +127,10 @@ export type CustomRuleFunction<
   params: TParams,
   path: string,
   schema: Schema
-) => boolean | { success: false; [key: string]: JsonPrimitive };
+) =>
+  | Promise<boolean | { success: false; [key: string]: JsonPrimitive }>
+  | boolean
+  | { success: false; [key: string]: JsonPrimitive };
 
 export type CustomRuleMap = Record<string, CustomRuleFunction>;
 
