@@ -1,5 +1,5 @@
 import { resolveProperty, resolveRules } from "../conditions";
-import { resolve, resolveFunction } from "../functions";
+import { resolve } from "../functions";
 import { isPivateValue, isValueMasked, type PrivateValue } from "../private";
 import { validateRule } from "../rules";
 import {
