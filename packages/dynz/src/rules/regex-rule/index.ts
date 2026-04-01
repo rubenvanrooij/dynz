@@ -6,6 +6,7 @@ export type RegexRule = {
   type: "regex";
   regex: string;
   code?: string | undefined;
+  flags?: string | undefined;
 };
 
 export type RegexRuleErrorMessage = ErrorMessageFromRule<RegexRule>;
@@ -33,8 +34,8 @@ export type RegexRuleErrorMessage = ErrorMessageFromRule<RegexRule>;
  * @see {@link minLength} - Minimum length validation
  * @see {@link maxLength} - Maximum length validation
  */
-export function regex(regex: string, code?: string): RegexRule {
-  return { type: "regex", regex, code };
+export function regex(regex: string, flags?: string, code?: string): RegexRule {
+  return { type: "regex", regex, code, flags };
 }
 
 export const regexRule: RuleFn<Schema, RegexRule, RegexRuleErrorMessage> = ({ rule, value }) => {
@@ -42,7 +43,7 @@ export const regexRule: RuleFn<Schema, RegexRule, RegexRuleErrorMessage> = ({ ru
     throw new Error("regexRule expects a string value");
   }
 
-  const regex = new RegExp(rule.regex);
+  const regex = new RegExp(rule.regex, rule.flags);
   return regex.test(value)
     ? undefined
     : {
