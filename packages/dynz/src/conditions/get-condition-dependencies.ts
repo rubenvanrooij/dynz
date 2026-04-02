@@ -39,7 +39,7 @@ export function getConditionDependencies(predicate: Predicate, path: string, sch
   }
 }
 
-function getParamaterDependencies(param: ParamaterValue, path: string, schema: Schema): string[] {
+export function getParamaterDependencies(param: ParamaterValue, path: string, schema: Schema): string[] {
   if (isReference(param)) {
     const referencePath = ensureAbsolutePath(param.path, path);
     const inner = findSchemaByPath(referencePath, schema);
