@@ -1,4 +1,4 @@
-import type { ParamaterValue, Predicate } from "../functions";
+import type { ParamaterValue, Predicate, Transformer } from "../functions";
 import { isReference } from "../reference";
 import { type Rule, type Schema, SchemaType } from "../types";
 import { ensureAbsolutePath, findSchemaByPath } from "../utils";
@@ -10,11 +10,12 @@ import type { RulesDependencyMap } from "./types";
  * @param path
  * @returns
  */
-export function getConditionDependencies(predicate: Predicate, path: string, schema: Schema): string[] {
-  switch (predicate.type) {
+
+export function getConditionDependencies(input: Predicate | Transformer, path: string, schema: Schema): string[] {
+  switch (input.type) {
     case "and":
     case "or":
-      return predicate.predicates.reduce<string[]>((acc, cur) => {
+      return input.predicates.reduce<string[]>((acc, cur) => {
         acc.push(...getConditionDependencies(cur, path, schema));
         return acc;
       }, []);
@@ -28,14 +29,31 @@ export function getConditionDependencies(predicate: Predicate, path: string, sch
     case "lte":
     case "matches":
       return [
-        ...getParamaterDependencies(predicate.left, path, schema),
-        ...getParamaterDependencies(predicate.right, path, schema),
+        ...getParamaterDependencies(input.left, path, schema),
+        ...getParamaterDependencies(input.right, path, schema),
       ];
-    default:
-      return predicate.inputs.reduce<string[]>((acc, cur) => {
+    case "ceil":
+    case "cos":
+    case "floor":
+    case "sin":
+    case "tan":
+    case "size":
+    case "age":
+    case "lookup":
+      return getParamaterDependencies(input.value, path, schema);
+    case "sum":
+    case "sub":
+    case "multiply":
+    case "divide":
+      return input.value.reduce<string[]>((acc, cur) => {
         acc.push(...getParamaterDependencies(cur, path, schema));
         return acc;
       }, []);
+    // default:
+    //   return predicate.inputs.reduce<string[]>((acc, cur) => {
+    //     acc.push(...getParamaterDependencies(cur, path, schema));
+    //     return acc;
+    //   }, []);
   }
 }
 
@@ -51,7 +69,11 @@ export function getParamaterDependencies(param: ParamaterValue, path: string, sc
     return [referencePath];
   }
 
-  return [];
+  if (param === undefined || param.type === "st") {
+    return [];
+  }
+
+  return getConditionDependencies(param, path, schema);
 }
 
 function getRuleDependencies(rule: Rule, path: string, schema: Schema): string[] {

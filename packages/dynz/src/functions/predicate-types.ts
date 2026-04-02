@@ -1,12 +1,12 @@
 import type { AndFunction } from "./and-function";
-import type { CustomFunction } from "./custom-function";
+// import type { CustomFunction } from "./custom-function";
 import type { EqualsFunction } from "./equals-function";
-import type { GreaterThanOrEqualFunction } from "./greater-than-or-equal-function";
 import type { GreaterThanFunction } from "./greater-than-function";
+import type { GreaterThanOrEqualFunction } from "./greater-than-or-equal-function";
 import type { IsInFunction } from "./is-in-function";
 import type { IsNotInFunction } from "./is-not-in-function";
-import type { LowerThanOrEqualFunction } from "./lower-than-or-equal-function";
 import type { LowerThanFunction } from "./lower-than-function";
+import type { LowerThanOrEqualFunction } from "./lower-than-or-equal-function";
 import type { MatchesFunction } from "./matches-function";
 import type { NotEqualsFunction } from "./not-equals-function";
 import type { OrFunction } from "./or-function";
@@ -43,7 +43,7 @@ import type { OrFunction } from "./or-function";
  */
 export type Predicate =
   | AndFunction
-  | CustomFunction
+  // | CustomFunction
   | EqualsFunction
   | GreaterThanFunction
   | GreaterThanOrEqualFunction
