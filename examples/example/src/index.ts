@@ -80,7 +80,9 @@ const car = d.object({
   fields: {
     licensePlate: d.string({
       rules: [d.custom('validLicensePlate')]
-    })
+    }),
+    car: d.string({}),
+    foo: d.string({})
   }
 })
 
@@ -98,7 +100,7 @@ d.validate(car, undefined, {
               success: false,
             })
           }
-        }, 2000)
+        }, 100)
       })
     }
   }

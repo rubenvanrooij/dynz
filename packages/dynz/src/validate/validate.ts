@@ -233,14 +233,14 @@ export async function _validate<T extends Schema>(
       }))
     );
 
-    const acc = { success: true, values: {} } as ValidationResult<Record<string, unknown>>;
+    let acc = { success: true, values: {} } as ValidationResult<Record<string, unknown>>;
 
     for (const { key, result } of entries) {
       if (acc.success) {
         if (result.success) {
           acc.values[key] = result.values;
         } else {
-          return { success: false, errors: result.errors };
+          acc = { success: false, errors: result.errors };
         }
       } else if (!result.success) {
         acc.errors.push(...result.errors);
@@ -316,14 +316,14 @@ export async function _validate<T extends Schema>(
       )
     );
 
-    const acc = { success: true, values: [] } as ValidationResult<unknown[]>;
+    let acc = { success: true, values: [] } as ValidationResult<unknown[]>;
 
     for (const result of results) {
       if (acc.success) {
         if (result.success) {
           acc.values.push(result.values);
         } else {
-          return { success: false, errors: result.errors };
+          acc = { success: false, errors: result.errors };
         }
       } else if (!result.success) {
         acc.errors.push(...result.errors);
