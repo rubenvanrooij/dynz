@@ -1,6 +1,5 @@
 // import type { Reference } from "../reference";
 import type { Reference } from "../reference";
-import type { EnumValues } from "../schemas";
 import type { ValueType } from "../types";
 import type { Predicate } from "./predicate-types";
 import type { Transformer } from "./transformer-types";

@@ -29,7 +29,7 @@ export function matchesFunction(
   right: ValueType | undefined,
   flags?: string
 ): boolean | undefined {
-  if (left === undefined || isString(right) === false) {
+  if (left === undefined || left === null || isString(right) === false) {
     return undefined;
   }
   return new RegExp(right, flags).test(left.toString());

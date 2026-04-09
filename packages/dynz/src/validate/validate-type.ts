@@ -1,7 +1,7 @@
 import { parse } from "date-fns";
-import { resolve, resolvePredicate } from "../functions";
+import { resolvePredicate } from "../functions";
 import { DEFAULT_DATE_STRING_FORMAT, type Enum, type OptionValue } from "../schemas";
-import { type Context, type DateString, type ResolveContext, type Schema, SchemaType, type ValueType } from "../types";
+import { type DateString, type ResolveContext, type Schema, SchemaType, type ValueType } from "../types";
 
 /**
  * Validates whether the value is of the correct type for a given schema
@@ -37,6 +37,8 @@ export function validateType<T extends Schema>(
       return isDateString(value, schema.format);
     case SchemaType.OPTIONS:
       return isOption(schema.options, value, path, context);
+    case SchemaType.EXPRESSION:
+      return true;
   }
 }
 
@@ -71,6 +73,8 @@ export function validateShallowType<T extends SchemaType>(type: T, value: unknow
       return isString(value);
     case SchemaType.OPTIONS:
       return isNumber(value) || isString(value) || isBoolean(value);
+    case SchemaType.EXPRESSION:
+      return true;
   }
 }
 

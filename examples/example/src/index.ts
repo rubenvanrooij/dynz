@@ -22,6 +22,56 @@ const PAYMENT_INTERVAL_DISCOUNT = {
   MONTHLY: 1.0 // 0% 
 }
 
+const supportSchema = d.object({
+  fields: {
+    topic: d.options({
+      options: ['billing', 'technical', 'other']
+    }),
+    orderId: d.string({
+      included: d.eq(d.ref('topic'), d.v('billing'))
+    }),
+    description: d.string({
+      included: d.eq(d.ref('topic'), d.v('other'))
+    }),
+    message: d.string()
+  }
+})
+
+const pcConfiguratorSchema = d.object({
+  fields: {
+    cores: d.options({
+      options: [8, 16, 32, 64]
+    }),
+    ramGb: d.options({
+      options: [16, 32, 64, 128]
+    }),
+    gpuCount: d.number({
+      rules: [d.min(d.v(1)), d.max(d.v(1))]
+    }),
+    sliMode: d.options({
+      options: ['nvlink', 'disabled'],
+      included: d.gte(d.ref('gpuCount'), d.v(2))
+    }),
+    storageCount: d.number({
+      rules: [d.min(d.v(1)), d.max(d.v(8))]
+    }),
+    storageRaidLevel: d.options({
+      options: ['raid0', 'raid1', {
+        enabled: d.gte(d.ref('storageCount'), d.v(3)),
+        value: 'raid5'
+      }],
+      included: d.gte(d.ref('storageCount'), d.v(2))
+    }),
+    coolingType: d.options({
+      options: ['air', 'liquid-240', 'liquid-360'],
+      included: d.gte(d.multiply(d.ref('cores'), d.ref('gpuCount')), d.v(32))
+    }),
+    totalTdp: d.expression({
+      value: d.multiply(d.ref('cores'), d.v(8))
+    })
+  }
+})
+
 const obj = d.object({
   fields: {
     product: d.options({

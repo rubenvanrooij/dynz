@@ -1,27 +1,17 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { REFERENCE_TYPE, ref, unpackRef } from "../../reference";
+import { describe, expect, it } from "vitest";
+import { v } from "../../functions";
+import { REFERENCE_TYPE, ref } from "../../reference";
 import { type NumberSchema, number } from "../../schemas";
 import type { Context } from "../../types";
 import { maxPrecision, maxPrecisionRule } from "./index";
 
-vi.mock("../../reference", () => {
-  return {
-    ref: (path: string) => ({
-      _type: REFERENCE_TYPE,
-      path: path,
-    }),
-    REFERENCE_TYPE: "MOCKED_REFERENCE_TYPE",
-    unpackRef: vi.fn(),
-  };
-});
-
 describe("maxPrecision rule", () => {
   it("should create maxPrecision rule with number value", () => {
-    const rule = maxPrecision(2);
+    const rule = maxPrecision(v(2));
 
     expect(rule).toEqual({
       type: "max_precision",
-      maxPrecision: 2,
+      maxPrecision: v(2),
     });
   });
 
@@ -31,19 +21,16 @@ describe("maxPrecision rule", () => {
 
     expect(rule).toEqual({
       type: "max_precision",
-      maxPrecision: {
-        _type: REFERENCE_TYPE,
-        path: "$.maxPrecision",
-      },
+      maxPrecision: { type: REFERENCE_TYPE, path: "$.maxPrecision" },
     });
   });
 
   it("should create maxPrecision rule with custom code", () => {
-    const rule = maxPrecision(3, "PRECISION_TOO_HIGH");
+    const rule = maxPrecision(v(3), "PRECISION_TOO_HIGH");
 
     expect(rule).toEqual({
       type: "max_precision",
-      maxPrecision: 3,
+      maxPrecision: v(3),
       code: "PRECISION_TOO_HIGH",
     });
   });
@@ -53,14 +40,8 @@ describe("maxPrecisionRule validator", () => {
   const mockContext = {} as unknown as Context<NumberSchema>;
   const mockSchema = number();
 
-  beforeEach(() => {
-    vi.resetAllMocks();
-  });
-
-  it("should return undefined when precision is within maximum", async () => {
-    const rule = maxPrecision(2);
-
-    vi.mocked(unpackRef).mockReturnValue({ value: 2 } as ReturnType<typeof unpackRef>);
+  it("should return undefined when precision is within maximum", () => {
+    const rule = maxPrecision(v(2));
 
     const result = maxPrecisionRule({
       rule,
@@ -74,11 +55,9 @@ describe("maxPrecisionRule validator", () => {
   });
 
   it("should return error when precision exceeds maximum", async () => {
-    const rule = maxPrecision(2);
+    const rule = maxPrecision(v(2));
 
-    vi.mocked(unpackRef).mockReturnValue({ value: 2 } as ReturnType<typeof unpackRef>);
-
-    const result = maxPrecisionRule({
+    const result = await maxPrecisionRule({
       rule,
       value: 1.23456,
       path: "testPath",
@@ -86,17 +65,14 @@ describe("maxPrecisionRule validator", () => {
       context: mockContext,
     });
 
-    expect(unpackRef).toHaveBeenCalledTimes(1);
     expect(result).toBeDefined();
     expect(result?.code).toBe("max_precision");
     expect(result?.message).toContain("testPath");
     expect(result?.message).toContain("precision");
   });
 
-  it("should return undefined when unpackRef returns undefined", async () => {
-    const rule = maxPrecision(2);
-
-    vi.mocked(unpackRef).mockReturnValue({ value: undefined } as ReturnType<typeof unpackRef>);
+  it("should return undefined when resolved maxPrecision is undefined", () => {
+    const rule = maxPrecision(undefined);
 
     const result = maxPrecisionRule({
       rule,
@@ -109,10 +85,8 @@ describe("maxPrecisionRule validator", () => {
     expect(result).toBeUndefined();
   });
 
-  it("should handle reference objects correctly", async () => {
-    const rule = maxPrecision(ref("maxPrecisionThreshold"));
-
-    vi.mocked(unpackRef).mockReturnValue({ value: 4 } as ReturnType<typeof unpackRef>);
+  it("should handle larger threshold correctly", () => {
+    const rule = maxPrecision(v(4));
 
     const result = maxPrecisionRule({
       rule,
@@ -126,11 +100,9 @@ describe("maxPrecisionRule validator", () => {
   });
 
   it("should include correct error message format", async () => {
-    const rule = maxPrecision(1);
+    const rule = maxPrecision(v(1));
 
-    vi.mocked(unpackRef).mockReturnValue({ value: 1 } as ReturnType<typeof unpackRef>);
-
-    const result = maxPrecisionRule({
+    const result = await maxPrecisionRule({
       rule,
       value: 1.32432,
       path: "$.price",
@@ -144,10 +116,8 @@ describe("maxPrecisionRule validator", () => {
     expect(result?.code).toBe("max_precision");
   });
 
-  it("should handle whole numbers correctly", async () => {
-    const rule = maxPrecision(2);
-
-    vi.mocked(unpackRef).mockReturnValue({ value: 2 } as ReturnType<typeof unpackRef>);
+  it("should handle whole numbers correctly", () => {
+    const rule = maxPrecision(v(2));
 
     const result = maxPrecisionRule({
       rule,
@@ -160,10 +130,8 @@ describe("maxPrecisionRule validator", () => {
     expect(result).toBeUndefined();
   });
 
-  it("should return undefined when precision equals maximum", async () => {
-    const rule = maxPrecision(3);
-
-    vi.mocked(unpackRef).mockReturnValue({ value: 3 } as ReturnType<typeof unpackRef>);
+  it("should return undefined when precision equals maximum", () => {
+    const rule = maxPrecision(v(3));
 
     const result = maxPrecisionRule({
       rule,

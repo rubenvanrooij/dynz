@@ -20,9 +20,13 @@ export function lookup<
 }
 
 export function lookupFunction(value: ValueType | undefined, lookup: ValueType | undefined): ValueType | undefined {
-  if (value === undefined || typeof lookup !== "object") {
+  if (value === undefined || value === null || lookup === null || typeof lookup !== "object") {
     return undefined;
   }
 
-  return lookup[value];
+  if (typeof value !== "string" && typeof value !== "number") {
+    return undefined;
+  }
+
+  return (lookup as Record<string | number, ValueType>)[value];
 }

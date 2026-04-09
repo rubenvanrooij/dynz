@@ -9,3 +9,4 @@ export function v<T extends ValueType>(value: T): Static<T> {
 }
 
 export const val = v;
+export const st = v;

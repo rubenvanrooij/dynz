@@ -1,5 +1,4 @@
 import { type ParamaterValue, resolve } from "../../functions";
-import type { FileSchema } from "../../schemas";
 import type { ErrorMessageFromRule, ExtractResolvedRules, RuleFn, Schema, ValueType } from "../../types";
 import { isFile } from "../../validate/validate-type";
 

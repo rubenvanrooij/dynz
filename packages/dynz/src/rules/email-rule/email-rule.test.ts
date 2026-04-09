@@ -69,7 +69,7 @@ describe("emailRule validator", () => {
     ];
 
     for (const invalidEmail of invalidEmails) {
-      const result = emailRule({
+      const result = await emailRule({
         rule,
         value: invalidEmail,
         path: "testPath",
@@ -86,7 +86,7 @@ describe("emailRule validator", () => {
   it("should include correct error message format", async () => {
     const rule = email();
 
-    const result = emailRule({
+    const result = await emailRule({
       rule,
       value: "invalid-email",
       path: "$.userEmail",

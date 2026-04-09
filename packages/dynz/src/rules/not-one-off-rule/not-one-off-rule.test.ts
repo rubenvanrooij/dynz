@@ -1,122 +1,57 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { REFERENCE_TYPE, ref, unpackRef } from "../../reference";
+import { describe, expect, it } from "vitest";
+import { v } from "../../functions";
+import { REFERENCE_TYPE, ref } from "../../reference";
 import { type NumberSchema, number, type StringSchema, string } from "../../schemas";
 import type { Context } from "../../types";
-import { type NotOneOfRule, notOneOf, notOneOfRule } from "./index";
+import { notOneOf, notOneOfRule } from "./index";
 
-vi.mock("../../reference", () => {
-  return {
-    ref: (path: string) => ({
-      _type: REFERENCE_TYPE,
-      path: path,
-    }),
-    REFERENCE_TYPE: "MOCKED_REFERENCE_TYPE",
-    unpackRef: vi.fn(),
-  };
-});
-
-describe("oneOf rule", () => {
-  it("should create oneOf rule with string values", () => {
-    const rule = notOneOf(["apple", "banana", "orange"]);
+describe("notOneOf rule", () => {
+  it("should create notOneOf rule with string values", () => {
+    const rule = notOneOf([v("apple"), v("banana"), v("orange")]);
 
     expect(rule).toEqual({
-      type: "one_of",
-      values: ["apple", "banana", "orange"],
+      type: "not_one_of",
+      values: [v("apple"), v("banana"), v("orange")],
     });
   });
 
-  it("should create oneOf rule with number values", () => {
-    const rule = notOneOf([1, 2, 3, 5, 8]);
+  it("should create notOneOf rule with number values", () => {
+    const rule = notOneOf([v(1), v(2), v(3), v(5), v(8)]);
 
     expect(rule).toEqual({
-      type: "one_of",
-      values: [1, 2, 3, 5, 8],
+      type: "not_one_of",
+      values: [v(1), v(2), v(3), v(5), v(8)],
     });
   });
 
-  it("should create oneOf rule with mixed values", () => {
-    const rule = notOneOf(["active", 1, "inactive", 0]);
+  it("should create notOneOf rule with reference value", () => {
+    const rule = notOneOf([ref("blockedValue")]);
 
     expect(rule).toEqual({
-      type: "one_of",
-      values: ["active", 1, "inactive", 0],
+      type: "not_one_of",
+      values: [{ type: REFERENCE_TYPE, path: "blockedValue" }],
     });
   });
 
-  it("should create oneOf rule with custom code", () => {
-    const rule = notOneOf(["red", "green", "blue"], "INVALID_COLOR");
+  it("should create notOneOf rule with custom code", () => {
+    const rule = notOneOf([v("red"), v("green"), v("blue")], "INVALID_COLOR");
 
     expect(rule).toEqual({
-      type: "one_of",
-      values: ["red", "green", "blue"],
+      type: "not_one_of",
+      values: [v("red"), v("green"), v("blue")],
       code: "INVALID_COLOR",
     });
   });
 });
 
-describe("oneOfRule validator", () => {
+describe("notOneOfRule validator", () => {
   const mockStringContext = {} as unknown as Context<StringSchema>;
   const mockNumberContext = {} as unknown as Context<NumberSchema>;
   const mockStringSchema = string();
   const mockNumberSchema = number();
 
-  beforeEach(() => {
-    vi.resetAllMocks();
-  });
-
-  it("should return undefined when string value is in allowed values", async () => {
-    const rule = notOneOf(["apple", "banana", "orange"]);
-
-    vi.mocked(unpackRef).mockImplementation((value) => {
-      if (value === "apple") return { value: "apple" } as ReturnType<typeof unpackRef>;
-      if (value === "banana") return { value: "banana" } as ReturnType<typeof unpackRef>;
-      if (value === "orange") return { value: "orange" } as ReturnType<typeof unpackRef>;
-      return { value: undefined } as ReturnType<typeof unpackRef>;
-    });
-
-    const result = notOneOfRule({
-      rule,
-      value: "banana",
-      path: "testPath",
-      schema: mockStringSchema,
-      context: mockStringContext,
-    });
-
-    expect(result).toBeUndefined();
-  });
-
-  it("should return undefined when number value is in allowed values", async () => {
-    const rule = notOneOf([1, 2, 3, 5, 8]);
-
-    vi.mocked(unpackRef).mockImplementation((value) => {
-      if (value === 1) return { value: 1 } as ReturnType<typeof unpackRef>;
-      if (value === 2) return { value: 2 } as ReturnType<typeof unpackRef>;
-      if (value === 3) return { value: 3 } as ReturnType<typeof unpackRef>;
-      if (value === 5) return { value: 5 } as ReturnType<typeof unpackRef>;
-      if (value === 8) return { value: 8 } as ReturnType<typeof unpackRef>;
-      return { value: undefined } as ReturnType<typeof unpackRef>;
-    });
-
-    const result = notOneOfRule({
-      rule,
-      value: 5,
-      path: "testPath",
-      schema: mockNumberSchema,
-      context: mockNumberContext,
-    });
-
-    expect(result).toBeUndefined();
-  });
-
-  it("should return error when string value is not in allowed values", async () => {
-    const rule = notOneOf(["apple", "banana", "orange"]);
-
-    vi.mocked(unpackRef).mockImplementation((value) => {
-      if (value === "apple") return { value: "apple" } as ReturnType<typeof unpackRef>;
-      if (value === "banana") return { value: "banana" } as ReturnType<typeof unpackRef>;
-      if (value === "orange") return { value: "orange" } as ReturnType<typeof unpackRef>;
-      return { value: undefined } as ReturnType<typeof unpackRef>;
-    });
+  it("should return undefined when string value is not in blocked values", () => {
+    const rule = notOneOf([v("apple"), v("banana"), v("orange")]);
 
     const result = notOneOfRule({
       rule,
@@ -126,24 +61,11 @@ describe("oneOfRule validator", () => {
       context: mockStringContext,
     });
 
-    expect(result).toBeDefined();
-    expect(result?.code).toBe("one_of");
-    expect(result?.message).toContain("grape");
-    expect(result?.message).toContain("is not a one of");
-    expect(result?.values).toEqual(["apple", "banana", "orange"]);
+    expect(result).toBeUndefined();
   });
 
-  it("should return error when number value is not in allowed values", async () => {
-    const rule = notOneOf([1, 2, 3, 5, 8]);
-
-    vi.mocked(unpackRef).mockImplementation((value) => {
-      if (value === 1) return { value: 1 } as ReturnType<typeof unpackRef>;
-      if (value === 2) return { value: 2 } as ReturnType<typeof unpackRef>;
-      if (value === 3) return { value: 3 } as ReturnType<typeof unpackRef>;
-      if (value === 5) return { value: 5 } as ReturnType<typeof unpackRef>;
-      if (value === 8) return { value: 8 } as ReturnType<typeof unpackRef>;
-      return { value: undefined } as ReturnType<typeof unpackRef>;
-    });
+  it("should return undefined when number value is not in blocked values", () => {
+    const rule = notOneOf([v(1), v(2), v(3), v(5), v(8)]);
 
     const result = notOneOfRule({
       rule,
@@ -153,57 +75,43 @@ describe("oneOfRule validator", () => {
       context: mockNumberContext,
     });
 
-    expect(result).toBeDefined();
-    expect(result?.code).toBe("one_of");
-    expect(result?.message).toContain("4");
-    expect(result?.message).toContain("is not a one of");
-  });
-
-  it("should handle reference objects correctly", async () => {
-    const allowedColorsRef = ref("allowedColors");
-    const rule = notOneOf([allowedColorsRef]);
-
-    vi.mocked(unpackRef).mockImplementation((value) => {
-      if (value === allowedColorsRef) return { value: "red" } as ReturnType<typeof unpackRef>;
-      return { value: undefined } as ReturnType<typeof unpackRef>;
-    });
-
-    const result = notOneOfRule({
-      rule,
-      value: "red",
-      path: "currentColor",
-      schema: mockStringSchema,
-      context: mockStringContext,
-    });
-
     expect(result).toBeUndefined();
   });
 
-  it("should include correct error message format", async () => {
-    const rule = notOneOf(["small", "medium", "large"]);
+  it("should return error when string value is in blocked values", async () => {
+    const rule = notOneOf([v("apple"), v("banana"), v("orange")]);
 
-    vi.mocked(unpackRef).mockImplementation((value) => {
-      if (value === "small") return { value: "small" } as ReturnType<typeof unpackRef>;
-      if (value === "medium") return { value: "medium" } as ReturnType<typeof unpackRef>;
-      if (value === "large") return { value: "large" } as ReturnType<typeof unpackRef>;
-      return { value: undefined } as ReturnType<typeof unpackRef>;
-    });
-
-    const result = notOneOfRule({
+    const result = await notOneOfRule({
       rule,
-      value: "extra-large",
-      path: "$.size",
+      value: "banana",
+      path: "testPath",
       schema: mockStringSchema,
       context: mockStringContext,
     });
 
-    expect(result?.message).toContain("extra-large");
-    expect(result?.message).toContain("is not a one of");
-    expect(result?.code).toBe("one_of");
-    expect(result?.values).toEqual(["small", "medium", "large"]);
+    expect(result).toBeDefined();
+    expect(result?.code).toBe("not_one_of");
+    expect(result?.message).toContain("banana");
+    expect(result?.values).toEqual(["apple", "banana", "orange"]);
   });
 
-  it("should handle empty allowed values array", async () => {
+  it("should return error when number value is in blocked values", async () => {
+    const rule = notOneOf([v(1), v(2), v(3), v(5), v(8)]);
+
+    const result = await notOneOfRule({
+      rule,
+      value: 5,
+      path: "testPath",
+      schema: mockNumberSchema,
+      context: mockNumberContext,
+    });
+
+    expect(result).toBeDefined();
+    expect(result?.code).toBe("not_one_of");
+    expect(result?.message).toContain("5");
+  });
+
+  it("should return undefined when blocked values are empty", () => {
     const rule = notOneOf([]);
 
     const result = notOneOfRule({
@@ -214,49 +122,21 @@ describe("oneOfRule validator", () => {
       context: mockStringContext,
     });
 
-    expect(result).toBeDefined();
-    expect(result?.code).toBe("one_of");
-    expect(result?.message).toContain("any-value");
-  });
-
-  it("should handle mixed type values correctly", async () => {
-    const rule = notOneOf(["active", 1, "inactive", 0]) as unknown as OneOfRule<number[]>;
-
-    vi.mocked(unpackRef).mockImplementation((value) => {
-      if (value === "active") return { value: "active" } as ReturnType<typeof unpackRef>;
-      if (value === 1) return { value: 1 } as ReturnType<typeof unpackRef>;
-      if (value === "inactive") return { value: "inactive" } as ReturnType<typeof unpackRef>;
-      if (value === 0) return { value: 0 } as ReturnType<typeof unpackRef>;
-      return { value: undefined } as ReturnType<typeof unpackRef>;
-    });
-
-    const result = notOneOfRule({
-      rule,
-      value: 1,
-      path: "status",
-      schema: mockNumberSchema,
-      context: mockNumberContext,
-    });
-
     expect(result).toBeUndefined();
   });
 
-  it("should handle single allowed value", async () => {
-    const rule = notOneOf(["only-option"]);
+  it("should handle single blocked value", async () => {
+    const rule = notOneOf([v("blocked")]);
 
-    vi.mocked(unpackRef).mockImplementation((value) => {
-      if (value === "only-option") return { value: "only-option" } as ReturnType<typeof unpackRef>;
-      return { value: undefined } as ReturnType<typeof unpackRef>;
-    });
-
-    const result = notOneOfRule({
+    const result = await notOneOfRule({
       rule,
-      value: "only-option",
+      value: "blocked",
       path: "testPath",
       schema: mockStringSchema,
       context: mockStringContext,
     });
 
-    expect(result).toBeUndefined();
+    expect(result).toBeDefined();
+    expect(result?.code).toBe("not_one_of");
   });
 });

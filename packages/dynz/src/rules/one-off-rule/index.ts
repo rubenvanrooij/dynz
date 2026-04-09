@@ -1,5 +1,4 @@
 import { type ParamaterValue, resolve } from "../../functions";
-import type { NumberSchema, StringSchema } from "../../schemas";
 import type { ErrorMessageFromRule, ExtractResolvedRules, RuleFn, Schema, ValueType } from "../../types";
 import { isNumber, isString } from "../../validate/validate-type";
 

@@ -1,4 +1,3 @@
-import type { StringSchema } from "../../schemas/string/types";
 import type { ErrorMessageFromRule, RuleFn, Schema } from "../../types";
 import { isString } from "../../validate/validate-type";
 

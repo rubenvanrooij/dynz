@@ -1,5 +1,4 @@
 import { type ParamaterValue, resolveExpected } from "../../functions";
-import type { NumberSchema } from "../../schemas";
 import {
   type ErrorMessageFromRule,
   type ExtractResolvedRules,

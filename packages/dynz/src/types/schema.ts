@@ -63,17 +63,12 @@ export type Schema =
   | EnumSchema
   | ExpressionSchema;
 
-/**
- * All possible rules that can be applied to a schema
- */
-export type Rule = Unpacked<Exclude<Schema["rules"], undefined>>;
-
 export type IsIncluded<T extends Schema> = T extends { included: true }
   ? true
   : T extends { included: false }
     ? false
-    : // required is conditionally
-      T["included"] extends object
+    : // included is conditional
+      T extends { included: object }
       ? false
       : true; // default included
 
@@ -82,7 +77,7 @@ export type IsRequired<T extends Schema> = T extends { required: true }
   : T extends { required: false }
     ? false
     : // required is conditionally
-      T["required"] extends object
+      T extends { required: object }
       ? false
       : true; // default required
 
@@ -118,7 +113,7 @@ export type ValueType<T extends SchemaType = SchemaType> = T extends typeof Sche
                   ? File
                   : T extends typeof SchemaType.ENUM
                     ? EnumValue
-                    : T extends typeof SchemaType.STATIC
+                    : T extends typeof SchemaType.EXPRESSION
                       ? unknown
                       : never;
 

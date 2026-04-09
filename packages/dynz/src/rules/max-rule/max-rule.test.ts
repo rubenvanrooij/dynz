@@ -1,36 +1,26 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { REFERENCE_TYPE, ref, unpackRef } from "../../reference";
+import { describe, expect, it } from "vitest";
+import { v } from "../../functions";
+import { REFERENCE_TYPE, ref } from "../../reference";
 import { type NumberSchema, number } from "../../schemas";
 import type { Context } from "../../types";
 import { max, maxRule } from "./index";
 
-vi.mock("../../reference", () => {
-  return {
-    ref: (path: string) => ({
-      _type: REFERENCE_TYPE,
-      path: path,
-    }),
-    REFERENCE_TYPE: "MOCKED_REFERENCE_TYPE",
-    unpackRef: vi.fn(),
-  };
-});
-
 describe("max rule", () => {
   it("should create max rule with number value", () => {
-    const rule = max(100);
+    const rule = max(v(100));
 
     expect(rule).toEqual({
       type: "max",
-      max: 100,
+      max: v(100),
     });
   });
 
   it("should create max rule with decimal number", () => {
-    const rule = max(99.99);
+    const rule = max(v(99.99));
 
     expect(rule).toEqual({
       type: "max",
-      max: 99.99,
+      max: v(99.99),
     });
   });
 
@@ -40,10 +30,7 @@ describe("max rule", () => {
 
     expect(rule).toEqual({
       type: "max",
-      max: {
-        _type: REFERENCE_TYPE,
-        path: "maximumAllowed",
-      },
+      max: { type: REFERENCE_TYPE, path: "maximumAllowed" },
     });
   });
 
@@ -52,19 +39,16 @@ describe("max rule", () => {
 
     expect(rule).toEqual({
       type: "max",
-      max: {
-        _type: REFERENCE_TYPE,
-        path: "limits[0]",
-      },
+      max: { type: REFERENCE_TYPE, path: "limits[0]" },
     });
   });
 
   it("should create max rule with custom code", () => {
-    const rule = max(50, "CUSTOM_MAX_ERROR");
+    const rule = max(v(50), "CUSTOM_MAX_ERROR");
 
     expect(rule).toEqual({
       type: "max",
-      max: 50,
+      max: v(50),
       code: "CUSTOM_MAX_ERROR",
     });
   });
@@ -74,14 +58,8 @@ describe("maxRule validator", () => {
   const mockContext = {} as unknown as Context<NumberSchema>;
   const mockSchema = number();
 
-  beforeEach(() => {
-    vi.resetAllMocks();
-  });
-
-  it("should return undefined when value is below maximum", async () => {
-    const rule = max(100);
-
-    vi.mocked(unpackRef).mockReturnValue({ value: 100 } as ReturnType<typeof unpackRef>);
+  it("should return undefined when value is below maximum", () => {
+    const rule = max(v(100));
 
     const result = maxRule({
       rule,
@@ -95,11 +73,9 @@ describe("maxRule validator", () => {
   });
 
   it("should return error when value exceeds maximum", async () => {
-    const rule = max(100);
+    const rule = max(v(100));
 
-    vi.mocked(unpackRef).mockReturnValue({ value: 100 } as ReturnType<typeof unpackRef>);
-
-    const result = maxRule({
+    const result = await maxRule({
       rule,
       value: 150,
       path: "testPath",
@@ -107,17 +83,14 @@ describe("maxRule validator", () => {
       context: mockContext,
     });
 
-    expect(unpackRef).toHaveBeenCalledTimes(1);
     expect(result).toBeDefined();
     expect(result?.code).toBe("max");
     expect(result?.message).toContain("testPath");
     expect(result?.message).toContain("should have a maximum of");
   });
 
-  it("should return undefined when unpackRef returns undefined", async () => {
-    const rule = max(100);
-
-    vi.mocked(unpackRef).mockReturnValue({ value: undefined } as ReturnType<typeof unpackRef>);
+  it("should return undefined when resolved max is undefined", () => {
+    const rule = max(undefined);
 
     const result = maxRule({
       rule,
@@ -130,10 +103,8 @@ describe("maxRule validator", () => {
     expect(result).toBeUndefined();
   });
 
-  it("should handle reference objects correctly", async () => {
-    const rule = max(ref("maxThreshold"));
-
-    vi.mocked(unpackRef).mockReturnValue({ value: 200 } as ReturnType<typeof unpackRef>);
+  it("should handle reference objects correctly", () => {
+    const rule = max(v(200));
 
     const result = maxRule({
       rule,
@@ -147,11 +118,9 @@ describe("maxRule validator", () => {
   });
 
   it("should include correct error message format", async () => {
-    const rule = max(75);
+    const rule = max(v(75));
 
-    vi.mocked(unpackRef).mockReturnValue({ value: 75 } as ReturnType<typeof unpackRef>);
-
-    const result = maxRule({
+    const result = await maxRule({
       rule,
       value: 100,
       path: "$.percentage",
@@ -164,10 +133,8 @@ describe("maxRule validator", () => {
     expect(result?.code).toBe("max");
   });
 
-  it("should return undefined when value equals maximum", async () => {
-    const rule = max(42);
-
-    vi.mocked(unpackRef).mockReturnValue({ value: 42 } as ReturnType<typeof unpackRef>);
+  it("should return undefined when value equals maximum", () => {
+    const rule = max(v(42));
 
     const result = maxRule({
       rule,

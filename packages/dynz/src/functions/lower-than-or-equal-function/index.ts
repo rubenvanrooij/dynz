@@ -49,7 +49,7 @@ export function lowerThanOrEqualFunction(
   left: ValueType | undefined,
   right: ValueType | undefined
 ): boolean | undefined {
-  if (left === undefined || right === undefined) {
+  if (left === undefined || right === undefined || left === null || right === null) {
     return undefined;
   }
   return +left <= +right;

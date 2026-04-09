@@ -1,13 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { eq } from "../../conditions";
+import { eq, v } from "../../functions";
+import { ref } from "../../reference";
 import { maxSize } from "../../rules";
 import { SchemaType } from "../../types";
 import { file } from "./builder";
 
 describe("file builder", () => {
   it("should create file schema with provided properties", () => {
-    const condition = eq("$.isRequired", true);
-    const rule = maxSize(1024);
+    const condition = eq(ref("$.isRequired"), v(true));
+    const rule = maxSize(v(1024));
 
     const schema = file({
       required: condition,

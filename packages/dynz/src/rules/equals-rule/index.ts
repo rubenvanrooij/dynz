@@ -1,6 +1,4 @@
 import { type ParamaterValue, resolveExpected } from "../../functions";
-import type { BooleanSchema, NumberSchema, OptionsSchema, StringSchema } from "../../schemas";
-import type { EnumSchema } from "../../schemas/enum";
 import type { ErrorMessageFromRule, ExtractResolvedRules, RuleFn, Schema } from "../../types";
 
 export type EqualsRule<T extends ParamaterValue = ParamaterValue> = {

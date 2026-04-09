@@ -1,5 +1,4 @@
 import { type ParamaterValue, resolveExpected } from "../../functions";
-import type { FileSchema } from "../../schemas";
 import {
   type ErrorMessageFromRule,
   type ExtractResolvedRules,

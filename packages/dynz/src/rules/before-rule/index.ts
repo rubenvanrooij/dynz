@@ -1,5 +1,4 @@
 import { type ParamaterValue, resolveExpected } from "../../functions";
-import type { DateSchema } from "../../schemas";
 import {
   type ErrorMessageFromRule,
   type ExtractResolvedRules,
@@ -49,26 +48,3 @@ export const beforeRule: RuleFn<Schema, Extract<ExtractResolvedRules<Schema>, Be
         message: `The value ${value} for schema ${path} is after ${before}`,
       };
 };
-
-// export const beforeDateStringRule: RuleFn<
-//   DateStringSchema,
-//   Extract<ExtractResolvedRules<DateStringSchema>, BeforeRule>,
-//   BeforeRuleErrorMessage
-// > = ({ rule, value, path, context, schema }) => {
-//   const unpackedRef = unpackRef(rule.before, path, context, SchemaType.DATE, SchemaType.DATE_STRING);
-//   const before = unpackedRef.static
-//     ? parseDateString(unpackedRef.value, schema.format)
-//     : getDateFromDateOrDateStringRefeference(unpackedRef);
-
-//   if (before === undefined) {
-//     return undefined;
-//   }
-
-//   return isBefore(parseDateString(value, schema.format), before)
-//     ? undefined
-//     : {
-//       code: "before",
-//       before,
-//       message: `The value ${value} for schema ${path} is after ${unpackedRef.value}`,
-//     };
-// };

@@ -1,36 +1,26 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { REFERENCE_TYPE, ref, unpackRef } from "../../reference";
+import { describe, expect, it } from "vitest";
+import { v } from "../../functions";
+import { REFERENCE_TYPE, ref } from "../../reference";
 import { type FileSchema, file } from "../../schemas";
 import type { Context } from "../../types";
 import { mimeType, mimeTypeRule } from "./index";
 
-vi.mock("../../reference", () => {
-  return {
-    ref: (path: string) => ({
-      _type: REFERENCE_TYPE,
-      path: path,
-    }),
-    REFERENCE_TYPE: "MOCKED_REFERENCE_TYPE",
-    unpackRef: vi.fn(),
-  };
-});
-
 describe("mimeType rule", () => {
   it("should create mimeType rule with string value", () => {
-    const rule = mimeType("image/jpeg");
+    const rule = mimeType(v("image/jpeg"));
 
     expect(rule).toEqual({
       type: "mime_type",
-      mimeType: "image/jpeg",
+      mimeType: v("image/jpeg"),
     });
   });
 
   it("should create mimeType rule with array value", () => {
-    const rule = mimeType(["image/jpeg", "image/png", "image/gif"]);
+    const rule = mimeType(v(["image/jpeg", "image/png", "image/gif"]));
 
     expect(rule).toEqual({
       type: "mime_type",
-      mimeType: ["image/jpeg", "image/png", "image/gif"],
+      mimeType: v(["image/jpeg", "image/png", "image/gif"]),
     });
   });
 
@@ -40,19 +30,16 @@ describe("mimeType rule", () => {
 
     expect(rule).toEqual({
       type: "mime_type",
-      mimeType: {
-        _type: REFERENCE_TYPE,
-        path: "$.allowedMimeTypes",
-      },
+      mimeType: { type: REFERENCE_TYPE, path: "$.allowedMimeTypes" },
     });
   });
 
   it("should create mimeType rule with custom code", () => {
-    const rule = mimeType("application/pdf", "INVALID_FILE_TYPE");
+    const rule = mimeType(v("application/pdf"), "INVALID_FILE_TYPE");
 
     expect(rule).toEqual({
       type: "mime_type",
-      mimeType: "application/pdf",
+      mimeType: v("application/pdf"),
       code: "INVALID_FILE_TYPE",
     });
   });
@@ -62,15 +49,9 @@ describe("mimeTypeRule validator", () => {
   const mockContext = {} as unknown as Context<FileSchema>;
   const mockSchema = file();
 
-  beforeEach(() => {
-    vi.resetAllMocks();
-  });
-
-  it("should return undefined when file type matches single allowed type", async () => {
-    const rule = mimeType("image/jpeg");
-    const mockFile = { type: "image/jpeg" } as File;
-
-    vi.mocked(unpackRef).mockReturnValue({ value: "image/jpeg" } as ReturnType<typeof unpackRef>);
+  it("should return undefined when file type matches single allowed type", () => {
+    const rule = mimeType(v("image/jpeg"));
+    const mockFile = new File([""], "test.jpg", { type: "image/jpeg" });
 
     const result = mimeTypeRule({
       rule,
@@ -83,11 +64,9 @@ describe("mimeTypeRule validator", () => {
     expect(result).toBeUndefined();
   });
 
-  it("should return undefined when file type matches one of multiple allowed types", async () => {
-    const rule = mimeType(["image/jpeg", "image/png"]);
-    const mockFile = { type: "image/png" } as File;
-
-    vi.mocked(unpackRef).mockReturnValue({ value: ["image/jpeg", "image/png"] } as ReturnType<typeof unpackRef>);
+  it("should return undefined when file type matches one of multiple allowed types", () => {
+    const rule = mimeType(v(["image/jpeg", "image/png"]));
+    const mockFile = new File([""], "test.png", { type: "image/png" });
 
     const result = mimeTypeRule({
       rule,
@@ -101,12 +80,10 @@ describe("mimeTypeRule validator", () => {
   });
 
   it("should return error when file type does not match allowed type", async () => {
-    const rule = mimeType("image/jpeg");
-    const mockFile = { type: "application/pdf" } as File;
+    const rule = mimeType(v("image/jpeg"));
+    const mockFile = new File([""], "test.pdf", { type: "application/pdf" });
 
-    vi.mocked(unpackRef).mockReturnValue({ value: "image/jpeg" } as ReturnType<typeof unpackRef>);
-
-    const result = mimeTypeRule({
+    const result = await mimeTypeRule({
       rule,
       value: mockFile,
       path: "testPath",
@@ -114,7 +91,6 @@ describe("mimeTypeRule validator", () => {
       context: mockContext,
     });
 
-    expect(unpackRef).toHaveBeenCalledTimes(1);
     expect(result).toBeDefined();
     expect(result?.code).toBe("mime_type");
     expect(result?.message).toContain("testPath");
@@ -122,12 +98,10 @@ describe("mimeTypeRule validator", () => {
   });
 
   it("should return error when file type does not match any of multiple allowed types", async () => {
-    const rule = mimeType(["image/jpeg", "image/png"]);
-    const mockFile = { type: "text/plain" } as File;
+    const rule = mimeType(v(["image/jpeg", "image/png"]));
+    const mockFile = new File([""], "test.txt", { type: "text/plain" });
 
-    vi.mocked(unpackRef).mockReturnValue({ value: ["image/jpeg", "image/png"] } as ReturnType<typeof unpackRef>);
-
-    const result = mimeTypeRule({
+    const result = await mimeTypeRule({
       rule,
       value: mockFile,
       path: "testPath",
@@ -140,11 +114,9 @@ describe("mimeTypeRule validator", () => {
     expect(result?.message).toContain("text/plain");
   });
 
-  it("should return undefined when unpackRef returns undefined", async () => {
-    const rule = mimeType("image/jpeg");
-    const mockFile = { type: "application/pdf" } as File;
-
-    vi.mocked(unpackRef).mockReturnValue({ value: undefined } as ReturnType<typeof unpackRef>);
+  it("should return undefined when resolved mimeType is undefined", () => {
+    const rule = mimeType(undefined);
+    const mockFile = new File([""], "test.pdf", { type: "application/pdf" });
 
     const result = mimeTypeRule({
       rule,
@@ -157,30 +129,11 @@ describe("mimeTypeRule validator", () => {
     expect(result).toBeUndefined();
   });
 
-  it("should handle reference objects correctly", async () => {
-    const rule = mimeType(ref("allowedTypes"));
-    const mockFile = { type: "application/json" } as File;
-
-    vi.mocked(unpackRef).mockReturnValue({ value: ["application/json", "text/xml"] } as ReturnType<typeof unpackRef>);
-
-    const result = mimeTypeRule({
-      rule,
-      value: mockFile,
-      path: "dataFile",
-      schema: mockSchema,
-      context: mockContext,
-    });
-
-    expect(result).toBeUndefined();
-  });
-
   it("should include correct error message format", async () => {
-    const rule = mimeType("video/mp4");
-    const mockFile = { type: "audio/mp3" } as File;
+    const rule = mimeType(v("video/mp4"));
+    const mockFile = new File([""], "test.mp3", { type: "audio/mp3" });
 
-    vi.mocked(unpackRef).mockReturnValue({ value: "video/mp4" } as ReturnType<typeof unpackRef>);
-
-    const result = mimeTypeRule({
+    const result = await mimeTypeRule({
       rule,
       value: mockFile,
       path: "$.mediaFile",
@@ -194,13 +147,9 @@ describe("mimeTypeRule validator", () => {
     expect(result?.code).toBe("mime_type");
   });
 
-  it("should handle document mime types correctly", async () => {
-    const rule = mimeType(["application/pdf", "application/msword"]);
-    const mockFile = { type: "application/pdf" } as File;
-
-    vi.mocked(unpackRef).mockReturnValue({ value: ["application/pdf", "application/msword"] } as ReturnType<
-      typeof unpackRef
-    >);
+  it("should handle document mime types correctly", () => {
+    const rule = mimeType(v(["application/pdf", "application/msword"]));
+    const mockFile = new File([""], "test.pdf", { type: "application/pdf" });
 
     const result = mimeTypeRule({
       rule,

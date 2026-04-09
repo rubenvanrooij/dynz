@@ -3,51 +3,6 @@ import { SchemaType } from "../types";
 import { getNested } from "./get-nested";
 
 describe("getNested", () => {
-  describe("private schema access", () => {
-    it("should throw error when root schema is private", () => {
-      const schema = {
-        type: SchemaType.STRING,
-        private: true,
-      };
-      const value = "test";
-
-      expect(() => getNested("$.field", schema, value)).toThrow("Cannot access private schema at path $.field");
-    });
-
-    it("should throw error when nested field is private", () => {
-      const schema = {
-        type: SchemaType.OBJECT,
-        fields: {
-          secret: {
-            type: SchemaType.STRING,
-            private: true,
-          },
-        },
-      };
-      const value = { secret: "hidden" };
-
-      expect(() => getNested("$.secret", schema, value)).toThrow("Cannot access private schema at path $.secret");
-    });
-
-    it("should throw error when array element schema is private", () => {
-      const schema = {
-        type: SchemaType.OBJECT,
-        fields: {
-          items: {
-            type: SchemaType.ARRAY,
-            schema: {
-              type: SchemaType.STRING,
-              private: true,
-            },
-          },
-        },
-      };
-      const value = { items: ["item1", "item2"] };
-
-      expect(() => getNested("$.items[0]", schema, value)).toThrow("Cannot access private schema at path $.items[0]");
-    });
-  });
-
   describe("object traversal", () => {
     it("should get nested value from object", () => {
       const schema = {

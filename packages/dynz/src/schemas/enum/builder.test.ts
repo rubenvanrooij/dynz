@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { eq } from "../../conditions";
+import { eq, v } from "../../functions";
+import { ref } from "../../reference";
 import { equals } from "../../rules";
 import { SchemaType } from "../../types";
 import { enum as enumBuilder } from "./builder";
@@ -11,8 +12,8 @@ describe("enum builder", () => {
   } as const;
 
   it("should create enum schema with provided properties", () => {
-    const condition = eq("$.isAdmin", true);
-    const rule = equals("admin");
+    const condition = eq(ref("$.isAdmin"), v(true));
+    const rule = equals(v("admin"));
 
     const schema = enumBuilder({
       enum: testEnum,

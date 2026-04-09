@@ -1,5 +1,4 @@
 import { type ParamaterValue, resolveExpected } from "../../functions";
-import type { ArraySchema, StringSchema } from "../../schemas";
 import {
   type ErrorMessageFromRule,
   type ExtractResolvedRules,
@@ -7,7 +6,7 @@ import {
   type Schema,
   SchemaType,
 } from "../../types";
-import { isArray, isNumber, isString, validateType } from "../../validate/validate-type";
+import { isArray, isString } from "../../validate/validate-type";
 
 export type MinLengthRule<T extends ParamaterValue<number> = ParamaterValue<number>> = {
   type: "min_length";

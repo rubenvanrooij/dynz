@@ -130,8 +130,6 @@ export function resolveFunction(
         resolve(input.right, path, context),
         input.flags
       );
-    case "custom":
-      throw new Error("not yet implemented");
     // expects array of input values
     case "sum":
     case "sub":

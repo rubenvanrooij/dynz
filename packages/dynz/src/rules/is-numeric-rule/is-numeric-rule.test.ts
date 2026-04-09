@@ -59,7 +59,7 @@ describe("isNumericRule validator", () => {
     async (val) => {
       const rule = isNumeric();
 
-      const result = isNumericRule({
+      const result = await isNumericRule({
         rule,
         value: val,
         path: "testPath",
@@ -76,7 +76,7 @@ describe("isNumericRule validator", () => {
   it("should include correct error message format", async () => {
     const rule = isNumeric();
 
-    const result = isNumericRule({
+    const result = await isNumericRule({
       rule,
       value: "not-a-number",
       path: "$.quantity",

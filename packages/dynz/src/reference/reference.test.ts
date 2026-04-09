@@ -3,7 +3,7 @@ import { isReference, REFERENCE_TYPE, type Reference, ref, type ValueOrReference
 
 describe("REFERENCE_TYPE", () => {
   it("should be a constant string", () => {
-    expect(REFERENCE_TYPE).toBe("__dref");
+    expect(REFERENCE_TYPE).toBe("_dref");
     expect(typeof REFERENCE_TYPE).toBe("string");
   });
 });
@@ -13,7 +13,7 @@ describe("ref function", () => {
     const reference = ref("user.name");
 
     expect(reference).toEqual({
-      _type: REFERENCE_TYPE,
+      type: REFERENCE_TYPE,
       path: "user.name",
     });
   });
@@ -22,7 +22,7 @@ describe("ref function", () => {
     const reference = ref("$.user.profile.email");
 
     expect(reference).toEqual({
-      _type: REFERENCE_TYPE,
+      type: REFERENCE_TYPE,
       path: "$.user.profile.email",
     });
   });
@@ -31,7 +31,7 @@ describe("ref function", () => {
     const reference = ref("users[0].name");
 
     expect(reference).toEqual({
-      _type: REFERENCE_TYPE,
+      type: REFERENCE_TYPE,
       path: "users[0].name",
     });
   });
@@ -40,7 +40,7 @@ describe("ref function", () => {
     const reference = ref("$.data.users[0].profile.settings.theme");
 
     expect(reference).toEqual({
-      _type: REFERENCE_TYPE,
+      type: REFERENCE_TYPE,
       path: "$.data.users[0].profile.settings.theme",
     });
   });
@@ -49,7 +49,7 @@ describe("ref function", () => {
     const reference = ref("$");
 
     expect(reference).toEqual({
-      _type: REFERENCE_TYPE,
+      type: REFERENCE_TYPE,
       path: "$",
     });
   });
@@ -65,7 +65,7 @@ describe("ref function", () => {
     const reference = ref("");
 
     expect(reference).toEqual({
-      _type: REFERENCE_TYPE,
+      type: REFERENCE_TYPE,
       path: "",
     });
   });
@@ -79,7 +79,7 @@ describe("isReference function", () => {
 
   it("should return true for manually created reference objects", () => {
     const manualRef = {
-      _type: REFERENCE_TYPE,
+      type: REFERENCE_TYPE,
       path: "manual.path",
     };
     expect(isReference(manualRef)).toBe(true);
@@ -110,22 +110,22 @@ describe("isReference function", () => {
     expect(isReference({ name: "test" })).toBe(false);
   });
 
-  it("should return false for objects with wrong _type", () => {
-    expect(isReference({ _type: "wrong", path: "test" })).toBe(false);
-    expect(isReference({ _type: "reference", path: "test" })).toBe(false);
+  it("should return false for objects with wrong type", () => {
+    expect(isReference({ type: "wrong", path: "test" })).toBe(false);
+    expect(isReference({ type: "reference", path: "test" })).toBe(false);
   });
 
-  it("should return false for objects missing _type", () => {
+  it("should return false for objects missing type", () => {
     expect(isReference({ path: "test" })).toBe(false);
   });
 
   it("should return false for objects missing path", () => {
-    expect(isReference({ _type: REFERENCE_TYPE })).toBe(false);
+    expect(isReference({ type: REFERENCE_TYPE })).toBe(false);
   });
 
   it("should return false for objects with additional properties", () => {
     const objWithExtra = {
-      _type: REFERENCE_TYPE,
+      type: REFERENCE_TYPE,
       path: "test",
       extra: "property",
     };
@@ -156,7 +156,7 @@ describe("Reference type", () => {
 
     if (isReference(value)) {
       // TypeScript should know this is a Reference
-      expect(value._type).toBe(REFERENCE_TYPE);
+      expect(value.type).toBe(REFERENCE_TYPE);
       expect(value.path).toBe("test.path");
     } else {
       throw new Error("Expected value to be a reference");

@@ -1,6 +1,7 @@
 import type { ParamaterValue, Predicate, Transformer } from "../functions";
 import { isReference } from "../reference";
-import { type Rule, type Schema, SchemaType } from "../types";
+import type { Rule } from "../rules";
+import { type Schema, SchemaType } from "../types";
 import { ensureAbsolutePath, findSchemaByPath } from "../utils";
 import type { RulesDependencyMap } from "./types";
 
@@ -49,17 +50,13 @@ export function getConditionDependencies(input: Predicate | Transformer, path: s
         acc.push(...getParamaterDependencies(cur, path, schema));
         return acc;
       }, []);
-    // default:
-    //   return predicate.inputs.reduce<string[]>((acc, cur) => {
-    //     acc.push(...getParamaterDependencies(cur, path, schema));
-    //     return acc;
-    //   }, []);
   }
 }
 
 export function getParamaterDependencies(param: ParamaterValue, path: string, schema: Schema): string[] {
   if (isReference(param)) {
     const referencePath = ensureAbsolutePath(param.path, path);
+
     const inner = findSchemaByPath(referencePath, schema);
 
     if (inner.included !== undefined && typeof inner.included !== "boolean") {

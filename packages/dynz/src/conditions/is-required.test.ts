@@ -3,15 +3,10 @@ import { object, string } from "../schemas";
 import { isRequired } from "./is-required";
 
 // Mock dependencies
-vi.mock("../utils", () => ({
-  getNested: vi.fn(),
-}));
-
 vi.mock("./resolve-property", () => ({
   resolveProperty: vi.fn(),
 }));
 
-import { getNested } from "../utils";
 import { resolveProperty } from "./resolve-property";
 
 describe("isRequired", () => {
@@ -34,18 +29,13 @@ describe("isRequired", () => {
 
   it("should return result from resolveProperty", () => {
     const path = "$.user.name";
-    const nestedSchema = string({ required: true });
 
-    vi.mocked(getNested).mockReturnValue({
-      schema: nestedSchema,
-      value: "John",
-    });
     vi.mocked(resolveProperty).mockReturnValue(true);
 
     const result = isRequired(mockSchema, path, mockValues);
 
     expect(result).toBe(true);
-    expect(resolveProperty).toHaveBeenCalledWith(nestedSchema, "required", path, true, {
+    expect(resolveProperty).toHaveBeenCalledWith("required", path, true, {
       schema: mockSchema,
       values: mockValues,
     });

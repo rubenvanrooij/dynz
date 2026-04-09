@@ -1,4 +1,4 @@
-import { resolvePredicate } from "../functions";
+import { type Predicate, resolvePredicate } from "../functions";
 import type { ResolveContext, Schema } from "../types";
 import { getNested } from "../utils";
 
@@ -18,12 +18,12 @@ export function resolveProperty<T extends Schema>(
   for (let i = 1; i <= segments.length; i++) {
     const currentPath = segments.slice(0, i).join(".");
     const nested = getNested(currentPath, context.schema, context.values);
-    const included = _resolveProperty(nested.schema, property, currentPath, defaultValue, context);
+    const ret = _resolveProperty(nested.schema, property, currentPath, defaultValue, context);
 
-    if (!included) return false;
+    if (!ret) return false;
   }
 
-  return true;
+  return _resolveProperty(context.schema, property, path, defaultValue, context);
 }
 
 /**
@@ -47,7 +47,7 @@ export function _resolveProperty<T extends Schema>(
     return prop;
   }
 
-  const resolved = resolvePredicate(prop, path, context);
+  const resolved = resolvePredicate(prop as Predicate, path, context);
 
   if (resolved === undefined) {
     return defaultValue;

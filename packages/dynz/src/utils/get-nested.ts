@@ -7,10 +7,6 @@ export function getNested<T extends Schema>(
   schema: T,
   value: unknown
 ): { schema: Schema; value: unknown } {
-  if (schema.private) {
-    throw new Error(`Cannot access private schema at path ${path}`);
-  }
-
   const result = path
     .split(/[.[\]]/)
     .filter(Boolean)
@@ -22,13 +18,8 @@ export function getNested<T extends Schema>(
             throw new Error(`Expected an array at path ${path}, but got ${typeof acc.value}`);
           }
 
-          const childSchema = acc.schema.schema;
           const index = +cur;
           const val = acc.value[index];
-
-          if (childSchema.private === true) {
-            throw new Error(`Cannot access private schema at path ${path}`);
-          }
 
           return {
             value: val === undefined ? acc.schema.default : val,
@@ -46,10 +37,6 @@ export function getNested<T extends Schema>(
 
           if (childSchema === undefined) {
             throw new Error(`No schema found for path ${path}`);
-          }
-
-          if (childSchema.private === true) {
-            throw new Error(`Cannot access private schema at path ${path}`);
           }
 
           return {
