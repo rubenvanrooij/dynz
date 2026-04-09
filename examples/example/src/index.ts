@@ -8,155 +8,169 @@ import { runRegistrationForm } from "./registration-form";
 const ADDONS_PRICES = {
   legalAid: 10,
   damageToPassengers: 5,
-  roadsideAssistance: 3
-}
+  roadsideAssistance: 3,
+};
 
 const PRODUCT_PRICES = {
   A: 20,
   B: 25,
   C: 30,
-}
+};
 
 const PAYMENT_INTERVAL_DISCOUNT = {
-  YEARLY: 0.90, // 10%
-  MONTHLY: 1.0 // 0% 
-}
+  YEARLY: 0.9, // 10%
+  MONTHLY: 1.0, // 0%
+};
 
 const supportSchema = d.object({
   fields: {
     topic: d.options({
-      options: ['billing', 'technical', 'other']
+      options: ["billing", "technical", "other"],
     }),
     orderId: d.string({
-      included: d.eq(d.ref('topic'), d.v('billing'))
+      included: d.eq(d.ref("topic"), d.v("billing")),
     }),
     description: d.string({
-      included: d.eq(d.ref('topic'), d.v('other'))
+      included: d.eq(d.ref("topic"), d.v("other")),
     }),
-    message: d.string()
-  }
-})
+    message: d.string(),
+  },
+});
 
 const pcConfiguratorSchema = d.object({
   fields: {
     cores: d.options({
-      options: [8, 16, 32, 64]
+      options: [8, 16, 32, 64],
     }),
     ramGb: d.options({
-      options: [16, 32, 64, 128]
+      options: [16, 32, 64, 128],
     }),
     gpuCount: d.number({
-      rules: [d.min(d.v(1)), d.max(d.v(1))]
+      rules: [d.min(d.v(1)), d.max(d.v(1))],
     }),
     sliMode: d.options({
-      options: ['nvlink', 'disabled'],
-      included: d.gte(d.ref('gpuCount'), d.v(2))
+      options: ["nvlink", "disabled"],
+      included: d.gte(d.ref("gpuCount"), d.v(2)),
     }),
     storageCount: d.number({
-      rules: [d.min(d.v(1)), d.max(d.v(8))]
+      rules: [d.min(d.v(1)), d.max(d.v(8))],
     }),
     storageRaidLevel: d.options({
-      options: ['raid0', 'raid1', {
-        enabled: d.gte(d.ref('storageCount'), d.v(3)),
-        value: 'raid5'
-      }],
-      included: d.gte(d.ref('storageCount'), d.v(2))
+      options: [
+        "raid0",
+        "raid1",
+        {
+          enabled: d.gte(d.ref("storageCount"), d.v(3)),
+          value: "raid5",
+        },
+      ],
+      included: d.gte(d.ref("storageCount"), d.v(2)),
     }),
     coolingType: d.options({
-      options: ['air', 'liquid-240', 'liquid-360'],
-      included: d.gte(d.multiply(d.ref('cores'), d.ref('gpuCount')), d.v(32))
+      options: ["air", "liquid-240", "liquid-360"],
+      included: d.gte(d.multiply(d.ref("cores"), d.ref("gpuCount")), d.v(32)),
     }),
     totalTdp: d.expression({
-      value: d.multiply(d.ref('cores'), d.v(8))
-    })
-  }
-})
+      value: d.multiply(d.ref("cores"), d.v(8)),
+    }),
+  },
+});
 
 const obj = d.object({
   fields: {
     product: d.options({
-      options: ['A', 'B', 'C']
+      options: ["A", "B", "C"],
     }),
     paymentInterval: d.options({
-      options: ['YEARLY', 'MONTHLY']
+      options: ["YEARLY", "MONTHLY"],
     }),
     addons: d.object({
       fields: {
         legalAid: d.boolean({
-          included: d.gt(d.lookup({
-            value: d.ref('$.product'),
-            lookup: d.val(PRODUCT_PRICES)
-          }), d.val(2))
+          included: d.gt(
+            d.lookup({
+              value: d.ref("$.product"),
+              lookup: d.val(PRODUCT_PRICES),
+            }),
+            d.val(2)
+          ),
         }),
         damageToPassengers: d.boolean(),
-        roadsideAssistance: d.boolean()
-      }
+        roadsideAssistance: d.boolean(),
+      },
     }),
     price: d.expression({
       value: d.multiply(
         d.sum(
           d.lookup({
-            value: d.ref('$.product'),
-            lookup: d.val(PRODUCT_PRICES)
+            value: d.ref("$.product"),
+            lookup: d.val(PRODUCT_PRICES),
           }),
-          d.multiply(d.size(d.ref('$.addons.legalAid')), d.val(ADDONS_PRICES.legalAid)),
-          d.multiply(d.size(d.ref('$.addons.damageToPassengers')), d.val(ADDONS_PRICES.damageToPassengers)),
-          d.multiply(d.size(d.ref('$.addons.roadsideAssistance')), d.val(ADDONS_PRICES.roadsideAssistance))
+          d.multiply(d.size(d.ref("$.addons.legalAid")), d.val(ADDONS_PRICES.legalAid)),
+          d.multiply(d.size(d.ref("$.addons.damageToPassengers")), d.val(ADDONS_PRICES.damageToPassengers)),
+          d.multiply(d.size(d.ref("$.addons.roadsideAssistance")), d.val(ADDONS_PRICES.roadsideAssistance))
         ),
         d.lookup({
-          value: d.ref('$.paymentInterval'),
-          lookup: d.val(PAYMENT_INTERVAL_DISCOUNT)
-        }),
-      )
+          value: d.ref("$.paymentInterval"),
+          lookup: d.val(PAYMENT_INTERVAL_DISCOUNT),
+        })
+      ),
     }),
   },
 });
-console.log(
-  JSON.stringify(obj))
+console.log(JSON.stringify(obj));
 
 console.log(
   d.validate(obj, undefined, {
-    product: 'A',
-    paymentInterval: 'YEARLY',
+    product: "A",
+    paymentInterval: "YEARLY",
     addons: {
       legalAid: false,
       damageToPassengers: true,
-      roadsideAssistance: true
-    }
+      roadsideAssistance: true,
+    },
   })
 );
 
 const car = d.object({
   fields: {
     licensePlate: d.string({
-      rules: [d.custom('validLicensePlate')]
+      rules: [d.custom("validLicensePlate")],
     }),
     car: d.string({}),
-    foo: d.string({})
-  }
-})
+    foo: d.string({}),
+  },
+});
 
-d.validate(car, undefined, {
-  licensePlate: 'K-157-NJ'
-}, {
-  customRules: {
-    'validLicensePlate': (value) => {
-      return new Promise((r) => {
-        setTimeout(() => {
-          if (typeof value.value === 'string' && value.value.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() === 'k157nj') {
-            return r(true);
-          } else {
-            return r({
-              success: false,
-            })
-          }
-        }, 100)
-      })
-    }
+d.validate(
+  car,
+  undefined,
+  {
+    licensePlate: "K-157-NJ",
+  },
+  {
+    customRules: {
+      validLicensePlate: (value) => {
+        return new Promise((r) => {
+          setTimeout(() => {
+            if (
+              typeof value.value === "string" &&
+              value.value.replace(/[^a-zA-Z0-9]/g, "").toLowerCase() === "k157nj"
+            ) {
+              return r(true);
+            } else {
+              return r({
+                success: false,
+              });
+            }
+          }, 100);
+        });
+      },
+    },
   }
-}).then((val) => {
-  console.log(val)
-})
+).then((val) => {
+  console.log(val);
+});
 
 // console.log(
 //   d.validate(car, undefined, {
