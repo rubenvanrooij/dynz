@@ -1,9 +1,9 @@
 import type { ErrorMessageFromRule, RuleFn, Schema } from "../../types";
 import { isString } from "../../validate/validate-type";
 
-export type RegexRule = {
+export type RegexRule<T extends string = string> = {
   type: "regex";
-  regex: string;
+  regex: T;
   code?: string | undefined;
   flags?: string | undefined;
 };

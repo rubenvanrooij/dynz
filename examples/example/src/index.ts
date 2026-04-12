@@ -37,140 +37,147 @@ const supportSchema = d.object({
   },
 });
 
-const pcConfiguratorSchema = d.object({
-  fields: {
-    cores: d.options({
-      options: [8, 16, 32, 64],
-    }),
-    ramGb: d.options({
-      options: [16, 32, 64, 128],
-    }),
-    gpuCount: d.number({
-      rules: [d.min(d.v(1)), d.max(d.v(1))],
-    }),
-    sliMode: d.options({
-      options: ["nvlink", "disabled"],
-      included: d.gte(d.ref("gpuCount"), d.v(2)),
-    }),
-    storageCount: d.number({
-      rules: [d.min(d.v(1)), d.max(d.v(8))],
-    }),
-    storageRaidLevel: d.options({
-      options: [
-        "raid0",
-        "raid1",
-        {
-          enabled: d.gte(d.ref("storageCount"), d.v(3)),
-          value: "raid5",
-        },
-      ],
-      included: d.gte(d.ref("storageCount"), d.v(2)),
-    }),
-    coolingType: d.options({
-      options: ["air", "liquid-240", "liquid-360"],
-      included: d.gte(d.multiply(d.ref("cores"), d.ref("gpuCount")), d.v(32)),
-    }),
-    totalTdp: d.expression({
-      value: d.multiply(d.ref("cores"), d.v(8)),
-    }),
-  },
-});
+const schema = d.obj({
+  foo: d.str(),
+  bar: d.str()
+})
 
-const obj = d.object({
-  fields: {
-    product: d.options({
-      options: ["A", "B", "C"],
-    }),
-    paymentInterval: d.options({
-      options: ["YEARLY", "MONTHLY"],
-    }),
-    addons: d.object({
-      fields: {
-        legalAid: d.boolean({
-          included: d.gt(
-            d.lookup({
-              value: d.ref("$.product"),
-              lookup: d.val(PRODUCT_PRICES),
-            }),
-            d.val(2)
-          ),
-        }),
-        damageToPassengers: d.boolean(),
-        roadsideAssistance: d.boolean(),
-      },
-    }),
-    price: d.expression({
-      value: d.multiply(
-        d.sum(
-          d.lookup({
-            value: d.ref("$.product"),
-            lookup: d.val(PRODUCT_PRICES),
-          }),
-          d.multiply(d.size(d.ref("$.addons.legalAid")), d.val(ADDONS_PRICES.legalAid)),
-          d.multiply(d.size(d.ref("$.addons.damageToPassengers")), d.val(ADDONS_PRICES.damageToPassengers)),
-          d.multiply(d.size(d.ref("$.addons.roadsideAssistance")), d.val(ADDONS_PRICES.roadsideAssistance))
-        ),
-        d.lookup({
-          value: d.ref("$.paymentInterval"),
-          lookup: d.val(PAYMENT_INTERVAL_DISCOUNT),
-        })
-      ),
-    }),
-  },
-});
-console.log(JSON.stringify(obj));
+console.log(d.validate(schema, undefined, {}))
 
-console.log(
-  d.validate(obj, undefined, {
-    product: "A",
-    paymentInterval: "YEARLY",
-    addons: {
-      legalAid: false,
-      damageToPassengers: true,
-      roadsideAssistance: true,
-    },
-  })
-);
+// const pcConfiguratorSchema = d.object({
+//   fields: {
+//     cores: d.options({
+//       options: [8, 16, 32, 64],
+//     }),
+//     ramGb: d.options({
+//       options: [16, 32, 64, 128],
+//     }),
+//     gpuCount: d.number({
+//       // rules: [d.min(d.v(1)), d.max(d.v(1))],
+//     }),
+//     sliMode: d.options({
+//       options: ["nvlink", "disabled"],
+//       included: d.gte(d.ref("gpuCount"), d.v(2)),
+//     }),
+//     storageCount: d.number({
+//       // rules: [d.min(d.v(1)), d.max(d.v(8))],
+//     }),
+//     storageRaidLevel: d.options({
+//       options: [
+//         "raid0",
+//         "raid1",
+//         {
+//           enabled: d.gte(d.ref("storageCount"), d.v(3)),
+//           value: "raid5",
+//         },
+//       ],
+//       included: d.gte(d.ref("storageCount"), d.v(2)),
+//     }),
+//     coolingType: d.options({
+//       options: ["air", "liquid-240", "liquid-360"],
+//       included: d.gte(d.multiply(d.ref("cores"), d.ref("gpuCount")), d.v(32)),
+//     }),
+//     totalTdp: d.expression({
+//       value: d.multiply(d.ref("cores"), d.v(8)),
+//     }),
+//   },
+// });
 
-const car = d.object({
-  fields: {
-    licensePlate: d.string({
-      rules: [d.custom("validLicensePlate")],
-    }),
-    car: d.string({}),
-    foo: d.string({}),
-  },
-});
+// const obj = d.object({
+//   fields: {
+//     product: d.options({
+//       options: ["A", "B", "C"],
+//     }),
+//     paymentInterval: d.options({
+//       options: ["YEARLY", "MONTHLY"],
+//     }),
+//     addons: d.object({
+//       fields: {
+//         legalAid: d.boolean({
+//           included: d.gt(
+//             d.lookup({
+//               value: d.ref("$.product"),
+//               lookup: d.val(PRODUCT_PRICES),
+//             }),
+//             d.val(2)
+//           ),
+//         }),
+//         damageToPassengers: d.boolean(),
+//         roadsideAssistance: d.boolean(),
+//       },
+//     }),
+//     price: d.expression({
+//       value: d.multiply(
+//         d.sum(
+//           d.lookup({
+//             value: d.ref("$.product"),
+//             lookup: d.val(PRODUCT_PRICES),
+//           }),
+//           d.multiply(d.size(d.ref("$.addons.legalAid")), d.val(ADDONS_PRICES.legalAid)),
+//           d.multiply(d.size(d.ref("$.addons.damageToPassengers")), d.val(ADDONS_PRICES.damageToPassengers)),
+//           d.multiply(d.size(d.ref("$.addons.roadsideAssistance")), d.val(ADDONS_PRICES.roadsideAssistance))
+//         ),
+//         d.lookup({
+//           value: d.ref("$.paymentInterval"),
+//           lookup: d.val(PAYMENT_INTERVAL_DISCOUNT),
+//         })
+//       ),
+//     }),
+//   },
+// });
+// console.log(JSON.stringify(obj));
 
-d.validate(
-  car,
-  undefined,
-  {
-    licensePlate: "K-157-NJ",
-  },
-  {
-    customRules: {
-      validLicensePlate: (value) => {
-        return new Promise((r) => {
-          setTimeout(() => {
-            if (
-              typeof value.value === "string" &&
-              value.value.replace(/[^a-zA-Z0-9]/g, "").toLowerCase() === "k157nj"
-            ) {
-              return r(true);
-            } else {
-              return r({
-                success: false,
-              });
-            }
-          }, 100);
-        });
-      },
-    },
-  }
-).then((val) => {
-  console.log(val);
-});
+// console.log(
+//   d.validate(obj, undefined, {
+//     product: "A",
+//     paymentInterval: "YEARLY",
+//     addons: {
+//       legalAid: false,
+//       damageToPassengers: true,
+//       roadsideAssistance: true,
+//     },
+//   })
+// );
+
+// const car = d.object({
+//   fields: {
+//     licensePlate: d.string({
+//       rules: [d.custom("validLicensePlate")],
+//     }),
+//     car: d.string({}),
+//     foo: d.string({}),
+//   },
+// });
+
+// d.validate(
+//   car,
+//   undefined,
+//   {
+//     licensePlate: "K-157-NJ",
+//   },
+//   {
+//     customRules: {
+//       validLicensePlate: (value) => {
+//         return new Promise((r) => {
+//           setTimeout(() => {
+//             if (
+//               typeof value.value === "string" &&
+//               value.value.replace(/[^a-zA-Z0-9]/g, "").toLowerCase() === "k157nj"
+//             ) {
+//               return r(true);
+//             } else {
+//               return r({
+//                 success: false,
+//               });
+//             }
+//           }, 100);
+//         });
+//       },
+//     },
+//   }
+// ).then((val) => {
+//   console.log(val);
+// });
 
 // console.log(
 //   d.validate(car, undefined, {
