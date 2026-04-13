@@ -1,5 +1,11 @@
 # dynz
 
+## 0.0.15
+
+### Patch Changes
+
+- dc4eb75: added function support to dynz
+
 ## 0.0.14
 
 ### Patch Changes
