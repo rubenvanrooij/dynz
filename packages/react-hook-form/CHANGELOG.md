@@ -1,5 +1,13 @@
 # @dynz/react-hook-form-resolver
 
+## 0.0.18
+
+### Patch Changes
+
+- dc4eb75: added function support to dynz
+- Updated dependencies [dc4eb75]
+  - dynz@0.0.15
+
 ## 0.0.17
 
 ### Patch Changes
