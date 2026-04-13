@@ -5,9 +5,7 @@
 [![NPM version][npm-image]][npm-url]
 [![Downloads][downloads-image]][npm-url]
 
-Dynz is a headless schema library for describing user interactions as serializable, channel-agnostic definitions.
-It replaces scattered form logic — split across frontend markup, client-side validation, and server-side rules — with a single TypeScript schema that any consumer can evaluate: a React renderer, a NestJS backend, an LLM, or an external system.
-Schemas are fully inspectable and composable — conditions, validation rules, and derived values are expressed as data, not code, making them portable, testable, and readable by anything that can parse JSON.
+Dynz is a headless schema library that replaces scattered form logic with a single TypeScript definition any consumer can evaluate — a Frontend, a Backend, an LLM, or an external system. Conditions, validation rules, and derived values are expressed as data, not code, making schemas portable, testable, and channel-agnostic by design.
 
 ## Features
 
