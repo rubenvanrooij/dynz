@@ -1,48 +1,44 @@
 import * as d from "dynz";
-import { expect } from "vitest";
-import { expression } from "./../../../packages/dynz/src/schemas/expression/builder";
 import { runRegistrationForm } from "./registration-form";
 
-// runRegistrationForm()
 
-const ADDONS_PRICES = {
-  legalAid: 10,
-  damageToPassengers: 5,
-  roadsideAssistance: 3,
-};
+runRegistrationForm()
 
-const PRODUCT_PRICES = {
-  A: 20,
-  B: 25,
-  C: 30,
-};
+// const ADDONS_PRICES = {
+//   legalAid: 10,
+//   damageToPassengers: 5,
+//   roadsideAssistance: 3,
+// };
 
-const PAYMENT_INTERVAL_DISCOUNT = {
-  YEARLY: 0.9, // 10%
-  MONTHLY: 1.0, // 0%
-};
+// const PRODUCT_PRICES = {
+//   A: 20,
+//   B: 25,
+//   C: 30,
+// };
 
-const supportSchema = d.object({
-  fields: {
-    topic: d.options({
-      options: ["billing", "technical", "other"],
-    }),
-    orderId: d.string({
-      included: d.eq(d.ref("topic"), d.v("billing")),
-    }),
-    description: d.string({
-      included: d.eq(d.ref("topic"), d.v("other")),
-    }),
-    message: d.string(),
-  },
-});
+// const PAYMENT_INTERVAL_DISCOUNT = {
+//   YEARLY: 0.9, // 10%
+//   MONTHLY: 1.0, // 0%
+// };
 
-const schema = d.obj({
-  foo: d.str(),
-  bar: d.str()
-})
+// const Topics = {
+//   BILLING: 'billing',
+//   TECHNICAL: 'technical',
+//   OTHER: 'other'
+// } as const
 
-console.log(d.validate(schema, undefined, {}))
+// type Topics = (typeof Topics)[keyof typeof Topics]
+
+// d.object({
+//   topic: d.options(Object.values(Topics)),
+//   orderId: d.string()
+//     .setIncluded(d.eq(d.ref('topic'), d.v(Topics.BILLING))),
+//   description: d.string()
+//     .setIncluded(d.eq(d.ref('topic'), d.v(Topics.OTHER))),
+//   message: d.string()
+// })
+
+// console.log(d.validate(schema, undefined, {}))
 
 // const pcConfiguratorSchema = d.object({
 //   fields: {

@@ -1,4 +1,5 @@
 import type { ParamaterValue, Predicate } from "../../functions";
+import type { JsonRecord } from "../../types";
 import {
   type ConditionalRule,
   conditional,
@@ -19,154 +20,172 @@ import {
   regex,
 } from "../../rules";
 import { SchemaType } from "../../types";
-import type { StringSchema } from "./types";
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-type Append<TRules extends Rule[] | undefined, R extends Rule> = TRules extends readonly Rule[] ? [...TRules, R] : [R];
+/** Append R to the end of the tuple TRules */
+type Push<TRules extends Rule[], R extends Rule> = [...TRules, R];
 
-type WithChanged<T, K extends keyof T, V> = Omit<T, K> & Record<K, V>;
+/** Map every element of a rule tuple to ConditionalRule (preserves length) */
+type WrapConditionals<T extends Rule[]> = { [K in keyof T]: ConditionalRule };
 
 // ---------------------------------------------------------------------------
-// Public builder type
+// Rule-only builder  (exposed inside `when()` callbacks)
+// No property setters — only rule-appending methods.
 // ---------------------------------------------------------------------------
 
-type AddRule<TSchema extends StringSchema, TRule extends Rule> = WithChanged<
-  TSchema,
-  "rules",
-  Append<TSchema["rules"], TRule>
->;
+export type StrRuleBuilder<TRules extends Rule[]> = {
+  readonly type: typeof SchemaType.STRING;
+  readonly rules: TRules;
 
-type WrapRules<TRules extends Rule[]> = TRules extends [infer _H extends Rule, ...infer Tail extends Rule[]]
-  ? [ConditionalRule, ...WrapRules<Tail>]
-  : [];
-
-type AppendAll<TSchema extends StringSchema, TNewRules extends Rule[]> = TNewRules extends [
-  infer H extends Rule,
-  ...infer Tail extends Rule[],
-]
-  ? AppendAll<AddRule<TSchema, H>, Tail>
-  : TSchema;
-
-type AddConditionalRules<
-  TSchema extends StringSchema,
-  TCallbackRules extends Rule[] | undefined,
-> = TCallbackRules extends Rule[] ? AppendAll<TSchema, WrapRules<TCallbackRules>> : TSchema;
-
-/**
- * Fluent string schema builder.
- * TBase holds all non-rules schema properties; TRules is the accumulated rule tuple.
- */
-export type StringFluent<T extends StringSchema> = T & {
-  minLength: <P extends ParamaterValue<number>>(min: P, code: string) => StringFluent<AddRule<T, MinLengthRule<P>>>;
-  maxLength: <P extends ParamaterValue<number>>(max: P, code?: string) => StringFluent<AddRule<T, MaxLengthRule<P>>>;
-  regex: <P extends string>(pattern: P, flags?: string, code?: string) => StringFluent<AddRule<T, RegexRule<P>>>;
-  email: (code?: string) => StringFluent<AddRule<T, EmailRule>>;
-  equals: <P extends ParamaterValue>(value: P, code?: string) => StringFluent<AddRule<T, EqualsRule<P>>>;
-  isNumeric: (code?: string) => StringFluent<AddRule<T, IsNumericRule>>;
-  oneOf: <P extends ParamaterValue[]>(values: P, code?: string) => StringFluent<AddRule<T, OneOfRule<P>>>;
-
-  when: <B extends StringFluent<StringSchema>>(
-    pred: Predicate,
-    cb: (b: StringFluent<{ type: typeof SchemaType.STRING; rules: undefined }>) => B
-  ) => StringFluent<AddConditionalRules<T, B["rules"]>>;
-
-  setRequired: <P extends boolean | Predicate>(value: P) => StringFluent<T & { required: P }>;
-  optional: () => StringFluent<T & { required: false }>;
-  setDefault: (value: string) => StringFluent<T & { default: string }>;
-  setCoerce: <P extends boolean>(value: P) => StringFluent<T & { coerce: boolean }>;
-  setPrivate: <P extends boolean>(value: P) => StringFluent<T & { private: boolean }>;
-  setMutable: <P extends boolean | Predicate>(value: P) => StringFluent<T & { mutable: boolean | Predicate }>;
-  setIncluded: <P extends boolean | Predicate>(value: P) => StringFluent<T & { included: boolean | Predicate }>;
+  min: <P extends ParamaterValue<number>>(min: P, code?: string) => StrRuleBuilder<Push<TRules, MinLengthRule<P>>>;
+  max: <P extends ParamaterValue<number>>(max: P, code?: string) => StrRuleBuilder<Push<TRules, MaxLengthRule<P>>>;
+  regex: <P extends string>(pattern: P, flags?: string, code?: string) => StrRuleBuilder<Push<TRules, RegexRule<P>>>;
+  email: (code?: string) => StrRuleBuilder<Push<TRules, EmailRule>>;
+  equals: <P extends ParamaterValue>(value: P, code?: string) => StrRuleBuilder<Push<TRules, EqualsRule<P>>>;
+  isNumeric: (code?: string) => StrRuleBuilder<Push<TRules, IsNumericRule>>;
+  oneOf: <P extends ParamaterValue[]>(values: P, code?: string) => StrRuleBuilder<Push<TRules, OneOfRule<P>>>;
 };
 
 // ---------------------------------------------------------------------------
-// Implementation
+// Full fluent builder
+//
+// Two type parameters keep rules and schema properties completely separate,
+// so neither side needs Omit/intersection tricks.
+//
+// TRules  — the accumulated rules as a precise tuple (index-accessible)
+// TProps  — the schema property bag (required, mutable, coerce, …)
 // ---------------------------------------------------------------------------
 
-function appendRule<A extends Rule[] | undefined, F extends Rule>(rules: A, rule: F): Append<A, F> {
-  return (rules === undefined ? [rule] : [...rules, rule]) as Append<A, F>;
-}
+export type StrFluent<TRules extends Rule[], TProps> = {
+  readonly type: typeof SchemaType.STRING;
+  readonly rules: TRules;
+} & TProps & {
+    // — Rule methods —
+    min: <P extends ParamaterValue<number>>(min: P, code?: string) => StrFluent<Push<TRules, MinLengthRule<P>>, TProps>;
+    max: <P extends ParamaterValue<number>>(max: P, code?: string) => StrFluent<Push<TRules, MaxLengthRule<P>>, TProps>;
+    regex: <P extends string>(
+      pattern: P,
+      flags?: string,
+      code?: string
+    ) => StrFluent<Push<TRules, RegexRule<P>>, TProps>;
+    email: (code?: string) => StrFluent<Push<TRules, EmailRule>, TProps>;
+    equals: <P extends ParamaterValue>(value: P, code?: string) => StrFluent<Push<TRules, EqualsRule<P>>, TProps>;
+    isNumeric: (code?: string) => StrFluent<Push<TRules, IsNumericRule>, TProps>;
+    oneOf: <P extends ParamaterValue[]>(values: P, code?: string) => StrFluent<Push<TRules, OneOfRule<P>>, TProps>;
 
-function createStringFluent<T extends StringSchema>(data: T): StringFluent<T> {
-  // // biome-ignore lint/suspicious/noExplicitAny: used in type inference
-  // const withRule = <A extends (...args: any) => Rule>(builder: A) => {
-  //   return (...params: Parameters<A>) => {
-  //     const rule = builder(...params) as ReturnType<A>;
-  //     type NewRules = TRules extends readonly Rule[] ? [...TRules, ReturnType<A>] : [ReturnType<A>];
-  //     const newRules = (rulesArg === undefined ? [rule] : [...rulesArg, rule]) as NewRules;
+    // — Conditional rules —
+    /**
+     * Apply rules conditionally. The builder passed to `cb` only exposes rule
+     * methods — no property setters (required, mutable, …) are available there.
+     */
+    when: <WRules extends Rule[]>(
+      pred: Predicate,
+      cb: (b: StrRuleBuilder<[]>) => StrRuleBuilder<WRules>
+    ) => StrFluent<[...TRules, ...WrapConditionals<WRules>], TProps>;
 
-  //     return createStringFluent(base, newRules);
-  //   };
-  // };
-
-  const withProps = <P extends Partial<StringSchema>>(props: P) => {
-    return createStringFluent({ ...data, ...props }) as StringFluent<T & P>;
+    // — Property setters —
+    setRequired: <P extends boolean | Predicate>(value: P) => StrFluent<TRules, TProps & { required: P }>;
+    optional: () => StrFluent<TRules, TProps & { required: false }>;
+    setMutable: <P extends boolean | Predicate>(value: P) => StrFluent<TRules, TProps & { mutable: P }>;
+    setIncluded: <P extends boolean | Predicate>(value: P) => StrFluent<TRules, TProps & { included: P }>;
+    setPrivate: <P extends boolean>(value: P) => StrFluent<TRules, TProps & { private: P }>;
+    setCoerce: <P extends boolean>(value: P) => StrFluent<TRules, TProps & { coerce: P }>;
+    setDefault: (value: string) => StrFluent<TRules, TProps & { default: string }>;
+    ui: <TUI extends JsonRecord>(config: TUI) => StrFluent<TRules, TProps & { ui: TUI }>;
   };
+
+// ---------------------------------------------------------------------------
+// Runtime factories
+// ---------------------------------------------------------------------------
+
+function createRuleBuilder<TRules extends Rule[]>(rules: TRules): StrRuleBuilder<TRules> {
+  const push = <R extends Rule>(rule: R): StrRuleBuilder<Push<TRules, R>> =>
+    createRuleBuilder([...rules, rule] as Push<TRules, R>);
 
   return {
-    ...data,
-    minLength: <P extends ParamaterValue<number>>(min: P, code?: string) => {
-      return createStringFluent({ ...data, rules: appendRule(data.rules, minLength(min, code)) }) as StringFluent<
-        AddRule<T, MinLengthRule<P>>
-      >;
-    },
-    maxLength: <P extends ParamaterValue<number>>(max: P, code?: string) => {
-      return createStringFluent({ ...data, rules: appendRule(data.rules, maxLength(max, code)) }) as StringFluent<
-        AddRule<T, MaxLengthRule<P>>
-      >;
-    },
-    regex: <P extends string>(pattern: P, flags?: string, code?: string) => {
-      return createStringFluent({
-        ...data,
-        rules: appendRule(data.rules, regex(pattern, flags, code)),
-      }) as StringFluent<AddRule<T, RegexRule<P>>>;
-    },
-    email: (code?: string) => {
-      return createStringFluent({ ...data, rules: appendRule(data.rules, email(code)) }) as StringFluent<
-        AddRule<T, EmailRule>
-      >;
-    },
-    equals: <P extends ParamaterValue>(value: P, code?: string) => {
-      return createStringFluent({ ...data, rules: appendRule(data.rules, equals(value, code)) }) as StringFluent<
-        AddRule<T, EqualsRule<P>>
-      >;
-    },
-    isNumeric: (code?: string) => {
-      return createStringFluent({ ...data, rules: appendRule(data.rules, isNumeric(code)) }) as StringFluent<
-        AddRule<T, IsNumericRule>
-      >;
-    },
-    oneOf: <P extends ParamaterValue[]>(values: P, code?: string) => {
-      return createStringFluent({ ...data, rules: appendRule(data.rules, oneOf(values, code)) }) as StringFluent<
-        AddRule<T, OneOfRule<P>>
-      >;
-    },
-    when: <B extends StringFluent<StringSchema>>(
-      pred: Predicate,
-      cb: (b: StringFluent<{ type: typeof SchemaType.STRING; rules: undefined }>) => B
-    ) => {
-      const result = cb(createStringFluent({ type: SchemaType.STRING, rules: undefined }));
-      const newRules = (result.rules ?? []).map((rule) =>
-        conditional({ when: pred, then: rule as Exclude<Rule, ConditionalRule> })
-      );
-      return createStringFluent({
-        ...data,
-        rules: [...(data.rules ?? []), ...newRules],
-      }) as StringFluent<AddConditionalRules<T, B["rules"]>>;
-    },
-    setRequired: <P extends boolean | Predicate>(value: P) => withProps({ required: value }),
-    optional: () => withProps({ required: false }),
-    setDefault: (value: string) => withProps({ default: value }),
-    setCoerce: <P extends boolean>(value: P) => withProps({ coerce: value }),
-    setPrivate: <P extends boolean>(value: P) => withProps({ private: value }),
-    setMutable: <P extends boolean | Predicate>(value: P) => withProps({ mutable: value }),
-    setIncluded: <P extends boolean | Predicate>(value: P) => withProps({ included: value }),
+    type: SchemaType.STRING,
+    rules,
+    min: <P extends ParamaterValue<number>>(min: P, code?: string) => push(minLength(min, code)),
+    max: <P extends ParamaterValue<number>>(max: P, code?: string) => push(maxLength(max, code)),
+    regex: <P extends string>(pattern: P, flags?: string, code?: string) => push(regex(pattern, flags, code)),
+    email: (code?: string) => push(email(code)),
+    equals: <P extends ParamaterValue>(value: P, code?: string) => push(equals(value, code)),
+    isNumeric: (code?: string) => push(isNumeric(code)),
+    oneOf: <P extends ParamaterValue[]>(values: P, code?: string) => push(oneOf(values, code)),
   };
 }
 
-export function str<T extends Omit<StringSchema, "type">>(data: T) {
-  return createStringFluent({ type: SchemaType.STRING, ...data });
+function createFluent<TRules extends Rule[], TProps>(rules: TRules, props: TProps): StrFluent<TRules, TProps> {
+  const pushRule = <R extends Rule>(rule: R): StrFluent<Push<TRules, R>, TProps> =>
+    createFluent([...rules, rule] as Push<TRules, R>, props);
+
+  const setProp = <K extends string, V>(key: K, value: V): StrFluent<TRules, TProps & Record<K, V>> =>
+    createFluent(rules, { ...props, [key]: value } as TProps & Record<K, V>);
+
+  return {
+    type: SchemaType.STRING,
+    rules,
+    ...props,
+
+    // — Rule methods —
+    min: <P extends ParamaterValue<number>>(min: P, code?: string) => pushRule(minLength(min, code)),
+    max: <P extends ParamaterValue<number>>(max: P, code?: string) => pushRule(maxLength(max, code)),
+    regex: <P extends string>(pattern: P, flags?: string, code?: string) => pushRule(regex(pattern, flags, code)),
+    email: (code?: string) => pushRule(email(code)),
+    equals: <P extends ParamaterValue>(value: P, code?: string) => pushRule(equals(value, code)),
+    isNumeric: (code?: string) => pushRule(isNumeric(code)),
+    oneOf: <P extends ParamaterValue[]>(values: P, code?: string) => pushRule(oneOf(values, code)),
+
+    // — Conditional rules —
+    when: <WRules extends Rule[]>(pred: Predicate, cb: (b: StrRuleBuilder<[]>) => StrRuleBuilder<WRules>) => {
+      const result = cb(createRuleBuilder([]));
+      const conditionals = result.rules.map((rule) =>
+        conditional({ when: pred, then: rule as Exclude<Rule, ConditionalRule> })
+      ) as WrapConditionals<WRules>;
+      return createFluent([...rules, ...conditionals] as [...TRules, ...WrapConditionals<WRules>], props);
+    },
+
+    // — Property setters —
+    setRequired: <P extends boolean | Predicate>(value: P) => setProp("required", value),
+    optional: () => setProp("required", false as false),
+    setMutable: <P extends boolean | Predicate>(value: P) => setProp("mutable", value),
+    setIncluded: <P extends boolean | Predicate>(value: P) => setProp("included", value),
+    setPrivate: <P extends boolean>(value: P) => setProp("private", value),
+    setCoerce: <P extends boolean>(value: P) => setProp("coerce", value),
+    setDefault: (value: string) => setProp("default", value),
+    ui: <TUI extends JsonRecord>(config: TUI) => setProp("ui", config),
+  } as StrFluent<TRules, TProps>;
+}
+
+// ---------------------------------------------------------------------------
+// Public entry point
+// ---------------------------------------------------------------------------
+
+/**
+ * Create a new string schema fluent builder.
+ *
+ * Rules accumulate as a typed tuple so each index is fully typed:
+ * ```
+ * str().min(val(3)).max(ref('otherField'))
+ * //   rules: [MinLengthRule<Static<3>>, MaxLengthRule<Reference<'otherField'>>]
+ * //   schema.rules[1].max → Reference<'otherField'>
+ * ```
+ *
+ * Property setters accept both static booleans and predicates:
+ * ```
+ * str().setRequired(true)
+ * str().setRequired(eq(val(3), ref('otherField')))
+ * ```
+ *
+ * `when` restricts the callback builder to rule methods only:
+ * ```
+ * str().when(eq(val(3), ref('otherField')), (b) => b.min(ref('otherField')))
+ * ```
+ */
+// eslint-disable-next-line @typescript-eslint/ban-types
+export function string(): StrFluent<[], Record<never, never>> {
+  return createFluent([], {} as Record<never, never>);
 }

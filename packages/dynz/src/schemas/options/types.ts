@@ -13,7 +13,7 @@ export type OptionsValue = OptionValue[];
 export type OptionsSchema<TOptions extends OptionsValue = OptionsValue> = BaseSchema<
   Unpacked<TOptions>,
   typeof SchemaType.OPTIONS,
-  Rule
+  Rule[]
 > & {
   options: TOptions;
 };

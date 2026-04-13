@@ -37,6 +37,6 @@ export type EnumValues<TEnum extends Enum = Enum> = {
 /**
  * Enum schema interface
  */
-export type EnumSchema<T extends Enum = Enum> = BaseSchema<EnumValues<T>, typeof SchemaType.ENUM, Rule> & {
+export type EnumSchema<T extends Enum = Enum> = BaseSchema<EnumValues<T>, typeof SchemaType.ENUM, Rule[]> & {
   enum: T;
 };
