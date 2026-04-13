@@ -1,6 +1,7 @@
 import { parse } from "date-fns";
+import { resolvePredicate } from "../functions";
 import { DEFAULT_DATE_STRING_FORMAT, type Enum, type OptionValue } from "../schemas";
-import { type DateString, type Schema, SchemaType, type ValueType } from "../types";
+import { type DateString, type ResolveContext, type Schema, SchemaType, type ValueType } from "../types";
 
 /**
  * Validates whether the value is of the correct type for a given schema
@@ -9,7 +10,12 @@ import { type DateString, type Schema, SchemaType, type ValueType } from "../typ
  * @param value the value to be validated
  * @returns true if the value is correct, false if not
  */
-export function validateType<T extends Schema>(schema: T, value: unknown): value is ValueType<T["type"]> {
+export function validateType<T extends Schema>(
+  schema: T,
+  value: unknown,
+  path: string,
+  context: ResolveContext
+): value is ValueType<T["type"]> {
   switch (schema.type) {
     case SchemaType.NUMBER:
       return isNumber(value);
@@ -30,7 +36,9 @@ export function validateType<T extends Schema>(schema: T, value: unknown): value
     case SchemaType.DATE_STRING:
       return isDateString(value, schema.format);
     case SchemaType.OPTIONS:
-      return isOption(schema.options, value);
+      return isOption(schema.options, value, path, context);
+    case SchemaType.EXPRESSION:
+      return true;
   }
 }
 
@@ -65,6 +73,8 @@ export function validateShallowType<T extends SchemaType>(type: T, value: unknow
       return isString(value);
     case SchemaType.OPTIONS:
       return isNumber(value) || isString(value) || isBoolean(value);
+    case SchemaType.EXPRESSION:
+      return true;
   }
 }
 
@@ -86,8 +96,20 @@ export function isEnum<const T extends Enum>(enum_: T, value: unknown): value is
  * @param value the value to be validated
  * @returns true if the value is an option, false if not
  */
-export function isOption<const T extends OptionValue>(options: readonly T[], value: unknown): value is T {
-  return options.some((v) => v === value);
+export function isOption<const T extends OptionValue>(
+  options: readonly T[],
+  value: unknown,
+  path: string,
+  context: ResolveContext
+): value is T {
+  return options.some((v) => {
+    if (isObject(v)) {
+      const enabled = typeof v.enabled === "boolean" ? v.enabled : resolvePredicate(v.enabled, path, context);
+      return enabled && v.value === value;
+    }
+
+    return v === value;
+  });
 }
 
 /**

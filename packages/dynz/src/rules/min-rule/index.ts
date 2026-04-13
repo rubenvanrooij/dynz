@@ -1,25 +1,74 @@
-import { type Reference, unpackRef } from "../../reference";
-import type { NumberSchema } from "../../schemas";
-import { type ErrorMessageFromRule, type ExtractResolvedRules, type RuleFn, SchemaType } from "../../types";
+import { type ParamaterValue, resolveExpected, type Transformer } from "../../functions";
+import {
+  type ErrorMessageFromRule,
+  type ExtractResolvedRules,
+  type RuleFn,
+  type Schema,
+  SchemaType,
+} from "../../types";
+import { isNumber } from "../../validate/validate-type";
 
-export type MinRule<T extends number | Reference = number | Reference> = {
+export type MinRule<T extends ParamaterValue<number> = ParamaterValue<number>, A extends Transformer = Transformer> = {
   type: "min";
   min: T;
+  tranform?: A | undefined;
   code?: string | undefined;
 };
 
-export type MinRuleErrorMessage = ErrorMessageFromRule<MinRule>;
+export type MinRuleErrorMessage = ErrorMessageFromRule<MinRule, number, "min">;
 
-export function min<T extends number | Reference>(min: T, code?: string): MinRule<T> {
-  return { min, type: "min", code };
+/**
+ * Creates a minimum value validation rule for number fields.
+ *
+ * Rules are validation constraints that are attached to schema fields.
+ * They define what values are valid and produce validation errors when violated.
+ *
+ * **Note:** This is different from the {@link gt} predicate! This rule validates
+ * field values, while `gt()` is a boolean expression for conditional logic.
+ *
+ * @category Rule
+ * @param min - The minimum allowed value (static value, reference, or transformer)
+ * @param code - Optional custom error code for this validation
+ * @param transformer - Optional transformer to apply before validation
+ * @returns A MinRule that validates value >= min
+ *
+ * @example
+ * // Simple minimum value
+ * number({ rules: [min(v(0))] })
+ *
+ * @example
+ * // Dynamic minimum from another field
+ * number({ rules: [min(ref('minPrice'))] })
+ *
+ * @example
+ * // Minimum based on calculated value
+ * number({
+ *   rules: [min(sum(ref('cost'), ref('margin')))]
+ * })
+ *
+ * @see {@link max} - Maximum value rule
+ * @see {@link gt} - Greater than predicate (for conditional logic)
+ * @see {@link gte} - Greater than or equal predicate (for conditional logic)
+ */
+export function min<T extends ParamaterValue<number>, A extends Transformer = Transformer>(
+  min: T,
+  code?: string,
+  transformer?: A
+): MinRule<T, A> {
+  return { min, type: "min", code, tranform: transformer };
 }
 
-export const minRule: RuleFn<
-  NumberSchema,
-  Extract<ExtractResolvedRules<NumberSchema>, MinRule>,
-  MinRuleErrorMessage
-> = ({ rule, value, path, context }) => {
-  const { value: min } = unpackRef(rule.min, path, context, SchemaType.NUMBER);
+export const minRule: RuleFn<Schema, Extract<ExtractResolvedRules<Schema>, MinRule>, MinRuleErrorMessage> = ({
+  rule,
+  value,
+  path,
+  context,
+}) => {
+  if (!isNumber(value)) {
+    throw new Error("minRule expects a number value");
+  }
+
+  const min = resolveExpected(rule.min, path, context, SchemaType.NUMBER);
 
   if (min === undefined) {
     return undefined;
@@ -29,7 +78,7 @@ export const minRule: RuleFn<
     ? undefined
     : {
         code: "min",
-        min: min,
+        min,
         message: `The value ${value} for schema ${path} should be at least ${min}`,
       };
 };

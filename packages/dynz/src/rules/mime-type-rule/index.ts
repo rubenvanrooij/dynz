@@ -1,26 +1,29 @@
-import { type Reference, unpackRef } from "../../reference";
-import type { FileSchema } from "../../schemas/file/types";
-import type { ErrorMessageFromRule, RuleFn } from "../../types";
+import { type ParamaterValue, resolve } from "../../functions";
+import type { ErrorMessageFromRule, ExtractResolvedRules, RuleFn, Schema, ValueType } from "../../types";
+import { isFile } from "../../validate/validate-type";
 
-export type MimeTypeRule<T extends string | string[] | Reference = string | string[] | Reference> = {
+export type MimeTypeRule<T extends ParamaterValue<string | string[]> = ParamaterValue<string | string[]>> = {
   type: "mime_type";
   mimeType: T;
   code?: string | undefined;
 };
 
-export type MimeTypeRuleErrorMessage = ErrorMessageFromRule<MimeTypeRule>;
+export type MimeTypeRuleErrorMessage = ErrorMessageFromRule<MimeTypeRule, ValueType[], "mimeType">;
 
-export function mimeType<T extends string | string[] | Reference>(mimeType: T, code?: string): MimeTypeRule<T> {
+export function mimeType<T extends ParamaterValue<string | string[]>>(mimeType: T, code?: string): MimeTypeRule<T> {
   return { mimeType, type: "mime_type", code };
 }
 
-export const mimeTypeRule: RuleFn<FileSchema, MimeTypeRule, MimeTypeRuleErrorMessage> = ({
-  rule,
-  value,
-  path,
-  context,
-}) => {
-  const { value: mimeType } = unpackRef(rule.mimeType, path, context);
+export const mimeTypeRule: RuleFn<
+  Schema,
+  Extract<ExtractResolvedRules<Schema>, MimeTypeRule>,
+  MimeTypeRuleErrorMessage
+> = ({ rule, value, path, context }) => {
+  if (!isFile(value)) {
+    throw new Error("mimeTypeRule expects a file value");
+  }
+
+  const mimeType = resolve(rule.mimeType, path, context);
 
   if (mimeType === undefined) {
     return undefined;

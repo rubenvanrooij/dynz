@@ -3,7 +3,7 @@
       "target": "es2020",
       "lib": ["ESNext", "DOM"],
       "module": "ESNext",
-      "moduleResolution": "node",
+      "moduleResolution": "bundler",
       "jsx": "preserve",
 
       "allowImportingTsExtensions": true,
@@ -21,16 +21,13 @@
       "noImplicitAny": true,
       "noImplicitReturns": true,
       "noImplicitThis": true,
-      "noImplicitOverride": true,
-  
+      "noImplicitOverride": true,  
       "noFallthroughCasesInSwitch": true,
       "resolveJsonModule": true,
-  
       "removeComments": false,
       "esModuleInterop": true,
       "emitDecoratorMetadata": true,
       "experimentalDecorators": true,
-      "downlevelIteration": true,
       "isolatedModules": true,
   
       "pretty": true

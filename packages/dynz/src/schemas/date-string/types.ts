@@ -1,19 +1,11 @@
-import type { Reference } from "../..";
-import type { AfterRule, BeforeRule, CustomRule, EqualsRule, MaxDateRule, MinDateRule } from "../../rules";
+import type { Rule } from "../../rules";
 import type { BaseSchema, DateString, PrivateSchema, SchemaType } from "../../types";
 
-export type DateStringRules =
-  | CustomRule
-  | EqualsRule<DateString | Reference>
-  | BeforeRule<DateString | Reference>
-  | AfterRule<DateString | Reference>
-  | MinDateRule<DateString | Reference>
-  | MaxDateRule<DateString | Reference>;
-
-export type DateStringSchema<
-  TFormat extends string = string,
-  TRule extends DateStringRules = DateStringRules,
-> = BaseSchema<DateString, typeof SchemaType.DATE_STRING, TRule> &
+export type DateStringSchema<TFormat extends string = string, TRule extends Rule = Rule> = BaseSchema<
+  DateString,
+  typeof SchemaType.DATE_STRING,
+  TRule
+> &
   PrivateSchema & {
     /*
      * Unicode Tokens

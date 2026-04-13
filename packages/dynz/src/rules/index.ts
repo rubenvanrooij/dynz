@@ -19,3 +19,5 @@ export * from "./min-rule";
 export * from "./min-size-rule";
 export * from "./one-off-rule";
 export * from "./regex-rule";
+export * from "./rule";
+export * from "./validate";

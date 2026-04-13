@@ -1,4 +1,196 @@
 import * as d from "dynz";
+import { expect } from "vitest";
+import { expression } from "./../../../packages/dynz/src/schemas/expression/builder";
+import { runRegistrationForm } from "./registration-form";
+
+// runRegistrationForm()
+
+const ADDONS_PRICES = {
+  legalAid: 10,
+  damageToPassengers: 5,
+  roadsideAssistance: 3,
+};
+
+const PRODUCT_PRICES = {
+  A: 20,
+  B: 25,
+  C: 30,
+};
+
+const PAYMENT_INTERVAL_DISCOUNT = {
+  YEARLY: 0.9, // 10%
+  MONTHLY: 1.0, // 0%
+};
+
+const supportSchema = d.object({
+  fields: {
+    topic: d.options({
+      options: ["billing", "technical", "other"],
+    }),
+    orderId: d.string({
+      included: d.eq(d.ref("topic"), d.v("billing")),
+    }),
+    description: d.string({
+      included: d.eq(d.ref("topic"), d.v("other")),
+    }),
+    message: d.string(),
+  },
+});
+
+const pcConfiguratorSchema = d.object({
+  fields: {
+    cores: d.options({
+      options: [8, 16, 32, 64],
+    }),
+    ramGb: d.options({
+      options: [16, 32, 64, 128],
+    }),
+    gpuCount: d.number({
+      rules: [d.min(d.v(1)), d.max(d.v(1))],
+    }),
+    sliMode: d.options({
+      options: ["nvlink", "disabled"],
+      included: d.gte(d.ref("gpuCount"), d.v(2)),
+    }),
+    storageCount: d.number({
+      rules: [d.min(d.v(1)), d.max(d.v(8))],
+    }),
+    storageRaidLevel: d.options({
+      options: [
+        "raid0",
+        "raid1",
+        {
+          enabled: d.gte(d.ref("storageCount"), d.v(3)),
+          value: "raid5",
+        },
+      ],
+      included: d.gte(d.ref("storageCount"), d.v(2)),
+    }),
+    coolingType: d.options({
+      options: ["air", "liquid-240", "liquid-360"],
+      included: d.gte(d.multiply(d.ref("cores"), d.ref("gpuCount")), d.v(32)),
+    }),
+    totalTdp: d.expression({
+      value: d.multiply(d.ref("cores"), d.v(8)),
+    }),
+  },
+});
+
+const obj = d.object({
+  fields: {
+    product: d.options({
+      options: ["A", "B", "C"],
+    }),
+    paymentInterval: d.options({
+      options: ["YEARLY", "MONTHLY"],
+    }),
+    addons: d.object({
+      fields: {
+        legalAid: d.boolean({
+          included: d.gt(
+            d.lookup({
+              value: d.ref("$.product"),
+              lookup: d.val(PRODUCT_PRICES),
+            }),
+            d.val(2)
+          ),
+        }),
+        damageToPassengers: d.boolean(),
+        roadsideAssistance: d.boolean(),
+      },
+    }),
+    price: d.expression({
+      value: d.multiply(
+        d.sum(
+          d.lookup({
+            value: d.ref("$.product"),
+            lookup: d.val(PRODUCT_PRICES),
+          }),
+          d.multiply(d.size(d.ref("$.addons.legalAid")), d.val(ADDONS_PRICES.legalAid)),
+          d.multiply(d.size(d.ref("$.addons.damageToPassengers")), d.val(ADDONS_PRICES.damageToPassengers)),
+          d.multiply(d.size(d.ref("$.addons.roadsideAssistance")), d.val(ADDONS_PRICES.roadsideAssistance))
+        ),
+        d.lookup({
+          value: d.ref("$.paymentInterval"),
+          lookup: d.val(PAYMENT_INTERVAL_DISCOUNT),
+        })
+      ),
+    }),
+  },
+});
+console.log(JSON.stringify(obj));
+
+console.log(
+  d.validate(obj, undefined, {
+    product: "A",
+    paymentInterval: "YEARLY",
+    addons: {
+      legalAid: false,
+      damageToPassengers: true,
+      roadsideAssistance: true,
+    },
+  })
+);
+
+const car = d.object({
+  fields: {
+    licensePlate: d.string({
+      rules: [d.custom("validLicensePlate")],
+    }),
+    car: d.string({}),
+    foo: d.string({}),
+  },
+});
+
+d.validate(
+  car,
+  undefined,
+  {
+    licensePlate: "K-157-NJ",
+  },
+  {
+    customRules: {
+      validLicensePlate: (value) => {
+        return new Promise((r) => {
+          setTimeout(() => {
+            if (
+              typeof value.value === "string" &&
+              value.value.replace(/[^a-zA-Z0-9]/g, "").toLowerCase() === "k157nj"
+            ) {
+              return r(true);
+            } else {
+              return r({
+                success: false,
+              });
+            }
+          }, 100);
+        });
+      },
+    },
+  }
+).then((val) => {
+  console.log(val);
+});
+
+// console.log(
+//   d.validate(car, undefined, {
+//     licensePlate: '3'
+//   }, {
+//     customRules: {
+//       'validLicensePlate': (value) => {
+//         return new Promise((r) => {
+//           setTimeout(() => {
+//             r(true)
+//           }, 10000)
+//         })
+//       }
+//     }
+//   })
+// );
+
+// console.log('isInclluded: ', d.isIncluded(obj, '$.settings.wantCoffee', {
+//   tired: true
+// }))
 
 // const foo = object({
 //   fields: {
@@ -29,29 +221,119 @@ import * as d from "dynz";
 //   console.log(result.values); // ✅ Type-safe access
 // }
 
-const s = d.object({
-  fields: {
-    one: d.dateString({
-      format: "yyyy",
-      rules: [d.after(d.ref("two"))],
-    }),
-    two: d.date({
-      rules: [
-        d.after(d.ref("one")),
-        d.conditional({
-          when: d.and(d.gt("one", 12), d.neq("one", undefined)),
-          then: d.after(d.ref("one")),
-        }),
-      ],
-    }),
-  },
-});
-console.log(
-  d.validate(s, undefined, {
-    one: "2026",
-    two: new Date(),
-  })
-);
+// const MIN_ANGLE = 4;
+// const MAX_ANGLE = 10;
+
+// const MIN_FUNCTION = d.ceil(d.sum(d.ref("frontHeight"), d.multiply(d.ref("depth"), d.tan(d.v(MIN_ANGLE)))));
+// const MAX_FUNCTION = d.ceil(d.sum(d.ref("frontHeight"), d.multiply(d.ref("depth"), d.tan(d.v(MAX_ANGLE)))));
+
+// const VERANDA_SCHEMA = d.object({
+//   fields: {
+//     depth: d.number(),
+//     frontHeight: d.number(),
+//     backHeight: d.number({
+//       rules: [d.min(MIN_FUNCTION), d.max(MAX_FUNCTION)],
+//     }),
+//   },
+// });
+
+// const a = d.getNested("depth", VERANDA_SCHEMA, {});
+
+// console.log(a.value);
+
+// // resolve min value of backHeight
+// console.log("---ST--");
+// console.log(
+//   d.resolve(MIN_FUNCTION, "$", {
+//     schema: VERANDA_SCHEMA,
+//     values: {
+//       depth: 2500,
+//       frontHeight: 2000,
+//     },
+//   })
+// );
+// console.log("--END---");
+
+// console.log(
+//   d.validate(VERANDA_SCHEMA, undefined, {
+//     depth: 2500,
+//     frontHeight: 2000,
+//     backHeight: 2100,
+//   })
+// );
+
+// const priceExample = d.object({
+//   fields: {
+//     price: d.number({
+//       rules: [d.min(d.sum(d.ref("margin"), d.ref("commission")))],
+//     }),
+//     margin: d.number({
+//       // rules: [d.age(d.v(3))],
+//     }),
+//     commission: d.number({
+//       rules: [d.min(d.v(0))],
+//     }),
+//   },
+// });
+
+// /** SUCCESS */
+// console.log(
+//   d.validate(priceExample, undefined, {
+//     price: 3123,
+//     margin: 15,
+//     commission: 5,
+//   })
+// );
+
+// /** FAILS */
+// console.log(
+//   d.validate(priceExample, undefined, {
+//     price: 3123,
+//     margin: 15,
+//     commission: 5,
+//   })
+// );
+
+// const Countries = {
+//   Netherlands: "netherlands",
+//   USA: "usa",
+// } as const;
+
+// export const MinorAges = {
+//   [Countries.Netherlands]: 18,
+//   [Countries.USA]: 21,
+// };
+
+// const minAge = <T extends string, A extends d.ParamaterValue>(ref: T, min: A) => d.lte(d.age(d.ref(ref)), min);
+
+// const parentalApprovalExample = d.object({
+//   fields: {
+//     country: d.enum({
+//       enum: Countries,
+//     }),
+//     birthDate: d.date(),
+//     parentalApproval: d.boolean({
+//       rules: [
+//         d.conditional(
+//           ...Object.entries(MinorAges).map(([country, age]) => ({
+//             when: d.and(d.eq(d.ref("country"), d.v(country)), minAge("birthDate", d.v(age))),
+//             then: d.equals(d.v(true), `Parental approval is required for users under ${age} from ${country}`),
+//           }))
+//         ),
+//       ],
+//     }),
+//   },
+// });
+
+// console.log(JSON.stringify(parentalApprovalExample));
+
+// console.log(
+//   d.validate(parentalApprovalExample, undefined, {
+//     country: Countries.USA,
+//     birthDate: new Date("2007-01-22"),
+//     parentalApproval: false,
+//   })
+// );
 
 // const UserRoles = {
 //   ADMIN: "admin",
@@ -189,7 +471,7 @@ object({
     .email()
     .conditional({
       when: eq('accountType', 'business'),
-      then: regex('@company\.com$', "Business accounts must use company email")
+      then: regex('@company.com$', "Business accounts must use company email")
     })
 })
 */
@@ -201,7 +483,7 @@ object({
 //         mutable: user.role === 'admin',
 //       }),
 //       bsn: string({
-//         rules: [regex('^\d{8,9}$', 'bsn')],
+//         rules: [regex('^d{8,9}$', 'bsn')],
 //         private: true,
 //       })
 //     }
@@ -277,7 +559,7 @@ object({
 // console.timeEnd('validate');
 // console.log('done!');
 
-// // console.log(`is required: ${isRequired(foo, '$.[0].bsn', values)}`);
+// // console.log(`is required: $isRequired(foo, '$.[0].bsn', values)`);
 
 // console.log('starting validation...');
 
@@ -311,7 +593,7 @@ object({
 //   foo,
 //   [
 //     {
-//       name: `John ${i}`,
+//       name: `John $i`,
 //       bsn: plain('123'),
 //       contactVia: 'Foo',
 //       birthDate: '2024-01-01',

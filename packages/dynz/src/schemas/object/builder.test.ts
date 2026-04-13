@@ -1,13 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { eq } from "../../conditions";
+import { eq, v } from "../../functions";
+import { ref } from "../../reference";
 import { custom } from "../../rules";
 import { SchemaType } from "../../types";
-import { object } from "./builder";
 import { string } from "../string";
+import { object } from "./builder";
 
 describe("object builder", () => {
   it("should create object schema with provided properties", () => {
-    const condition = eq("$.isRequired", true);
+    const condition = eq(ref("$.isRequired"), v(true));
     const rule = custom("testRule");
 
     const schema = object({

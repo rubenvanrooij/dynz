@@ -1,17 +1,7 @@
 import { resolveProperty, resolveRules } from "../conditions";
+import { resolve } from "../functions";
 import { isPivateValue, isValueMasked, type PrivateValue } from "../private";
-import {
-  validateArray,
-  validateBoolean,
-  validateDate,
-  validateDateString,
-  validateEnum,
-  validateFile,
-  validateNumber,
-  validateObject,
-  validateOptions,
-  validateString,
-} from "../schemas";
+import { validateRule } from "../rules";
 import {
   type Context,
   ErrorCode,
@@ -30,29 +20,27 @@ export function validate<T extends Schema>(
   currentValues: SchemaValues<T> | undefined,
   newValues: unknown,
   options: ValidateOptions = {}
-): ValidationResult<SchemaValues<T>> {
+): Promise<ValidationResult<SchemaValues<T>>> {
   return _validate(schema, { current: currentValues, new: newValues }, "$", {
     type: "validate",
     schema,
     validateOptions: options,
     validateMutable: currentValues !== undefined,
-    values: {
-      current: currentValues,
-      new: newValues,
-    },
-  }) as ValidationResult<SchemaValues<T>>;
+    currentValues: currentValues,
+    values: newValues,
+  }) as Promise<ValidationResult<SchemaValues<T>>>;
 }
 
-export function _validate<T extends Schema>(
+export async function _validate<T extends Schema>(
   schema: T,
   values: { current: unknown; new: unknown },
   path: string,
   context: Context
-): ValidationResult<unknown> {
+): Promise<ValidationResult<unknown>> {
   /**
    * If the schema is not included we do not need to validate it
    */
-  if (!resolveProperty(schema, "included", path, true, context)) {
+  if (!resolveProperty("included", path, true, context)) {
     if (context.validateOptions.stripNotIncludedValues === true) {
       return {
         success: true,
@@ -83,6 +71,14 @@ export function _validate<T extends Schema>(
     };
   }
 
+  // static schema types must be in front of validation
+  if (schema.type === SchemaType.EXPRESSION) {
+    return {
+      success: true,
+      values: resolve(schema.value, path, context),
+    };
+  }
+
   // If the new value is masked; skip all validation and return the value immediately
   if (isValueMasked(schema, values.new)) {
     return {
@@ -97,7 +93,7 @@ export function _validate<T extends Schema>(
   /**
    * if the schema is marked as not mutable; the value shuld still be the same
    */
-  if (context.validateMutable && resolveProperty(schema, "mutable", path, true, context) === false) {
+  if (context.validateMutable && resolveProperty("mutable", path, true, context) === false) {
     if (valueChanged(schema, path, values.current, values.new)) {
       return {
         success: false,
@@ -116,7 +112,7 @@ export function _validate<T extends Schema>(
     }
   }
 
-  const isRequired = resolveProperty(schema, "required", path, true, context);
+  const isRequired = resolveProperty("required", path, true, context);
 
   /**
    * Validate required
@@ -151,7 +147,7 @@ export function _validate<T extends Schema>(
   /**
    * Type check
    */
-  if (isDefined(newValue) && validateType(schema, newValue) === false) {
+  if (isDefined(newValue) && validateType(schema, newValue, path, context) === false) {
     const error = {
       path,
       schema,
@@ -185,7 +181,7 @@ export function _validate<T extends Schema>(
    */
   if (isDefined(newValue)) {
     for (const rule of resolveRules(schema, path, context)) {
-      const result = validateRule({
+      const result = await validateRule({
         type: schema.type,
         ruleType: rule.type,
         schema,
@@ -225,39 +221,67 @@ export function _validate<T extends Schema>(
       throw new Error(`current value is not an object: ${currentValue}`);
     }
 
-    return Object.entries(schema.fields).reduce<ValidationResult<Record<string, unknown>>>(
-      (acc, [key, innerSchema]) => {
-        const result = _validate(
+    const entries = await Promise.all(
+      Object.entries(schema.fields).map(async ([key, innerSchema]) => ({
+        key,
+        result: await _validate(
           innerSchema,
-          {
-            current: currentValue?.[key],
-            new: newValue[key],
-          },
+          { current: currentValue?.[key], new: newValue[key] },
           `${path}.${key}`,
           context
-        );
-
-        if (acc.success) {
-          if (result.success) {
-            acc.values[key] = result.values;
-            return acc;
-          }
-
-          return {
-            success: false,
-            errors: result.errors,
-          };
-        }
-
-        if (result.success) {
-          return acc;
-        }
-
-        acc.errors.push(...result.errors);
-        return acc;
-      },
-      { success: true, values: {} }
+        ),
+      }))
     );
+
+    let acc = { success: true, values: {} } as ValidationResult<Record<string, unknown>>;
+
+    for (const { key, result } of entries) {
+      if (acc.success) {
+        if (result.success) {
+          acc.values[key] = result.values;
+        } else {
+          acc = { success: false, errors: result.errors };
+        }
+      } else if (!result.success) {
+        acc.errors.push(...result.errors);
+      }
+    }
+
+    return acc;
+
+    // return Object.entries(schema.fields).reduce<ValidationResult<Record<string, unknown>>>(
+    //   (acc, [key, innerSchema]) => {
+    //     const result = await _validate(
+    //       innerSchema,
+    //       {
+    //         current: currentValue?.[key],
+    //         new: newValue[key],
+    //       },
+    //       `${path}.${key}`,
+    //       context
+    //     );
+
+    //     if (acc.success) {
+    //       if (result.success) {
+    //         acc.values[key] = result.values;
+    //         return acc;
+    //       }
+
+    //       return {
+    //         success: false,
+    //         errors: result.errors,
+    //       };
+    //     }
+
+    //     if (result.success) {
+    //       return acc;
+    //     }
+
+    //     acc.errors.push(...result.errors);
+    //     return acc;
+    //   },
+    //   { success: true, values: {} }
+    // );
   }
 
   /**
@@ -278,9 +302,9 @@ export function _validate<T extends Schema>(
       validateMutable: false,
     };
 
-    return newValue.reduce<ValidationResult<unknown[]>>(
-      (acc, cur, index) => {
-        const result = _validate(
+    const results = await Promise.all(
+      newValue.map((cur: unknown, index: number) =>
+        _validate(
           schema.schema,
           {
             current: currentValue?.[index],
@@ -288,60 +312,66 @@ export function _validate<T extends Schema>(
           },
           `${path}.[${index}]`,
           newContext
-        );
-
-        if (acc.success) {
-          if (result.success) {
-            acc.values.push(result.values);
-            return acc;
-          }
-
-          return {
-            success: false,
-            errors: result.errors,
-          };
-        }
-
-        if (result.success) {
-          return acc;
-        }
-
-        acc.errors.push(...result.errors);
-        return acc;
-      },
-      { success: true, values: [] }
+        )
+      )
     );
+
+    let acc = { success: true, values: [] } as ValidationResult<unknown[]>;
+
+    for (const result of results) {
+      if (acc.success) {
+        if (result.success) {
+          acc.values.push(result.values);
+        } else {
+          acc = { success: false, errors: result.errors };
+        }
+      } else if (!result.success) {
+        acc.errors.push(...result.errors);
+      }
+    }
+
+    return acc;
   }
+
+  //   return newValue.reduce<ValidationResult<unknown[]>>(
+  //     (acc, cur, index) => {
+  //       const result = _validate(
+  //         schema.schema,
+  //         {
+  //           current: currentValue?.[index],
+  //           new: cur,
+  //         },
+  //         `${path}.[${index}]`,
+  //         newContext
+  //       );
+
+  //       if (acc.success) {
+  //         if (result.success) {
+  //           acc.values.push(result.values);
+  //           return acc;
+  //         }
+
+  //         return {
+  //           success: false,
+  //           errors: result.errors,
+  //         };
+  //       }
+
+  //       if (result.success) {
+  //         return acc;
+  //       }
+
+  //       acc.errors.push(...result.errors);
+  //       return acc;
+  //     },
+  //     { success: true, values: [] }
+  //   );
+  // }
 
   return {
     success: true,
     values: newValue,
   };
-}
-
-function validateRule<T extends Schema>(context: ValidateRuleContextUnion<T>) {
-  switch (context.type) {
-    case SchemaType.STRING:
-      return validateString(context);
-    case SchemaType.NUMBER:
-      return validateNumber(context);
-    case SchemaType.ARRAY:
-      return validateArray(context);
-    case SchemaType.BOOLEAN:
-      return validateBoolean(context);
-    case SchemaType.DATE:
-      return validateDate(context);
-    case SchemaType.DATE_STRING:
-      return validateDateString(context);
-    case SchemaType.FILE:
-      return validateFile(context);
-    case SchemaType.OBJECT:
-      return validateObject(context);
-    case SchemaType.OPTIONS:
-      return validateOptions(context);
-    case SchemaType.ENUM:
-      return validateEnum(context);
-  }
 }
 
 /**

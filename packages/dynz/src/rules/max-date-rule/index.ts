@@ -1,35 +1,35 @@
-import { isBefore } from "date-fns";
-import { type Reference, unpackRef } from "../../reference";
-import type { DateSchema, DateStringSchema } from "../../schemas";
+import { isBefore, isDate } from "date-fns";
+import { type ParamaterValue, resolveExpected } from "../../functions";
 import {
-  type DateString,
   type ErrorMessageFromRule,
   type ExtractResolvedRules,
   type RuleFn,
+  type Schema,
   SchemaType,
 } from "../../types";
-import { parseDateString } from "../../validate/validate-type";
-import { getDateFromDateOrDateStringRefeference } from "../utils/reference";
 
-export type MaxDateRule<T extends Date | DateString | Reference = Date | DateString | Reference> = {
+export type MaxDateRule<T extends ParamaterValue<Date> = ParamaterValue<Date>> = {
   type: "max_date";
   max: T;
   code?: string | undefined;
 };
 
-export type MaxDateRuleErrorMessage = ErrorMessageFromRule<MaxDateRule>;
+export type MaxDateRuleErrorMessage = ErrorMessageFromRule<MaxDateRule, Date, "max">;
 
-export function maxDate<T extends Date | DateString | Reference>(max: T, code?: string): MaxDateRule<T> {
+export function maxDate<T extends ParamaterValue<Date>>(max: T, code?: string): MaxDateRule<T> {
   return { max, type: "max_date", code };
 }
 
 export const maxDateRule: RuleFn<
-  DateSchema,
-  Extract<ExtractResolvedRules<DateSchema>, MaxDateRule>,
+  Schema,
+  Extract<ExtractResolvedRules<Schema>, MaxDateRule>,
   MaxDateRuleErrorMessage
 > = ({ rule, value, path, context }) => {
-  const unpackedRef = unpackRef(rule.max, path, context, SchemaType.DATE, SchemaType.DATE_STRING);
-  const max = unpackedRef.static ? unpackedRef.value : getDateFromDateOrDateStringRefeference(unpackedRef);
+  if (!isDate(value)) {
+    throw new Error("maxDateRule expects a date value");
+  }
+
+  const max = resolveExpected(rule.max, path, context, SchemaType.DATE);
 
   if (max === undefined) {
     return undefined;
@@ -44,27 +44,27 @@ export const maxDateRule: RuleFn<
       };
 };
 
-export const maxDateStringRule: RuleFn<
-  DateStringSchema,
-  Extract<ExtractResolvedRules<DateStringSchema>, MaxDateRule>,
-  MaxDateRuleErrorMessage
-> = ({ rule, value, path, context, schema }) => {
-  const unpackedRef = unpackRef(rule.max, path, context, SchemaType.DATE, SchemaType.DATE_STRING);
-  const max = unpackedRef.static
-    ? parseDateString(unpackedRef.value, schema.format)
-    : getDateFromDateOrDateStringRefeference(unpackedRef);
+// export const maxDateStringRule: RuleFn<
+//   DateStringSchema,
+//   Extract<ExtractResolvedRules<DateStringSchema>, MaxDateRule>,
+//   MaxDateRuleErrorMessage
+// > = ({ rule, value, path, context, schema }) => {
+//   const unpackedRef = unpackRef(rule.max, path, context, SchemaType.DATE, SchemaType.DATE_STRING);
+//   const max = unpackedRef.static
+//     ? parseDateString(unpackedRef.value, schema.format)
+//     : getDateFromDateOrDateStringRefeference(unpackedRef);
 
-  if (max === undefined) {
-    return undefined;
-  }
+//   if (max === undefined) {
+//     return undefined;
+//   }
 
-  const valueDate = parseDateString(value, schema.format);
+//   const valueDate = parseDateString(value, schema.format);
 
-  return isBefore(valueDate, max) || valueDate.getTime() === max.getTime()
-    ? undefined
-    : {
-        code: "max_date",
-        max,
-        message: `The value ${value} for schema ${path} is after or on ${max}`,
-      };
-};
+//   return isBefore(valueDate, max) || valueDate.getTime() === max.getTime()
+//     ? undefined
+//     : {
+//       code: "max_date",
+//       max,
+//       message: `The value ${value} for schema ${path} is after or on ${max}`,
+//     };
+// };

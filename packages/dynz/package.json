@@ -2,7 +2,7 @@
   "name": "dynz",
   "version": "0.0.14",
   "private": false,
-  "license": "MIT",
+  "license": "BUSL-1.1",
   "type": "module",
   "sideEffects": false,
   "keywords": [

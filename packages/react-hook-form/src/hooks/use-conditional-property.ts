@@ -1,4 +1,4 @@
-import { findSchemaByPath, getConditionDependencies, getNested, resolveProperty } from "dynz";
+import { findSchemaByPath, getConditionDependencies, resolveProperty } from "dynz";
 import { useMemo } from "react";
 import { useWatch } from "react-hook-form";
 import { useDynzFormContext } from "./use-dynz-form-context";
@@ -11,15 +11,17 @@ export function useConditionalProperty(
 
   const path = `$.${name}`;
 
-  // No need to watch for value changes if the schema has no conditions on the mutable property
   const innerSchema = findSchemaByPath(path, schema);
 
   const propertyValue = innerSchema[property];
 
   const dependencies =
+    // No need to watch for value changes if the schema has no conditions on the mutable property
     propertyValue === undefined || typeof propertyValue === "boolean"
       ? []
-      : getConditionDependencies(propertyValue, path).map((field) => field.slice(2));
+      : getConditionDependencies(propertyValue, path, schema).map((field) => field.slice(2));
+
+  // ADD ALL PARRENTS AS DEPENDENCIES
 
   // Watch is just here to trigger a rerender when a value gets updated
   const watchedValues = useWatch({
@@ -35,13 +37,10 @@ export function useConditionalProperty(
   // biome-ignore lint/correctness/useExhaustiveDependencies: watchedValues triggers the re evealuation
   return useMemo(() => {
     const values = getValues();
-    const nested = getNested(path, schema, values);
 
-    return resolveProperty(nested.schema, property, path, true, {
+    return resolveProperty(property, path, true, {
       schema,
-      values: {
-        new: values,
-      },
+      values,
     });
   }, [innerSchema, property, path, schema, watchedValues]);
 }

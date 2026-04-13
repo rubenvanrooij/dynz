@@ -20,6 +20,7 @@ import type {
   OneOfRuleErrorMessage,
   RegexRuleErrorMessage,
 } from "../rules";
+import type { NotOneOfRuleErrorMessage } from "../rules/not-one-off-rule";
 import type { EnumValues } from "../schemas";
 import type { BaseRule, ExtractResolvedRules } from "./rules";
 import type { Schema, SchemaType, ValueType } from "./schema";
@@ -103,6 +104,7 @@ export type ErrorMessage =
   | MinRuleErrorMessage
   | MinSizeRuleErrorMessage
   | OneOfRuleErrorMessage
+  | NotOneOfRuleErrorMessage
   | RegexRuleErrorMessage;
 
 export type ValidationErrorResult = {
@@ -125,7 +127,10 @@ export type CustomRuleFunction<
   params: TParams,
   path: string,
   schema: Schema
-) => boolean | { success: false; [key: string]: JsonPrimitive };
+) =>
+  | Promise<boolean | { success: false; [key: string]: JsonPrimitive }>
+  | boolean
+  | { success: false; [key: string]: JsonPrimitive };
 
 export type CustomRuleMap = Record<string, CustomRuleFunction>;
 
@@ -153,17 +158,15 @@ export type Context<T extends Schema = Schema> = {
   validateOptions: ValidateOptions;
   validateMutable: boolean;
 
-  values: {
-    current: unknown;
-    new: unknown;
-  };
+  // current values
+  currentValues: unknown;
+  // new values
+  values: unknown;
 };
 
-export type ResolveContext<T extends Schema = Schema> = {
+export type ResolveContext<T extends Schema = Schema, A = unknown> = {
   schema: T;
-  values: {
-    new: unknown;
-  };
+  values: A;
 };
 
 export type ErrorMessageForRule<T extends BaseRule> = Omit<T, "type"> & BaseErrorMessage<T["type"]>;

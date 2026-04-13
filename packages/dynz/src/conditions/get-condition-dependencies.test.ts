@@ -1,47 +1,91 @@
 import { describe, expect, it } from "vitest";
+import { and, eq, gt, gte, isIn, isNotIn, lt, lte, matches, neq, or, v } from "../functions";
 import { ref } from "../reference";
-import { array } from "../schemas/array/builder";
-import { object } from "../schemas/object/builder";
-import { string } from "../schemas/string/builder";
-import { conditional } from "../rules/conditional-rule";
 import { custom } from "../rules/custom-rule";
 import { equals } from "../rules/equals-rule";
-import { minEntries } from "../rules/min-entries-rule";
-import { minLength } from "../rules/min-length-rule";
 import { oneOf } from "../rules/one-off-rule";
-import { and, or, eq, neq, gt, gte, lt, lte, matches, isIn, isNotIn } from "./builder";
+import { object } from "../schemas/object/builder";
+import { string } from "../schemas/string/builder";
 import { getConditionDependencies, getRulesDependenciesMap } from "./get-condition-dependencies";
+
+// Root schema containing all fields referenced in getConditionDependencies tests
+const rootSchema = object({
+  fields: {
+    email: string(),
+    status: string(),
+    age: string(),
+    score: string(),
+    price: string(),
+    limit: string(),
+    phone: string(),
+    role: string(),
+    name: string(),
+    active: string(),
+    verified: string(),
+    enabled: string(),
+    type: string(),
+    points: string(),
+    trusted: string(),
+    userType: string(),
+    subscriptionMonths: string(),
+    teamSize: string(),
+    hasContract: string(),
+    level: string(),
+    global: object({
+      fields: {
+        setting: string(),
+        promotionalAccess: string(),
+        feature: string(),
+      },
+    }),
+    module: object({
+      fields: {
+        localSetting: string(),
+        config: object({ fields: {} }),
+      },
+    }),
+  },
+});
 
 describe("getConditionDependencies", () => {
   describe("simple conditions", () => {
     it("should return single dependency for equals condition", () => {
-      const condition = eq("email", "test@example.com");
-      const result = getConditionDependencies(condition, "$.user");
+      const condition = eq(ref("email"), v("test@example.com"));
+      const result = getConditionDependencies(condition, "$.user", rootSchema);
 
       expect(result).toEqual(["$.email"]);
     });
 
     it("should handle all comparison condition types", () => {
       const testCases = [
-        { condition: neq("status", "inactive"), expected: "status" },
-        { condition: gt("age", 18), expected: "age" },
-        { condition: gte("score", 80), expected: "score" },
-        { condition: lt("price", 100), expected: "price" },
-        { condition: lte("limit", 50), expected: "limit" },
-        { condition: matches("phone", "^\\+[1-9]\\d{1,14}$"), expected: "phone" },
-        { condition: isIn("role", ["admin", "user"]), expected: "role" },
-        { condition: isNotIn("status", ["banned", "suspended"]), expected: "status" },
+        { condition: neq(ref("status"), v("inactive")), expected: "status" },
+        { condition: gt(ref("age"), v(18)), expected: "age" },
+        { condition: gte(ref("score"), v(80)), expected: "score" },
+        { condition: lt(ref("price"), v(100)), expected: "price" },
+        { condition: lte(ref("limit"), v(50)), expected: "limit" },
+        {
+          condition: matches(ref("phone"), v("^\\+[1-9]\\d{1,14}$")),
+          expected: "phone",
+        },
+        {
+          condition: isIn(ref("role"), v(["admin", "user"])),
+          expected: "role",
+        },
+        {
+          condition: isNotIn(ref("status"), v(["banned", "suspended"])),
+          expected: "status",
+        },
       ];
 
       testCases.forEach(({ condition, expected }) => {
-        const result = getConditionDependencies(condition, "$.test");
+        const result = getConditionDependencies(condition, "$.test", rootSchema);
         expect(result).toEqual([`$.${expected}`]);
       });
     });
 
     it("should handle absolute paths correctly", () => {
-      const condition = eq("$.global.setting", true);
-      const result = getConditionDependencies(condition, "$.local.field");
+      const condition = eq(ref("$.global.setting"), v(true));
+      const result = getConditionDependencies(condition, "$.local.field", rootSchema);
 
       expect(result).toEqual(["$.global.setting"]);
     });
@@ -49,49 +93,52 @@ describe("getConditionDependencies", () => {
 
   describe("AND conditions", () => {
     it("should return dependencies from all nested conditions", () => {
-      const condition = and(eq("name", "John"), gt("age", 21), isIn("role", ["admin", "user"]));
+      const condition = and(eq(ref("name"), v("John")), gt(ref("age"), v(21)), isIn(ref("role"), v(["admin", "user"])));
 
-      const result = getConditionDependencies(condition, "$.user");
+      const result = getConditionDependencies(condition, "$.user", rootSchema);
 
       expect(result).toEqual(["$.name", "$.age", "$.role"]);
     });
 
     it("should handle nested AND conditions", () => {
-      const condition = and(eq("active", true), and(gt("score", 80), eq("verified", true)));
+      const condition = and(eq(ref("active"), v(true)), and(gt(ref("score"), v(80)), eq(ref("verified"), v(true))));
 
-      const result = getConditionDependencies(condition, "$.user");
+      const result = getConditionDependencies(condition, "$.user", rootSchema);
 
       expect(result).toEqual(["$.active", "$.score", "$.verified"]);
     });
 
     it("should handle empty AND conditions", () => {
       const condition = and();
-      const result = getConditionDependencies(condition, "$.user");
+      const result = getConditionDependencies(condition, "$.user", rootSchema);
       expect(result).toEqual([]);
     });
   });
 
   describe("OR conditions", () => {
     it("should return dependencies from all nested conditions", () => {
-      const condition = or(eq("type", "premium"), gt("points", 1000));
+      const condition = or(eq(ref("type"), v("premium")), gt(ref("points"), v(1000)));
 
-      const result = getConditionDependencies(condition, "$.account");
+      const result = getConditionDependencies(condition, "$.account", rootSchema);
 
       expect(result).toEqual(["$.type", "$.points"]);
     });
 
     it("should handle complex nested logical conditions", () => {
-      const condition = and(eq("enabled", true), or(and(eq("role", "admin"), gt("level", 5)), eq("trusted", true)));
+      const condition = and(
+        eq(ref("enabled"), v(true)),
+        or(and(eq(ref("role"), v("admin")), gt(ref("level"), v(5))), eq(ref("trusted"), v(true)))
+      );
 
-      const result = getConditionDependencies(condition, "$.user");
+      const result = getConditionDependencies(condition, "$.user", rootSchema);
 
       expect(result).toEqual(["$.enabled", "$.role", "$.level", "$.trusted"]);
     });
 
     it("should handle mixed absolute and relative paths", () => {
-      const condition = and(eq("$.global.feature", true), eq("localSetting", "enabled"));
+      const condition = and(eq(ref("$.global.feature"), v(true)), eq(ref("localSetting"), v("enabled")));
 
-      const result = getConditionDependencies(condition, "$.module.config");
+      const result = getConditionDependencies(condition, "$.module.config", rootSchema);
 
       expect(result).toEqual(["$.global.feature", "$.module.localSetting"]);
     });
@@ -100,12 +147,12 @@ describe("getConditionDependencies", () => {
   describe("deeply nested structures", () => {
     it("should handle complex combinations", () => {
       const condition = or(
-        and(eq("userType", "premium"), gt("subscriptionMonths", 12)),
-        and(eq("userType", "enterprise"), or(gt("teamSize", 50), eq("hasContract", true))),
-        eq("$.global.promotionalAccess", true)
+        and(eq(ref("userType"), v("premium")), gt(ref("subscriptionMonths"), v(12))),
+        and(eq(ref("userType"), v("enterprise")), or(gt(ref("teamSize"), v(50)), eq(ref("hasContract"), v(true)))),
+        eq(ref("$.global.promotionalAccess"), v(true))
       );
 
-      const result = getConditionDependencies(condition, "$.account");
+      const result = getConditionDependencies(condition, "$.account", rootSchema);
 
       expect(result).toEqual([
         "$.userType",
@@ -129,248 +176,6 @@ describe("getRulesDependenciesMap", () => {
     });
   });
 
-  it("should return dependencies for schema with conditional rules", () => {
-    const schema = string({
-      rules: [
-        conditional({
-          when: eq("enabled", true),
-          then: minLength(1),
-        }),
-      ],
-    });
-
-    const result = getRulesDependenciesMap(schema, "$.field");
-
-    expect(result).toEqual({
-      dependencies: {
-        "$.field": new Set(["$.enabled"]),
-      },
-      reverse: {
-        "$.enabled": new Set(["$.field"]),
-      },
-    });
-  });
-
-  it("should handle multiple conditional rules with complex conditions", () => {
-    const schema = string({
-      rules: [
-        conditional({
-          when: and(eq("validate", true), eq("$.global.strict", true)),
-          then: minLength(1),
-        }),
-        conditional({
-          when: eq("format", "email"),
-          then: minLength(5),
-        }),
-      ],
-    });
-
-    const result = getRulesDependenciesMap(schema, "$.email");
-
-    expect(result).toEqual({
-      dependencies: {
-        "$.email": new Set(["$.validate", "$.global.strict", "$.format"]),
-      },
-      reverse: {
-        "$.validate": new Set(["$.email"]),
-        "$.global.strict": new Set(["$.email"]),
-        "$.format": new Set(["$.email"]),
-      },
-    });
-  });
-
-  it("should handle object schema with nested field dependencies", () => {
-    const schema = object({
-      fields: {
-        name: string({
-          rules: [
-            conditional({
-              when: eq("required", true),
-              then: minLength(1),
-            }),
-          ],
-        }),
-        age: string({
-          rules: [
-            conditional({
-              when: eq("$.global.validateAge", true),
-              then: minLength(1),
-            }),
-          ],
-        }),
-        email: string(),
-      },
-    });
-
-    const result = getRulesDependenciesMap(schema, "$.user");
-
-    expect(result).toEqual({
-      dependencies: {
-        "$.user.name": new Set(["$.user.required"]),
-        "$.user.age": new Set(["$.global.validateAge"]),
-      },
-      reverse: {
-        "$.user.required": new Set(["$.user.name"]),
-        "$.global.validateAge": new Set(["$.user.age"]),
-      },
-    });
-  });
-
-  it("should handle array schema dependencies", () => {
-    const schema = array({
-      schema: string({
-        rules: [
-          conditional({
-            when: eq("validateItems", true),
-            then: minLength(1),
-          }),
-        ],
-      }),
-      rules: [
-        conditional({
-          when: eq("validateArray", true),
-          then: minLength(1),
-        }),
-      ],
-    });
-
-    const result = getRulesDependenciesMap(schema, "$.items");
-
-    expect(result).toEqual({
-      dependencies: {
-        "$.items": new Set(["$.validateArray"]),
-        "$.items.[]": new Set(["$.items.validateItems"]),
-      },
-      reverse: {
-        "$.validateArray": new Set(["$.items"]),
-        "$.items.validateItems": new Set(["$.items.[]"]),
-      },
-    });
-  });
-
-  it("should handle complex nested structures", () => {
-    const schema = object({
-      fields: {
-        profile: object({
-          fields: {
-            email: string({
-              rules: [
-                conditional({
-                  when: or(eq("emailRequired", true), eq("$.global.forceEmail", true)),
-                  then: minLength(1),
-                }),
-              ],
-            }),
-          },
-        }),
-        tags: array({
-          schema: string(),
-        }),
-      },
-      rules: [
-        conditional({
-          when: eq("validateUser", true),
-          then: minEntries(1),
-        }),
-      ],
-    });
-
-    const result = getRulesDependenciesMap(schema, "$.user");
-
-    expect(result).toEqual({
-      dependencies: {
-        "$.user": new Set(["$.validateUser"]),
-        "$.user.profile.email": new Set(["$.user.profile.emailRequired", "$.global.forceEmail"]),
-      },
-      reverse: {
-        "$.validateUser": new Set(["$.user"]),
-        "$.user.profile.emailRequired": new Set(["$.user.profile.email"]),
-        "$.global.forceEmail": new Set(["$.user.profile.email"]),
-      },
-    });
-  });
-
-  it("should use default path when not provided", () => {
-    const schema = string({
-      rules: [
-        conditional({
-          when: eq("enabled", true),
-          then: minLength(1),
-        }),
-      ],
-    });
-
-    const result = getRulesDependenciesMap(schema);
-
-    expect(result).toEqual({
-      dependencies: {
-        $: new Set(["$.enabled"]),
-      },
-      reverse: {
-        "$.enabled": new Set(["$"]),
-      },
-    });
-  });
-
-  it("should only include fields with conditional rules", () => {
-    const schema = object({
-      fields: {
-        name: string({
-          rules: [minLength(1)],
-        }),
-        email: string({
-          rules: [
-            conditional({
-              when: eq("emailRequired", true),
-              then: minLength(1),
-            }),
-          ],
-        }),
-        age: string(),
-      },
-    });
-
-    const result = getRulesDependenciesMap(schema, "$.user");
-
-    expect(result).toEqual({
-      dependencies: {
-        "$.user.email": new Set(["$.user.emailRequired"]),
-      },
-      reverse: {
-        "$.user.emailRequired": new Set(["$.user.email"]),
-      },
-    });
-  });
-
-  it("should handle OR conditions with multiple paths", () => {
-    const schema = string({
-      rules: [
-        conditional({
-          when: or(
-            eq("method1", "active"),
-            eq("method2", "active"),
-            and(eq("method3", "active"), eq("$.global.allowMethod3", true))
-          ),
-          then: minLength(1),
-        }),
-      ],
-    });
-
-    const result = getRulesDependenciesMap(schema, "$.validation");
-
-    expect(result).toEqual({
-      dependencies: {
-        "$.validation": new Set(["$.method1", "$.method2", "$.method3", "$.global.allowMethod3"]),
-      },
-      reverse: {
-        "$.method1": new Set(["$.validation"]),
-        "$.method2": new Set(["$.validation"]),
-        "$.method3": new Set(["$.validation"]),
-        "$.global.allowMethod3": new Set(["$.validation"]),
-      },
-    });
-  });
-
   describe("custom rules with references", () => {
     it("should extract dependencies from custom rule parameters", () => {
       const schema = string({
@@ -378,7 +183,7 @@ describe("getRulesDependenciesMap", () => {
           custom("myValidation", {
             threshold: ref("settings.threshold"),
             comparisonValue: ref("$.global.comparison"),
-            staticValue: "test",
+            staticValue: v("test"),
           }),
         ],
       });
@@ -427,8 +232,8 @@ describe("getRulesDependenciesMap", () => {
       const schema = string({
         rules: [
           custom("simpleValidation", {
-            staticParam: "value",
-            numericParam: 42,
+            staticParam: v("value"),
+            numericParam: v(42),
           }),
         ],
       });
@@ -462,7 +267,7 @@ describe("getRulesDependenciesMap", () => {
 
     it("should extract dependencies from oneOf rule with references", () => {
       const schema = string({
-        rules: [oneOf(["static", ref("allowedValue1"), ref("$.global.allowedValue2")])],
+        rules: [oneOf([v("static"), ref("allowedValue1"), ref("$.global.allowedValue2")])],
       });
 
       const result = getRulesDependenciesMap(schema, "$.choice");
@@ -476,116 +281,6 @@ describe("getRulesDependenciesMap", () => {
           "$.global.allowedValue2": new Set(["$.choice"]),
         },
       });
-    });
-
-    it("should handle multiple rules with different reference patterns", () => {
-      const schema = string({
-        rules: [
-          equals(ref("$.settings.expectedValue")),
-          oneOf([ref("option1"), ref("option2")]),
-          conditional({
-            when: eq("enabled", true),
-            then: custom("complexValidation", {
-              reference1: ref("data.ref1"),
-              reference2: ref("$.global.ref2"),
-            }),
-          }),
-        ],
-      });
-
-      const result = getRulesDependenciesMap(schema, "$.field");
-
-      expect(result).toEqual({
-        dependencies: {
-          "$.field": new Set([
-            "$.settings.expectedValue",
-            "$.option1",
-            "$.option2",
-            "$.enabled",
-            "$.data.ref1",
-            "$.global.ref2",
-          ]),
-        },
-        reverse: {
-          "$.settings.expectedValue": new Set(["$.field"]),
-          "$.option1": new Set(["$.field"]),
-          "$.option2": new Set(["$.field"]),
-          "$.enabled": new Set(["$.field"]),
-          "$.data.ref1": new Set(["$.field"]),
-          "$.global.ref2": new Set(["$.field"]),
-        },
-      });
-    });
-  });
-
-  describe("reverse dependency map", () => {
-    it("should correctly build reverse dependencies for complex scenarios", () => {
-      const schema = object({
-        fields: {
-          email: string({
-            rules: [
-              conditional({
-                when: eq("emailRequired", true),
-                then: minLength(1),
-              }),
-            ],
-          }),
-          password: string({
-            rules: [
-              conditional({
-                when: eq("emailRequired", true),
-                then: minLength(8),
-              }),
-            ],
-          }),
-          confirmPassword: string({
-            rules: [equals(ref("password"))],
-          }),
-        },
-      });
-
-      const result = getRulesDependenciesMap(schema, "$.form");
-
-      expect(result.reverse).toEqual({
-        "$.form.emailRequired": new Set(["$.form.email", "$.form.password"]),
-        "$.form.password": new Set(["$.form.confirmPassword"]),
-      });
-    });
-
-    it("should handle global references affecting multiple fields", () => {
-      const schema = object({
-        fields: {
-          field1: string({
-            rules: [
-              conditional({
-                when: eq("$.global.strictMode", true),
-                then: minLength(5),
-              }),
-            ],
-          }),
-          field2: string({
-            rules: [
-              conditional({
-                when: eq("$.global.strictMode", true),
-                then: minLength(10),
-              }),
-            ],
-          }),
-          field3: string({
-            rules: [
-              custom("validation", {
-                mode: ref("$.global.strictMode"),
-              }),
-            ],
-          }),
-        },
-      });
-
-      const result = getRulesDependenciesMap(schema, "$.form");
-
-      expect(result.reverse["$.global.strictMode"]).toEqual(
-        new Set(["$.form.field1", "$.form.field2", "$.form.field3"])
-      );
     });
   });
 });

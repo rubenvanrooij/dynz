@@ -1,15 +1,8 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
+import { eq, v } from "../functions";
 import { object, string } from "../schemas";
 import type { ResolveContext } from "../types";
-import { eq } from "./builder";
 import { resolveRules } from "./resolve-rules";
-
-// Mock dependencies
-vi.mock("./resolve-condition", () => ({
-  resolveCondition: vi.fn(),
-}));
-
-import { resolveCondition } from "./resolve-condition";
 
 describe("resolveRules", () => {
   const mockContext: ResolveContext = {
@@ -19,24 +12,20 @@ describe("resolveRules", () => {
     },
   };
 
-  beforeEach(() => {
-    vi.resetAllMocks();
-  });
-
   describe("unconditional rules", () => {
     it("should return all unconditional rules", () => {
       const schema = string({
         rules: [
-          { type: "min_length", min: 5 },
-          { type: "max_length", max: 50 },
+          { type: "min_length", min: v(5) },
+          { type: "max_length", max: v(50) },
         ],
       });
 
       const result = resolveRules(schema, "$.test", mockContext);
 
       expect(result).toEqual([
-        { type: "min_length", min: 5 },
-        { type: "max_length", max: 50 },
+        { type: "min_length", min: v(5) },
+        { type: "max_length", max: v(50) },
       ]);
     });
 
@@ -59,79 +48,69 @@ describe("resolveRules", () => {
 
   describe("conditional rules", () => {
     it("should include conditional rule when condition is true", () => {
-      const condition = eq("$.user.role", "admin");
+      const thenRule = { type: "max_length" as const, max: v(100) };
       const schema = string({
         rules: [
-          { type: "min_length", min: 5 },
+          { type: "min_length", min: v(5) },
           {
             type: "conditional",
-            when: condition,
-            then: { type: "max_length", max: 100 },
+            cases: [
+              {
+                when: eq(v("admin"), v("admin")),
+                then: thenRule,
+              },
+            ],
           },
         ],
       });
 
-      vi.mocked(resolveCondition).mockReturnValue(true);
+      const context: ResolveContext = {
+        schema: object({ fields: {} }),
+        values: { new: {} },
+      };
 
-      const result = resolveRules(schema, "$.test", mockContext);
+      const result = resolveRules(schema, "$.test", context);
 
-      expect(result).toEqual([
-        { type: "min_length", min: 5 },
-        { type: "max_length", max: 100 },
-      ]);
-      expect(resolveCondition).toHaveBeenCalledWith(condition, "$.test", mockContext);
+      expect(result).toEqual([{ type: "min_length", min: v(5) }, thenRule]);
     });
 
     it("should exclude conditional rule when condition is false", () => {
-      const condition = eq("$.user.role", "user");
+      const thenRule = { type: "max_length" as const, max: v(100) };
       const schema = string({
         rules: [
-          { type: "min_length", min: 5 },
+          { type: "min_length", min: v(5) },
           {
             type: "conditional",
-            when: condition,
-            then: { type: "max_length", max: 100 },
+            cases: [
+              {
+                when: eq(v("admin"), v("user")),
+                then: thenRule,
+              },
+            ],
           },
         ],
       });
 
-      vi.mocked(resolveCondition).mockReturnValue(false);
+      const context: ResolveContext = {
+        schema: object({ fields: {} }),
+        values: { new: {} },
+      };
 
-      const result = resolveRules(schema, "$.test", mockContext);
+      const result = resolveRules(schema, "$.test", context);
 
-      expect(result).toEqual([{ type: "min_length", min: 5 }]);
-      expect(resolveCondition).toHaveBeenCalledWith(condition, "$.test", mockContext);
+      expect(result).toEqual([{ type: "min_length", min: v(5) }]);
     });
   });
 
   describe("performance and behavior", () => {
-    it("should not call resolveCondition for unconditional rules", () => {
+    it("should not process conditional rules for unconditional-only schemas", () => {
       const schema = string({
-        rules: [{ type: "min_length", min: 5 }],
+        rules: [{ type: "min_length", min: v(5) }],
       });
 
-      resolveRules(schema, "$.test", mockContext);
+      const result = resolveRules(schema, "$.test", mockContext);
 
-      expect(resolveCondition).not.toHaveBeenCalled();
-    });
-
-    it("should call resolveCondition for conditional rules", () => {
-      const condition = eq("$.a", 1);
-      const schema = string({
-        rules: [
-          {
-            type: "conditional",
-            when: condition,
-            then: { type: "min_length", min: 5 },
-          },
-        ],
-      });
-
-      vi.mocked(resolveCondition).mockReturnValue(true);
-
-      resolveRules(schema, "$.test", mockContext);
-
-      expect(resolveCondition).toHaveBeenCalledWith(condition, "$.test", mockContext);
+      expect(result).toEqual([{ type: "min_length", min: v(5) }]);
     });
   });
 });

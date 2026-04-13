@@ -1,4 +1,4 @@
-import type { Condition } from "../conditions";
+import type { Predicate } from "../functions";
 import type { PrivateValue } from "../private";
 import type { ConditionalRule } from "../rules";
 import type {
@@ -15,6 +15,7 @@ import type {
   StringSchema,
 } from "../schemas";
 import type { EnumSchema } from "../schemas/enum";
+import type { ExpressionSchema } from "../schemas/expression";
 import type { BaseRule } from "./rules";
 import type { DateString, Prettify, Unpacked } from "./utils";
 
@@ -29,17 +30,18 @@ export const SchemaType = {
   BOOLEAN: "boolean",
   ENUM: "enum",
   FILE: "file",
+  EXPRESSION: "expression",
 } as const;
 
 export type SchemaType = EnumValues<typeof SchemaType>;
 
 export type BaseSchema<TValue, TType extends SchemaType, TRule extends BaseRule> = {
   type: TType;
-  rules?: Array<TRule | ConditionalRule<TRule, never>>;
+  rules?: Array<TRule | ConditionalRule>;
   default?: TValue;
-  required?: boolean | Condition;
-  mutable?: boolean | Condition;
-  included?: boolean | Condition;
+  required?: boolean | Predicate;
+  mutable?: boolean | Predicate;
+  included?: boolean | Predicate;
   private?: boolean;
 };
 
@@ -58,19 +60,15 @@ export type Schema =
   | OptionsSchema
   | FileSchema
   | DateSchema
-  | EnumSchema;
-
-/**
- * All possible rules that can be applied to a schema
- */
-export type Rule = Unpacked<Exclude<Schema["rules"], undefined>>;
+  | EnumSchema
+  | ExpressionSchema;
 
 export type IsIncluded<T extends Schema> = T extends { included: true }
   ? true
   : T extends { included: false }
     ? false
-    : // required is conditionally
-      T["included"] extends object
+    : // included is conditional
+      T extends { included: object }
       ? false
       : true; // default included
 
@@ -79,7 +77,7 @@ export type IsRequired<T extends Schema> = T extends { required: true }
   : T extends { required: false }
     ? false
     : // required is conditionally
-      T["required"] extends object
+      T extends { required: object }
       ? false
       : true; // default required
 
@@ -106,7 +104,7 @@ export type ValueType<T extends SchemaType = SchemaType> = T extends typeof Sche
         : T extends typeof SchemaType.OBJECT
           ? Record<string, unknown>
           : T extends typeof SchemaType.ARRAY
-            ? unknown[]
+            ? ValueType[]
             : T extends typeof SchemaType.BOOLEAN
               ? boolean
               : T extends typeof SchemaType.OPTIONS
@@ -115,7 +113,11 @@ export type ValueType<T extends SchemaType = SchemaType> = T extends typeof Sche
                   ? File
                   : T extends typeof SchemaType.ENUM
                     ? EnumValue
-                    : never;
+                    : T extends typeof SchemaType.EXPRESSION
+                      ? unknown
+                      : never;
+
+export type ValueTypeOrUndefined = ValueType | undefined | Array<ValueType | undefined>;
 
 type OptionalFields<T extends ObjectSchema<never>> = {
   [K in keyof T["fields"] as IsOptionalField<T["fields"][K]> extends true ? K : never]?: SchemaValuesInternal<

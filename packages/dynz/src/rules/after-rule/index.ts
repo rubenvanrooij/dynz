@@ -1,24 +1,22 @@
-import { type Reference, unpackRef } from "../../reference";
-import type { DateSchema, DateStringSchema } from "../../schemas";
+import { type ParamaterValue, resolveExpected } from "../../functions";
 import {
-  SchemaType,
-  type DateString,
   type ErrorMessageFromRule,
   type ExtractResolvedRules,
   type RuleFn,
+  type Schema,
+  SchemaType,
 } from "../../types";
-import { parseDateString } from "../../validate/validate-type";
-import { getDateFromDateOrDateStringRefeference } from "../utils/reference";
+import { isDate } from "../../validate/validate-type";
 
-export type AfterRule<T extends Date | DateString | Reference = Date | DateString | Reference> = {
+export type AfterRule<T extends ParamaterValue<Date> = ParamaterValue<Date>> = {
   type: "after";
   after: T;
   code?: string | undefined;
 };
 
-export type AfterRuleErrorMessage = ErrorMessageFromRule<AfterRule>;
+export type AfterRuleErrorMessage = ErrorMessageFromRule<AfterRule, Date, "after">;
 
-export function after<T extends Date | DateString | Reference>(after: T, code?: string): AfterRule<T> {
+export function after<T extends ParamaterValue<Date>>(after: T, code?: string): AfterRule<T> {
   return { after, type: "after", code };
 }
 
@@ -26,13 +24,17 @@ export function isAfter(value: Date, after: Date): boolean {
   return value.getTime() > after.getTime();
 }
 
-export const afterRule: RuleFn<
-  DateSchema,
-  Extract<ExtractResolvedRules<DateSchema>, AfterRule>,
-  AfterRuleErrorMessage
-> = ({ rule, value, path, context }) => {
-  const unpackedRef = unpackRef(rule.after, path, context, SchemaType.DATE, SchemaType.DATE_STRING);
-  const after = unpackedRef.static ? unpackedRef.value : getDateFromDateOrDateStringRefeference(unpackedRef);
+export const afterRule: RuleFn<Schema, Extract<ExtractResolvedRules<Schema>, AfterRule>, AfterRuleErrorMessage> = ({
+  rule,
+  value,
+  path,
+  context,
+}) => {
+  if (!isDate(value)) {
+    throw new Error("afterRule expects a date value");
+  }
+
+  const after = resolveExpected(rule.after, path, context, SchemaType.DATE);
 
   if (after === undefined) {
     return undefined;
@@ -43,29 +45,6 @@ export const afterRule: RuleFn<
     : {
         code: "after",
         after,
-        message: `The value ${value} for schema ${path} is before ${unpackedRef.value}`,
-      };
-};
-
-export const afterDateStringRule: RuleFn<
-  DateStringSchema,
-  Extract<ExtractResolvedRules<DateStringSchema>, AfterRule>,
-  AfterRuleErrorMessage
-> = ({ rule, value, path, schema, context }) => {
-  const unpackedRef = unpackRef(rule.after, path, context, SchemaType.DATE, SchemaType.DATE_STRING);
-  const after = unpackedRef.static
-    ? parseDateString(unpackedRef.value, schema.format)
-    : getDateFromDateOrDateStringRefeference(unpackedRef);
-
-  if (after === undefined) {
-    return undefined;
-  }
-
-  return isAfter(parseDateString(value, schema.format), after)
-    ? undefined
-    : {
-        code: "after",
-        after,
-        message: `The value ${value} for schema ${path} is before ${unpackedRef.value}`,
+        message: `The value ${value} for schema ${path} is before ${after}`,
       };
 };

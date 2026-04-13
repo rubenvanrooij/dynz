@@ -1,13 +1,13 @@
-import type { Condition } from "dynz";
+import type { Predicate } from "dynz";
 import type { ReactNode } from "react";
-import { useCondition } from "../hooks/use-condition";
+import { usePredicate } from "../hooks/use-predicate";
 
 export type WhenProps = {
-  cond: Condition;
+  cond: Predicate;
   children?: ReactNode;
 };
 
 export function When({ cond, children }: WhenProps) {
-  const result = useCondition(cond);
+  const result = usePredicate(cond);
   return result ? children : null;
 }

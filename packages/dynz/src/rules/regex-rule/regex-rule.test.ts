@@ -62,7 +62,7 @@ describe("regex rule", () => {
   });
 
   it("should create regex rule with custom code", () => {
-    const rule = regex("^[A-Z]+$", "UPPERCASE_ONLY");
+    const rule = regex("^[A-Z]+$", undefined, "UPPERCASE_ONLY");
 
     expect(rule).toEqual({
       type: "regex",
@@ -97,7 +97,7 @@ describe("regexRule validator", () => {
   it("should return error when value does not match regex pattern", async () => {
     const rule = regex("^[0-9]+$");
 
-    const result = regexRule({
+    const result = await regexRule({
       rule,
       value: "abc123",
       path: "testPath",
@@ -113,7 +113,7 @@ describe("regexRule validator", () => {
   it("should handle email regex validation", async () => {
     const rule = regex("^[^@]+@[^@]+\\.[^@]+$");
 
-    const validEmail = regexRule({
+    const validEmail = await regexRule({
       rule,
       value: "test@example.com",
       path: "email",
@@ -121,7 +121,7 @@ describe("regexRule validator", () => {
       context: mockContext,
     });
 
-    const invalidEmail = regexRule({
+    const invalidEmail = await regexRule({
       rule,
       value: "invalid-email",
       path: "email",
@@ -137,7 +137,7 @@ describe("regexRule validator", () => {
   it("should include correct error message format", async () => {
     const rule = regex("^[A-Z]+$");
 
-    const result = regexRule({
+    const result = await regexRule({
       rule,
       value: "lowercase",
       path: "$.code",
@@ -155,7 +155,7 @@ describe("regexRule validator", () => {
     const passwordPattern = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$";
     const rule = regex(passwordPattern);
 
-    const strongPassword = regexRule({
+    const strongPassword = await regexRule({
       rule,
       value: "StrongPass123!",
       path: "password",
@@ -163,7 +163,7 @@ describe("regexRule validator", () => {
       context: mockContext,
     });
 
-    const weakPassword = regexRule({
+    const weakPassword = await regexRule({
       rule,
       value: "weak",
       path: "password",

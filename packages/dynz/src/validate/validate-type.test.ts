@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { enum as enumBuilder, object, string } from "../schemas";
-import { SchemaType } from "../types";
+import { type ResolveContext, SchemaType } from "../types";
 import {
   isArray,
   isBoolean,
@@ -17,19 +17,24 @@ import {
 } from "./validate-type";
 
 describe("validateType", () => {
+  const mockContext: ResolveContext = {
+    schema: object({ fields: {} }),
+    values: {},
+  };
+
   it("should validate all schema types correctly", () => {
     // String
-    expect(validateType(string(), "test")).toBe(true);
-    expect(validateType(string(), 123)).toBe(false);
+    expect(validateType(string(), "test", "$", mockContext)).toBe(true);
+    expect(validateType(string(), 123, "$", mockContext)).toBe(false);
 
     // Object
-    expect(validateType(object({ fields: {} }), {})).toBe(true);
-    expect(validateType(object({ fields: {} }), [])).toBe(false);
+    expect(validateType(object({ fields: {} }), {}, "$", mockContext)).toBe(true);
+    expect(validateType(object({ fields: {} }), [], "$", mockContext)).toBe(false);
 
     // Enum
     const testEnum = { ADMIN: "admin", USER: "user" } as const;
-    expect(validateType(enumBuilder({ enum: testEnum }), "admin")).toBe(true);
-    expect(validateType(enumBuilder({ enum: testEnum }), "invalid")).toBe(false);
+    expect(validateType(enumBuilder({ enum: testEnum }), "admin", "$", mockContext)).toBe(true);
+    expect(validateType(enumBuilder({ enum: testEnum }), "invalid", "$", mockContext)).toBe(false);
   });
 });
 
@@ -81,9 +86,13 @@ describe("type checking functions", () => {
   });
 
   it("should validate options correctly", () => {
-    const options = ["option1", "option2"] as const;
-    expect(isOption(options, "option1")).toBe(true);
-    expect(isOption(options, "invalid")).toBe(false);
+    const optionsList = ["option1", "option2"] as const;
+    const mockContext: ResolveContext = {
+      schema: object({ fields: {} }),
+      values: {},
+    };
+    expect(isOption(optionsList, "option1", "$", mockContext)).toBe(true);
+    expect(isOption(optionsList, "invalid", "$", mockContext)).toBe(false);
   });
 
   it("should validate date strings correctly", () => {

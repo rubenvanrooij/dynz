@@ -2,7 +2,7 @@
   "name": "@dynz/react-hook-form",
   "version": "0.0.17",
   "private": false,
-  "license": "MIT",
+  "license": "BUSL-1.1",
   "type": "module",
   "sideEffects": false,
   "keywords": [

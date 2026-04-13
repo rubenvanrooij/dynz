@@ -3,15 +3,10 @@ import { object, string } from "../schemas";
 import { isIncluded } from "./is-included";
 
 // Mock dependencies
-vi.mock("../utils", () => ({
-  getNested: vi.fn(),
-}));
-
 vi.mock("./resolve-property", () => ({
   resolveProperty: vi.fn(),
 }));
 
-import { getNested } from "../utils";
 import { resolveProperty } from "./resolve-property";
 
 describe("isIncluded", () => {
@@ -34,24 +29,41 @@ describe("isIncluded", () => {
     vi.resetAllMocks();
   });
 
-  it("should return result from resolveProperty", () => {
+  it("should return true when all ancestors and leaf are included", () => {
     const path = "$.user.name";
-    const nestedSchema = string({ included: true });
 
-    vi.mocked(getNested).mockReturnValue({
-      schema: nestedSchema,
-      value: "John",
-    });
     vi.mocked(resolveProperty).mockReturnValue(true);
 
     const result = isIncluded(mockSchema, path, mockValues);
 
     expect(result).toBe(true);
-    expect(resolveProperty).toHaveBeenCalledWith(nestedSchema, "included", path, true, {
+    expect(resolveProperty).toHaveBeenCalledWith("included", path, true, {
       schema: mockSchema,
-      values: {
-        new: mockValues,
-      },
+      values: mockValues,
+    });
+  });
+
+  it("should return false when the leaf schema is not included", () => {
+    const path = "$.user.name";
+
+    vi.mocked(resolveProperty).mockReturnValueOnce(false);
+
+    const result = isIncluded(mockSchema, path, mockValues);
+
+    expect(result).toBe(false);
+  });
+
+  it("should check only the leaf for a top-level path", () => {
+    const path = "$.name";
+
+    vi.mocked(resolveProperty).mockReturnValue(true);
+
+    const result = isIncluded(mockSchema, path, mockValues);
+
+    expect(result).toBe(true);
+    expect(resolveProperty).toHaveBeenCalledWith("included", path, true, {
+      schema: mockSchema,
+      values: mockValues,
     });
   });
 });

@@ -1,27 +1,17 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { REFERENCE_TYPE, ref, unpackRef } from "../../reference";
+import { describe, expect, it } from "vitest";
+import { v } from "../../functions";
+import { REFERENCE_TYPE, ref } from "../../reference";
 import { type StringSchema, string } from "../../schemas";
 import type { Context } from "../../types";
 import { minLength, minLengthRule } from "./index";
 
-vi.mock("../../reference", () => {
-  return {
-    ref: (path: string) => ({
-      _type: REFERENCE_TYPE,
-      path: path,
-    }),
-    REFERENCE_TYPE: "MOCKED_REFERENCE_TYPE",
-    unpackRef: vi.fn(),
-  };
-});
-
 describe("minLength rule", () => {
   it("should create minLength rule with number value", () => {
-    const rule = minLength(5);
+    const rule = minLength(v(5));
 
     expect(rule).toEqual({
       type: "min_length",
-      min: 5,
+      min: v(5),
     });
   });
 
@@ -31,19 +21,16 @@ describe("minLength rule", () => {
 
     expect(rule).toEqual({
       type: "min_length",
-      min: {
-        _type: REFERENCE_TYPE,
-        path: "$.minLength",
-      },
+      min: { type: REFERENCE_TYPE, path: "$.minLength" },
     });
   });
 
   it("should create minLength rule with custom code", () => {
-    const rule = minLength(3, "CUSTOM_MIN_LENGTH_ERROR");
+    const rule = minLength(v(3), "CUSTOM_MIN_LENGTH_ERROR");
 
     expect(rule).toEqual({
       type: "min_length",
-      min: 3,
+      min: v(3),
       code: "CUSTOM_MIN_LENGTH_ERROR",
     });
   });
@@ -53,14 +40,8 @@ describe("minLengthRule validator", () => {
   const mockContext = {} as unknown as Context<StringSchema>;
   const mockSchema = string();
 
-  beforeEach(() => {
-    vi.resetAllMocks();
-  });
-
-  it("should return undefined when value meets minimum length requirement", async () => {
-    const rule = minLength(5);
-
-    vi.mocked(unpackRef).mockReturnValue({ value: 5 } as ReturnType<typeof unpackRef>);
+  it("should return undefined when value meets minimum length requirement", () => {
+    const rule = minLength(v(5));
 
     const result = minLengthRule({
       rule,
@@ -74,11 +55,9 @@ describe("minLengthRule validator", () => {
   });
 
   it("should return error when value is below minimum length", async () => {
-    const rule = minLength(10);
+    const rule = minLength(v(10));
 
-    vi.mocked(unpackRef).mockReturnValue({ value: 10 } as ReturnType<typeof unpackRef>);
-
-    const result = minLengthRule({
+    const result = await minLengthRule({
       rule,
       value: "short",
       path: "testPath",
@@ -86,17 +65,14 @@ describe("minLengthRule validator", () => {
       context: mockContext,
     });
 
-    expect(unpackRef).toHaveBeenCalledTimes(1);
     expect(result).toBeDefined();
     expect(result?.code).toBe("min_length");
     expect(result?.message).toContain("testPath");
     expect(result?.message).toContain("should have at least a length of");
   });
 
-  it("should return undefined when unpackRef returns undefined", async () => {
-    const rule = minLength(5);
-
-    vi.mocked(unpackRef).mockReturnValue({ value: undefined } as ReturnType<typeof unpackRef>);
+  it("should return undefined when resolved min is undefined", () => {
+    const rule = minLength(undefined);
 
     const result = minLengthRule({
       rule,
@@ -109,10 +85,8 @@ describe("minLengthRule validator", () => {
     expect(result).toBeUndefined();
   });
 
-  it("should handle reference objects correctly", async () => {
-    const rule = minLength(ref("minLengthThreshold"));
-
-    vi.mocked(unpackRef).mockReturnValue({ value: 3 } as ReturnType<typeof unpackRef>);
+  it("should handle larger threshold correctly", () => {
+    const rule = minLength(v(3));
 
     const result = minLengthRule({
       rule,
@@ -126,11 +100,9 @@ describe("minLengthRule validator", () => {
   });
 
   it("should include correct error message format", async () => {
-    const rule = minLength(15);
+    const rule = minLength(v(15));
 
-    vi.mocked(unpackRef).mockReturnValue({ value: 15 } as ReturnType<typeof unpackRef>);
-
-    const result = minLengthRule({
+    const result = await minLengthRule({
       rule,
       value: "short text",
       path: "$.description",
@@ -143,10 +115,8 @@ describe("minLengthRule validator", () => {
     expect(result?.code).toBe("min_length");
   });
 
-  it("should return undefined when value equals minimum length", async () => {
-    const rule = minLength(7);
-
-    vi.mocked(unpackRef).mockReturnValue({ value: 7 } as ReturnType<typeof unpackRef>);
+  it("should return undefined when value equals minimum length", () => {
+    const rule = minLength(v(7));
 
     const result = minLengthRule({
       rule,
@@ -160,11 +130,9 @@ describe("minLengthRule validator", () => {
   });
 
   it("should handle empty string correctly", async () => {
-    const rule = minLength(1);
+    const rule = minLength(v(1));
 
-    vi.mocked(unpackRef).mockReturnValue({ value: 1 } as ReturnType<typeof unpackRef>);
-
-    const result = minLengthRule({
+    const result = await minLengthRule({
       rule,
       value: "",
       path: "testPath",

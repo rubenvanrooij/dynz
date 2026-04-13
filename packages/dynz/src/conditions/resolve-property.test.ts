@@ -1,53 +1,98 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { string } from "../schemas";
+import { describe, expect, it } from "vitest";
+import { v } from "../functions";
+import { eq } from "../functions/equals-function";
+import { ref } from "../reference";
+import { object, string } from "../schemas";
 import type { ResolveContext } from "../types";
-import { eq } from "./builder";
 import { resolveProperty } from "./resolve-property";
 
-// Mock dependencies
-vi.mock("./resolve-condition", () => ({
-  resolveCondition: vi.fn(),
-}));
-
-import { resolveCondition } from "./resolve-condition";
-
 describe("resolveProperty", () => {
-  const mockContext: ResolveContext = {
-    schema: string(),
-    values: {
-      new: { user: { name: "John", age: 30 } },
-    },
-  };
-
-  beforeEach(() => {
-    vi.resetAllMocks();
-  });
-
   it("should return default value when property is undefined", () => {
     const schema = string();
+    const context: ResolveContext = {
+      schema,
+      values: "hello",
+    };
 
-    const result = resolveProperty(schema, "required", "$.test", true, mockContext);
+    const result = resolveProperty("required", "$", true, context);
 
     expect(result).toBe(true);
   });
 
-  it("should return boolean value when property is boolean", () => {
-    const schema = string({ required: false });
+  it("should return false default value when property is undefined", () => {
+    const schema = string();
+    const context: ResolveContext = {
+      schema,
+      values: "hello",
+    };
 
-    const result = resolveProperty(schema, "required", "$.test", true, mockContext);
+    const result = resolveProperty("required", "$", false, context);
 
     expect(result).toBe(false);
   });
 
-  it("should resolve condition when property is condition", () => {
-    const condition = eq("$.user.age", 18);
-    const schema = string({ required: condition });
+  it("should return boolean value when property is false", () => {
+    const schema = string({ required: false });
+    const context: ResolveContext = {
+      schema,
+      values: "hello",
+    };
 
-    vi.mocked(resolveCondition).mockReturnValue(true);
+    const result = resolveProperty("required", "$", true, context);
 
-    const result = resolveProperty(schema, "required", "$.test", false, mockContext);
+    expect(result).toBe(false);
+  });
+
+  it("should return boolean value when property is true", () => {
+    const schema = string({ required: true });
+    const context: ResolveContext = {
+      schema,
+      values: "hello",
+    };
+
+    const result = resolveProperty("required", "$", false, context);
 
     expect(result).toBe(true);
-    expect(resolveCondition).toHaveBeenCalledWith(condition, "$.test", mockContext);
+  });
+
+  it("should resolve condition when property is a predicate - nested path", () => {
+    const rootSchema = object({
+      fields: {
+        name: string({ required: eq(ref("$.status"), v("active")) }),
+        status: string(),
+      },
+    });
+    const context: ResolveContext = {
+      schema: rootSchema,
+      values: { status: "active", name: "John" },
+    };
+
+    const result = resolveProperty("required", "$.name", true, context);
+
+    expect(result).toBe(true);
+  });
+
+  it("should return false when mutable property is false", () => {
+    const schema = string({ mutable: false });
+    const context: ResolveContext = {
+      schema,
+      values: "hello",
+    };
+
+    const result = resolveProperty("mutable", "$", true, context);
+
+    expect(result).toBe(false);
+  });
+
+  it("should return true when included property is undefined (default)", () => {
+    const schema = string();
+    const context: ResolveContext = {
+      schema,
+      values: "hello",
+    };
+
+    const result = resolveProperty("included", "$", true, context);
+
+    expect(result).toBe(true);
   });
 });

@@ -1,0 +1,1342 @@
+---
+title: JSON Format Specification
+description: Dynz Schema JSON Format Specification - Version 1.0
+---
+
+# Dynz JSON Event Format for Schema Serialization
+
+## Abstract
+
+The JSON Format for Dynz Schemas specifies how to serialize and deserialize dynz validation schemas to and from JSON. This enables schemas to be transmitted, stored, and reconstructed across different systems and runtimes.
+
+## Table of Contents
+
+1. [Introduction](#1-introduction)
+2. [Type System](#2-type-system)
+3. [Schema Types](#3-schema-types)
+4. [Rules](#4-rules)
+5. [Conditions](#5-conditions)
+6. [References](#6-references)
+7. [Functions](#7-functions)
+8. [Validation Results](#8-validation-results)
+9. [Examples](#9-examples)
+10. [References](#10-references)
+
+## 1. Introduction
+
+This document defines the JSON serialization format for dynz schemas. A dynz schema defines the structure, validation rules, and constraints for data validation.
+
+### 1.1 Conformance
+
+The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be interpreted as described in [RFC2119](https://tools.ietf.org/html/rfc2119).
+
+### 1.2 Media Type
+
+The media type for Dynz JSON schemas is:
+
+```
+application/dynz-schema+json
+```
+
+### 1.3 Terminology
+
+| Term | Definition |
+|------|------------|
+| Schema | A JSON object that defines the structure and validation rules for data |
+| Rule | A validation constraint applied to a schema value |
+| Condition | A boolean expression used for conditional validation |
+| Reference | A pointer to another field's value within the data being validated |
+| Function | A computed value derived from other values |
+
+## 2. Type System
+
+### 2.1 Type Mapping
+
+The following table shows how Dynz types map to JSON types:
+
+| Dynz Type | JSON Type | Description |
+|-----------|-----------|-------------|
+| `string` | String | Unicode string value |
+| `number` | Number | JSON number (integer or floating-point) |
+| `boolean` | Boolean | `true` or `false` |
+| `object` | Object | JSON object with defined fields |
+| `array` | Array | JSON array of schema-validated items |
+| `date` | String | ISO 8601 date string |
+| `date_string` | String | Formatted date string |
+| `enum` | String/Number | Value from a defined enumeration |
+| `options` | String/Number | Value from a defined set of options |
+| `file` | Object | File metadata object (runtime only) |
+
+### 2.2 Null Values
+
+A value of `null` SHOULD be treated as an absent value. Schemas with `required: true` MUST reject `null` values.
+
+## 3. Schema Types
+
+### 3.1 Base Schema Structure
+
+All schemas share common optional properties:
+
+```json
+{
+  "type": "<schema_type>",
+  "rules": [],
+  "default": "<value>",
+  "required": true,
+  "mutable": true,
+  "included": true,
+  "private": false
+}
+```
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `type` | String | Yes | The schema type identifier |
+| `rules` | Array | No | Array of validation rules |
+| `default` | Any | No | Default value when absent |
+| `required` | Boolean \| Condition | No | Whether the field is required |
+| `mutable` | Boolean \| Condition | No | Whether the field can be modified |
+| `included` | Boolean \| Condition | No | Whether the field is included in validation |
+| `private` | Boolean | No | Whether to mask the value in results |
+
+### 3.2 String Schema
+
+Type identifier: `"string"`
+
+```json
+{
+  "type": "string",
+  "coerce": false
+}
+```
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `coerce` | Boolean | No | Auto-coerce values to string |
+
+**Allowed Rules:** `regex`, `min_length`, `max_length`, `equals`, `is_numeric`, `email`, `custom`, `one_of`
+
+**Example:**
+
+```json
+{
+  "type": "string",
+  "required": true,
+  "coerce": true,
+  "rules": [
+    { "type": "min_length", "min": 3 },
+    { "type": "max_length", "max": 100 },
+    { "type": "email" }
+  ]
+}
+```
+
+### 3.3 Number Schema
+
+Type identifier: `"number"`
+
+```json
+{
+  "type": "number",
+  "coerce": false
+}
+```
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `coerce` | Boolean | No | Auto-coerce values to number |
+
+**Allowed Rules:** `min`, `max`, `max_precision`, `equals`, `custom`, `one_of`
+
+**Example:**
+
+```json
+{
+  "type": "number",
+  "coerce": true,
+  "default": 0,
+  "rules": [
+    { "type": "min", "min": 0 },
+    { "type": "max", "max": 1000 },
+    { "type": "max_precision", "maxPrecision": 2 }
+  ]
+}
+```
+
+### 3.4 Boolean Schema
+
+Type identifier: `"boolean"`
+
+```json
+{
+  "type": "boolean",
+  "coerce": false
+}
+```
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `coerce` | Boolean | No | Auto-coerce values to boolean |
+
+**Allowed Rules:** `equals`, `custom`
+
+**Example:**
+
+```json
+{
+  "type": "boolean",
+  "default": false,
+  "coerce": true,
+  "rules": [
+    { "type": "equals", "equals": true }
+  ]
+}
+```
+
+### 3.5 Object Schema
+
+Type identifier: `"object"`
+
+```json
+{
+  "type": "object",
+  "fields": {}
+}
+```
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `fields` | Object | Yes | Map of field names to schemas |
+
+**Allowed Rules:** `custom`, `min_entries`, `max_entries`
+
+**Example:**
+
+```json
+{
+  "type": "object",
+  "fields": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "email": {
+      "type": "string",
+      "required": true,
+      "rules": [{ "type": "email" }]
+    },
+    "age": {
+      "type": "number",
+      "required": false
+    }
+  }
+}
+```
+
+### 3.6 Array Schema
+
+Type identifier: `"array"`
+
+```json
+{
+  "type": "array",
+  "schema": {},
+  "coerce": false
+}
+```
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `schema` | Schema | Yes | Schema for array items |
+| `coerce` | Boolean | No | Auto-coerce values to array |
+
+**Allowed Rules:** `min_length`, `max_length`, `custom`
+
+**Example:**
+
+```json
+{
+  "type": "array",
+  "schema": {
+    "type": "string",
+    "rules": [{ "type": "email" }]
+  },
+  "rules": [
+    { "type": "min_length", "min": 1 },
+    { "type": "max_length", "max": 10 }
+  ]
+}
+```
+
+### 3.7 Date Schema
+
+Type identifier: `"date"`
+
+```json
+{
+  "type": "date",
+  "coerce": false
+}
+```
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `coerce` | Boolean | No | Auto-coerce values to Date |
+
+**Allowed Rules:** `min_date`, `max_date`, `before`, `after`, `equals`, `custom`
+
+**Example:**
+
+```json
+{
+  "type": "date",
+  "required": true,
+  "rules": [
+    { "type": "min_date", "min": "2024-01-01" },
+    { "type": "max_date", "max": "2024-12-31" }
+  ]
+}
+```
+
+### 3.8 Date String Schema
+
+Type identifier: `"date_string"`
+
+```json
+{
+  "type": "date_string",
+  "format": "yyyy-MM-dd"
+}
+```
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `format` | String | Yes | Date format using Unicode tokens |
+
+**Format Tokens:**
+
+| Token | Description | Example |
+|-------|-------------|---------|
+| `yyyy` | 4-digit year | 2024 |
+| `MM` | 2-digit month | 01-12 |
+| `dd` | 2-digit day | 01-31 |
+| `HH` | 2-digit hour (24h) | 00-23 |
+| `mm` | 2-digit minute | 00-59 |
+| `ss` | 2-digit second | 00-59 |
+
+**Allowed Rules:** `custom`, `equals`, `before`, `after`, `min_date`, `max_date`
+
+**Example:**
+
+```json
+{
+  "type": "date_string",
+  "format": "yyyy-MM-dd",
+  "required": true,
+  "rules": [
+    { "type": "before", "before": "2025-12-31" }
+  ]
+}
+```
+
+### 3.9 Enum Schema
+
+Type identifier: `"enum"`
+
+```json
+{
+  "type": "enum",
+  "enum": {}
+}
+```
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `enum` | Object | Yes | Key-value mapping of enum members |
+
+**Allowed Rules:** `equals`
+
+**Example:**
+
+```json
+{
+  "type": "enum",
+  "required": true,
+  "enum": {
+    "ACTIVE": "active",
+    "INACTIVE": "inactive",
+    "PENDING": "pending"
+  }
+}
+```
+
+### 3.10 Options Schema
+
+Type identifier: `"options"`
+
+```json
+{
+  "type": "options",
+  "options": []
+}
+```
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `options` | Array | Yes | Array of valid option values |
+
+**Allowed Rules:** `equals`, `custom`
+
+**Example:**
+
+```json
+{
+  "type": "options",
+  "required": true,
+  "options": ["small", "medium", "large"]
+}
+```
+
+### 3.11 File Schema
+
+Type identifier: `"file"`
+
+```json
+{
+  "type": "file"
+}
+```
+
+**Allowed Rules:** `min_size`, `max_size`, `mime_type`, `custom`
+
+**Example:**
+
+```json
+{
+  "type": "file",
+  "required": true,
+  "rules": [
+    { "type": "min_size", "min": 1024 },
+    { "type": "max_size", "max": 5242880 },
+    { "type": "mime_type", "mimeType": ["image/jpeg", "image/png"] }
+  ]
+}
+```
+
+## 4. Rules
+
+### 4.1 Base Rule Structure
+
+All rules have a common structure:
+
+```json
+{
+  "type": "<rule_type>",
+  "code": "<custom_error_code>"
+}
+```
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `type` | String | Yes | The rule type identifier |
+| `code` | String | No | Custom error code to override default |
+
+### 4.2 String Rules
+
+#### 4.2.1 min_length
+
+Validates minimum string length.
+
+```json
+{
+  "type": "min_length",
+  "min": 5
+}
+```
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `min` | Number \| Reference | Minimum length |
+
+#### 4.2.2 max_length
+
+Validates maximum string length.
+
+```json
+{
+  "type": "max_length",
+  "max": 100
+}
+```
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `max` | Number \| Reference | Maximum length |
+
+#### 4.2.3 regex
+
+Validates string against a regular expression pattern.
+
+```json
+{
+  "type": "regex",
+  "regex": "^[a-z]+$"
+}
+```
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `regex` | String | Regular expression pattern |
+
+#### 4.2.4 email
+
+Validates that the string is a valid email address.
+
+```json
+{
+  "type": "email"
+}
+```
+
+#### 4.2.5 is_numeric
+
+Validates that the string contains only numeric characters.
+
+```json
+{
+  "type": "is_numeric"
+}
+```
+
+### 4.3 Number Rules
+
+#### 4.3.1 min
+
+Validates minimum numeric value.
+
+```json
+{
+  "type": "min",
+  "min": 0
+}
+```
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `min` | Number \| Reference \| Function | Minimum value |
+
+#### 4.3.2 max
+
+Validates maximum numeric value.
+
+```json
+{
+  "type": "max",
+  "max": 100
+}
+```
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `max` | Number \| Reference \| Function | Maximum value |
+
+#### 4.3.3 max_precision
+
+Validates maximum decimal precision.
+
+```json
+{
+  "type": "max_precision",
+  "maxPrecision": 2
+}
+```
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `maxPrecision` | Number \| Reference | Maximum decimal places |
+
+### 4.4 Comparison Rules
+
+#### 4.4.1 equals
+
+Validates that the value equals a specific value.
+
+```json
+{
+  "type": "equals",
+  "equals": "expected_value"
+}
+```
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `equals` | Any \| Reference | Expected value |
+
+#### 4.4.2 one_of
+
+Validates that the value is one of the allowed values.
+
+```json
+{
+  "type": "one_of",
+  "values": ["value1", "value2", "value3"]
+}
+```
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `values` | Array | Array of allowed values |
+
+### 4.5 Date Rules
+
+#### 4.5.1 min_date
+
+Validates minimum date value.
+
+```json
+{
+  "type": "min_date",
+  "min": "2024-01-01"
+}
+```
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `min` | String \| Reference | Minimum date (ISO 8601) |
+
+#### 4.5.2 max_date
+
+Validates maximum date value.
+
+```json
+{
+  "type": "max_date",
+  "max": "2024-12-31"
+}
+```
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `max` | String \| Reference | Maximum date (ISO 8601) |
+
+#### 4.5.3 before
+
+Validates that date is before a specific date (exclusive).
+
+```json
+{
+  "type": "before",
+  "before": "2024-12-31"
+}
+```
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `before` | String \| Reference | Date that value must be before |
+
+#### 4.5.4 after
+
+Validates that date is after a specific date (exclusive).
+
+```json
+{
+  "type": "after",
+  "after": "2024-01-01"
+}
+```
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `after` | String \| Reference | Date that value must be after |
+
+### 4.6 Collection Rules
+
+#### 4.6.1 min_entries
+
+Validates minimum number of object entries.
+
+```json
+{
+  "type": "min_entries",
+  "min": 1
+}
+```
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `min` | Number \| Reference | Minimum entry count |
+
+#### 4.6.2 max_entries
+
+Validates maximum number of object entries.
+
+```json
+{
+  "type": "max_entries",
+  "max": 20
+}
+```
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `max` | Number \| Reference | Maximum entry count |
+
+### 4.7 File Rules
+
+#### 4.7.1 min_size
+
+Validates minimum file size in bytes.
+
+```json
+{
+  "type": "min_size",
+  "min": 1024
+}
+```
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `min` | Number \| Reference | Minimum size in bytes |
+
+#### 4.7.2 max_size
+
+Validates maximum file size in bytes.
+
+```json
+{
+  "type": "max_size",
+  "max": 5242880
+}
+```
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `max` | Number \| Reference | Maximum size in bytes |
+
+#### 4.7.3 mime_type
+
+Validates file MIME type.
+
+```json
+{
+  "type": "mime_type",
+  "mimeType": ["image/jpeg", "image/png"]
+}
+```
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `mimeType` | String \| Array | Allowed MIME type(s) |
+
+### 4.8 Custom Rule
+
+Custom validation with a named validator function.
+
+```json
+{
+  "type": "custom",
+  "name": "validateCustom",
+  "params": {}
+}
+```
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `name` | String | Name of custom validator function |
+| `params` | Object | Custom parameters passed to validator |
+
+### 4.9 Conditional Rule
+
+Apply a rule conditionally based on a condition.
+
+```json
+{
+  "type": "conditional",
+  "when": {},
+  "then": {}
+}
+```
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `when` | Condition | Condition that must be true |
+| `then` | Rule | Rule to apply when condition is true |
+
+**Example:**
+
+```json
+{
+  "type": "conditional",
+  "when": {
+    "type": "eq",
+    "left": { "type": "_dref", "path": "$.requiresApproval" },
+    "right": true
+  },
+  "then": {
+    "type": "min_length",
+    "min": 10
+  }
+}
+```
+
+## 5. Conditions
+
+Conditions are boolean expressions that control validation behavior.
+
+### 5.1 Base Condition Structure
+
+```json
+{
+  "type": "<condition_type>",
+  "left": "<value_or_reference>",
+  "right": "<value_or_reference>"
+}
+```
+
+### 5.2 Comparison Conditions
+
+#### 5.2.1 eq (Equals)
+
+```json
+{
+  "type": "eq",
+  "left": { "type": "_dref", "path": "$.field" },
+  "right": "value"
+}
+```
+
+#### 5.2.2 neq (Not Equals)
+
+```json
+{
+  "type": "neq",
+  "left": { "type": "_dref", "path": "$.field" },
+  "right": "value"
+}
+```
+
+#### 5.2.3 gt (Greater Than)
+
+```json
+{
+  "type": "gt",
+  "left": { "type": "_dref", "path": "$.field" },
+  "right": 10
+}
+```
+
+#### 5.2.4 gte (Greater Than or Equal)
+
+```json
+{
+  "type": "gte",
+  "left": { "type": "_dref", "path": "$.field" },
+  "right": 10
+}
+```
+
+#### 5.2.5 lt (Less Than)
+
+```json
+{
+  "type": "lt",
+  "left": { "type": "_dref", "path": "$.field" },
+  "right": 10
+}
+```
+
+#### 5.2.6 lte (Less Than or Equal)
+
+```json
+{
+  "type": "lte",
+  "left": { "type": "_dref", "path": "$.field" },
+  "right": 10
+}
+```
+
+#### 5.2.7 matches (Regex Match)
+
+```json
+{
+  "type": "matches",
+  "left": { "type": "_dref", "path": "$.field" },
+  "right": "^[a-z]+$",
+  "flags": "i"
+}
+```
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `flags` | String | Optional regex flags (e.g., "i" for case-insensitive) |
+
+#### 5.2.8 in (Is In)
+
+```json
+{
+  "type": "in",
+  "left": { "type": "_dref", "path": "$.field" },
+  "right": ["value1", "value2", "value3"]
+}
+```
+
+#### 5.2.9 nin (Is Not In)
+
+```json
+{
+  "type": "nin",
+  "left": { "type": "_dref", "path": "$.field" },
+  "right": ["value1", "value2"]
+}
+```
+
+### 5.3 Logical Conditions
+
+#### 5.3.1 and
+
+All conditions MUST be true.
+
+```json
+{
+  "type": "and",
+  "conditions": [
+    { "type": "eq", "left": { "type": "_dref", "path": "$.a" }, "right": 1 },
+    { "type": "eq", "left": { "type": "_dref", "path": "$.b" }, "right": 2 }
+  ]
+}
+```
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `conditions` | Array | Array of conditions (all must be true) |
+
+#### 5.3.2 or
+
+At least one condition MUST be true.
+
+```json
+{
+  "type": "or",
+  "conditions": [
+    { "type": "eq", "left": { "type": "_dref", "path": "$.a" }, "right": 1 },
+    { "type": "eq", "left": { "type": "_dref", "path": "$.a" }, "right": 2 }
+  ]
+}
+```
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `conditions` | Array | Array of conditions (at least one must be true) |
+
+## 6. References
+
+References allow schemas to access values from other fields during validation.
+
+### 6.1 Reference Structure
+
+```json
+{
+  "type": "_dref",
+  "path": "<field_path>"
+}
+```
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `type` | String | MUST be `"_dref"` |
+| `path` | String | Path to the referenced field |
+
+### 6.2 Path Syntax
+
+| Path | Description |
+|------|-------------|
+| `"fieldName"` | Simple field reference |
+| `"$.user.email"` | Nested object path |
+| `"items[0].id"` | Array index access |
+| `"$.data.users[5].name"` | Complex nested path |
+
+**Example Usage in Rules:**
+
+```json
+{
+  "type": "equals",
+  "equals": { "type": "_dref", "path": "$.confirmPassword" }
+}
+```
+
+## 7. Functions
+
+Functions compute values dynamically during validation.
+
+### 7.1 Function Structure
+
+```json
+{
+  "_type": "__func__",
+  "type": "<function_type>",
+  "left": "<value_or_reference>",
+  "right": "<value_or_reference>"
+}
+```
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `_type` | String | MUST be `"__func__"` |
+| `type` | String | Function type identifier |
+| `left` | Any | First operand |
+| `right` | Any | Second operand (for binary functions) |
+
+### 7.2 Arithmetic Functions
+
+#### 7.2.1 sum
+
+Adds two values.
+
+```json
+{
+  "_type": "__func__",
+  "type": "sum",
+  "left": { "type": "_dref", "path": "$.price" },
+  "right": { "type": "_dref", "path": "$.tax" }
+}
+```
+
+#### 7.2.2 sub
+
+Subtracts right from left.
+
+```json
+{
+  "_type": "__func__",
+  "type": "sub",
+  "left": { "type": "_dref", "path": "$.total" },
+  "right": { "type": "_dref", "path": "$.discount" }
+}
+```
+
+#### 7.2.3 mul
+
+Multiplies two values.
+
+```json
+{
+  "_type": "__func__",
+  "type": "mul",
+  "left": { "type": "_dref", "path": "$.quantity" },
+  "right": { "type": "_dref", "path": "$.unitPrice" }
+}
+```
+
+#### 7.2.4 div
+
+Divides left by right.
+
+```json
+{
+  "_type": "__func__",
+  "type": "div",
+  "left": { "type": "_dref", "path": "$.total" },
+  "right": { "type": "_dref", "path": "$.count" }
+}
+```
+
+### 7.3 Date Functions
+
+#### 7.3.1 age
+
+Calculates the age from a date value.
+
+```json
+{
+  "_type": "__func__",
+  "type": "age",
+  "left": { "type": "_dref", "path": "$.birthDate" }
+}
+```
+
+## 8. Validation Results
+
+### 8.1 Success Result
+
+```json
+{
+  "success": true,
+  "values": {
+    "field1": "value1",
+    "field2": 123
+  }
+}
+```
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `success` | Boolean | MUST be `true` |
+| `values` | Object | Validated and coerced values |
+
+### 8.2 Error Result
+
+```json
+{
+  "success": false,
+  "errors": []
+}
+```
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `success` | Boolean | MUST be `false` |
+| `errors` | Array | Array of validation errors |
+
+### 8.3 Error Structure
+
+```json
+{
+  "code": "min_length",
+  "customCode": "name_too_short",
+  "path": "user.name",
+  "message": "Must be at least 3 characters",
+  "value": "ab"
+}
+```
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `code` | String | Error type code |
+| `customCode` | String | Custom error code if specified |
+| `path` | String | Path to the field with the error |
+| `message` | String | Human-readable error message |
+| `value` | Any | The invalid value |
+
+### 8.4 Error Codes
+
+| Code | Description |
+|------|-------------|
+| `immutable` | Field cannot be modified |
+| `included` | Field must be included |
+| `required` | Required field is missing |
+| `type` | Value does not match schema type |
+| `min` | Value below minimum |
+| `max` | Value exceeds maximum |
+| `min_length` | String/array too short |
+| `max_length` | String/array too long |
+| `regex` | String doesn't match pattern |
+| `email` | Invalid email format |
+| `is_numeric` | Not a numeric string |
+| `equals` | Value doesn't equal expected |
+| `one_of` | Value not in allowed set |
+| `min_date` | Date before minimum |
+| `max_date` | Date after maximum |
+| `before` | Date not before required |
+| `after` | Date not after required |
+| `min_size` | File too small |
+| `max_size` | File too large |
+| `mime_type` | Invalid file type |
+| `min_entries` | Object has too few entries |
+| `max_entries` | Object has too many entries |
+| `max_precision` | Number precision exceeded |
+| `custom` | Custom validation failed |
+
+## 9. Examples
+
+### 9.1 User Registration Schema
+
+```json
+{
+  "type": "object",
+  "fields": {
+    "email": {
+      "type": "string",
+      "required": true,
+      "rules": [
+        { "type": "email" }
+      ]
+    },
+    "password": {
+      "type": "string",
+      "required": true,
+      "private": true,
+      "rules": [
+        { "type": "min_length", "min": 8 },
+        {
+          "type": "regex",
+          "regex": "^(?=.*[A-Z])(?=.*[a-z])(?=.*\\d)"
+        }
+      ]
+    },
+    "confirmPassword": {
+      "type": "string",
+      "required": true,
+      "private": true,
+      "rules": [
+        {
+          "type": "equals",
+          "equals": { "type": "_dref", "path": "$.password" }
+        }
+      ]
+    },
+    "accountType": {
+      "type": "options",
+      "required": true,
+      "options": ["personal", "business"]
+    },
+    "companyName": {
+      "type": "string",
+      "required": {
+        "type": "eq",
+        "left": { "type": "_dref", "path": "$.accountType" },
+        "right": "business"
+      },
+      "rules": [
+        { "type": "min_length", "min": 2 }
+      ]
+    }
+  }
+}
+```
+
+### 9.2 Product Schema with Conditional Validation
+
+```json
+{
+  "type": "object",
+  "fields": {
+    "name": {
+      "type": "string",
+      "required": true,
+      "rules": [
+        { "type": "min_length", "min": 1 },
+        { "type": "max_length", "max": 200 }
+      ]
+    },
+    "price": {
+      "type": "number",
+      "required": true,
+      "coerce": true,
+      "rules": [
+        { "type": "min", "min": 0 },
+        { "type": "max_precision", "maxPrecision": 2 }
+      ]
+    },
+    "discountPercent": {
+      "type": "number",
+      "required": false,
+      "rules": [
+        { "type": "min", "min": 0 },
+        { "type": "max", "max": 100 }
+      ]
+    },
+    "finalPrice": {
+      "type": "number",
+      "mutable": false,
+      "rules": [
+        {
+          "type": "equals",
+          "equals": {
+            "_type": "__func__",
+            "type": "sub",
+            "left": { "type": "_dref", "path": "$.price" },
+            "right": {
+              "_type": "__func__",
+              "type": "mul",
+              "left": { "type": "_dref", "path": "$.price" },
+              "right": {
+                "_type": "__func__",
+                "type": "div",
+                "left": { "type": "_dref", "path": "$.discountPercent" },
+                "right": 100
+              }
+            }
+          }
+        }
+      ]
+    },
+    "category": {
+      "type": "enum",
+      "required": true,
+      "enum": {
+        "ELECTRONICS": "electronics",
+        "CLOTHING": "clothing",
+        "FOOD": "food",
+        "OTHER": "other"
+      }
+    },
+    "expirationDate": {
+      "type": "date_string",
+      "format": "yyyy-MM-dd",
+      "required": {
+        "type": "eq",
+        "left": { "type": "_dref", "path": "$.category" },
+        "right": "food"
+      },
+      "included": {
+        "type": "eq",
+        "left": { "type": "_dref", "path": "$.category" },
+        "right": "food"
+      },
+      "rules": [
+        {
+          "type": "after",
+          "after": "2024-01-01"
+        }
+      ]
+    },
+    "tags": {
+      "type": "array",
+      "schema": {
+        "type": "string",
+        "rules": [
+          { "type": "min_length", "min": 1 }
+        ]
+      },
+      "rules": [
+        { "type": "max_length", "max": 10 }
+      ]
+    }
+  }
+}
+```
+
+### 9.3 Validation Result Examples
+
+**Success:**
+
+```json
+{
+  "success": true,
+  "values": {
+    "email": "user@example.com",
+    "password": { "state": "masked", "value": "***" },
+    "confirmPassword": { "state": "masked", "value": "***" },
+    "accountType": "personal"
+  }
+}
+```
+
+**Error:**
+
+```json
+{
+  "success": false,
+  "errors": [
+    {
+      "code": "email",
+      "path": "email",
+      "message": "Invalid email format",
+      "value": "invalid-email"
+    },
+    {
+      "code": "min_length",
+      "path": "password",
+      "message": "Must be at least 8 characters",
+      "value": "short"
+    }
+  ]
+}
+```
+
+## 10. References
+
+- [RFC2119](https://tools.ietf.org/html/rfc2119) - Key words for use in RFCs to Indicate Requirement Levels
+- [RFC8259](https://tools.ietf.org/html/rfc8259) - The JavaScript Object Notation (JSON) Data Interchange Format
+- [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) - Date and time format
+- [Unicode Technical Standard #35](https://unicode.org/reports/tr35/tr35-dates.html#Date_Field_Symbol_Table) - Date format tokens

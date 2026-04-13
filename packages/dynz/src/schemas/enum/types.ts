@@ -1,4 +1,4 @@
-import type { EqualsRule } from "../../rules";
+import type { Rule } from "../../rules";
 import type { BaseSchema, SchemaType } from "../../types";
 
 /**
@@ -35,13 +35,8 @@ export type EnumValues<TEnum extends Enum = Enum> = {
 }[keyof TEnum];
 
 /**
- * Allowed enum rules
- */
-export type EnumRules = EqualsRule;
-
-/**
  * Enum schema interface
  */
-export type EnumSchema<T extends Enum = Enum> = BaseSchema<EnumValues<T>, typeof SchemaType.ENUM, EnumRules> & {
+export type EnumSchema<T extends Enum = Enum> = BaseSchema<EnumValues<T>, typeof SchemaType.ENUM, Rule> & {
   enum: T;
 };

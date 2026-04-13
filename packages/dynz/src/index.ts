@@ -1,4 +1,5 @@
 export * from "./conditions";
+export * from "./functions";
 export * from "./private";
 export * from "./reference";
 export * from "./rules";

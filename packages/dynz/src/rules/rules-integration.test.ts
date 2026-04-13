@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { and, ConditionType, eq, or } from "../conditions";
+import { and, eq, or, v } from "../functions";
 import { REFERENCE_TYPE, ref } from "../reference/reference";
 import { conditional, custom, equals, max, maxDate, min, minDate, regex } from "./index";
 
@@ -9,7 +9,7 @@ describe("rules integration", () => {
       const reference = ref("name");
 
       expect(reference).toEqual({
-        _type: REFERENCE_TYPE,
+        type: REFERENCE_TYPE,
         path: "name",
       });
     });
@@ -18,7 +18,7 @@ describe("rules integration", () => {
       const reference = ref("$.user.email");
 
       expect(reference).toEqual({
-        _type: REFERENCE_TYPE,
+        type: REFERENCE_TYPE,
         path: "$.user.email",
       });
     });
@@ -27,7 +27,7 @@ describe("rules integration", () => {
       const reference = ref("items[0].id");
 
       expect(reference).toEqual({
-        _type: REFERENCE_TYPE,
+        type: REFERENCE_TYPE,
         path: "items[0].id",
       });
     });
@@ -36,7 +36,7 @@ describe("rules integration", () => {
       const reference = ref("user.profile.settings.theme");
 
       expect(reference).toEqual({
-        _type: REFERENCE_TYPE,
+        type: REFERENCE_TYPE,
         path: "user.profile.settings.theme",
       });
     });
@@ -52,12 +52,12 @@ describe("rules integration", () => {
   describe("rule combinations", () => {
     it("should create complex rule set for password validation", () => {
       const passwordRules = [
-        min(8),
-        max(128),
+        min(v(8)),
+        max(v(128)),
         regex("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]+$"),
         conditional({
-          when: eq("$.securityLevel", "high"),
-          then: min(12),
+          when: eq(ref("$.securityLevel"), v("high")),
+          then: min(v(12)),
         }),
       ];
 
@@ -71,10 +71,10 @@ describe("rules integration", () => {
     it("should create email validation rule set", () => {
       const emailRules = [
         regex("^[^@]+@[^@]+\\.[^@]+$"),
-        max(320), // RFC 5321 limit
+        max(v(320)), // RFC 5321 limit
         custom("validateEmailDomain", {
-          allowedDomains: ["company.com", "partner.org"],
-          blockDisposable: true,
+          allowedDomains: v(["company.com", "partner.org"]),
+          blockDisposable: v(true),
         }),
       ] as const;
 
@@ -87,15 +87,15 @@ describe("rules integration", () => {
 
     it("should create nested conditional rules scenario", () => {
       const rule = conditional({
-        when: and(eq("$.userType", "premium"), or(eq("$.region", "US"), eq("$.region", "EU"))),
+        when: and(eq(v("$.userType"), v("premium")), or(eq(v("$.region"), v("US")), eq(v("$.region"), v("EU")))),
         then: equals(ref("$.settings.premiumValue")),
       });
 
-      expect(rule.when.type).toBe(ConditionType.AND);
-      expect(rule.when.conditions).toHaveLength(2);
-      expect(rule.when.conditions[1].type).toBe(ConditionType.OR);
-      expect(rule.then.type).toBe("equals");
-      expect(rule.then.equals._type).toBe(REFERENCE_TYPE);
+      expect(rule.cases[0].when.type).toBe("and");
+      expect(rule.cases[0].when.predicates).toHaveLength(2);
+      expect(rule.cases[0].when.predicates[1].type).toBe("or");
+      expect(rule.cases[0].then.type).toBe("equals");
+      expect(rule.cases[0].then.equals.type).toBe(REFERENCE_TYPE);
     });
 
     it("should create age validation with cross-references", () => {
@@ -103,7 +103,7 @@ describe("rules integration", () => {
         min(ref("$.legalMinimumAge")),
         max(ref("$.retirementAge")),
         conditional({
-          when: eq("$.requiresParentalConsent", true),
+          when: eq(ref("$.requiresParentalConsent"), v(true)),
           then: custom("validateParentalConsent", {
             guardianEmail: ref("$.guardian.email"),
           }),
@@ -111,17 +111,17 @@ describe("rules integration", () => {
       ] as const;
 
       expect(ageRules).toHaveLength(3);
-      expect(ageRules[0].min._type).toBe(REFERENCE_TYPE);
-      expect(ageRules[1].max._type).toBe(REFERENCE_TYPE);
+      expect(ageRules[0].min.type).toBe(REFERENCE_TYPE);
+      expect(ageRules[1].max.type).toBe(REFERENCE_TYPE);
       expect(ageRules[2].type).toBe("conditional");
     });
 
     it("should create date range validation", () => {
       const dateRules = [
         minDate(ref("$.startDate")),
-        maxDate(new Date("2030-12-31")),
+        maxDate(v(new Date("2030-12-31"))),
         conditional({
-          when: eq("$.isRecurring", true),
+          when: eq(ref("$.isRecurring"), v(true)),
           then: custom("validateRecurrencePattern", {
             maxOccurrences: ref("$.maxRecurrences"),
             endDate: ref("$.seriesEndDate"),
@@ -131,8 +131,8 @@ describe("rules integration", () => {
 
       expect(dateRules).toHaveLength(3);
       expect(dateRules[0].min.path).toBe("$.startDate");
-      expect(dateRules[1].max).toEqual(new Date("2030-12-31"));
-      expect(dateRules[2].then.params.maxOccurrences._type).toBe(REFERENCE_TYPE);
+      expect(dateRules[1].max).toEqual(v(new Date("2030-12-31")));
+      expect(dateRules[2].cases[0].then.params.maxOccurrences.type).toBe(REFERENCE_TYPE);
     });
   });
 });
