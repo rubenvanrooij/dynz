@@ -1,5 +1,4 @@
 import type { ParamaterValue, Predicate } from "../../functions";
-import type { JsonRecord } from "../../types";
 import {
   type ConditionalRule,
   conditional,
@@ -19,7 +18,9 @@ import {
   type Rule,
   regex,
 } from "../../rules";
+import type { JsonRecord } from "../../types";
 import { SchemaType } from "../../types";
+import { type ToParam, toParamaterValue } from "../shared";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -64,15 +65,24 @@ export type StrFluent<TRules extends Rule[], TProps> = {
   readonly rules: TRules;
 } & TProps & {
     // — Rule methods —
-    min: <P extends ParamaterValue<number>>(min: P, code?: string) => StrFluent<Push<TRules, MinLengthRule<P>>, TProps>;
-    max: <P extends ParamaterValue<number>>(max: P, code?: string) => StrFluent<Push<TRules, MaxLengthRule<P>>, TProps>;
+    min: <P extends ParamaterValue<number> | number>(
+      min: P,
+      code?: string
+    ) => StrFluent<Push<TRules, MinLengthRule<ToParam<P>>>, TProps>;
+    max: <P extends ParamaterValue<number> | number>(
+      max: P,
+      code?: string
+    ) => StrFluent<Push<TRules, MaxLengthRule<ToParam<P>>>, TProps>;
     regex: <P extends string>(
       pattern: P,
       flags?: string,
       code?: string
     ) => StrFluent<Push<TRules, RegexRule<P>>, TProps>;
     email: (code?: string) => StrFluent<Push<TRules, EmailRule>, TProps>;
-    equals: <P extends ParamaterValue>(value: P, code?: string) => StrFluent<Push<TRules, EqualsRule<P>>, TProps>;
+    equals: <P extends ParamaterValue<string> | string>(
+      value: P,
+      code?: string
+    ) => StrFluent<Push<TRules, EqualsRule<ToParam<P>>>, TProps>;
     isNumeric: (code?: string) => StrFluent<Push<TRules, IsNumericRule>, TProps>;
     oneOf: <P extends ParamaterValue[]>(values: P, code?: string) => StrFluent<Push<TRules, OneOfRule<P>>, TProps>;
 
@@ -131,11 +141,14 @@ function createFluent<TRules extends Rule[], TProps>(rules: TRules, props: TProp
     ...props,
 
     // — Rule methods —
-    min: <P extends ParamaterValue<number>>(min: P, code?: string) => pushRule(minLength(min, code)),
-    max: <P extends ParamaterValue<number>>(max: P, code?: string) => pushRule(maxLength(max, code)),
+    min: <P extends ParamaterValue<number> | number>(min: P, code?: string) =>
+      pushRule(minLength(toParamaterValue(min), code)),
+    max: <P extends ParamaterValue<number> | number>(max: P, code?: string) =>
+      pushRule(maxLength(toParamaterValue(max), code)),
     regex: <P extends string>(pattern: P, flags?: string, code?: string) => pushRule(regex(pattern, flags, code)),
     email: (code?: string) => pushRule(email(code)),
-    equals: <P extends ParamaterValue>(value: P, code?: string) => pushRule(equals(value, code)),
+    equals: <P extends ParamaterValue<string> | string>(value: P, code?: string) =>
+      pushRule(equals(toParamaterValue(value), code)),
     isNumeric: (code?: string) => pushRule(isNumeric(code)),
     oneOf: <P extends ParamaterValue[]>(values: P, code?: string) => pushRule(oneOf(values, code)),
 

@@ -1,5 +1,6 @@
 import type { ParamaterValue, Predicate, Transformer } from "../../functions";
 import type { JsonRecord } from "../../types";
+import { type ToParam, toParamaterValue } from "../shared";
 import {
   type ConditionalRule,
   conditional,
@@ -65,20 +66,23 @@ export type NumFluent<TRules extends Rule[], TProps> = {
   readonly rules: TRules;
 } & TProps & {
     // — Rule methods —
-    min: <P extends ParamaterValue<number>, A extends Transformer = Transformer>(
+    min: <P extends ParamaterValue<number> | number, A extends Transformer = Transformer>(
       value: P,
       code?: string,
       transformer?: A
-    ) => NumFluent<Push<TRules, MinRule<P, A>>, TProps>;
-    max: <P extends ParamaterValue<number>>(value: P, code?: string) => NumFluent<Push<TRules, MaxRule<P>>, TProps>;
-    maxPrecision: <P extends ParamaterValue<number>>(
+    ) => NumFluent<Push<TRules, MinRule<ToParam<P>, A>>, TProps>;
+    max: <P extends ParamaterValue<number> | number>(
       value: P,
       code?: string
-    ) => NumFluent<Push<TRules, MaxPrecisionRule<P>>, TProps>;
-    equals: <P extends ParamaterValue<number>>(
+    ) => NumFluent<Push<TRules, MaxRule<ToParam<P>>>, TProps>;
+    maxPrecision: <P extends ParamaterValue<number> | number>(
       value: P,
       code?: string
-    ) => NumFluent<Push<TRules, EqualsRule<P>>, TProps>;
+    ) => NumFluent<Push<TRules, MaxPrecisionRule<ToParam<P>>>, TProps>;
+    equals: <P extends ParamaterValue<number> | number>(
+      value: P,
+      code?: string
+    ) => NumFluent<Push<TRules, EqualsRule<ToParam<P>>>, TProps>;
     isNumeric: (code?: string) => NumFluent<Push<TRules, IsNumericRule>, TProps>;
     oneOf: <P extends ParamaterValue[]>(values: P, code?: string) => NumFluent<Push<TRules, OneOfRule<P>>, TProps>;
 
@@ -136,14 +140,17 @@ function createFluent<TRules extends Rule[], TProps>(rules: TRules, props: TProp
     ...props,
 
     // — Rule methods —
-    min: <P extends ParamaterValue<number>, A extends Transformer = Transformer>(
+    min: <P extends ParamaterValue<number> | number, A extends Transformer = Transformer>(
       value: P,
       code?: string,
       transformer?: A
-    ) => pushRule(min(value, code, transformer)),
-    max: <P extends ParamaterValue<number>>(value: P, code?: string) => pushRule(max(value, code)),
-    maxPrecision: <P extends ParamaterValue<number>>(value: P, code?: string) => pushRule(maxPrecision(value, code)),
-    equals: <P extends ParamaterValue<number>>(value: P, code?: string) => pushRule(equals(value, code)),
+    ) => pushRule(min(toParamaterValue(value), code, transformer)),
+    max: <P extends ParamaterValue<number> | number>(value: P, code?: string) =>
+      pushRule(max(toParamaterValue(value), code)),
+    maxPrecision: <P extends ParamaterValue<number> | number>(value: P, code?: string) =>
+      pushRule(maxPrecision(toParamaterValue(value), code)),
+    equals: <P extends ParamaterValue<number> | number>(value: P, code?: string) =>
+      pushRule(equals(toParamaterValue(value), code)),
     isNumeric: (code?: string) => pushRule(isNumeric(code)),
     oneOf: <P extends ParamaterValue[]>(values: P, code?: string) => pushRule(oneOf(values, code)),
 

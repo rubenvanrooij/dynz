@@ -1,5 +1,4 @@
 export * from "./array";
-export * from "./array";
 export * from "./boolean";
 export * from "./date";
 export * from "./date-string";
@@ -9,4 +8,5 @@ export * from "./file";
 export * from "./number";
 export * from "./object";
 export * from "./options";
+export * from "./shared";
 export * from "./string";

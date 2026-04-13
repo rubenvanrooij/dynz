@@ -50,8 +50,10 @@ export function gt<const TLeft extends ParamaterValue, const TRight extends Para
 }
 
 export function greaterThanFunction(left: ValueType | undefined, right: ValueType | undefined): boolean | undefined {
+  console.log(left, "<>", right);
   if (left === undefined || right === undefined || left === null || right === null) {
     return undefined;
   }
+  console.log(left, "<>", right);
   return +left > +right;
 }

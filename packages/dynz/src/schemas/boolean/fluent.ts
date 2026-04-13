@@ -1,5 +1,6 @@
 import type { ParamaterValue, Predicate } from "../../functions";
 import type { JsonRecord } from "../../types";
+import { type ToParam, toParamaterValue } from "../shared";
 import { type ConditionalRule, conditional, type EqualsRule, equals, type Rule } from "../../rules";
 import { SchemaType } from "../../types";
 
@@ -37,10 +38,10 @@ export type BoolFluent<TRules extends Rule[], TProps> = {
   readonly rules: TRules;
 } & TProps & {
     // — Rule methods —
-    equals: <P extends ParamaterValue<boolean>>(
+    equals: <P extends ParamaterValue<boolean> | boolean>(
       value: P,
       code?: string
-    ) => BoolFluent<Push<TRules, EqualsRule<P>>, TProps>;
+    ) => BoolFluent<Push<TRules, EqualsRule<ToParam<P>>>, TProps>;
 
     // — Conditional rules —
     when: <WRules extends Rule[]>(
@@ -87,7 +88,8 @@ function createFluent<TRules extends Rule[], TProps>(rules: TRules, props: TProp
     ...props,
 
     // — Rule methods —
-    equals: <P extends ParamaterValue<boolean>>(value: P, code?: string) => pushRule(equals(value, code)),
+    equals: <P extends ParamaterValue<boolean> | boolean>(value: P, code?: string) =>
+      pushRule(equals(toParamaterValue(value), code)),
 
     // — Conditional rules —
     when: <WRules extends Rule[]>(pred: Predicate, cb: (b: BoolRuleBuilder<[]>) => BoolRuleBuilder<WRules>) => {

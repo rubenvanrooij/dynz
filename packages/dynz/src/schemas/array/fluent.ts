@@ -1,5 +1,6 @@
 import type { ParamaterValue, Predicate } from "../../functions";
 import type { JsonRecord } from "../../types";
+import { type ToParam, toParamaterValue } from "../shared";
 import {
   type ConditionalRule,
   conditional,
@@ -55,14 +56,14 @@ export type ArrayFluent<TSchema extends Schema, TRules extends Rule[], TProps> =
   readonly rules: TRules;
 } & TProps & {
     // — Rule methods —
-    min: <P extends ParamaterValue<number>>(
+    min: <P extends ParamaterValue<number> | number>(
       min: P,
       code?: string
-    ) => ArrayFluent<TSchema, Push<TRules, MinLengthRule<P>>, TProps>;
-    max: <P extends ParamaterValue<number>>(
+    ) => ArrayFluent<TSchema, Push<TRules, MinLengthRule<ToParam<P>>>, TProps>;
+    max: <P extends ParamaterValue<number> | number>(
       max: P,
       code?: string
-    ) => ArrayFluent<TSchema, Push<TRules, MaxLengthRule<P>>, TProps>;
+    ) => ArrayFluent<TSchema, Push<TRules, MaxLengthRule<ToParam<P>>>, TProps>;
 
     // — Conditional rules —
     when: <WRules extends Rule[]>(
@@ -118,8 +119,10 @@ function createFluent<TSchema extends Schema, TRules extends Rule[], TProps>(
     ...props,
 
     // — Rule methods —
-    min: <P extends ParamaterValue<number>>(min: P, code?: string) => pushRule(minLength(min, code)),
-    max: <P extends ParamaterValue<number>>(max: P, code?: string) => pushRule(maxLength(max, code)),
+    min: <P extends ParamaterValue<number> | number>(min: P, code?: string) =>
+      pushRule(minLength(toParamaterValue(min), code)),
+    max: <P extends ParamaterValue<number> | number>(max: P, code?: string) =>
+      pushRule(maxLength(toParamaterValue(max), code)),
 
     // — Conditional rules —
     when: <WRules extends Rule[]>(

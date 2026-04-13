@@ -1,5 +1,6 @@
 import type { ParamaterValue, Predicate } from "../../functions";
 import type { JsonRecord } from "../../types";
+import { type ToParam, toParamaterValue } from "../shared";
 import {
   type ConditionalRule,
   conditional,
@@ -52,18 +53,18 @@ export type FileFluent<TRules extends Rule[], TProps> = {
   readonly rules: TRules;
 } & TProps & {
     // — Rule methods —
-    minSize: <P extends ParamaterValue<number>>(
+    minSize: <P extends ParamaterValue<number> | number>(
       min: P,
       code?: string
-    ) => FileFluent<Push<TRules, MinSizeRule<P>>, TProps>;
-    maxSize: <P extends ParamaterValue<number>>(
+    ) => FileFluent<Push<TRules, MinSizeRule<ToParam<P>>>, TProps>;
+    maxSize: <P extends ParamaterValue<number> | number>(
       max: P,
       code?: string
-    ) => FileFluent<Push<TRules, MaxSizeRule<P>>, TProps>;
-    mimeType: <P extends ParamaterValue<string | string[]>>(
+    ) => FileFluent<Push<TRules, MaxSizeRule<ToParam<P>>>, TProps>;
+    mimeType: <P extends ParamaterValue<string | string[]> | string>(
       type: P,
       code?: string
-    ) => FileFluent<Push<TRules, MimeTypeRule<P>>, TProps>;
+    ) => FileFluent<Push<TRules, MimeTypeRule<ToParam<P>>>, TProps>;
 
     // — Conditional rules —
     when: <WRules extends Rule[]>(
@@ -110,9 +111,12 @@ function createFluent<TRules extends Rule[], TProps>(rules: TRules, props: TProp
     ...props,
 
     // — Rule methods —
-    minSize: <P extends ParamaterValue<number>>(min: P, code?: string) => pushRule(minSize(min, code)),
-    maxSize: <P extends ParamaterValue<number>>(max: P, code?: string) => pushRule(maxSize(max, code)),
-    mimeType: <P extends ParamaterValue<string | string[]>>(type: P, code?: string) => pushRule(mimeType(type, code)),
+    minSize: <P extends ParamaterValue<number> | number>(min: P, code?: string) =>
+      pushRule(minSize(toParamaterValue(min), code)),
+    maxSize: <P extends ParamaterValue<number> | number>(max: P, code?: string) =>
+      pushRule(maxSize(toParamaterValue(max), code)),
+    mimeType: <P extends ParamaterValue<string | string[]> | string>(type: P, code?: string) =>
+      pushRule(mimeType(toParamaterValue(type), code)),
 
     // — Conditional rules —
     when: <WRules extends Rule[]>(pred: Predicate, cb: (b: FileRuleBuilder<[]>) => FileRuleBuilder<WRules>) => {

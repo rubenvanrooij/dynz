@@ -1,5 +1,6 @@
 import type { ParamaterValue, Predicate } from "../../functions";
 import type { JsonRecord } from "../../types";
+import { type ToParam, toParamaterValue } from "../shared";
 import {
   type ConditionalRule,
   conditional,
@@ -53,10 +54,10 @@ export type EnumFluent<TEnum extends Enum, TRules extends Rule[], TProps> = {
   readonly rules: TRules;
 } & TProps & {
     // — Rule methods —
-    equals: <P extends ParamaterValue<EnumValues<TEnum>>>(
+    equals: <P extends ParamaterValue<EnumValues<TEnum>> | EnumValues<TEnum>>(
       value: P,
       code?: string
-    ) => EnumFluent<TEnum, Push<TRules, EqualsRule<P>>, TProps>;
+    ) => EnumFluent<TEnum, Push<TRules, EqualsRule<ToParam<P>>>, TProps>;
     oneOf: <P extends ParamaterValue[]>(
       values: P,
       code?: string
@@ -116,7 +117,8 @@ function createFluent<TEnum extends Enum, TRules extends Rule[], TProps>(
     ...props,
 
     // — Rule methods —
-    equals: <P extends ParamaterValue<EnumValues<TEnum>>>(value: P, code?: string) => pushRule(equals(value, code)),
+    equals: <P extends ParamaterValue<EnumValues<TEnum>> | EnumValues<TEnum>>(value: P, code?: string) =>
+      pushRule(equals(toParamaterValue(value), code)),
     oneOf: <P extends ParamaterValue[]>(values: P, code?: string) => pushRule(oneOf(values, code)),
 
     // — Conditional rules —

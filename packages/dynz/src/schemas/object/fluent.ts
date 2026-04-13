@@ -1,5 +1,6 @@
 import type { ParamaterValue, Predicate } from "../../functions";
 import type { JsonRecord } from "../../types";
+import { type ToParam, toParamaterValue } from "../shared";
 import {
   type ConditionalRule,
   conditional,
@@ -55,14 +56,14 @@ export type ObjectFluent<TFields extends Record<string, Schema>, TRules extends 
   readonly rules: TRules;
 } & TProps & {
     // — Rule methods —
-    minEntries: <P extends ParamaterValue<number>>(
+    minEntries: <P extends ParamaterValue<number> | number>(
       min: P,
       code?: string
-    ) => ObjectFluent<TFields, Push<TRules, MinEntriesRule<P>>, TProps>;
-    maxEntries: <P extends ParamaterValue<number>>(
+    ) => ObjectFluent<TFields, Push<TRules, MinEntriesRule<ToParam<P>>>, TProps>;
+    maxEntries: <P extends ParamaterValue<number> | number>(
       max: P,
       code?: string
-    ) => ObjectFluent<TFields, Push<TRules, MaxEntriesRule<P>>, TProps>;
+    ) => ObjectFluent<TFields, Push<TRules, MaxEntriesRule<ToParam<P>>>, TProps>;
 
     // — Conditional rules —
     when: <WRules extends Rule[]>(
@@ -117,8 +118,10 @@ function createFluent<TFields extends Record<string, Schema>, TRules extends Rul
     ...props,
 
     // — Rule methods —
-    minEntries: <P extends ParamaterValue<number>>(min: P, code?: string) => pushRule(minEntries(min, code)),
-    maxEntries: <P extends ParamaterValue<number>>(max: P, code?: string) => pushRule(maxEntries(max, code)),
+    minEntries: <P extends ParamaterValue<number> | number>(min: P, code?: string) =>
+      pushRule(minEntries(toParamaterValue(min), code)),
+    maxEntries: <P extends ParamaterValue<number> | number>(max: P, code?: string) =>
+      pushRule(maxEntries(toParamaterValue(max), code)),
 
     // — Conditional rules —
     when: <WRules extends Rule[]>(
