@@ -1,4 +1,4 @@
-import { type ParamaterValue, resolveExpected, type Static, v } from "../../functions";
+import { type ParamaterValue, resolveExpected } from "../../functions";
 import {
   type ErrorMessageFromRule,
   type ExtractResolvedRules,
@@ -13,8 +13,6 @@ export type MinLengthRule<T extends ParamaterValue<number> = ParamaterValue<numb
   min: T;
   code?: string | undefined;
 };
-
-type ToParamValue<T> = T extends number ? Static<T> : T extends ParamaterValue<number> ? T : never;
 
 export type MinLengthRuleErrorMessage = ErrorMessageFromRule<MinLengthRule, number, "min">;
 
@@ -44,9 +42,11 @@ export type MinLengthRuleErrorMessage = ErrorMessageFromRule<MinLengthRule, numb
  * @see {@link maxLength} - Maximum length rule
  * @see {@link size} - Size transformer (for predicates)
  */
-export function minLength<const T extends ParamaterValue<number>>(min: T, code?: string): MinLengthRule<T> {
-  // const resolved = (typeof min === "number" ? v(min) : min) as ToParamValue<T>;
-  return { min: min, type: "min_length", code };
+export function minLength<T extends ParamaterValue<number> = ParamaterValue<number>>(
+  min: T,
+  code?: string
+): MinLengthRule<T> {
+  return { min, type: "min_length", code };
 }
 
 export const minLengthRule: RuleFn<
