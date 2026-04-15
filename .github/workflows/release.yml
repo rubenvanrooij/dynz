@@ -8,8 +8,11 @@ on:
 env:
   CI: true
 
-jobs:
+permissions:
+  id-token: write # Required for OIDC
+  contents: read
 
+jobs:
   setup_environment:
     name: Install packages
     runs-on: ubuntu-latest
@@ -19,7 +22,7 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/environment
 
-  publish_to_npm: 
+  publish_to_npm:
     name: Publish to npm
     timeout-minutes: 15
     runs-on: ubuntu-latest
@@ -37,6 +40,4 @@ jobs:
           title: "chore: update versions"
           publish: pnpm ci:publish --no-git-checks
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
