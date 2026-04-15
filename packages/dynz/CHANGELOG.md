@@ -1,5 +1,11 @@
 # dynz
 
+## 0.0.16
+
+### Patch Changes
+
+- 873ed04: removed the object API and replaced it with the new fluent api
+
 ## 0.0.15
 
 ### Patch Changes

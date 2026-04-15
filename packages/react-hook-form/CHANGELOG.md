@@ -1,5 +1,13 @@
 # @dynz/react-hook-form-resolver
 
+## 0.0.19
+
+### Patch Changes
+
+- 873ed04: removed the object API and replaced it with the new fluent api
+- Updated dependencies [873ed04]
+  - dynz@0.0.16
+
 ## 0.0.18
 
 ### Patch Changes
