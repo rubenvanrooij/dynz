@@ -1,5 +1,11 @@
 # next-example
 
+## 0.1.2
+
+### Patch Changes
+
+- 873ed04: removed the object API and replaced it with the new fluent api
+
 ## 0.1.1
 
 ### Patch Changes
