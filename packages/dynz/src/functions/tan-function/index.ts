@@ -1,5 +1,8 @@
+import type { ToParam } from "../../schemas";
 import type { ValueType } from "../../types";
 import { coerceNumber } from "../../utils";
+import { isNumber } from "../../validate/validate-type";
+import { val } from "../builders";
 import type { ParamaterValue } from "../types";
 
 export const tanFunctionType = "tan";
@@ -30,10 +33,10 @@ export type TanFunction<TValue extends ParamaterValue = never> = {
  * @see {@link sin} - Sine transformer
  * @see {@link cos} - Cosine transformer
  */
-export function tan<const T extends ParamaterValue>(value: T): TanFunction<T> {
+export function tan<const T extends ParamaterValue<number> | number>(value: T): TanFunction<ToParam<T>> {
   return {
     type: tanFunctionType,
-    value,
+    value: (isNumber(value) ? val(value) : value) as ToParam<T>,
   };
 }
 

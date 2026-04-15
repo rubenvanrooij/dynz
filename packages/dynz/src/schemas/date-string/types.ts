@@ -4,7 +4,7 @@ import type { BaseSchema, DateString, PrivateSchema, SchemaType } from "../../ty
 export type DateStringSchema<TFormat extends string = string, TRule extends Rule = Rule> = BaseSchema<
   DateString,
   typeof SchemaType.DATE_STRING,
-  TRule
+  TRule[]
 > &
   PrivateSchema & {
     /*

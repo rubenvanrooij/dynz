@@ -38,9 +38,7 @@ describe("maxEntries rule", () => {
 
 describe("maxEntriesRule validator", () => {
   const mockContext = {} as unknown as Context<ObjectSchema<never>>;
-  const mockSchema = object({
-    fields: {},
-  });
+  const mockSchema = object({});
 
   it("should return undefined when object has fewer entries than maximum", () => {
     const rule = maxEntries(v(5));

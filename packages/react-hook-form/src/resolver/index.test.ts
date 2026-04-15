@@ -1,4 +1,4 @@
-import { boolean, minLength, number, object, regex, string, v } from "dynz";
+import { boolean, number, object, string } from "dynz";
 import { describe, expect, it, vi } from "vitest";
 import { dynzResolver } from "./index";
 
@@ -11,11 +11,9 @@ vi.mock("@hookform/resolvers", () => ({
 describe("dynzResolver", () => {
   it("should return success for valid simple string schema", async () => {
     const schema = object({
-      fields: {
-        fieldOne: string(),
-        fieldTwo: number(),
-        fieldThree: boolean(),
-      },
+      fieldOne: string(),
+      fieldTwo: number(),
+      fieldThree: boolean(),
     });
     const resolver = dynzResolver(schema);
 
@@ -44,12 +42,7 @@ describe("dynzResolver", () => {
 
   it("should return only the first errors by default", async () => {
     const schema = object({
-      fields: {
-        value: string({
-          required: true,
-          rules: [minLength(v(10)), regex("^[A-Z]")],
-        }),
-      },
+      value: string().setRequired(true).min(10).regex("^[A-Z]"),
     });
     const resolver = dynzResolver(schema);
 
@@ -68,12 +61,7 @@ describe("dynzResolver", () => {
 
   it("should return all errors when criteriaMode is set to all", async () => {
     const schema = object({
-      fields: {
-        value: string({
-          required: true,
-          rules: [minLength(v(10)), regex("^[A-Z]")],
-        }),
-      },
+      value: string().setRequired(true).min(10).regex("^[A-Z]"),
     });
     const resolver = dynzResolver(schema);
 

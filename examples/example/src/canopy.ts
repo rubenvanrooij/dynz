@@ -1,4 +1,4 @@
-import * as d from "dynz";
+import { and, boolean, eq, gte, number, object, options, ref, string, v, validate } from "dynz";
 
 // Aluminium canopy attached to a house.
 // All dimensions are in meters.
@@ -18,108 +18,77 @@ import * as d from "dynz";
 //   - sideScreens      — only available when height >= 2.5m
 //   - customRalColor   — only available when color is "custom"
 
-export const canopySchema = d.object({
-  private: false,
-  fields: {
-    // --- Dimensions ---
-    width: d.number({
-      rules: [d.min(d.v(1)), d.max(d.v(6))],
-    }),
+export const canopySchema = object({
+  // --- Dimensions ---
+  width: number().min(1).max(6),
 
-    depth: d.number({
-      rules: [d.min(d.v(0.5)), d.max(d.v(4))],
-    }),
+  depth: number().min(0.5).max(4),
 
-    // Height of the wall attachment point (eave height).
-    height: d.number({
-      rules: [d.min(d.v(2)), d.max(d.v(3.5))],
-    }),
+  // Height of the wall attachment point (eave height).
+  height: number().min(2).max(3.5),
 
-    // Roof slope as a percentage (rise / run × 100).
-    // Minimum 2% ensures adequate water runoff on an aluminium roof.
-    slopePercent: d.number({
-      rules: [
-        d.min(d.v(2)), // 2% minimum slope
-        d.max(d.v(30)), // 30% is a steep but still practical canopy pitch
-      ],
-    }),
+  // Roof slope as a percentage (rise / run × 100).
+  // Minimum 2% ensures adequate water runoff on an aluminium roof.
+  slopePercent: number()
+    .min(2) // 2% minimum slope
+    .max(30), // 30% is a steep but still practical canopy pitch
 
-    // --- Appearance ---
-    color: d.options({
-      default: "anthracite",
-      options: ["anthracite", "white", "silver", "black", "brown", "custom"],
-    }),
+  // --- Appearance ---
+  color: options(["anthracite", "white", "silver", "black", "brown", "custom"]).setDefault("anthracite"),
 
-    // RAL code required only when color is set to "custom".
-    customRalCode: d.string({
-      included: d.eq(d.ref("color"), d.v("custom")),
-      rules: [d.regex("^RAL\\s?\\d{4}$", "invalidRalCode")],
-    }),
+  // RAL code required only when color is set to "custom".
+  customRalCode: string()
+    .setIncluded(eq(ref("color"), v("custom")))
+    .regex("^RAL\\s?\\d{4}$", undefined, "invalidRalCode"),
 
-    // Powder-coat finish (standard anodised vs. satin vs. gloss).
-    finish: d.options({
-      default: "satin",
-      options: ["anodised", "satin", "gloss"],
-    }),
+  // Powder-coat finish (standard anodised vs. satin vs. gloss).
+  finish: options(["anodised", "satin", "gloss"]).setDefault("satin"),
 
-    // --- Gutters ---
-    gutters: d.boolean({
-      coerce: true,
-    }),
+  // --- Gutters ---
+  gutters: boolean().setCoerce(true),
 
-    // Upgrade to a wider 150 mm gutter profile — only makes sense when gutters are included.
-    gutterUpgrade: d.boolean({
-      coerce: true,
-      included: d.eq(d.ref("gutters"), d.v(true)),
-    }),
+  // Upgrade to a wider 150 mm gutter profile — only makes sense when gutters are included.
+  gutterUpgrade: boolean()
+    .setCoerce(true)
+    .setIncluded(eq(ref("gutters"), v(true))),
 
-    // --- Addons ---
-    addons: d.object({
-      fields: {
-        // LED strip lighting under the crossbeams — requires enough width to be worthwhile.
-        ledLighting: d.boolean({
-          coerce: true,
-          included: d.gte(d.ref("$.width"), d.v(3)),
-        }),
+  // --- Addons ---
+  addons: object({
+    // LED strip lighting under the crossbeams — requires enough width to be worthwhile.
+    ledLighting: boolean()
+      .setCoerce(true)
+      .setIncluded(gte(ref("$.width"), v(3))),
 
-        // Infrared heater rails — need sufficient width to mount evenly.
-        infraredHeaters: d.boolean({
-          coerce: true,
-          included: d.gte(d.ref("$.width"), d.v(4)),
-        }),
+    // Infrared heater rails — need sufficient width to mount evenly.
+    infraredHeaters: boolean()
+      .setCoerce(true)
+      .setIncluded(gte(ref("$.width"), v(4))),
 
-        // Integrated solar panels on the aluminium roof — need both width and depth.
-        solarRoofPanels: d.boolean({
-          coerce: true,
-          included: d.and(d.gte(d.ref("$.width"), d.v(4)), d.gte(d.ref("$.depth"), d.v(3))),
-        }),
+    // Integrated solar panels on the aluminium roof — need both width and depth.
+    solarRoofPanels: boolean()
+      .setCoerce(true)
+      .setIncluded(and(gte(ref("$.width"), v(4)), gte(ref("$.depth"), v(3)))),
 
-        // Roof skylight / opening panel — requires enough depth to accommodate the frame.
-        roofSkylight: d.boolean({
-          coerce: true,
-          included: d.gte(d.ref("$.depth"), d.v(3)),
-        }),
+    // Roof skylight / opening panel — requires enough depth to accommodate the frame.
+    roofSkylight: boolean()
+      .setCoerce(true)
+      .setIncluded(gte(ref("$.depth"), v(3))),
 
-        // Retractable or fixed side screens — only practical at sufficient standing height.
-        sideScreens: d.boolean({
-          coerce: true,
-          included: d.gte(d.ref("$.height"), d.v(2.5)),
-        }),
+    // Retractable or fixed side screens — only practical at sufficient standing height.
+    sideScreens: boolean()
+      .setCoerce(true)
+      .setIncluded(gte(ref("$.height"), v(2.5))),
 
-        // Side screen style — only shown when side screens are selected.
-        sideScreenStyle: d.options({
-          default: "fixed",
-          options: ["fixed", "retractable", "louvred"],
-          included: d.and(d.gte(d.ref("$.height"), d.v(2.5)), d.eq(d.ref("$.addons.sideScreens"), d.v(true))),
-        }),
-      },
-    }),
-  },
-});
+    // Side screen style — only shown when side screens are selected.
+    sideScreenStyle: options(["fixed", "retractable", "louvred"])
+      .setDefault("fixed")
+      .setIncluded(and(gte(ref("$.height"), v(2.5)), eq(ref("$.addons.sideScreens"), v(true)))),
+  }).setPrivate(false),
+}).setPrivate(false);
 
 export function runCanopyDemo() {
   // Example: a wide canopy with most addons unlocked.
-  const result = d.validate(canopySchema, undefined, {
+  const result = validate(canopySchema, undefined, {
     width: 5,
     depth: 3.5,
     height: 2.7,

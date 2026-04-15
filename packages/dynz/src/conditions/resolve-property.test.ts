@@ -32,7 +32,7 @@ describe("resolveProperty", () => {
   });
 
   it("should return boolean value when property is false", () => {
-    const schema = string({ required: false });
+    const schema = string().optional();
     const context: ResolveContext = {
       schema,
       values: "hello",
@@ -44,7 +44,7 @@ describe("resolveProperty", () => {
   });
 
   it("should return boolean value when property is true", () => {
-    const schema = string({ required: true });
+    const schema = string().setRequired(true);
     const context: ResolveContext = {
       schema,
       values: "hello",
@@ -57,10 +57,8 @@ describe("resolveProperty", () => {
 
   it("should resolve condition when property is a predicate - nested path", () => {
     const rootSchema = object({
-      fields: {
-        name: string({ required: eq(ref("$.status"), v("active")) }),
-        status: string(),
-      },
+      name: string().setRequired(eq(ref("$.status"), v("active"))),
+      status: string(),
     });
     const context: ResolveContext = {
       schema: rootSchema,
@@ -73,7 +71,7 @@ describe("resolveProperty", () => {
   });
 
   it("should return false when mutable property is false", () => {
-    const schema = string({ mutable: false });
+    const schema = string().setMutable(false);
     const context: ResolveContext = {
       schema,
       values: "hello",

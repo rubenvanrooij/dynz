@@ -1,3 +1,4 @@
+import { type ToParam, toParamaterValue } from "../../schemas";
 import type { ValueType } from "../../types";
 import { isArray } from "../../validate/validate-type";
 import type { ParamaterValue } from "../types";
@@ -10,14 +11,14 @@ export type IsNotInFunction<TLeft extends ParamaterValue = never, TRight extends
   right: [TRight] extends [never] ? ParamaterValue : TRight;
 };
 
-export function isNotIn<const TLeft extends ParamaterValue, const TRight extends ParamaterValue>(
-  left: TLeft,
-  right: TRight
-): IsNotInFunction<TLeft, TRight> {
+export function isNotIn<
+  const TLeft extends ParamaterValue | number | string | boolean | Date,
+  const TRight extends ParamaterValue | number | string | boolean | Date,
+>(left: TLeft, right: TRight): IsNotInFunction<ToParam<TLeft>, ToParam<TRight>> {
   return {
     type: isNotInFunctionType,
-    left,
-    right,
+    left: toParamaterValue(left),
+    right: toParamaterValue(right),
   };
 }
 

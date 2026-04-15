@@ -1,72 +1,84 @@
 import * as d from "dynz";
 
-export const registrationFormSchema = d.object({
-  private: false,
-  fields: {
-    name: d.string({
-      rules: [d.minLength(d.v(3))],
-    }),
-    company: d.string({
-      rules: [],
-    }),
-    email: d.string({
-      rules: [
-        d.email(),
-        d.conditional({
-          when: d.matches(d.ref("company"), d.v("\\bapple\\b"), "i"),
-          then: d.regex("@apple.com$", "useCompanyMail"),
-        }),
-        d.conditional({
-          when: d.matches(d.ref("company"), d.v("\\microsoft\\b"), "i"),
-          then: d.regex("@microsoft.com$", "useCompanyMail"),
-        }),
-      ],
-    }),
-    attendanceType: d.options({
-      default: "Virtual",
-      options: ["inPerson", "virtual", "hybrid"],
-    }),
-    accomidationRequired: d.boolean({
-      coerce: true,
-      included: d.eq(d.ref("attendanceType"), d.v("inPerson")),
-    }),
-    workshopPreferences: d.options({
-      options: ["AI & Machine Learning", "Web Development", "Data Science", "Cybersecurity"],
-      included: d.or(d.eq(d.ref("attendanceType"), d.v("inPerson")), d.eq(d.ref("attendanceType"), d.v("hybrid"))),
-    }),
-    dietry: d.object({
-      included: d.eq(d.ref("attendanceType"), d.v("inPerson")),
-      fields: {
-        restrictions: d.boolean({
-          coerce: true,
-        }),
-        details: d.string({
-          included: d.eq(d.ref("$.dietry.restrictions"), d.v(true)),
-        }),
-      },
-    }),
-    professionalLevel: d.options({
-      options: ["Student", "Junior Professional", "Senior Professional", "Executive"],
-    }),
-    studentInstitution: d.string({
-      included: d.eq(d.ref("professionalLevel"), d.v("Student")),
-    }),
-  },
+const form = d.object({
+  width: d.number().min(0),
+  height: d.number().min(0),
+
+  perimeter: d.expr(d.sum(d.multiply(d.ref("width"), 2), d.multiply(d.ref("height"), 2))).setCoerce(true),
+
+  area: d.expr(d.multiply(d.ref("width"), d.ref("height"))).setIncluded(d.gt(d.ref("width"), 20)),
 });
 
-export function runRegistrationForm() {
-  const result = d.validate(registrationFormSchema, undefined, {
-    name: "foo",
-    company: "apple",
-    email: "ruben@apple.com",
-    attendanceType: "virtual",
-    professionalLevel: "Student",
-    studentInstitution: "foo",
-    // dietry: {
-    //   restrictions: false
-    // }
-  });
+export async function runExample() {
+  const result = await d.validate(
+    form,
+    undefined,
+    {
+      width: 21,
+      height: 2,
+      perimeter: 44,
+      foo: "bar",
+    },
+    {
+      stripNotIncludedValues: true,
+    }
+  );
+
+  console.log(JSON.stringify(form));
 
   console.log("-----");
   console.log(result);
 }
+
+// d.string().email().equals(d.st(3))
+
+// const registrationFormSchema = d.object({
+//   name: d.string().min(d.v(3)),
+//   company: d.string(),
+//   email: d.string()
+//     .email()
+//     .when(
+//       d.matches(d.ref("company"), d.v("\\bapple\\b"), "i"),
+//       (rules) => rules.regex("@apple.com$", "useCompanyMail")
+//     )
+//     .when(
+//       d.matches(d.ref("company"), d.v("\\microsoft\\b"), "i"),
+//       (rules) => rules.regex("@microsoft.com$", "useCompanyMail")
+//     ),
+//   attendanceType: d.options(["inPerson", {
+//     value: "virtual",
+//     enabled: d.neq(d.ref("company"), d.v("\\bapple\\b"))
+//   }, {
+//       value: "hybrid",
+//       enabled: d.neq(d.ref("company"), d.v("\\bapple\\b"))
+//     }]),
+//   accomidationRequired: d.boolean()
+//     .setIncluded(d.eq(d.ref("attendanceType"), d.v("inPerson")))
+//     .setCoerce(true),
+//   workshopPreferences: d.options(["AI & Machine Learning", "Web Development", "Data Science", "Cybersecurity"])
+//     .setIncluded(d.or(d.eq(d.ref("attendanceType"), d.v("inPerson")), d.eq(d.ref("attendanceType"), d.v("hybrid")))),
+//   dietry: d.object({
+//     restrictions: d.boolean().setCoerce(true),
+//     details: d.string()
+//       .setIncluded(d.eq(d.ref("$.dietry.restrictions"), d.v(true)))
+//   }).setIncluded(d.eq(d.ref("attendanceType"), d.v("inPerson")),),
+//   professionalLevel: d.options(["Student", "Junior Professional", "Senior Professional", "Executive"]),
+//   studentInstitution: d.string()
+// })
+
+// export function runRegistrationForm() {
+//   const result = d.validate(registrationFormSchema, undefined, {
+//     name: "foo",
+//     company: "apple",
+//     email: "ruben@apple.com",
+//     attendanceType: "virtual",
+//     professionalLevel: "Student",
+//     studentInstitution: "foo",
+//     // dietry: {
+//     //   restrictions: false
+//     // }
+//   });
+
+//   console.log("-----");
+//   console.log(result);
+// }

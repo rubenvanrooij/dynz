@@ -1,4 +1,4 @@
-import * as d from "dynz";
+import { boolean, date, eq, isIn, neq, number, object, options, or, ref, string, v } from "dynz";
 
 /**
  * Dutch Pension Application Multi-Step Form
@@ -87,317 +87,255 @@ export const SurvivorPensionOption = {
 // STEP 1: PERSONAL INFORMATION
 // ============================================================================
 
-export const PersonalInfoSchema = d.object({
-  fields: {
-    // Basic identification
-    firstName: d.string({
-      rules: [d.minLength(d.v(2)), d.maxLength(d.v(50))],
-    }),
+export const PersonalInfoSchema = object({
+  // Basic identification
+  firstName: string().min(2).max(50),
 
-    middleName: d.string({
-      required: false,
-      rules: [d.maxLength(d.v(30))],
-    }),
+  middleName: string().optional().max(30),
 
-    lastName: d.string({
-      rules: [d.minLength(d.v(2)), d.maxLength(d.v(100))],
-    }),
+  lastName: string().min(2).max(100),
 
-    // Dutch BSN (Burgerservicenummer) - 9 digits
-    bsn: d.string({
-      rules: [d.regex("^[0-9]{9}$", "BSN moet 9 cijfers bevatten")],
-      // private: true,
-    }),
+  // Dutch BSN (Burgerservicenummer) - 9 digits
+  bsn: string().regex("^[0-9]{9}$", undefined, "BSN moet 9 cijfers bevatten"),
+  // .setPrivate(true),
 
-    dateOfBirth: d.date({
-      rules: [
-        // Must be at least 18 years old
-        d.maxDate(d.v(new Date(new Date().setFullYear(new Date().getFullYear() - 18)))),
-        // Must be younger than 100
-        d.minDate(d.v(new Date(new Date().setFullYear(new Date().getFullYear() - 100)))),
-      ],
-    }),
+  dateOfBirth: date()
+    // Must be at least 18 years old
+    .max(new Date(new Date().setFullYear(new Date().getFullYear() - 18)))
+    // Must be younger than 100
+    .min(new Date(new Date().setFullYear(new Date().getFullYear() - 100))),
 
-    gender: d.options({
-      options: Object.values(Gender),
-    }),
+  gender: options(Object.values(Gender)),
 
-    // Contact information
-    email: d.string({
-      rules: [d.email()],
-    }),
+  // Contact information
+  email: string().email(),
 
-    phoneNumber: d.string({
-      rules: [d.regex("^(\\+31|0)[0-9]{9}$", "Voer een geldig Nederlands telefoonnummer in")],
-    }),
+  phoneNumber: string().regex("^(\\+31|0)[0-9]{9}$", undefined, "Voer een geldig Nederlands telefoonnummer in"),
 
-    // Address
-    postalCode: d.string({
-      rules: [d.regex("^[1-9][0-9]{3}\\s?[A-Za-z]{2}$", "Voer een geldige postcode in (bijv. 1234 AB)")],
-    }),
+  // Address
+  postalCode: string().regex(
+    "^[1-9][0-9]{3}\\s?[A-Za-z]{2}$",
+    undefined,
+    "Voer een geldige postcode in (bijv. 1234 AB)"
+  ),
 
-    houseNumber: d.string({
-      rules: [d.regex("^[0-9]+[A-Za-z]?$")],
-    }),
+  houseNumber: string().regex("^[0-9]+[A-Za-z]?$"),
 
-    houseNumberAddition: d.string({
-      required: false,
-      rules: [d.maxLength(d.v(10))],
-    }),
+  houseNumberAddition: string().optional().max(10),
 
-    // Marital status - affects survivor pension options
-    maritalStatus: d.options({
-      options: Object.values(MaritalStatus),
-    }),
+  // Marital status - affects survivor pension options
+  maritalStatus: options(Object.values(MaritalStatus)),
 
-    // Partner information - only if married/partnership/cohabiting
-    partnerDateOfBirth: d.date({
-      included: d.isIn(
-        d.ref("maritalStatus"),
-        d.v([MaritalStatus.MARRIED, MaritalStatus.REGISTERED_PARTNERSHIP, MaritalStatus.COHABITING])
-      ),
-      rules: [d.maxDate(d.v(new Date(new Date().setFullYear(new Date().getFullYear() - 18))))],
-    }),
+  // Partner information - only if married/partnership/cohabiting
+  partnerDateOfBirth: date()
+    .setIncluded(
+      isIn(
+        ref("maritalStatus"),
+        v([MaritalStatus.MARRIED, MaritalStatus.REGISTERED_PARTNERSHIP, MaritalStatus.COHABITING])
+      )
+    )
+    .max(new Date(new Date().setFullYear(new Date().getFullYear() - 18))),
 
-    // Partner BSN for survivor pension registration
-    partnerBsn: d.string({
-      included: d.isIn(d.ref("maritalStatus"), d.v([MaritalStatus.MARRIED, MaritalStatus.REGISTERED_PARTNERSHIP])),
-      rules: [d.regex("^[0-9]{9}$", "BSN moet 9 cijfers bevatten")],
-      // private: true,
-    }),
+  // Partner BSN for survivor pension registration
+  partnerBsn: string()
+    .setIncluded(isIn(ref("maritalStatus"), v([MaritalStatus.MARRIED, MaritalStatus.REGISTERED_PARTNERSHIP])))
+    .regex("^[0-9]{9}$", undefined, "BSN moet 9 cijfers bevatten"),
+  // .setPrivate(true),
 
-    // Children information - affects survivor pension
-    hasChildrenUnder21: d.boolean({}),
+  // Children information - affects survivor pension
+  hasChildrenUnder21: boolean(),
 
-    numberOfChildrenUnder21: d.number({
-      included: d.eq(d.ref("hasChildrenUnder21"), d.v(true)),
-      rules: [d.min(d.v(1)), d.max(d.v(20))],
-    }),
-  },
+  numberOfChildrenUnder21: number()
+    .setIncluded(eq(ref("hasChildrenUnder21"), v(true)))
+    .min(1)
+    .max(20),
 });
 
 // ============================================================================
 // STEP 2: EMPLOYMENT & INCOME
 // ============================================================================
 
-export const EmploymentIncomeSchema = d.object({
-  fields: {
-    // Current employment status
-    employmentStatus: d.options({
-      options: Object.values(EmploymentStatus),
-    }),
+export const EmploymentIncomeSchema = object({
+  // Current employment status
+  employmentStatus: options(Object.values(EmploymentStatus)),
 
-    // Employer information - only for employed persons
-    employerName: d.string({
-      included: d.eq(d.ref("employmentStatus"), d.v(EmploymentStatus.EMPLOYED)),
-      rules: [d.minLength(d.v(2)), d.maxLength(d.v(100))],
-    }),
+  // Employer information - only for employed persons
+  employerName: string()
+    .setIncluded(eq(ref("employmentStatus"), v(EmploymentStatus.EMPLOYED)))
+    .min(2)
+    .max(100),
 
-    // Sector - for pension fund determination
-    sector: d.options({
-      options: Object.values(Sector),
-      included: d.or(
-        d.eq(d.ref("employmentStatus"), d.v(EmploymentStatus.EMPLOYED)),
-        d.eq(d.ref("employmentStatus"), d.v(EmploymentStatus.SELF_EMPLOYED))
-      ),
-    }),
+  // Sector - for pension fund determination
+  sector: options(Object.values(Sector)).setIncluded(
+    or(
+      eq(ref("employmentStatus"), v(EmploymentStatus.EMPLOYED)),
+      eq(ref("employmentStatus"), v(EmploymentStatus.SELF_EMPLOYED))
+    )
+  ),
 
-    // Contract type - affects pension accrual
-    contractType: d.options({
-      options: Object.values(ContractType),
-      included: d.eq(d.ref("employmentStatus"), d.v(EmploymentStatus.EMPLOYED)),
-    }),
+  // Contract type - affects pension accrual
+  contractType: options(Object.values(ContractType)).setIncluded(
+    eq(ref("employmentStatus"), v(EmploymentStatus.EMPLOYED))
+  ),
 
-    // Employment start date
-    employmentStartDate: d.date({
-      included: d.eq(d.ref("employmentStatus"), d.v(EmploymentStatus.EMPLOYED)),
-      rules: [d.maxDate(d.v(new Date()))],
-    }),
+  // Employment start date
+  employmentStartDate: date()
+    .setIncluded(eq(ref("employmentStatus"), v(EmploymentStatus.EMPLOYED)))
+    .max(new Date()),
 
-    // Part-time percentage (100 = full-time)
-    partTimePercentage: d.number({
-      included: d.eq(d.ref("employmentStatus"), d.v(EmploymentStatus.EMPLOYED)),
-      rules: [d.min(d.v(0)), d.max(d.v(100))],
-    }),
+  // Part-time percentage (100 = full-time)
+  partTimePercentage: number()
+    .setIncluded(eq(ref("employmentStatus"), v(EmploymentStatus.EMPLOYED)))
+    .min(0)
+    .max(100),
 
-    // Annual salary (bruto)
-    annualGrossSalary: d.number({
-      included: d.or(
-        d.eq(d.ref("employmentStatus"), d.v(EmploymentStatus.EMPLOYED)),
-        d.eq(d.ref("employmentStatus"), d.v(EmploymentStatus.SELF_EMPLOYED))
-      ),
-      rules: [
-        d.min(d.v(0)),
-        d.max(d.v(500000)), // Reasonable upper limit
-      ],
-    }),
+  // Annual salary (bruto)
+  annualGrossSalary: number()
+    .setIncluded(
+      or(
+        eq(ref("employmentStatus"), v(EmploymentStatus.EMPLOYED)),
+        eq(ref("employmentStatus"), v(EmploymentStatus.SELF_EMPLOYED))
+      )
+    )
+    .min(0)
+    .max(500000), // Reasonable upper limit
 
-    // Pension base (pensioengrondslag) - often salary minus franchise
-    pensionBase: d.number({
-      included: d.or(
-        d.eq(d.ref("employmentStatus"), d.v(EmploymentStatus.EMPLOYED)),
-        d.eq(d.ref("employmentStatus"), d.v(EmploymentStatus.SELF_EMPLOYED))
-      ),
-      rules: [
-        d.min(d.v(0)),
-        // Pension base cannot exceed gross salary
-        d.max(d.ref("annualGrossSalary")),
-      ],
-    }),
+  // Pension base (pensioengrondslag) - often salary minus franchise
+  pensionBase: number()
+    .setIncluded(
+      or(
+        eq(ref("employmentStatus"), v(EmploymentStatus.EMPLOYED)),
+        eq(ref("employmentStatus"), v(EmploymentStatus.SELF_EMPLOYED))
+      )
+    )
+    .min(0)
+    // Pension base cannot exceed gross salary
+    .max(ref("annualGrossSalary")),
 
-    // Holiday allowance included in salary?
-    holidayAllowanceIncluded: d.boolean({
-      included: d.eq(d.ref("employmentStatus"), d.v(EmploymentStatus.EMPLOYED)),
-    }),
+  // Holiday allowance included in salary?
+  holidayAllowanceIncluded: boolean().setIncluded(eq(ref("employmentStatus"), v(EmploymentStatus.EMPLOYED))),
 
-    // Previous employment history - important for pension transfer
-    hasPreviousEmployer: d.boolean({}),
+  // Previous employment history - important for pension transfer
+  hasPreviousEmployer: boolean(),
 
-    // Previous pension provider for potential value transfer
-    previousPensionProvider: d.string({
-      included: d.eq(d.ref("hasPreviousEmployer"), d.v(true)),
-      required: false,
-      rules: [d.maxLength(d.v(100))],
-    }),
+  // Previous pension provider for potential value transfer
+  previousPensionProvider: string()
+    .setIncluded(eq(ref("hasPreviousEmployer"), v(true)))
+    .optional()
+    .max(100),
 
-    // Self-employment years - for ZZP pension rules
-    selfEmploymentYears: d.number({
-      included: d.eq(d.ref("employmentStatus"), d.v(EmploymentStatus.SELF_EMPLOYED)),
-      rules: [d.min(d.v(0)), d.max(d.v(50))],
-    }),
+  // Self-employment years - for ZZP pension rules
+  selfEmploymentYears: number()
+    .setIncluded(eq(ref("employmentStatus"), v(EmploymentStatus.SELF_EMPLOYED)))
+    .min(0)
+    .max(50),
 
-    // Chamber of Commerce number for self-employed
-    kvkNumber: d.string({
-      included: d.eq(d.ref("employmentStatus"), d.v(EmploymentStatus.SELF_EMPLOYED)),
-      rules: [d.regex("^[0-9]{8}$", "KVK-nummer moet 8 cijfers bevatten")],
-    }),
+  // Chamber of Commerce number for self-employed
+  kvkNumber: string()
+    .setIncluded(eq(ref("employmentStatus"), v(EmploymentStatus.SELF_EMPLOYED)))
+    .regex("^[0-9]{8}$", undefined, "KVK-nummer moet 8 cijfers bevatten"),
 
-    // Monthly disability benefit amount - for disability status
-    monthlyDisabilityBenefit: d.number({
-      included: d.eq(d.ref("employmentStatus"), d.v(EmploymentStatus.DISABILITY)),
-      rules: [d.min(d.v(0)), d.max(d.v(10000))],
-    }),
+  // Monthly disability benefit amount - for disability status
+  monthlyDisabilityBenefit: number()
+    .setIncluded(eq(ref("employmentStatus"), v(EmploymentStatus.DISABILITY)))
+    .min(0)
+    .max(10000),
 
-    // WIA percentage - disability percentage
-    wiaPercentage: d.number({
-      included: d.eq(d.ref("employmentStatus"), d.v(EmploymentStatus.DISABILITY)),
-      rules: [d.min(d.v(35)), d.max(d.v(100))], // WIA starts at 35%
-    }),
-  },
+  // WIA percentage - disability percentage
+  wiaPercentage: number()
+    .setIncluded(eq(ref("employmentStatus"), v(EmploymentStatus.DISABILITY)))
+    .min(35) // WIA starts at 35%
+    .max(100),
 });
 
 // ============================================================================
 // STEP 3: PENSION PREFERENCES
 // ============================================================================
 
-export const PensionPreferencesSchema = d.object({
-  fields: {
-    // Preferred retirement age
-    preferredRetirementAge: d.options({
-      options: Object.values(RetirementAge),
-    }),
+export const PensionPreferencesSchema = object({
+  // Preferred retirement age
+  preferredRetirementAge: options(Object.values(RetirementAge)),
 
-    // Early retirement confirmation - must understand consequences
-    earlyRetirementAcknowledgement: d.boolean({
-      included: d.isIn(
-        d.ref("preferredRetirementAge"),
-        d.v([RetirementAge.EARLY_62, RetirementAge.EARLY_63, RetirementAge.EARLY_64, RetirementAge.EARLY_65])
-      ),
-      rules: [d.equals(d.v(true), "U moet bevestigen dat u de gevolgen van vervroegd pensioen begrijpt")],
-    }),
+  // Early retirement confirmation - must understand consequences
+  earlyRetirementAcknowledgement: boolean()
+    .setIncluded(
+      isIn(
+        ref("preferredRetirementAge"),
+        v([RetirementAge.EARLY_62, RetirementAge.EARLY_63, RetirementAge.EARLY_64, RetirementAge.EARLY_65])
+      )
+    )
+    .equals(v(true), "U moet bevestigen dat u de gevolgen van vervroegd pensioen begrijpt"),
 
-    // Pension type preference
-    pensionTypePreference: d.options({
-      options: Object.values(PensionType),
-    }),
+  // Pension type preference
+  pensionTypePreference: options(Object.values(PensionType)),
 
-    // Investment risk profile - for defined contribution
-    investmentRiskProfile: d.options({
-      options: ["defensive", "neutral", "offensive"] as const,
-      included: d.eq(d.ref("pensionTypePreference"), d.v(PensionType.DEFINED_CONTRIBUTION)),
-    }),
+  // Investment risk profile - for defined contribution
+  investmentRiskProfile: options(["defensive", "neutral", "offensive"] as const).setIncluded(
+    eq(ref("pensionTypePreference"), v(PensionType.DEFINED_CONTRIBUTION))
+  ),
 
-    // Lifecycle option - automatic de-risking as retirement approaches
-    useLifecycleOption: d.boolean({
-      included: d.eq(d.ref("pensionTypePreference"), d.v(PensionType.DEFINED_CONTRIBUTION)),
-    }),
+  // Lifecycle option - automatic de-risking as retirement approaches
+  useLifecycleOption: boolean().setIncluded(eq(ref("pensionTypePreference"), v(PensionType.DEFINED_CONTRIBUTION))),
 
-    // Survivor pension option - based on marital status from Step 1
-    survivorPensionOption: d.options({
-      options: Object.values(SurvivorPensionOption),
-    }),
+  // Survivor pension option - based on marital status from Step 1
+  survivorPensionOption: options(Object.values(SurvivorPensionOption)),
 
-    // Partner consent for waiving survivor pension
-    partnerConsentWaiver: d.boolean({
-      // Required if married/partnership and choosing no survivor pension
-      included: d.eq(d.ref("survivorPensionOption"), d.v(SurvivorPensionOption.NONE)),
-      rules: [d.equals(d.v(true), "Uw partner moet toestemming geven voor het afzien van partnerpensioen")],
-    }),
+  // Partner consent for waiving survivor pension
+  partnerConsentWaiver: boolean()
+    // Required if married/partnership and choosing no survivor pension
+    .setIncluded(eq(ref("survivorPensionOption"), v(SurvivorPensionOption.NONE)))
+    .equals(v(true), "Uw partner moet toestemming geven voor het afzien van partnerpensioen"),
 
-    // Additional voluntary contribution (AVC)
-    wantsAdditionalContribution: d.boolean({}),
+  // Additional voluntary contribution (AVC)
+  wantsAdditionalContribution: boolean(),
 
-    // AVC percentage of salary
-    additionalContributionPercentage: d.number({
-      included: d.eq(d.ref("wantsAdditionalContribution"), d.v(true)),
-      rules: [
-        d.min(d.v(0.5)),
-        d.max(d.v(30)), // Max fiscal limit
-      ],
-    }),
+  // AVC percentage of salary
+  additionalContributionPercentage: number()
+    .setIncluded(eq(ref("wantsAdditionalContribution"), v(true)))
+    .min(0.5)
+    .max(30), // Max fiscal limit
 
-    // Hoog-laag construction - higher pension first, lower later (or vice versa)
-    hoogLaagOption: d.options({
-      options: ["standard", "hoog_laag", "laag_hoog"] as const,
-    }),
+  // Hoog-laag construction - higher pension first, lower later (or vice versa)
+  hoogLaagOption: options(["standard", "hoog_laag", "laag_hoog"] as const),
 
-    // Ratio for hoog-laag (e.g., 100:75 means first period 100%, second 75%)
-    hoogLaagRatio: d.options({
-      options: ["100_75", "100_70", "75_100", "70_100"] as const,
-      included: d.neq(d.ref("hoogLaagOption"), d.v("standard")),
-    }),
+  // Ratio for hoog-laag (e.g., 100:75 means first period 100%, second 75%)
+  hoogLaagRatio: options(["100_75", "100_70", "75_100", "70_100"] as const).setIncluded(
+    neq(ref("hoogLaagOption"), v("standard"))
+  ),
 
-    // Exchange partner pension for higher retirement pension
-    exchangePartnerPension: d.boolean({
-      included: d.neq(d.ref("survivorPensionOption"), d.v(SurvivorPensionOption.NONE)),
-    }),
+  // Exchange partner pension for higher retirement pension
+  exchangePartnerPension: boolean().setIncluded(neq(ref("survivorPensionOption"), v(SurvivorPensionOption.NONE))),
 
-    // Pension income test waiver
-    pensionIncomeTestWaiver: d.boolean({
-      required: false,
-    }),
+  // Pension income test waiver
+  pensionIncomeTestWaiver: boolean().optional(),
 
-    // Communication preferences
-    digitalCommunicationOnly: d.boolean({}),
+  // Communication preferences
+  digitalCommunicationOnly: boolean(),
 
-    // Annual statement preference
-    annualStatementByMail: d.boolean({
-      included: d.eq(d.ref("digitalCommunicationOnly"), d.v(false)),
-    }),
+  // Annual statement preference
+  annualStatementByMail: boolean().setIncluded(eq(ref("digitalCommunicationOnly"), v(false))),
 
-    // Tax optimization preference
-    wantsTaxAdvice: d.boolean({}),
+  // Tax optimization preference
+  wantsTaxAdvice: boolean(),
 
-    // Declaration of accuracy
-    declarationOfAccuracy: d.boolean({
-      rules: [d.equals(d.v(true), "U moet verklaren dat alle ingevulde gegevens naar waarheid zijn ingevuld")],
-    }),
-  },
+  // Declaration of accuracy
+  declarationOfAccuracy: boolean().equals(
+    v(true),
+    "U moet verklaren dat alle ingevulde gegevens naar waarheid zijn ingevuld"
+  ),
 });
 
 // ============================================================================
 // COMPLETE MULTI-STEP FORM SCHEMA
 // ============================================================================
 
-export const PensionApplicationSchema = d.object({
-  fields: {
-    // Step 1
-    personalInfo: PersonalInfoSchema,
-    // Step 2
-    employmentIncome: EmploymentIncomeSchema,
-    // Step 3
-    pensionPreferences: PensionPreferencesSchema,
-  },
+export const PensionApplicationSchema = object({
+  // Step 1
+  personalInfo: PersonalInfoSchema,
+  // Step 2
+  employmentIncome: EmploymentIncomeSchema,
+  // Step 3
+  pensionPreferences: PensionPreferencesSchema,
 });
 
 // Helper type for form values

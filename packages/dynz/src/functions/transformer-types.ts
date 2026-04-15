@@ -17,7 +17,7 @@ import type { TanFunction } from "./tan-function";
  * Transformers don't validate directly - they calculate values that can then
  * be used as inputs to validation rules or predicates.
  *
- * **Important:** Transformers are NOT rules! They don't produce validation errors.
+ * **Important:** Transformers are NOT rules They don't produce validation errors.
  * They compute values that are then validated by rules.
  *
  * @category Transformer

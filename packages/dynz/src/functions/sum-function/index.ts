@@ -1,3 +1,4 @@
+import { type ToParams, toParamaterValues } from "../../schemas";
 import type { ValueType } from "../../types";
 import { coerceNumber } from "../../utils";
 import type { ParamaterValue } from "../types";
@@ -35,10 +36,10 @@ export type SumFunction<TValue extends ParamaterValue[] = never> = {
  * @see {@link multiply} - Multiplication transformer
  * @see {@link divide} - Division transformer
  */
-export function sum<const T extends ParamaterValue[]>(...value: T): SumFunction<T> {
+export function sum<const T extends (ParamaterValue<number> | number)[]>(...value: T): SumFunction<ToParams<T>> {
   return {
     type: sumFunctionType,
-    value,
+    value: toParamaterValues(value),
   };
 }
 

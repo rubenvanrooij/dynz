@@ -1,3 +1,4 @@
+import { type ToParams, toParamaterValues } from "../../schemas";
 import type { ValueType } from "../../types";
 import { coerceNumber } from "../../utils";
 import type { ParamaterValue } from "../types";
@@ -35,10 +36,10 @@ export type SubFunction<TValue extends ParamaterValue[] = never> = {
  * @see {@link multiply} - Multiplication transformer
  * @see {@link divide} - Division transformer
  */
-export function sub<const T extends ParamaterValue[]>(...value: T): SubFunction<T> {
+export function sub<const T extends (ParamaterValue<number> | number)[]>(...value: T): SubFunction<ToParams<T>> {
   return {
     type: subFunctionType,
-    value,
+    value: toParamaterValues(value),
   };
 }
 

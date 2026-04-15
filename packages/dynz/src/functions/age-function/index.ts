@@ -1,5 +1,7 @@
+import type { ToParam } from "../../schemas";
 import type { ValueType } from "../../types";
 import { isDate } from "../../validate/validate-type";
+import { val } from "../builders";
 import type { ParamaterValue } from "../types";
 
 export const ageFunctionType = "age";
@@ -41,10 +43,10 @@ export type AgeFunction<TValue extends ParamaterValue = never> = {
  * @see {@link minDate} - Rule for minimum date validation
  * @see {@link maxDate} - Rule for maximum date validation
  */
-export function age<const T extends ParamaterValue>(value: T): AgeFunction<T> {
+export function age<const T extends ParamaterValue<Date> | Date>(value: T): AgeFunction<ToParam<T>> {
   return {
     type: ageFunctionType,
-    value,
+    value: (isDate(value) ? val(value) : value) as ToParam<T>,
   };
 }
 

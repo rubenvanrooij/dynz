@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { enum as enumBuilder, object, string } from "../schemas";
+import { _enum, object, string } from "../schemas";
 import { type ResolveContext, SchemaType } from "../types";
 import {
   isArray,
@@ -18,7 +18,7 @@ import {
 
 describe("validateType", () => {
   const mockContext: ResolveContext = {
-    schema: object({ fields: {} }),
+    schema: object({}),
     values: {},
   };
 
@@ -28,13 +28,13 @@ describe("validateType", () => {
     expect(validateType(string(), 123, "$", mockContext)).toBe(false);
 
     // Object
-    expect(validateType(object({ fields: {} }), {}, "$", mockContext)).toBe(true);
-    expect(validateType(object({ fields: {} }), [], "$", mockContext)).toBe(false);
+    expect(validateType(object({}), {}, "$", mockContext)).toBe(true);
+    expect(validateType(object({}), [], "$", mockContext)).toBe(false);
 
     // Enum
     const testEnum = { ADMIN: "admin", USER: "user" } as const;
-    expect(validateType(enumBuilder({ enum: testEnum }), "admin", "$", mockContext)).toBe(true);
-    expect(validateType(enumBuilder({ enum: testEnum }), "invalid", "$", mockContext)).toBe(false);
+    expect(validateType(_enum(testEnum), "admin", "$", mockContext)).toBe(true);
+    expect(validateType(_enum(testEnum), "invalid", "$", mockContext)).toBe(false);
   });
 });
 
@@ -88,7 +88,7 @@ describe("type checking functions", () => {
   it("should validate options correctly", () => {
     const optionsList = ["option1", "option2"] as const;
     const mockContext: ResolveContext = {
-      schema: object({ fields: {} }),
+      schema: object({}),
       values: {},
     };
     expect(isOption(optionsList, "option1", "$", mockContext)).toBe(true);

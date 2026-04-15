@@ -1,3 +1,4 @@
+import { type ToParams, toParamaterValues } from "../../schemas";
 import type { ValueType } from "../../types";
 import { coerceNumber } from "../../utils";
 import type { ParamaterValue } from "../types";
@@ -33,10 +34,10 @@ export type DivideFunction<TValue extends ParamaterValue[] = never> = {
  * @see {@link sum} - Addition transformer
  * @see {@link sub} - Subtraction transformer
  */
-export function divide<const T extends ParamaterValue[]>(...value: T): DivideFunction<T> {
+export function divide<const T extends (ParamaterValue<number> | number)[]>(...value: T): DivideFunction<ToParams<T>> {
   return {
     type: divideFunctionType,
-    value,
+    value: toParamaterValues(value),
   };
 }
 

@@ -106,13 +106,7 @@ export function getRulesDependencies(schema: Schema, path: string): string[] {
     : [];
 }
 
-/**
- * Returns all the rule dependenceis on other fields for a givens chema
- * @param schema
- * @param path
- * @returns
- */
-export function getRulesDependenciesMap(schema: Schema, path: string = "$"): RulesDependencyMap {
+function _getRulesDependenciesMap(schema: Schema, path: string, root: Schema): RulesDependencyMap {
   const result: RulesDependencyMap = {
     dependencies: {},
     reverse: {},
@@ -130,18 +124,18 @@ export function getRulesDependenciesMap(schema: Schema, path: string = "$"): Rul
     }
   };
 
-  addDependencies(path, getRulesDependencies(schema, path));
+  addDependencies(path, getRulesDependencies(root, path));
 
   switch (schema.type) {
     case SchemaType.ARRAY: {
       // TODO: Find out if we should just ditch the [] and mark the fields dependent on the array itself?
       const arrayPath = `${path}.[]`;
-      addDependencies(arrayPath, getRulesDependencies(schema.schema, arrayPath));
+      addDependencies(arrayPath, getRulesDependencies(root, arrayPath));
       break;
     }
     case SchemaType.OBJECT: {
       for (const [fieldKey, fieldSchema] of Object.entries(schema.fields)) {
-        const childDependencies = getRulesDependenciesMap(fieldSchema, `${path}.${fieldKey}`);
+        const childDependencies = _getRulesDependenciesMap(fieldSchema, `${path}.${fieldKey}`, root);
         // Merge dependencies
         Object.assign(result.dependencies, childDependencies.dependencies);
         // Merge reverse dependencies
@@ -159,4 +153,14 @@ export function getRulesDependenciesMap(schema: Schema, path: string = "$"): Rul
   }
 
   return result;
+}
+
+/**
+ * Returns all the rule dependenceis on other fields for a givens chema
+ * @param schema
+ * @param path
+ * @returns
+ */
+export function getRulesDependenciesMap(schema: Schema, path: string = "$"): RulesDependencyMap {
+  return _getRulesDependenciesMap(schema, path, schema);
 }

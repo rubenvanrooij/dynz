@@ -1,6 +1,5 @@
 import type { Predicate } from "../functions";
 import type { PrivateValue } from "../private";
-import type { ConditionalRule } from "../rules";
 import type {
   ArraySchema,
   BooleanSchema,
@@ -35,19 +34,19 @@ export const SchemaType = {
 
 export type SchemaType = EnumValues<typeof SchemaType>;
 
-export type BaseSchema<TValue, TType extends SchemaType, TRule extends BaseRule> = {
+export type BaseSchema<TValue, TType extends SchemaType, TRule extends BaseRule[] | undefined> = {
   type: TType;
-  rules?: Array<TRule | ConditionalRule>;
-  default?: TValue;
-  required?: boolean | Predicate;
-  mutable?: boolean | Predicate;
-  included?: boolean | Predicate;
-  private?: boolean;
+  rules?: TRule;
+  default?: TValue | undefined;
+  required?: boolean | Predicate | undefined;
+  mutable?: boolean | Predicate | undefined;
+  included?: boolean | Predicate | undefined;
+  private?: boolean | undefined;
 };
 
 // TODO: Remove this?
 export type PrivateSchema = {
-  private?: boolean;
+  private?: boolean | undefined;
 };
 
 export type Schema =

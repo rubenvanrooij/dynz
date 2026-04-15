@@ -11,10 +11,8 @@ import { resolveProperty } from "./resolve-property";
 
 describe("isIncluded", () => {
   const mockSchema = object({
-    fields: {
-      name: string({ included: true }),
-      email: string({ included: false }),
-    },
+    name: string().setIncluded(true),
+    email: string().setIncluded(false),
   });
 
   const mockValues = {

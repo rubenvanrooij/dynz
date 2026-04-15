@@ -1,5 +1,8 @@
+import type { ToParam } from "../../schemas";
 import type { ValueType } from "../../types";
 import { coerceNumber } from "../../utils";
+import { isNumber } from "../../validate/validate-type";
+import { val } from "../builders";
 import type { ParamaterValue } from "../types";
 
 export const floorFunctionType = "floor";
@@ -34,10 +37,10 @@ export type FloorFunction<TValue extends ParamaterValue = never> = {
  *
  * @see {@link ceil} - Ceiling transformer (rounds up)
  */
-export function floor<const T extends ParamaterValue>(value: T): FloorFunction<T> {
+export function floor<const T extends ParamaterValue<number> | number>(value: T): FloorFunction<ToParam<T>> {
   return {
     type: floorFunctionType,
-    value,
+    value: (isNumber(value) ? val(value) : value) as ToParam<T>,
   };
 }
 

@@ -7,7 +7,7 @@ import type { BaseSchema, Schema, SchemaType, SchemaValuesInternal } from "../..
 export type ArraySchema<T extends Schema> = BaseSchema<
   [T] extends [never] ? unknown[] : SchemaValuesInternal<T>[],
   typeof SchemaType.ARRAY,
-  Rule
+  Rule[]
 > & {
   schema: [T] extends [never] ? Schema : T;
   coerce?: boolean;

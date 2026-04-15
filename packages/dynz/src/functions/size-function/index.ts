@@ -1,4 +1,5 @@
 import { isDate } from "date-fns";
+import { type ToParam, toParamaterValue } from "../../schemas";
 import type { ValueType } from "../../types";
 import { coerceNumber } from "../../utils";
 import { isArray, isFile, isString } from "../../validate/validate-type";
@@ -38,10 +39,10 @@ export type SizeFunction<TValue extends ParamaterValue = never> = {
  * @see {@link minLength} - Rule for minimum length validation
  * @see {@link maxLength} - Rule for maximum length validation
  */
-export function size<const T extends ParamaterValue>(value: T): SizeFunction<T> {
+export function size<const T extends ParamaterValue | string>(value: T): SizeFunction<ToParam<T>> {
   return {
     type: sizeFunctionType,
-    value,
+    value: toParamaterValue(value),
   };
 }
 
