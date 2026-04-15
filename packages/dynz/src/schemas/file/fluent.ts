@@ -1,18 +1,18 @@
 import type { ParamaterValue, Predicate } from "../../functions";
-import type { JsonRecord } from "../../types";
-import { type ToParam, toParamaterValue } from "../shared";
 import {
   type ConditionalRule,
   conditional,
   type MaxSizeRule,
-  maxSize,
   type MimeTypeRule,
-  mimeType,
   type MinSizeRule,
+  maxSize,
+  mimeType,
   minSize,
   type Rule,
 } from "../../rules";
+import type { JsonRecord } from "../../types";
 import { SchemaType } from "../../types";
+import { type ToParam, toParamaterValue } from "../shared";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -50,34 +50,45 @@ export type FileRuleBuilder<TRules extends Rule[]> = {
 
 export type FileFluent<TRules extends Rule[], TProps> = {
   readonly type: typeof SchemaType.FILE;
+  /** Accumulated validation rules for this file */
   readonly rules: TRules;
 } & TProps & {
     // — Rule methods —
+    /** Sets minimum file size in bytes. @param min - Minimum size in bytes. @param code - Optional error code */
     minSize: <P extends ParamaterValue<number> | number>(
       min: P,
       code?: string
     ) => FileFluent<Push<TRules, MinSizeRule<ToParam<P>>>, TProps>;
+    /** Sets maximum file size in bytes. @param max - Maximum size in bytes. @param code - Optional error code */
     maxSize: <P extends ParamaterValue<number> | number>(
       max: P,
       code?: string
     ) => FileFluent<Push<TRules, MaxSizeRule<ToParam<P>>>, TProps>;
+    /** Restricts allowed MIME types. @param type - Single type or array of allowed types (e.g., "image/png"). @param code - Optional error code */
     mimeType: <P extends ParamaterValue<string | string[]> | string>(
       type: P,
       code?: string
     ) => FileFluent<Push<TRules, MimeTypeRule<ToParam<P>>>, TProps>;
 
     // — Conditional rules —
+    /** Applies rules conditionally based on a predicate. @param pred - Condition to evaluate. @param cb - Builder callback for conditional rules */
     when: <WRules extends Rule[]>(
       pred: Predicate,
       cb: (b: FileRuleBuilder<[]>) => FileRuleBuilder<WRules>
     ) => FileFluent<[...TRules, ...WrapConditionals<WRules>], TProps>;
 
     // — Property setters —
+    /** Marks field as required or conditionally required. @param value - Boolean or predicate */
     setRequired: <P extends boolean | Predicate>(value: P) => FileFluent<TRules, TProps & { required: P }>;
+    /** Marks field as optional (shorthand for setRequired(false)) */
     optional: () => FileFluent<TRules, TProps & { required: false }>;
+    /** Controls if field can be modified after creation. @param value - Boolean or predicate */
     setMutable: <P extends boolean | Predicate>(value: P) => FileFluent<TRules, TProps & { mutable: P }>;
+    /** Controls if field is included in output. @param value - Boolean or predicate */
     setIncluded: <P extends boolean | Predicate>(value: P) => FileFluent<TRules, TProps & { included: P }>;
+    /** Marks field as private (masked in output). @param value - Boolean flag */
     setPrivate: <P extends boolean>(value: P) => FileFluent<TRules, TProps & { private: P }>;
+    /** Attaches UI metadata for form rendering. @param config - UI configuration object */
     ui: <TUI extends JsonRecord>(config: TUI) => FileFluent<TRules, TProps & { ui: TUI }>;
   };
 
@@ -122,7 +133,10 @@ function createFluent<TRules extends Rule[], TProps>(rules: TRules, props: TProp
     when: <WRules extends Rule[]>(pred: Predicate, cb: (b: FileRuleBuilder<[]>) => FileRuleBuilder<WRules>) => {
       const result = cb(createRuleBuilder([]));
       const conditionals = result.rules.map((rule) =>
-        conditional({ when: pred, then: rule as Exclude<Rule, ConditionalRule> })
+        conditional({
+          when: pred,
+          then: rule as Exclude<Rule, ConditionalRule>,
+        })
       ) as WrapConditionals<WRules>;
       return createFluent([...rules, ...conditionals] as [...TRules, ...WrapConditionals<WRules>], props);
     },

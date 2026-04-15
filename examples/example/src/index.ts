@@ -1,8 +1,6 @@
-import * as d from "dynz";
 import { runExample } from "./registration-form";
 
-
-runExample()
+runExample();
 
 // const ADDONS_PRICES = {
 //   legalAid: 10,

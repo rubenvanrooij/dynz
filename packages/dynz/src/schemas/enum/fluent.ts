@@ -1,6 +1,4 @@
 import type { ParamaterValue, Predicate } from "../../functions";
-import type { JsonRecord } from "../../types";
-import { type ToParam, toParamaterValue } from "../shared";
 import {
   type ConditionalRule,
   conditional,
@@ -10,7 +8,9 @@ import {
   oneOf,
   type Rule,
 } from "../../rules";
+import type { JsonRecord } from "../../types";
 import { SchemaType } from "../../types";
+import { type ToParam, toParamaterValue } from "../shared";
 import type { Enum, EnumValues } from "./types";
 
 // ---------------------------------------------------------------------------
@@ -50,32 +50,44 @@ export type EnumRuleBuilder<TEnum extends Enum, TRules extends Rule[]> = {
 
 export type EnumFluent<TEnum extends Enum, TRules extends Rule[], TProps> = {
   readonly type: typeof SchemaType.ENUM;
+  /** The enum definition containing allowed values */
   readonly enum: TEnum;
+  /** Accumulated validation rules for this enum */
   readonly rules: TRules;
 } & TProps & {
     // — Rule methods —
+    /** Validates value equals a specific enum member. @param value - Expected enum value. @param code - Optional error code */
     equals: <P extends ParamaterValue<EnumValues<TEnum>> | EnumValues<TEnum>>(
       value: P,
       code?: string
     ) => EnumFluent<TEnum, Push<TRules, EqualsRule<ToParam<P>>>, TProps>;
+    /** Validates value is one of allowed enum members. @param values - Array of allowed values. @param code - Optional error code */
     oneOf: <P extends ParamaterValue[]>(
       values: P,
       code?: string
     ) => EnumFluent<TEnum, Push<TRules, OneOfRule<P>>, TProps>;
 
     // — Conditional rules —
+    /** Applies rules conditionally based on a predicate. @param pred - Condition to evaluate. @param cb - Builder callback for conditional rules */
     when: <WRules extends Rule[]>(
       pred: Predicate,
       cb: (b: EnumRuleBuilder<TEnum, []>) => EnumRuleBuilder<TEnum, WRules>
     ) => EnumFluent<TEnum, [...TRules, ...WrapConditionals<WRules>], TProps>;
 
     // — Property setters —
+    /** Marks field as required or conditionally required. @param value - Boolean or predicate */
     setRequired: <P extends boolean | Predicate>(value: P) => EnumFluent<TEnum, TRules, TProps & { required: P }>;
+    /** Marks field as optional (shorthand for setRequired(false)) */
     optional: () => EnumFluent<TEnum, TRules, TProps & { required: false }>;
+    /** Controls if field can be modified after creation. @param value - Boolean or predicate */
     setMutable: <P extends boolean | Predicate>(value: P) => EnumFluent<TEnum, TRules, TProps & { mutable: P }>;
+    /** Controls if field is included in output. @param value - Boolean or predicate */
     setIncluded: <P extends boolean | Predicate>(value: P) => EnumFluent<TEnum, TRules, TProps & { included: P }>;
+    /** Marks field as private (masked in output). @param value - Boolean flag */
     setPrivate: <P extends boolean>(value: P) => EnumFluent<TEnum, TRules, TProps & { private: P }>;
+    /** Sets a default value when field is empty. @param value - Default enum value */
     setDefault: (value: EnumValues<TEnum>) => EnumFluent<TEnum, TRules, TProps & { default: EnumValues<TEnum> }>;
+    /** Attaches UI metadata for form rendering. @param config - UI configuration object */
     ui: <TUI extends JsonRecord>(config: TUI) => EnumFluent<TEnum, TRules, TProps & { ui: TUI }>;
   };
 
@@ -128,7 +140,10 @@ function createFluent<TEnum extends Enum, TRules extends Rule[], TProps>(
     ) => {
       const result = cb(createRuleBuilder(theEnum, []));
       const conditionals = result.rules.map((rule) =>
-        conditional({ when: pred, then: rule as Exclude<Rule, ConditionalRule> })
+        conditional({
+          when: pred,
+          then: rule as Exclude<Rule, ConditionalRule>,
+        })
       ) as WrapConditionals<WRules>;
       return createFluent(theEnum, [...rules, ...conditionals] as [...TRules, ...WrapConditionals<WRules>], props);
     },

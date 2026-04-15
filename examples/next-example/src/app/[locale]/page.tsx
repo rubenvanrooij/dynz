@@ -2,7 +2,7 @@
 
 import { IsIncluded } from "@dynz/react-hook-form";
 
-import * as d from "dynz";
+import { boolean, conditional, eq, matches, object, options, or, ref, type SchemaValues, string, v } from "dynz";
 import { PopcornIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { DynzBoolean, DynzSelect, DynzTextInput } from "@/components/dynz/dynz-form";
@@ -11,69 +11,37 @@ import { Alert, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-const stringRequiredRule = d.minLength(d.v(1), "required");
-
-const schema = d.object({
-  private: false,
-  fields: {
-    name: d.string({
-      rules: [stringRequiredRule, d.minLength(d.v(3))],
-    }),
-    company: d.string({
-      rules: [stringRequiredRule],
-    }),
-    email: d.string({
-      rules: [
-        stringRequiredRule,
-        d.email(),
-        d.conditional({
-          when: d.matches(d.ref("company"), d.v("\\bapple\\b"), "i"),
-          then: d.regex("@apple.com$", "useCompanyMail"),
-        }),
-        d.conditional({
-          when: d.matches(d.ref("company"), d.v("\\microsoft\\b"), "i"),
-          then: d.regex("@microsoft.com$", "useCompanyMail"),
-        }),
-      ],
-    }),
-    attendanceType: d.options({
-      default: "Virtual",
-      options: ["In-Person", "Virtual", "Hybrid"],
-    }),
-    accomidationRequired: d.boolean({
-      coerce: true,
-      included: d.eq(d.ref("attendanceType"), d.v("In-Person")),
-    }),
-    workshopPreferences: d.options({
-      options: ["AI & Machine Learning", "Web Development", "Data Science", "Cybersecurity"],
-      included: d.or(d.eq(d.ref("attendanceType"), d.v("In-Person")), d.eq(d.ref("attendanceType"), d.v("Hybrid"))),
-    }),
-    dietry: d.object({
-      fields: {
-        restrictions: d.boolean({
-          coerce: true,
-        }),
-        details: d.string({
-          rules: [stringRequiredRule],
-          included: d.eq(d.ref("$.dietry.restrictions"), d.v(true)),
-        }),
-      },
-    }),
-    professionalLevel: d.options({
-      options: ["Student", "Junior Professional", "Senior Professional", "Executive"],
-    }),
-    studentInstitution: d.string({
-      rules: [stringRequiredRule],
-      included: d.eq(d.ref("professionalLevel"), d.v("Student")),
-    }),
-    // image: array({
-    //   schema: file({
-    //     rules: [mimeType(['image/jpeg', 'text/csv'])]
-    //   }),
-    //   rules: [min(1), max(1)]
-    // })
-  },
-});
+const schema = object({
+  name: string().min(1, "required").min(3),
+  company: string().min(1, "required"),
+  email: string()
+    .min(1, "required")
+    .email()
+    .when(matches(ref("company"), v("\\bapple\\b"), "i"), (b) => b.regex("@apple.com$", undefined, "useCompanyMail"))
+    .when(matches(ref("company"), v("\\bmicrosoft\\b"), "i"), (b) =>
+      b.regex("@microsoft.com$", undefined, "useCompanyMail")
+    ),
+  attendanceType: options(["In-Person", "Virtual", "Hybrid"]).setDefault("Virtual"),
+  accomidationRequired: boolean()
+    .setCoerce(true)
+    .setIncluded(eq(ref("attendanceType"), v("In-Person"))),
+  workshopPreferences: options([
+    "AI & Machine Learning",
+    "Web Development",
+    "Data Science",
+    "Cybersecurity",
+  ]).setIncluded(or(eq(ref("attendanceType"), v("In-Person")), eq(ref("attendanceType"), v("Hybrid")))),
+  dietry: object({
+    restrictions: boolean().setCoerce(true),
+    details: string()
+      .min(1, "required")
+      .setIncluded(eq(ref("$.dietry.restrictions"), v(true))),
+  }),
+  professionalLevel: options(["Student", "Junior Professional", "Senior Professional", "Executive"]),
+  studentInstitution: string()
+    .min(1, "required")
+    .setIncluded(eq(ref("professionalLevel"), v("Student"))),
+}).setPrivate(false);
 
 console.log(JSON.stringify(schema));
 
@@ -86,7 +54,7 @@ const DEFAULT_VALUES = {
 export default function Home() {
   const t = useTranslations();
 
-  const onSubmit = (data: d.SchemaValues<typeof schema>) => {
+  const onSubmit = (data: SchemaValues<typeof schema>) => {
     alert(JSON.stringify(data));
   };
 

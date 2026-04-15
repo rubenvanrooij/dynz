@@ -1,3 +1,4 @@
+import { type ToParam, toParamaterValue } from "../../schemas";
 import type { ValueType } from "../../types";
 import type { ParamaterValue } from "../types";
 
@@ -10,12 +11,13 @@ export type LookupFunction<TValue extends ParamaterValue = never, TLookup extend
 };
 
 export function lookup<
-  const TValue extends ParamaterValue = never,
-  const TLookup extends ParamaterValue = never,
->(input: { value: TValue; lookup: TLookup }): LookupFunction<TValue, TLookup> {
+  const TValue extends ParamaterValue | number | string,
+  const TLookup extends ParamaterValue,
+>(input: { value: TValue; lookup: TLookup }): LookupFunction<ToParam<TValue>, TLookup> {
   return {
     type: lookupFunctionType,
-    ...input,
+    value: toParamaterValue(input.value),
+    lookup: input.lookup,
   };
 }
 

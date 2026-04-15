@@ -1,3 +1,4 @@
+import { type ToParam, toParamaterValue } from "../../schemas";
 import type { ValueType } from "../../types";
 import type { ParamaterValue } from "../types";
 
@@ -42,14 +43,14 @@ export type EqualsFunction<TLeft extends ParamaterValue = never, TRight extends 
  * @see {@link neq} - Not equals predicate
  * @see {@link equals} - Validation rule (not a predicate!)
  */
-export function eq<const TLeft extends ParamaterValue, const TRight extends ParamaterValue>(
-  left: TLeft,
-  right: TRight
-): EqualsFunction<TLeft, TRight> {
+export function eq<
+  const TLeft extends ParamaterValue | number | string | boolean | Date,
+  const TRight extends ParamaterValue | number | string | boolean | Date,
+>(left: TLeft, right: TRight): EqualsFunction<ToParam<TLeft>, ToParam<TRight>> {
   return {
     type: equalsFunctionType,
-    left,
-    right,
+    left: toParamaterValue(left),
+    right: toParamaterValue(right),
   };
 }
 

@@ -1,3 +1,4 @@
+import { type ToParam, toParamaterValue } from "../../schemas";
 import type { ValueType } from "../../types";
 import type { ParamaterValue } from "../types";
 
@@ -34,14 +35,14 @@ export type LowerThanOrEqualFunction<TLeft extends ParamaterValue = never, TRigh
  * @see {@link gte} - Greater than or equal (>=)
  * @see {@link max} - Rule for maximum value validation
  */
-export function lte<const TLeft extends ParamaterValue, const TRight extends ParamaterValue>(
-  left: TLeft,
-  right: TRight
-): LowerThanOrEqualFunction<TLeft, TRight> {
+export function lte<
+  const TLeft extends ParamaterValue<number> | number,
+  const TRight extends ParamaterValue<number> | number,
+>(left: TLeft, right: TRight): LowerThanOrEqualFunction<ToParam<TLeft>, ToParam<TRight>> {
   return {
     type: lowerThanOrEqualFunctionType,
-    left,
-    right,
+    left: toParamaterValue(left),
+    right: toParamaterValue(right),
   };
 }
 

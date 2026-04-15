@@ -1,8 +1,8 @@
 import type { ParamaterValue, Predicate } from "../../functions";
-import type { JsonRecord } from "../../types";
-import { type ToParam, toParamaterValue } from "../shared";
 import { type ConditionalRule, conditional, type EqualsRule, equals, type Rule } from "../../rules";
+import type { JsonRecord } from "../../types";
 import { SchemaType } from "../../types";
+import { type ToParam, toParamaterValue } from "../shared";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -35,28 +35,39 @@ export type BoolRuleBuilder<TRules extends Rule[]> = {
 
 export type BoolFluent<TRules extends Rule[], TProps> = {
   readonly type: typeof SchemaType.BOOLEAN;
+  /** Accumulated validation rules for this boolean */
   readonly rules: TRules;
 } & TProps & {
     // — Rule methods —
+    /** Validates boolean equals a specific value. @param value - Expected value (true/false). @param code - Optional error code */
     equals: <P extends ParamaterValue<boolean> | boolean>(
       value: P,
       code?: string
     ) => BoolFluent<Push<TRules, EqualsRule<ToParam<P>>>, TProps>;
 
     // — Conditional rules —
+    /** Applies rules conditionally based on a predicate. @param pred - Condition to evaluate. @param cb - Builder callback for conditional rules */
     when: <WRules extends Rule[]>(
       pred: Predicate,
       cb: (b: BoolRuleBuilder<[]>) => BoolRuleBuilder<WRules>
     ) => BoolFluent<[...TRules, ...WrapConditionals<WRules>], TProps>;
 
     // — Property setters —
+    /** Marks field as required or conditionally required. @param value - Boolean or predicate */
     setRequired: <P extends boolean | Predicate>(value: P) => BoolFluent<TRules, TProps & { required: P }>;
+    /** Marks field as optional (shorthand for setRequired(false)) */
     optional: () => BoolFluent<TRules, TProps & { required: false }>;
+    /** Controls if field can be modified after creation. @param value - Boolean or predicate */
     setMutable: <P extends boolean | Predicate>(value: P) => BoolFluent<TRules, TProps & { mutable: P }>;
+    /** Controls if field is included in output. @param value - Boolean or predicate */
     setIncluded: <P extends boolean | Predicate>(value: P) => BoolFluent<TRules, TProps & { included: P }>;
+    /** Marks field as private (masked in output). @param value - Boolean flag */
     setPrivate: <P extends boolean>(value: P) => BoolFluent<TRules, TProps & { private: P }>;
+    /** Enables automatic type coercion. @param value - Boolean flag */
     setCoerce: <P extends boolean>(value: P) => BoolFluent<TRules, TProps & { coerce: P }>;
+    /** Sets a default value when field is empty. @param value - Default boolean value */
     setDefault: (value: boolean) => BoolFluent<TRules, TProps & { default: boolean }>;
+    /** Attaches UI metadata for form rendering. @param config - UI configuration object */
     ui: <TUI extends JsonRecord>(config: TUI) => BoolFluent<TRules, TProps & { ui: TUI }>;
   };
 
@@ -95,7 +106,10 @@ function createFluent<TRules extends Rule[], TProps>(rules: TRules, props: TProp
     when: <WRules extends Rule[]>(pred: Predicate, cb: (b: BoolRuleBuilder<[]>) => BoolRuleBuilder<WRules>) => {
       const result = cb(createRuleBuilder([]));
       const conditionals = result.rules.map((rule) =>
-        conditional({ when: pred, then: rule as Exclude<Rule, ConditionalRule> })
+        conditional({
+          when: pred,
+          then: rule as Exclude<Rule, ConditionalRule>,
+        })
       ) as WrapConditionals<WRules>;
       return createFluent([...rules, ...conditionals] as [...TRules, ...WrapConditionals<WRules>], props);
     },

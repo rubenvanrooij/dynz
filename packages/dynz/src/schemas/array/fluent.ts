@@ -1,6 +1,4 @@
 import type { ParamaterValue, Predicate } from "../../functions";
-import type { JsonRecord } from "../../types";
-import { type ToParam, toParamaterValue } from "../shared";
 import {
   type ConditionalRule,
   conditional,
@@ -10,7 +8,9 @@ import {
   minLength,
   type Rule,
 } from "../../rules";
+import type { JsonRecord } from "../../types";
 import { type Schema, SchemaType } from "../../types";
+import { type ToParam, toParamaterValue } from "../shared";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -52,32 +52,44 @@ export type ArrayRuleBuilder<TSchema extends Schema, TRules extends Rule[]> = {
 
 export type ArrayFluent<TSchema extends Schema, TRules extends Rule[], TProps> = {
   readonly type: typeof SchemaType.ARRAY;
+  /** The schema applied to each array item */
   readonly schema: TSchema;
+  /** Accumulated validation rules for this array */
   readonly rules: TRules;
 } & TProps & {
     // — Rule methods —
+    /** Sets minimum array length. @param min - Minimum number of items. @param code - Optional error code */
     min: <P extends ParamaterValue<number> | number>(
       min: P,
       code?: string
     ) => ArrayFluent<TSchema, Push<TRules, MinLengthRule<ToParam<P>>>, TProps>;
+    /** Sets maximum array length. @param max - Maximum number of items. @param code - Optional error code */
     max: <P extends ParamaterValue<number> | number>(
       max: P,
       code?: string
     ) => ArrayFluent<TSchema, Push<TRules, MaxLengthRule<ToParam<P>>>, TProps>;
 
     // — Conditional rules —
+    /** Applies rules conditionally based on a predicate. @param pred - Condition to evaluate. @param cb - Builder callback for conditional rules */
     when: <WRules extends Rule[]>(
       pred: Predicate,
       cb: (b: ArrayRuleBuilder<TSchema, []>) => ArrayRuleBuilder<TSchema, WRules>
     ) => ArrayFluent<TSchema, [...TRules, ...WrapConditionals<WRules>], TProps>;
 
     // — Property setters —
+    /** Marks field as required or conditionally required. @param value - Boolean or predicate */
     setRequired: <P extends boolean | Predicate>(value: P) => ArrayFluent<TSchema, TRules, TProps & { required: P }>;
+    /** Marks field as optional (shorthand for setRequired(false)) */
     optional: () => ArrayFluent<TSchema, TRules, TProps & { required: false }>;
+    /** Controls if field can be modified after creation. @param value - Boolean or predicate */
     setMutable: <P extends boolean | Predicate>(value: P) => ArrayFluent<TSchema, TRules, TProps & { mutable: P }>;
+    /** Controls if field is included in output. @param value - Boolean or predicate */
     setIncluded: <P extends boolean | Predicate>(value: P) => ArrayFluent<TSchema, TRules, TProps & { included: P }>;
+    /** Marks field as private (masked in output). @param value - Boolean flag */
     setPrivate: <P extends boolean>(value: P) => ArrayFluent<TSchema, TRules, TProps & { private: P }>;
+    /** Enables automatic type coercion. @param value - Boolean flag */
     setCoerce: <P extends boolean>(value: P) => ArrayFluent<TSchema, TRules, TProps & { coerce: P }>;
+    /** Attaches UI metadata for form rendering. @param config - UI configuration object */
     ui: <TUI extends JsonRecord>(config: TUI) => ArrayFluent<TSchema, TRules, TProps & { ui: TUI }>;
   };
 
@@ -131,7 +143,10 @@ function createFluent<TSchema extends Schema, TRules extends Rule[], TProps>(
     ) => {
       const result = cb(createRuleBuilder(schema, []));
       const conditionals = result.rules.map((rule) =>
-        conditional({ when: pred, then: rule as Exclude<Rule, ConditionalRule> })
+        conditional({
+          when: pred,
+          then: rule as Exclude<Rule, ConditionalRule>,
+        })
       ) as WrapConditionals<WRules>;
       return createFluent(schema, [...rules, ...conditionals] as [...TRules, ...WrapConditionals<WRules>], props);
     },

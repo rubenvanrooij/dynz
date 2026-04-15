@@ -17,7 +17,7 @@ import type { OrFunction } from "./or-function";
  * Predicates evaluate to true/false and are used with conditional rules
  * to apply validation rules based on dynamic conditions.
  *
- * **Important:** Predicates are NOT rules! They don't validate field values directly.
+ * **Important:** Predicates are NOT rules They don't validate field values directly.
  * They are used in `when` clauses to determine IF a rule should be applied.
  *
  * @category Predicate

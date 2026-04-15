@@ -1,6 +1,4 @@
 import type { ParamaterValue, Predicate } from "../../functions";
-import type { JsonRecord } from "../../types";
-import { type ToParam, toParamaterValue } from "../shared";
 import {
   type AfterRule,
   after,
@@ -14,7 +12,9 @@ import {
   minDate,
   type Rule,
 } from "../../rules";
+import type { JsonRecord } from "../../types";
 import { SchemaType } from "../../types";
+import { type ToParam, toParamaterValue } from "../shared";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -50,40 +50,54 @@ export type DateRuleBuilder<TRules extends Rule[]> = {
 
 export type DateFluent<TRules extends Rule[], TProps> = {
   readonly type: typeof SchemaType.DATE;
+  /** Accumulated validation rules for this date */
   readonly rules: TRules;
 } & TProps & {
     // — Rule methods —
+    /** Validates date is strictly after a given date (exclusive). @param date - Boundary date. @param code - Optional error code */
     after: <P extends ParamaterValue<Date> | Date>(
       date: P,
       code?: string
     ) => DateFluent<Push<TRules, AfterRule<ToParam<P>>>, TProps>;
+    /** Validates date is strictly before a given date (exclusive). @param date - Boundary date. @param code - Optional error code */
     before: <P extends ParamaterValue<Date> | Date>(
       date: P,
       code?: string
     ) => DateFluent<Push<TRules, BeforeRule<ToParam<P>>>, TProps>;
+    /** Validates date is on or after a given date (inclusive). @param date - Minimum date. @param code - Optional error code */
     min: <P extends ParamaterValue<Date> | Date>(
       date: P,
       code?: string
     ) => DateFluent<Push<TRules, MinDateRule<ToParam<P>>>, TProps>;
+    /** Validates date is on or before a given date (inclusive). @param date - Maximum date. @param code - Optional error code */
     max: <P extends ParamaterValue<Date> | Date>(
       date: P,
       code?: string
     ) => DateFluent<Push<TRules, MaxDateRule<ToParam<P>>>, TProps>;
 
     // — Conditional rules —
+    /** Applies rules conditionally based on a predicate. @param pred - Condition to evaluate. @param cb - Builder callback for conditional rules */
     when: <WRules extends Rule[]>(
       pred: Predicate,
       cb: (b: DateRuleBuilder<[]>) => DateRuleBuilder<WRules>
     ) => DateFluent<[...TRules, ...WrapConditionals<WRules>], TProps>;
 
     // — Property setters —
+    /** Marks field as required or conditionally required. @param value - Boolean or predicate */
     setRequired: <P extends boolean | Predicate>(value: P) => DateFluent<TRules, TProps & { required: P }>;
+    /** Marks field as optional (shorthand for setRequired(false)) */
     optional: () => DateFluent<TRules, TProps & { required: false }>;
+    /** Controls if field can be modified after creation. @param value - Boolean or predicate */
     setMutable: <P extends boolean | Predicate>(value: P) => DateFluent<TRules, TProps & { mutable: P }>;
+    /** Controls if field is included in output. @param value - Boolean or predicate */
     setIncluded: <P extends boolean | Predicate>(value: P) => DateFluent<TRules, TProps & { included: P }>;
+    /** Marks field as private (masked in output). @param value - Boolean flag */
     setPrivate: <P extends boolean>(value: P) => DateFluent<TRules, TProps & { private: P }>;
+    /** Enables automatic type coercion (e.g., string to Date). @param value - Boolean flag */
     setCoerce: <P extends boolean>(value: P) => DateFluent<TRules, TProps & { coerce: P }>;
+    /** Sets a default value when field is empty. @param value - Default Date value */
     setDefault: (value: Date) => DateFluent<TRules, TProps & { default: Date }>;
+    /** Attaches UI metadata for form rendering. @param config - UI configuration object */
     ui: <TUI extends JsonRecord>(config: TUI) => DateFluent<TRules, TProps & { ui: TUI }>;
   };
 
@@ -131,7 +145,10 @@ function createFluent<TRules extends Rule[], TProps>(rules: TRules, props: TProp
     when: <WRules extends Rule[]>(pred: Predicate, cb: (b: DateRuleBuilder<[]>) => DateRuleBuilder<WRules>) => {
       const result = cb(createRuleBuilder([]));
       const conditionals = result.rules.map((rule) =>
-        conditional({ when: pred, then: rule as Exclude<Rule, ConditionalRule> })
+        conditional({
+          when: pred,
+          then: rule as Exclude<Rule, ConditionalRule>,
+        })
       ) as WrapConditionals<WRules>;
       return createFluent([...rules, ...conditionals] as [...TRules, ...WrapConditionals<WRules>], props);
     },

@@ -1,50 +1,40 @@
 import { describe, expect, it } from "vitest";
 import { and, eq, gt, gte, isIn, isNotIn, lt, lte, matches, neq, or, v } from "../functions";
 import { ref } from "../reference";
-import { custom } from "../rules/custom-rule";
-import { equals } from "../rules/equals-rule";
-import { oneOf } from "../rules/one-off-rule";
-import { object } from "../schemas/object/builder";
-import { string } from "../schemas/string/builder";
+import { object, string } from "../schemas";
 import { getConditionDependencies, getRulesDependenciesMap } from "./get-condition-dependencies";
 
 // Root schema containing all fields referenced in getConditionDependencies tests
 const rootSchema = object({
-  fields: {
-    email: string(),
-    status: string(),
-    age: string(),
-    score: string(),
-    price: string(),
-    limit: string(),
-    phone: string(),
-    role: string(),
-    name: string(),
-    active: string(),
-    verified: string(),
-    enabled: string(),
-    type: string(),
-    points: string(),
-    trusted: string(),
-    userType: string(),
-    subscriptionMonths: string(),
-    teamSize: string(),
-    hasContract: string(),
-    level: string(),
-    global: object({
-      fields: {
-        setting: string(),
-        promotionalAccess: string(),
-        feature: string(),
-      },
-    }),
-    module: object({
-      fields: {
-        localSetting: string(),
-        config: object({ fields: {} }),
-      },
-    }),
-  },
+  email: string(),
+  status: string(),
+  age: string(),
+  score: string(),
+  price: string(),
+  limit: string(),
+  phone: string(),
+  role: string(),
+  name: string(),
+  active: string(),
+  verified: string(),
+  enabled: string(),
+  type: string(),
+  points: string(),
+  trusted: string(),
+  userType: string(),
+  subscriptionMonths: string(),
+  teamSize: string(),
+  hasContract: string(),
+  level: string(),
+  global: object({
+    setting: string(),
+    promotionalAccess: string(),
+    feature: string(),
+  }),
+  module: object({
+    localSetting: string(),
+    config: object({}),
+  }),
 });
 
 describe("getConditionDependencies", () => {
@@ -178,14 +168,10 @@ describe("getRulesDependenciesMap", () => {
 
   describe("custom rules with references", () => {
     it("should extract dependencies from custom rule parameters", () => {
-      const schema = string({
-        rules: [
-          custom("myValidation", {
-            threshold: ref("settings.threshold"),
-            comparisonValue: ref("$.global.comparison"),
-            staticValue: v("test"),
-          }),
-        ],
+      const schema = string().custom("myValidation", {
+        threshold: ref("settings.threshold"),
+        comparisonValue: ref("$.global.comparison"),
+        staticValue: v("test"),
       });
 
       const result = getRulesDependenciesMap(schema, "$.field");
@@ -202,17 +188,14 @@ describe("getRulesDependenciesMap", () => {
     });
 
     it("should handle multiple custom rules with mixed references", () => {
-      const schema = string({
-        rules: [
-          custom("validation1", {
-            min: ref("$.limits.min"),
-            max: ref("limits.max"),
-          }),
-          custom("validation2", {
-            pattern: ref("$.pattern.regex"),
-          }),
-        ],
-      });
+      const schema = string()
+        .custom("validation1", {
+          min: ref("$.limits.min"),
+          max: ref("limits.max"),
+        })
+        .custom("validation2", {
+          pattern: ref("$.pattern.regex"),
+        });
 
       const result = getRulesDependenciesMap(schema, "$.input");
 
@@ -229,13 +212,9 @@ describe("getRulesDependenciesMap", () => {
     });
 
     it("should handle custom rules without any references", () => {
-      const schema = string({
-        rules: [
-          custom("simpleValidation", {
-            staticParam: v("value"),
-            numericParam: v(42),
-          }),
-        ],
+      const schema = string().custom("simpleValidation", {
+        staticParam: v("value"),
+        numericParam: v(42),
       });
 
       const result = getRulesDependenciesMap(schema, "$.field");
@@ -249,9 +228,7 @@ describe("getRulesDependenciesMap", () => {
 
   describe("other rules with references", () => {
     it("should extract dependencies from equals rule with reference", () => {
-      const schema = string({
-        rules: [equals(ref("confirmPassword"))],
-      });
+      const schema = string().equals(ref("confirmPassword"));
 
       const result = getRulesDependenciesMap(schema, "$.password");
 
@@ -266,9 +243,7 @@ describe("getRulesDependenciesMap", () => {
     });
 
     it("should extract dependencies from oneOf rule with references", () => {
-      const schema = string({
-        rules: [oneOf([v("static"), ref("allowedValue1"), ref("$.global.allowedValue2")])],
-      });
+      const schema = string().oneOf([v("static"), ref("allowedValue1"), ref("$.global.allowedValue2")]);
 
       const result = getRulesDependenciesMap(schema, "$.choice");
 

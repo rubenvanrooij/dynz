@@ -1,6 +1,4 @@
 import type { ParamaterValue, Predicate, Transformer } from "../../functions";
-import type { JsonRecord } from "../../types";
-import { type ToParam, toParamaterValue } from "../shared";
 import {
   type ConditionalRule,
   conditional,
@@ -18,7 +16,9 @@ import {
   oneOf,
   type Rule,
 } from "../../rules";
+import type { JsonRecord } from "../../types";
 import { SchemaType } from "../../types";
+import { type ToParam, toParamaterValue } from "../shared";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -63,43 +63,59 @@ export type NumRuleBuilder<TRules extends Rule[]> = {
 
 export type NumFluent<TRules extends Rule[], TProps> = {
   readonly type: typeof SchemaType.NUMBER;
+  /** Accumulated validation rules for this number */
   readonly rules: TRules;
 } & TProps & {
     // — Rule methods —
+    /** Sets minimum value. @param value - Minimum allowed value. @param code - Optional error code. @param transformer - Optional value transformer */
     min: <P extends ParamaterValue<number> | number, A extends Transformer = Transformer>(
       value: P,
       code?: string,
       transformer?: A
     ) => NumFluent<Push<TRules, MinRule<ToParam<P>, A>>, TProps>;
+    /** Sets maximum value. @param value - Maximum allowed value. @param code - Optional error code */
     max: <P extends ParamaterValue<number> | number>(
       value: P,
       code?: string
     ) => NumFluent<Push<TRules, MaxRule<ToParam<P>>>, TProps>;
+    /** Limits decimal precision. @param value - Maximum decimal places. @param code - Optional error code */
     maxPrecision: <P extends ParamaterValue<number> | number>(
       value: P,
       code?: string
     ) => NumFluent<Push<TRules, MaxPrecisionRule<ToParam<P>>>, TProps>;
+    /** Validates number equals an exact value. @param value - Expected value. @param code - Optional error code */
     equals: <P extends ParamaterValue<number> | number>(
       value: P,
       code?: string
     ) => NumFluent<Push<TRules, EqualsRule<ToParam<P>>>, TProps>;
+    /** Validates input is a valid number (useful for coerced strings). @param code - Optional error code */
     isNumeric: (code?: string) => NumFluent<Push<TRules, IsNumericRule>, TProps>;
+    /** Validates number is one of allowed values. @param values - Array of allowed values. @param code - Optional error code */
     oneOf: <P extends ParamaterValue[]>(values: P, code?: string) => NumFluent<Push<TRules, OneOfRule<P>>, TProps>;
 
     // — Conditional rules —
+    /** Applies rules conditionally based on a predicate. @param pred - Condition to evaluate. @param cb - Builder callback for conditional rules */
     when: <WRules extends Rule[]>(
       pred: Predicate,
       cb: (b: NumRuleBuilder<[]>) => NumRuleBuilder<WRules>
     ) => NumFluent<[...TRules, ...WrapConditionals<WRules>], TProps>;
 
     // — Property setters —
+    /** Marks field as required or conditionally required. @param value - Boolean or predicate */
     setRequired: <P extends boolean | Predicate>(value: P) => NumFluent<TRules, TProps & { required: P }>;
+    /** Marks field as optional (shorthand for setRequired(false)) */
     optional: () => NumFluent<TRules, TProps & { required: false }>;
+    /** Controls if field can be modified after creation. @param value - Boolean or predicate */
     setMutable: <P extends boolean | Predicate>(value: P) => NumFluent<TRules, TProps & { mutable: P }>;
+    /** Controls if field is included in output. @param value - Boolean or predicate */
     setIncluded: <P extends boolean | Predicate>(value: P) => NumFluent<TRules, TProps & { included: P }>;
+    /** Marks field as private (masked in output). @param value - Boolean flag */
     setPrivate: <P extends boolean>(value: P) => NumFluent<TRules, TProps & { private: P }>;
+    /** Enables automatic type coercion. @param value - Boolean flag */
     setCoerce: <P extends boolean>(value: P) => NumFluent<TRules, TProps & { coerce: P }>;
+    /** Sets a default value when field is empty. @param value - Default number value */
     setDefault: (value: number) => NumFluent<TRules, TProps & { default: number }>;
+    /** Attaches UI metadata for form rendering. @param config - UI configuration object */
     ui: <TUI extends JsonRecord>(config: TUI) => NumFluent<TRules, TProps & { ui: TUI }>;
   };
 
@@ -158,7 +174,10 @@ function createFluent<TRules extends Rule[], TProps>(rules: TRules, props: TProp
     when: <WRules extends Rule[]>(pred: Predicate, cb: (b: NumRuleBuilder<[]>) => NumRuleBuilder<WRules>) => {
       const result = cb(createRuleBuilder([]));
       const conditionals = result.rules.map((rule) =>
-        conditional({ when: pred, then: rule as Exclude<Rule, ConditionalRule> })
+        conditional({
+          when: pred,
+          then: rule as Exclude<Rule, ConditionalRule>,
+        })
       ) as WrapConditionals<WRules>;
       return createFluent([...rules, ...conditionals] as [...TRules, ...WrapConditionals<WRules>], props);
     },

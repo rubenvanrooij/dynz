@@ -12,6 +12,13 @@ export type ToParam<T extends ParamaterValue | number | string | boolean | Date>
     : Static<T>;
 
 /**
+ * Maps an array of values to their ToParam equivalents.
+ */
+export type ToParams<T extends (ParamaterValue | number | string | boolean | Date)[]> = {
+  [K in keyof T]: ToParam<T[K]>;
+};
+
+/**
  * Runtime counterpart of ToParam. Wraps string/number/boolean/Date literals
  * in val(); passes ParamaterValues through as-is.
  */
@@ -20,4 +27,13 @@ export function toParamaterValue<T extends ParamaterValue | number | string | bo
     return val(value) as ToParam<T>;
   }
   return value as ToParam<T>;
+}
+
+/**
+ * Runtime counterpart of ToParams. Maps an array of values to their wrapped equivalents.
+ */
+export function toParamaterValues<T extends (ParamaterValue | number | string | boolean | Date)[]>(
+  values: T
+): ToParams<T> {
+  return values.map((v) => toParamaterValue(v)) as ToParams<T>;
 }

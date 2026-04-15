@@ -1,18 +1,14 @@
 "use client";
 
-import { equals, object, ref, string } from "dynz";
+import { object, ref, string } from "dynz";
 import { DynzForm } from "@/components/dynz/form";
 import { DynzInput } from "@/components/dynz/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
 const schema = object({
-  fields: {
-    password: string(),
-    confirmPassword: string({
-      rules: [equals(ref("password"))],
-    }),
-  },
+  password: string(),
+  confirmPassword: string().equals(ref("password")),
 });
 
 export default function Home() {

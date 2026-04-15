@@ -14,15 +14,23 @@ import { SchemaType } from "../../types";
 
 export type ExprFluent<TValue extends ParamaterValue, TProps> = {
   readonly type: typeof SchemaType.EXPRESSION;
+  /** The computed expression (ref, transformer, static value, etc.) */
   readonly value: TValue;
 } & TProps & {
     // — Property setters —
+    /** Marks field as required or conditionally required. @param value - Boolean or predicate */
     setRequired: <P extends boolean | Predicate>(value: P) => ExprFluent<TValue, TProps & { required: P }>;
+    /** Marks field as optional (shorthand for setRequired(false)) */
     optional: () => ExprFluent<TValue, TProps & { required: false }>;
+    /** Controls if field can be modified after creation. @param value - Boolean or predicate */
     setMutable: <P extends boolean | Predicate>(value: P) => ExprFluent<TValue, TProps & { mutable: P }>;
+    /** Controls if field is included in output. @param value - Boolean or predicate */
     setIncluded: <P extends boolean | Predicate>(value: P) => ExprFluent<TValue, TProps & { included: P }>;
+    /** Marks field as private (masked in output). @param value - Boolean flag */
     setPrivate: <P extends boolean>(value: P) => ExprFluent<TValue, TProps & { private: P }>;
+    /** Enables automatic type coercion. @param value - Boolean flag */
     setCoerce: <P extends boolean>(value: P) => ExprFluent<TValue, TProps & { coerce: P }>;
+    /** Attaches UI metadata for form rendering. @param config - UI configuration object */
     ui: <TUI extends JsonRecord>(config: TUI) => ExprFluent<TValue, TProps & { ui: TUI }>;
   };
 

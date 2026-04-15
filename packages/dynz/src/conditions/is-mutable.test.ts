@@ -11,10 +11,8 @@ import { resolveProperty } from "./resolve-property";
 
 describe("isMutable", () => {
   const mockSchema = object({
-    fields: {
-      name: string({ mutable: true }),
-      id: string({ mutable: false }),
-    },
+    name: string().setMutable(true),
+    id: string().setMutable(false),
   });
 
   const mockValues = {

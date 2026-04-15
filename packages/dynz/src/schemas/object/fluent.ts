@@ -1,6 +1,4 @@
 import type { ParamaterValue, Predicate } from "../../functions";
-import type { JsonRecord } from "../../types";
-import { type ToParam, toParamaterValue } from "../shared";
 import {
   type ConditionalRule,
   conditional,
@@ -10,7 +8,9 @@ import {
   minEntries,
   type Rule,
 } from "../../rules";
+import type { JsonRecord } from "../../types";
 import { type Schema, SchemaType } from "../../types";
+import { type ToParam, toParamaterValue } from "../shared";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -52,31 +52,42 @@ export type ObjectRuleBuilder<TFields extends Record<string, Schema>, TRules ext
 
 export type ObjectFluent<TFields extends Record<string, Schema>, TRules extends Rule[], TProps> = {
   readonly type: typeof SchemaType.OBJECT;
+  /** Schema definitions for each object field */
   readonly fields: TFields;
+  /** Accumulated validation rules for this object */
   readonly rules: TRules;
 } & TProps & {
     // — Rule methods —
+    /** Sets minimum number of entries (for dynamic objects). @param min - Minimum entry count. @param code - Optional error code */
     minEntries: <P extends ParamaterValue<number> | number>(
       min: P,
       code?: string
     ) => ObjectFluent<TFields, Push<TRules, MinEntriesRule<ToParam<P>>>, TProps>;
+    /** Sets maximum number of entries (for dynamic objects). @param max - Maximum entry count. @param code - Optional error code */
     maxEntries: <P extends ParamaterValue<number> | number>(
       max: P,
       code?: string
     ) => ObjectFluent<TFields, Push<TRules, MaxEntriesRule<ToParam<P>>>, TProps>;
 
     // — Conditional rules —
+    /** Applies rules conditionally based on a predicate. @param pred - Condition to evaluate. @param cb - Builder callback for conditional rules */
     when: <WRules extends Rule[]>(
       pred: Predicate,
       cb: (b: ObjectRuleBuilder<TFields, []>) => ObjectRuleBuilder<TFields, WRules>
     ) => ObjectFluent<TFields, [...TRules, ...WrapConditionals<WRules>], TProps>;
 
     // — Property setters —
+    /** Marks field as required or conditionally required. @param value - Boolean or predicate */
     setRequired: <P extends boolean | Predicate>(value: P) => ObjectFluent<TFields, TRules, TProps & { required: P }>;
+    /** Marks field as optional (shorthand for setRequired(false)) */
     optional: () => ObjectFluent<TFields, TRules, TProps & { required: false }>;
+    /** Controls if field can be modified after creation. @param value - Boolean or predicate */
     setMutable: <P extends boolean | Predicate>(value: P) => ObjectFluent<TFields, TRules, TProps & { mutable: P }>;
+    /** Controls if field is included in output. @param value - Boolean or predicate */
     setIncluded: <P extends boolean | Predicate>(value: P) => ObjectFluent<TFields, TRules, TProps & { included: P }>;
+    /** Marks field as private (masked in output). @param value - Boolean flag */
     setPrivate: <P extends boolean>(value: P) => ObjectFluent<TFields, TRules, TProps & { private: P }>;
+    /** Attaches UI metadata for form rendering. @param config - UI configuration object */
     ui: <TUI extends JsonRecord>(config: TUI) => ObjectFluent<TFields, TRules, TProps & { ui: TUI }>;
   };
 
@@ -130,7 +141,10 @@ function createFluent<TFields extends Record<string, Schema>, TRules extends Rul
     ) => {
       const result = cb(createRuleBuilder(fields, []));
       const conditionals = result.rules.map((rule) =>
-        conditional({ when: pred, then: rule as Exclude<Rule, ConditionalRule> })
+        conditional({
+          when: pred,
+          then: rule as Exclude<Rule, ConditionalRule>,
+        })
       ) as WrapConditionals<WRules>;
       return createFluent(fields, [...rules, ...conditionals] as [...TRules, ...WrapConditionals<WRules>], props);
     },

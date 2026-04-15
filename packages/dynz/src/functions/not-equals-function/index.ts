@@ -1,3 +1,4 @@
+import { type ToParam, toParamaterValue } from "../../schemas";
 import type { ValueType } from "../../types";
 import type { ParamaterValue } from "../types";
 
@@ -31,14 +32,14 @@ export type NotEqualsFunction<TLeft extends ParamaterValue = never, TRight exten
  *
  * @see {@link eq} - Equals predicate
  */
-export function neq<const TLeft extends ParamaterValue, const TRight extends ParamaterValue>(
-  left: TLeft,
-  right: TRight
-): NotEqualsFunction<TLeft, TRight> {
+export function neq<
+  const TLeft extends ParamaterValue | number | string | boolean | Date,
+  const TRight extends ParamaterValue | number | string | boolean | Date,
+>(left: TLeft, right: TRight): NotEqualsFunction<ToParam<TLeft>, ToParam<TRight>> {
   return {
     type: notEqualsFunctionType,
-    left,
-    right,
+    left: toParamaterValue(left),
+    right: toParamaterValue(right),
   };
 }
 

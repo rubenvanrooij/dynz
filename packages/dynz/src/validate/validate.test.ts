@@ -47,10 +47,8 @@ describe("validate", () => {
 
     it("should validate an object schema", async () => {
       const schema = object({
-        fields: {
-          name: string(),
-          age: number(),
-        },
+        name: string(),
+        age: number(),
       });
       const result = await validate(schema, undefined, {
         name: "John",
@@ -64,7 +62,7 @@ describe("validate", () => {
     });
 
     it("should validate an array schema", async () => {
-      const schema = array({ schema: string() });
+      const schema = array(string());
       const result = await validate(schema, undefined, ["hello", "world"]);
 
       expect(result).toEqual({
@@ -74,7 +72,7 @@ describe("validate", () => {
     });
 
     it("should handle undefined values for optional schemas", async () => {
-      const schema = string({ required: false });
+      const schema = string().optional();
       const result = await validate(schema, undefined, undefined);
 
       expect(result).toEqual({
@@ -86,7 +84,7 @@ describe("validate", () => {
 
   describe("required validation", () => {
     it("should fail when required field is missing", async () => {
-      const schema = string({ required: true });
+      const schema = string().setRequired(true);
       const result = await validate(schema, undefined, undefined);
 
       expect(result).toEqual({
@@ -101,14 +99,14 @@ describe("validate", () => {
     });
 
     it("should pass when required field is present", async () => {
-      const schema = string({ required: true });
+      const schema = string().setRequired(true);
       const result = await validate(schema, undefined, "hello");
 
       expect(result.success).toBe(true);
     });
 
     it("should pass when optional field is missing", async () => {
-      const schema = string({ required: false });
+      const schema = string().optional();
       const result = await validate(schema, undefined, undefined);
 
       expect(result.success).toBe(true);
@@ -147,7 +145,7 @@ describe("validate", () => {
     });
 
     it("should fail when object value is not an object", async () => {
-      const schema = object({ fields: {} });
+      const schema = object({});
       const result = await validate(schema, undefined, "not an object");
 
       expect(result).toEqual({
@@ -162,7 +160,7 @@ describe("validate", () => {
     });
 
     it("should fail when array value is not an array", async () => {
-      const schema = array({ schema: string() });
+      const schema = array(string());
       const result = await validate(schema, undefined, "not an array");
 
       expect(result).toEqual({
@@ -179,7 +177,7 @@ describe("validate", () => {
 
   describe("included validation", () => {
     it("should fail when value is provided for non-included schema", async () => {
-      const schema = string({ included: false });
+      const schema = string().setIncluded(false);
       const result = await validate(schema, undefined, "hello");
 
       expect(result).toEqual({
@@ -193,14 +191,14 @@ describe("validate", () => {
     });
 
     it("should succeed when value is undefined for non-included schema", async () => {
-      const schema = string({ included: false });
+      const schema = string().setIncluded(false);
       const result = await validate(schema, undefined, undefined);
 
       expect(result.success).toBe(true);
     });
 
     it("should strip non-included values when stripNotIncludedValues is true", async () => {
-      const schema = string({ included: false });
+      const schema = string().setIncluded(false);
       const result = await validate(schema, undefined, "hello", {
         stripNotIncludedValues: true,
       });
@@ -214,7 +212,7 @@ describe("validate", () => {
 
   describe("mutability validation", () => {
     it("should fail when non-mutable field changes", async () => {
-      const schema = string({ mutable: false });
+      const schema = string().setMutable(false);
       const result = await validate(schema, "original", "changed");
 
       expect(result).toEqual({
@@ -228,7 +226,7 @@ describe("validate", () => {
     });
 
     it("should pass when non-mutable field stays the same", async () => {
-      const schema = string({ mutable: false });
+      const schema = string().setMutable(false);
       const result = await validate(schema, "same", "same");
 
       expect(result.success).toBe(true);
@@ -238,14 +236,10 @@ describe("validate", () => {
   describe("nested object validation", () => {
     it("should validate nested object fields", async () => {
       const schema = object({
-        fields: {
-          user: object({
-            fields: {
-              name: string({ required: true }),
-              age: number({ required: false }),
-            },
-          }),
-        },
+        user: object({
+          name: string().setRequired(true),
+          age: number().optional(),
+        }),
       });
 
       const validResult = await validate(schema, undefined, {
@@ -270,7 +264,7 @@ describe("validate", () => {
 
   describe("array validation", () => {
     it("should validate array elements", async () => {
-      const schema = array({ schema: number() });
+      const schema = array(number());
 
       const validResult = await validate(schema, undefined, [1, 2, 3]);
       expect(validResult.success).toBe(true);
@@ -291,7 +285,7 @@ describe("validate", () => {
 
   describe("private field validation", () => {
     it("should handle private fields with plain values", async () => {
-      const schema = string({ private: true });
+      const schema = string().setPrivate(true);
       const result = await validate(schema, undefined, plain("secret"));
 
       expect(result.success).toBe(true);
@@ -301,7 +295,7 @@ describe("validate", () => {
     });
 
     it("should handle private fields with masked values", async () => {
-      const schema = string({ private: true });
+      const schema = string().setPrivate(true);
       const result = await validate(schema, undefined, mask());
 
       expect(result.success).toBe(true);
@@ -311,7 +305,7 @@ describe("validate", () => {
     });
 
     it("should validate mutability of private fields", async () => {
-      const schema = string({ private: true, mutable: false });
+      const schema = string().setPrivate(true).setMutable(false);
       const result = await validate(schema, plain("original"), plain("changed"));
 
       expect(result).toEqual({
@@ -538,21 +532,21 @@ describe("validate", () => {
 
   describe("isValueMasked", () => {
     it("should return true for masked private values", async () => {
-      const schema = string({ private: true });
+      const schema = string().setPrivate(true);
       const maskedValue = mask();
 
       expect(isValueMasked(schema, maskedValue)).toBe(true);
     });
 
     it("should return false for plain private values", async () => {
-      const schema = string({ private: true });
+      const schema = string().setPrivate(true);
       const plainValue = plain("secret");
 
       expect(isValueMasked(schema, plainValue)).toBe(false);
     });
 
     it("should return false for non-private schemas", async () => {
-      const schema = string({ private: false });
+      const schema = string().setPrivate(false);
       const value = "regular value";
 
       expect(isValueMasked(schema, value)).toBe(false);
@@ -562,7 +556,7 @@ describe("validate", () => {
   describe("null value support", () => {
     describe("null values treated as undefined", () => {
       it("should handle null values for optional string fields", async () => {
-        const schema = string({ required: false });
+        const schema = string().optional();
         const result = await validate(schema, undefined, null);
 
         expect(result).toEqual({
@@ -572,7 +566,7 @@ describe("validate", () => {
       });
 
       it("should handle null values for optional number fields", async () => {
-        const schema = number({ required: false });
+        const schema = number().optional();
         const result = await validate(schema, undefined, null);
 
         expect(result).toEqual({
@@ -582,7 +576,7 @@ describe("validate", () => {
       });
 
       it("should fail when null value provided for required field", async () => {
-        const schema = string({ required: true });
+        const schema = string().setRequired(true);
         const result = await validate(schema, undefined, null);
 
         expect(result).toEqual({
@@ -597,7 +591,7 @@ describe("validate", () => {
       });
 
       it("should skip type validation for null values", async () => {
-        const schema = string({ required: false });
+        const schema = string().optional();
         const result = await validate(schema, undefined, null);
 
         expect(result.success).toBe(true);
@@ -607,15 +601,7 @@ describe("validate", () => {
       });
 
       it("should skip rule validation for null values", async () => {
-        const schema = string({
-          required: false,
-          rules: [
-            {
-              type: "min_length",
-              min: { type: "st", value: 5 },
-            },
-          ],
-        });
+        const schema = string().optional().min(5);
         const result = await validate(schema, undefined, null);
 
         expect(result.success).toBe(true);
@@ -628,10 +614,8 @@ describe("validate", () => {
     describe("null values in objects", () => {
       it("should handle null values in object fields", async () => {
         const schema = object({
-          fields: {
-            name: string({ required: false }),
-            age: number({ required: false }),
-          },
+          name: string().optional(),
+          age: number().optional(),
         });
         const result = await validate(schema, undefined, {
           name: null,
@@ -646,9 +630,7 @@ describe("validate", () => {
 
       it("should handle null current values in object validation", async () => {
         const schema = object({
-          fields: {
-            name: string({ required: true }),
-          },
+          name: string().setRequired(true),
         });
         const result = await validate(schema, undefined, { name: "John" });
 
@@ -660,14 +642,10 @@ describe("validate", () => {
 
       it("should validate nested objects with null values", async () => {
         const schema = object({
-          fields: {
-            user: object({
-              fields: {
-                name: string({ required: false }),
-                email: string({ required: true }),
-              },
-            }),
-          },
+          user: object({
+            name: string().optional(),
+            email: string().setRequired(true),
+          }),
         });
 
         const result = await validate(schema, undefined, {
@@ -685,7 +663,7 @@ describe("validate", () => {
 
     describe("null values in arrays", () => {
       it("should handle null current values in array validation", async () => {
-        const schema = array({ schema: string() });
+        const schema = array(string());
         const result = await validate(schema, undefined, ["hello", "world"]);
 
         expect(result.success).toBe(true);
@@ -695,7 +673,7 @@ describe("validate", () => {
       });
 
       it("should handle null elements in arrays with optional items", async () => {
-        const schema = array({ schema: string({ required: false }) });
+        const schema = array(string().optional());
         const result = await validate(schema, undefined, ["hello", null, "world"]);
 
         expect(result.success).toBe(true);
@@ -705,7 +683,7 @@ describe("validate", () => {
       });
 
       it("should fail for null elements in arrays with required items", async () => {
-        const schema = array({ schema: string({ required: true }) });
+        const schema = array(string().setRequired(true));
         const result = await validate(schema, undefined, ["hello", null, "world"]);
 
         expect(result).toEqual({
@@ -722,7 +700,7 @@ describe("validate", () => {
 
     describe("null values with private fields", () => {
       it("should handle null values for optional private fields by treating as plain null", async () => {
-        const schema = string({ private: true, required: false });
+        const schema = string().setPrivate(true).optional();
         const result = await validate(schema, undefined, plain(undefined));
 
         expect(result.success).toBe(true);
@@ -732,7 +710,7 @@ describe("validate", () => {
       });
 
       it("should fail when null provided for required private field", async () => {
-        const schema = string({ private: true, required: true });
+        const schema = string().setPrivate(true).setRequired(true);
         const result = await validate(schema, undefined, plain(undefined));
 
         expect(result).toEqual({
@@ -749,7 +727,7 @@ describe("validate", () => {
 
     describe("null values with included/excluded fields", () => {
       it("should succeed when null provided for non-included optional field", async () => {
-        const schema = string({ included: false, required: false });
+        const schema = string().setIncluded(false).optional();
         const result = await validate(schema, undefined, null);
 
         expect(result.success).toBe(true);
@@ -759,7 +737,7 @@ describe("validate", () => {
       });
 
       it("should strip null values when stripNotIncludedValues is true", async () => {
-        const schema = string({ included: false, required: false });
+        const schema = string().setIncluded(false).optional();
         const result = await validate(schema, undefined, null, {
           stripNotIncludedValues: true,
         });
@@ -773,14 +751,14 @@ describe("validate", () => {
 
     describe("null values with mutability", () => {
       it("should pass when changing from undefined to null in non-mutable field", async () => {
-        const schema = string({ mutable: false, required: false });
+        const schema = string().setMutable(false).optional();
         const result = await validate(schema, undefined, null);
 
         expect(result.success).toBe(true);
       });
 
       it("should fail when changing from value to null in non-mutable field", async () => {
-        const schema = string({ mutable: false, required: false });
+        const schema = string().setMutable(false).optional();
         const result = await validate(schema, "original", null);
 
         expect(result).toEqual({
@@ -797,11 +775,9 @@ describe("validate", () => {
     describe("mixed null and undefined scenarios", () => {
       it("should handle mixed null and undefined in object fields", async () => {
         const schema = object({
-          fields: {
-            nullField: string({ required: false }),
-            undefinedField: string({ required: false }),
-            valueField: string({ required: false }),
-          },
+          nullField: string().optional(),
+          undefinedField: string().optional(),
+          valueField: string().optional(),
         });
         const result = await validate(schema, undefined, {
           nullField: null,
@@ -821,26 +797,18 @@ describe("validate", () => {
 
       it("should handle complex nested scenarios with null values", async () => {
         const schema = object({
-          fields: {
-            user: object({
-              fields: {
-                profile: object({
-                  fields: {
-                    name: string({ required: false }),
-                    bio: string({ required: false }),
-                  },
-                }),
-                settings: array({
-                  schema: object({
-                    fields: {
-                      key: string({ required: true }),
-                      value: string({ required: false }),
-                    },
-                  }),
-                }),
-              },
+          user: object({
+            profile: object({
+              name: string().optional(),
+              bio: string().optional(),
             }),
-          },
+            settings: array(
+              object({
+                key: string().setRequired(true),
+                value: string().optional(),
+              })
+            ),
+          }),
         });
 
         const result = await validate(schema, undefined, {
@@ -887,7 +855,7 @@ describe("validate", () => {
     });
 
     it("should handle Date object mutations correctly", async () => {
-      const schema = date({ mutable: false });
+      const schema = date().setMutable(false);
       const originalDate = new Date("2023-01-01");
       const newDate = new Date("2023-01-02");
 

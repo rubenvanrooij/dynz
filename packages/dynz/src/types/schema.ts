@@ -1,6 +1,5 @@
 import type { Predicate } from "../functions";
 import type { PrivateValue } from "../private";
-import type { ConditionalRule } from "../rules";
 import type {
   ArraySchema,
   BooleanSchema,

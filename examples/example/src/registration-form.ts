@@ -1,43 +1,36 @@
 import * as d from "dynz";
 
 const form = d.object({
+  width: d.number().min(0),
+  height: d.number().min(0),
 
-  width: d.number().min(d.v(0)),
-  height: d.number().min(d.v(0)),
+  perimeter: d.expr(d.sum(d.multiply(d.ref("width"), 2), d.multiply(d.ref("height"), 2))).setCoerce(true),
 
-  perimeter: d.expr(d.sum(
-    d.multiply(d.ref('width'), d.val(2)),
-    d.multiply(d.ref('height'), d.val(2)),
-  )),
-
-  area: d.expr(d.multiply(
-    d.ref('width'),
-    d.ref('height')
-  )).setIncluded(d.gt(d.ref('width'), d.val(20)))
-})
+  area: d.expr(d.multiply(d.ref("width"), d.ref("height"))).setIncluded(d.gt(d.ref("width"), 20)),
+});
 
 export async function runExample() {
-  const result = await d.validate(form, undefined, {
-    width: 21,
-    height: 1,
-    foo: 'bar',
-    // perimeter: 14,
-    // area: 12
-  }, {
-    stripNotIncludedValues: true
-  });
+  const result = await d.validate(
+    form,
+    undefined,
+    {
+      width: 21,
+      height: 2,
+      perimeter: 44,
+      foo: "bar",
+    },
+    {
+      stripNotIncludedValues: true,
+    }
+  );
 
-  console.log(JSON.stringify(form))
+  console.log(JSON.stringify(form));
 
   console.log("-----");
   console.log(result);
 }
 
 // d.string().email().equals(d.st(3))
-
-
-
-
 
 // const registrationFormSchema = d.object({
 //   name: d.string().min(d.v(3)),

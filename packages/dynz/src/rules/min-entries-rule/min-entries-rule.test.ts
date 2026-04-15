@@ -38,9 +38,7 @@ describe("minEntries rule", () => {
 
 describe("minEntriesRule validator", () => {
   const mockContext = {} as unknown as Context<ObjectSchema<never>>;
-  const mockSchema = object({
-    fields: {},
-  });
+  const mockSchema = object({});
 
   it("should return undefined when object has more entries than minimum", () => {
     const rule = minEntries(v(2));

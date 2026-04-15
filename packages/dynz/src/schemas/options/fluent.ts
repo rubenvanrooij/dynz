@@ -1,6 +1,4 @@
 import type { ParamaterValue, Predicate } from "../../functions";
-import type { JsonRecord } from "../../types";
-import { type ToParam, toParamaterValue } from "../shared";
 import {
   type ConditionalRule,
   conditional,
@@ -10,7 +8,9 @@ import {
   oneOf,
   type Rule,
 } from "../../rules";
+import type { JsonRecord } from "../../types";
 import { SchemaType } from "../../types";
+import { type ToParam, toParamaterValue } from "../shared";
 import type { OptionsValue } from "./types";
 
 // ---------------------------------------------------------------------------
@@ -53,31 +53,46 @@ export type OptionsRuleBuilder<TOptions extends OptionsValue, TRules extends Rul
 
 export type OptionsFluent<TOptions extends OptionsValue, TRules extends Rule[], TProps> = {
   readonly type: typeof SchemaType.OPTIONS;
+  /** Array of selectable options with label/value pairs */
   readonly options: TOptions;
+  /** Accumulated validation rules for this options field */
   readonly rules: TRules;
 } & TProps & {
     // — Rule methods —
+    /** Validates selected option equals a specific value. @param value - Expected value. @param code - Optional error code */
     equals: <P extends ParamaterValue | string | number | boolean>(
       value: P,
       code?: string
     ) => OptionsFluent<TOptions, Push<TRules, EqualsRule<ToParam<P>>>, TProps>;
+    /** Validates selected option is one of allowed values. @param values - Array of allowed values. @param code - Optional error code */
     oneOf: <P extends ParamaterValue[]>(
       values: P,
       code?: string
     ) => OptionsFluent<TOptions, Push<TRules, OneOfRule<P>>, TProps>;
 
     // — Conditional rules —
+    /** Applies rules conditionally based on a predicate. @param pred - Condition to evaluate. @param cb - Builder callback for conditional rules */
     when: <WRules extends Rule[]>(
       pred: Predicate,
       cb: (b: OptionsRuleBuilder<TOptions, []>) => OptionsRuleBuilder<TOptions, WRules>
     ) => OptionsFluent<TOptions, [...TRules, ...WrapConditionals<WRules>], TProps>;
 
     // — Property setters —
+    /** Marks field as required or conditionally required. @param value - Boolean or predicate */
     setRequired: <P extends boolean | Predicate>(value: P) => OptionsFluent<TOptions, TRules, TProps & { required: P }>;
+    /** Marks field as optional (shorthand for setRequired(false)) */
     optional: () => OptionsFluent<TOptions, TRules, TProps & { required: false }>;
+    /** Controls if field can be modified after creation. @param value - Boolean or predicate */
     setMutable: <P extends boolean | Predicate>(value: P) => OptionsFluent<TOptions, TRules, TProps & { mutable: P }>;
+    /** Controls if field is included in output. @param value - Boolean or predicate */
     setIncluded: <P extends boolean | Predicate>(value: P) => OptionsFluent<TOptions, TRules, TProps & { included: P }>;
+    /** Marks field as private (masked in output). @param value - Boolean flag */
     setPrivate: <P extends boolean>(value: P) => OptionsFluent<TOptions, TRules, TProps & { private: P }>;
+    /** Enables automatic type coercion. @param value - Boolean flag */
+    setCoerce: <P extends boolean>(value: P) => OptionsFluent<TOptions, TRules, TProps & { coerce: P }>;
+    /** Sets a default value when field is empty. @param value - Default option value */
+    setDefault: <V extends TOptions[number]>(value: V) => OptionsFluent<TOptions, TRules, TProps & { default: V }>;
+    /** Attaches UI metadata for form rendering. @param config - UI configuration object */
     ui: <TUI extends JsonRecord>(config: TUI) => OptionsFluent<TOptions, TRules, TProps & { ui: TUI }>;
   };
 
@@ -130,7 +145,10 @@ function createFluent<TOptions extends OptionsValue, TRules extends Rule[], TPro
     ) => {
       const result = cb(createRuleBuilder(opts, []));
       const conditionals = result.rules.map((rule) =>
-        conditional({ when: pred, then: rule as Exclude<Rule, ConditionalRule> })
+        conditional({
+          when: pred,
+          then: rule as Exclude<Rule, ConditionalRule>,
+        })
       ) as WrapConditionals<WRules>;
       return createFluent(opts, [...rules, ...conditionals] as [...TRules, ...WrapConditionals<WRules>], props);
     },
@@ -141,6 +159,8 @@ function createFluent<TOptions extends OptionsValue, TRules extends Rule[], TPro
     setMutable: <P extends boolean | Predicate>(value: P) => setProp("mutable", value),
     setIncluded: <P extends boolean | Predicate>(value: P) => setProp("included", value),
     setPrivate: <P extends boolean>(value: P) => setProp("private", value),
+    setCoerce: <P extends boolean>(value: P) => setProp("coerce", value),
+    setDefault: <V extends TOptions[number]>(value: V) => setProp("default", value),
     ui: <TUI extends JsonRecord>(config: TUI) => setProp("ui", config),
   } as OptionsFluent<TOptions, TRules, TProps>;
 }

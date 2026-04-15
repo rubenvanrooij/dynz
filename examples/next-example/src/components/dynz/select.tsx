@@ -41,8 +41,8 @@ export function DynzSelect({ name, options: propOptions }: DynzSelectProps) {
             </FormControl>
             <SelectContent>
               {schemaOptions.map((option) => (
-                <SelectItem key={option} value={option.toString()}>
-                  {option}
+                <SelectItem key={option.toString()} value={option.toString()}>
+                  {option.toString()}
                 </SelectItem>
               ))}
             </SelectContent>

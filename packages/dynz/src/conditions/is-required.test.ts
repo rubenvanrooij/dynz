@@ -11,10 +11,8 @@ import { resolveProperty } from "./resolve-property";
 
 describe("isRequired", () => {
   const mockSchema = object({
-    fields: {
-      name: string({ required: true }),
-      email: string({ required: false }),
-    },
+    name: string().setRequired(true),
+    email: string().optional(),
   });
 
   const mockValues = {

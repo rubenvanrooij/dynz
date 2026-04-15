@@ -76,8 +76,8 @@ export function DynzSelect({ name, i18nPath }: BaseInputProps) {
               </FormControl>
               <SelectContent>
                 {innerSchema.options.map((option) => (
-                  <SelectItem key={option} value={option.toString()}>
-                    {option}
+                  <SelectItem key={option.toString()} value={option.toString()}>
+                    {option.toString()}
                   </SelectItem>
                 ))}
               </SelectContent>
