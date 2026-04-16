@@ -88,7 +88,7 @@ export type EnumFluent<TEnum extends Enum, TRules extends Rule[], TProps> = {
     /** Sets a default value when field is empty. @param value - Default enum value */
     setDefault: (value: EnumValues<TEnum>) => EnumFluent<TEnum, TRules, TProps & { default: EnumValues<TEnum> }>;
     /** Attaches UI metadata for form rendering. @param config - UI configuration object */
-    ui: <TUI extends JsonRecord>(config: TUI) => EnumFluent<TEnum, TRules, TProps & { ui: TUI }>;
+    setUi: <TUI extends JsonRecord>(config: TUI) => EnumFluent<TEnum, TRules, TProps & { ui: TUI }>;
   };
 
 // ---------------------------------------------------------------------------
@@ -155,7 +155,7 @@ function createFluent<TEnum extends Enum, TRules extends Rule[], TProps>(
     setIncluded: <P extends boolean | Predicate>(value: P) => setProp("included", value),
     setPrivate: <P extends boolean>(value: P) => setProp("private", value),
     setDefault: (value: EnumValues<TEnum>) => setProp("default", value),
-    ui: <TUI extends JsonRecord>(config: TUI) => setProp("ui", config),
+    setUi: <TUI extends JsonRecord>(config: TUI) => setProp("ui", config),
   } as EnumFluent<TEnum, TRules, TProps>;
 }
 

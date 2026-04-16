@@ -68,7 +68,7 @@ export type BoolFluent<TRules extends Rule[], TProps> = {
     /** Sets a default value when field is empty. @param value - Default boolean value */
     setDefault: (value: boolean) => BoolFluent<TRules, TProps & { default: boolean }>;
     /** Attaches UI metadata for form rendering. @param config - UI configuration object */
-    ui: <TUI extends JsonRecord>(config: TUI) => BoolFluent<TRules, TProps & { ui: TUI }>;
+    setUi: <TUI extends JsonRecord>(config: TUI) => BoolFluent<TRules, TProps & { ui: TUI }>;
   };
 
 // ---------------------------------------------------------------------------
@@ -122,7 +122,7 @@ function createFluent<TRules extends Rule[], TProps>(rules: TRules, props: TProp
     setPrivate: <P extends boolean>(value: P) => setProp("private", value),
     setCoerce: <P extends boolean>(value: P) => setProp("coerce", value),
     setDefault: (value: boolean) => setProp("default", value),
-    ui: <TUI extends JsonRecord>(config: TUI) => setProp("ui", config),
+    setUi: <TUI extends JsonRecord>(config: TUI) => setProp("ui", config),
   } as BoolFluent<TRules, TProps>;
 }
 

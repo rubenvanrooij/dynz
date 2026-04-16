@@ -98,7 +98,7 @@ export type DateFluent<TRules extends Rule[], TProps> = {
     /** Sets a default value when field is empty. @param value - Default Date value */
     setDefault: (value: Date) => DateFluent<TRules, TProps & { default: Date }>;
     /** Attaches UI metadata for form rendering. @param config - UI configuration object */
-    ui: <TUI extends JsonRecord>(config: TUI) => DateFluent<TRules, TProps & { ui: TUI }>;
+    setUi: <TUI extends JsonRecord>(config: TUI) => DateFluent<TRules, TProps & { ui: TUI }>;
   };
 
 // ---------------------------------------------------------------------------
@@ -161,7 +161,7 @@ function createFluent<TRules extends Rule[], TProps>(rules: TRules, props: TProp
     setPrivate: <P extends boolean>(value: P) => setProp("private", value),
     setCoerce: <P extends boolean>(value: P) => setProp("coerce", value),
     setDefault: (value: Date) => setProp("default", value),
-    ui: <TUI extends JsonRecord>(config: TUI) => setProp("ui", config),
+    setUi: <TUI extends JsonRecord>(config: TUI) => setProp("ui", config),
   } as DateFluent<TRules, TProps>;
 }
 

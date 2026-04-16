@@ -116,7 +116,7 @@ export type NumFluent<TRules extends Rule[], TProps> = {
     /** Sets a default value when field is empty. @param value - Default number value */
     setDefault: (value: number) => NumFluent<TRules, TProps & { default: number }>;
     /** Attaches UI metadata for form rendering. @param config - UI configuration object */
-    ui: <TUI extends JsonRecord>(config: TUI) => NumFluent<TRules, TProps & { ui: TUI }>;
+    setUi: <TUI extends JsonRecord>(config: TUI) => NumFluent<TRules, TProps & { ui: TUI }>;
   };
 
 // ---------------------------------------------------------------------------
@@ -190,7 +190,7 @@ function createFluent<TRules extends Rule[], TProps>(rules: TRules, props: TProp
     setPrivate: <P extends boolean>(value: P) => setProp("private", value),
     setCoerce: <P extends boolean>(value: P) => setProp("coerce", value),
     setDefault: (value: number) => setProp("default", value),
-    ui: <TUI extends JsonRecord>(config: TUI) => setProp("ui", config),
+    setUi: <TUI extends JsonRecord>(config: TUI) => setProp("ui", config),
   } as NumFluent<TRules, TProps>;
 }
 

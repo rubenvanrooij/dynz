@@ -90,7 +90,7 @@ export type ArrayFluent<TSchema extends Schema, TRules extends Rule[], TProps> =
     /** Enables automatic type coercion. @param value - Boolean flag */
     setCoerce: <P extends boolean>(value: P) => ArrayFluent<TSchema, TRules, TProps & { coerce: P }>;
     /** Attaches UI metadata for form rendering. @param config - UI configuration object */
-    ui: <TUI extends JsonRecord>(config: TUI) => ArrayFluent<TSchema, TRules, TProps & { ui: TUI }>;
+    setUi: <TUI extends JsonRecord>(config: TUI) => ArrayFluent<TSchema, TRules, TProps & { ui: TUI }>;
   };
 
 // ---------------------------------------------------------------------------
@@ -158,7 +158,7 @@ function createFluent<TSchema extends Schema, TRules extends Rule[], TProps>(
     setIncluded: <P extends boolean | Predicate>(value: P) => setProp("included", value),
     setPrivate: <P extends boolean>(value: P) => setProp("private", value),
     setCoerce: <P extends boolean>(value: P) => setProp("coerce", value),
-    ui: <TUI extends JsonRecord>(config: TUI) => setProp("ui", config),
+    setUi: <TUI extends JsonRecord>(config: TUI) => setProp("ui", config),
   } as ArrayFluent<TSchema, TRules, TProps>;
 }
 

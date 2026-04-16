@@ -31,7 +31,7 @@ export type ExprFluent<TValue extends ParamaterValue, TProps> = {
     /** Enables automatic type coercion. @param value - Boolean flag */
     setCoerce: <P extends boolean>(value: P) => ExprFluent<TValue, TProps & { coerce: P }>;
     /** Attaches UI metadata for form rendering. @param config - UI configuration object */
-    ui: <TUI extends JsonRecord>(config: TUI) => ExprFluent<TValue, TProps & { ui: TUI }>;
+    setUi: <TUI extends JsonRecord>(config: TUI) => ExprFluent<TValue, TProps & { ui: TUI }>;
   };
 
 // ---------------------------------------------------------------------------
@@ -53,7 +53,7 @@ function createFluent<TValue extends ParamaterValue, TProps>(val: TValue, props:
     setIncluded: <P extends boolean | Predicate>(value: P) => setProp("included", value),
     setPrivate: <P extends boolean>(value: P) => setProp("private", value),
     setCoerce: <P extends boolean>(value: P) => setProp("coerce", value),
-    ui: <TUI extends JsonRecord>(config: TUI) => setProp("ui", config),
+    setUi: <TUI extends JsonRecord>(config: TUI) => setProp("ui", config),
   } as ExprFluent<TValue, TProps>;
 }
 

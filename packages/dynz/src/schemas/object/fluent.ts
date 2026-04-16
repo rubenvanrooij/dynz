@@ -88,7 +88,7 @@ export type ObjectFluent<TFields extends Record<string, Schema>, TRules extends 
     /** Marks field as private (masked in output). @param value - Boolean flag */
     setPrivate: <P extends boolean>(value: P) => ObjectFluent<TFields, TRules, TProps & { private: P }>;
     /** Attaches UI metadata for form rendering. @param config - UI configuration object */
-    ui: <TUI extends JsonRecord>(config: TUI) => ObjectFluent<TFields, TRules, TProps & { ui: TUI }>;
+    setUi: <TUI extends JsonRecord>(config: TUI) => ObjectFluent<TFields, TRules, TProps & { ui: TUI }>;
   };
 
 // ---------------------------------------------------------------------------
@@ -155,7 +155,7 @@ function createFluent<TFields extends Record<string, Schema>, TRules extends Rul
     setMutable: <P extends boolean | Predicate>(value: P) => setProp("mutable", value),
     setIncluded: <P extends boolean | Predicate>(value: P) => setProp("included", value),
     setPrivate: <P extends boolean>(value: P) => setProp("private", value),
-    ui: <TUI extends JsonRecord>(config: TUI) => setProp("ui", config),
+    setUi: <TUI extends JsonRecord>(config: TUI) => setProp("ui", config),
   } as ObjectFluent<TFields, TRules, TProps>;
 }
 

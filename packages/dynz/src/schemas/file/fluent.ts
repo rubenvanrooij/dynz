@@ -89,7 +89,7 @@ export type FileFluent<TRules extends Rule[], TProps> = {
     /** Marks field as private (masked in output). @param value - Boolean flag */
     setPrivate: <P extends boolean>(value: P) => FileFluent<TRules, TProps & { private: P }>;
     /** Attaches UI metadata for form rendering. @param config - UI configuration object */
-    ui: <TUI extends JsonRecord>(config: TUI) => FileFluent<TRules, TProps & { ui: TUI }>;
+    setUi: <TUI extends JsonRecord>(config: TUI) => FileFluent<TRules, TProps & { ui: TUI }>;
   };
 
 // ---------------------------------------------------------------------------
@@ -147,7 +147,7 @@ function createFluent<TRules extends Rule[], TProps>(rules: TRules, props: TProp
     setMutable: <P extends boolean | Predicate>(value: P) => setProp("mutable", value),
     setIncluded: <P extends boolean | Predicate>(value: P) => setProp("included", value),
     setPrivate: <P extends boolean>(value: P) => setProp("private", value),
-    ui: <TUI extends JsonRecord>(config: TUI) => setProp("ui", config),
+    setUi: <TUI extends JsonRecord>(config: TUI) => setProp("ui", config),
   } as FileFluent<TRules, TProps>;
 }
 

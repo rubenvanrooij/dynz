@@ -93,7 +93,7 @@ export type OptionsFluent<TOptions extends OptionsValue, TRules extends Rule[], 
     /** Sets a default value when field is empty. @param value - Default option value */
     setDefault: <V extends TOptions[number]>(value: V) => OptionsFluent<TOptions, TRules, TProps & { default: V }>;
     /** Attaches UI metadata for form rendering. @param config - UI configuration object */
-    ui: <TUI extends JsonRecord>(config: TUI) => OptionsFluent<TOptions, TRules, TProps & { ui: TUI }>;
+    setUi: <TUI extends JsonRecord>(config: TUI) => OptionsFluent<TOptions, TRules, TProps & { ui: TUI }>;
   };
 
 // ---------------------------------------------------------------------------
@@ -161,7 +161,7 @@ function createFluent<TOptions extends OptionsValue, TRules extends Rule[], TPro
     setPrivate: <P extends boolean>(value: P) => setProp("private", value),
     setCoerce: <P extends boolean>(value: P) => setProp("coerce", value),
     setDefault: <V extends TOptions[number]>(value: V) => setProp("default", value),
-    ui: <TUI extends JsonRecord>(config: TUI) => setProp("ui", config),
+    setUi: <TUI extends JsonRecord>(config: TUI) => setProp("ui", config),
   } as OptionsFluent<TOptions, TRules, TProps>;
 }
 

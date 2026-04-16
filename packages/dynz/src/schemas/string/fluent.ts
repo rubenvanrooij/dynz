@@ -139,7 +139,7 @@ export type StrFluent<TRules extends Rule[], TProps> = {
     /** Sets a default value when field is empty. @param value - Default string value */
     setDefault: (value: string) => StrFluent<TRules, TProps & { default: string }>;
     /** Attaches UI metadata for form rendering. @param config - UI configuration object */
-    ui: <TUI extends JsonRecord>(config: TUI) => StrFluent<TRules, TProps & { ui: TUI }>;
+    setUi: <TUI extends JsonRecord>(config: TUI) => StrFluent<TRules, TProps & { ui: TUI }>;
   };
 
 // ---------------------------------------------------------------------------
@@ -216,7 +216,7 @@ function createFluent<TRules extends Rule[], TProps>(rules: TRules, props: TProp
     setPrivate: <P extends boolean>(value: P) => setProp("private", value),
     setCoerce: <P extends boolean>(value: P) => setProp("coerce", value),
     setDefault: (value: string) => setProp("default", value),
-    ui: <TUI extends JsonRecord>(config: TUI) => setProp("ui", config),
+    setUi: <TUI extends JsonRecord>(config: TUI) => setProp("ui", config),
   } as StrFluent<TRules, TProps>;
 }
 
