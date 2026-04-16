@@ -1,5 +1,11 @@
 # dynz
 
+## 0.0.17
+
+### Patch Changes
+
+- 345cf20: fixed issue with fluentAPI and setting ui props
+
 ## 0.0.16
 
 ### Patch Changes
