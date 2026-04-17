@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { type StringSchema, string } from "../../schemas";
 import type { Context } from "../../types";
-import { email, emailRule } from "./index";
+import { buildEmailRule, emailRule } from "./index";
 
 describe("email rule", () => {
   it("should create email rule", () => {
-    const rule = email();
+    const rule = buildEmailRule();
 
     expect(rule).toEqual({
       type: "email",
@@ -13,7 +13,7 @@ describe("email rule", () => {
   });
 
   it("should create email rule with custom code", () => {
-    const rule = email("INVALID_EMAIL");
+    const rule = buildEmailRule("INVALID_EMAIL");
 
     expect(rule).toEqual({
       type: "email",
@@ -31,7 +31,7 @@ describe("emailRule validator", () => {
   });
 
   it("should return undefined for valid email addresses", async () => {
-    const rule = email();
+    const rule = buildEmailRule();
 
     const validEmails = [
       "test@example.com",
@@ -55,7 +55,7 @@ describe("emailRule validator", () => {
   });
 
   it("should return error for invalid email addresses", async () => {
-    const rule = email();
+    const rule = buildEmailRule();
 
     const invalidEmails = [
       "invalid-email",
@@ -84,7 +84,7 @@ describe("emailRule validator", () => {
   });
 
   it("should include correct error message format", async () => {
-    const rule = email();
+    const rule = buildEmailRule();
 
     const result = await emailRule({
       rule,
@@ -100,7 +100,7 @@ describe("emailRule validator", () => {
   });
 
   it("should handle edge case email formats", async () => {
-    const rule = email();
+    const rule = buildEmailRule();
 
     const result = emailRule({
       rule,

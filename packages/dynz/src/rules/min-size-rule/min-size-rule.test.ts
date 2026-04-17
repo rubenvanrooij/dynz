@@ -3,7 +3,7 @@ import { v } from "../../functions";
 import { REFERENCE_TYPE, ref } from "../../reference";
 import { type FileSchema, file } from "../../schemas";
 import type { Context } from "../../types";
-import { minSize, minSizeRule } from "./index";
+import { buildMinSizeRule, minSizeRule } from "./index";
 
 function createFile(sizeInBytes: number, type = "application/octet-stream"): File {
   return new File(["a".repeat(sizeInBytes)], "test.bin", { type });
@@ -11,7 +11,7 @@ function createFile(sizeInBytes: number, type = "application/octet-stream"): Fil
 
 describe("minSize rule", () => {
   it("should create minSize rule with number value", () => {
-    const rule = minSize(v(1024));
+    const rule = buildMinSizeRule(v(1024));
 
     expect(rule).toEqual({
       type: "min_size",
@@ -21,7 +21,7 @@ describe("minSize rule", () => {
 
   it("should create minSize rule with reference", () => {
     const reference = ref("$.minFileSize");
-    const rule = minSize(reference);
+    const rule = buildMinSizeRule(reference);
 
     expect(rule).toEqual({
       type: "min_size",
@@ -30,7 +30,7 @@ describe("minSize rule", () => {
   });
 
   it("should create minSize rule with custom code", () => {
-    const rule = minSize(v(500), "CUSTOM_MIN_SIZE_ERROR");
+    const rule = buildMinSizeRule(v(500), "CUSTOM_MIN_SIZE_ERROR");
 
     expect(rule).toEqual({
       type: "min_size",
@@ -45,7 +45,7 @@ describe("minSizeRule validator", () => {
   const mockSchema = file();
 
   it("should return undefined when file meets minimum size requirement", () => {
-    const rule = minSize(v(100));
+    const rule = buildMinSizeRule(v(100));
     const mockFile = createFile(200);
 
     const result = minSizeRule({
@@ -60,7 +60,7 @@ describe("minSizeRule validator", () => {
   });
 
   it("should return error when file is below minimum size", async () => {
-    const rule = minSize(v(200));
+    const rule = buildMinSizeRule(v(200));
     const mockFile = createFile(100);
 
     const result = await minSizeRule({
@@ -78,7 +78,7 @@ describe("minSizeRule validator", () => {
   });
 
   it("should return undefined when resolved min is undefined", () => {
-    const rule = minSize(undefined);
+    const rule = buildMinSizeRule(undefined);
     const mockFile = createFile(100);
 
     const result = minSizeRule({
@@ -93,7 +93,7 @@ describe("minSizeRule validator", () => {
   });
 
   it("should include correct error message format", async () => {
-    const rule = minSize(v(500));
+    const rule = buildMinSizeRule(v(500));
     const mockFile = createFile(100);
 
     const result = await minSizeRule({
@@ -110,7 +110,7 @@ describe("minSizeRule validator", () => {
   });
 
   it("should return undefined when file size equals minimum", () => {
-    const rule = minSize(v(100));
+    const rule = buildMinSizeRule(v(100));
     const mockFile = createFile(100);
 
     const result = minSizeRule({
@@ -125,7 +125,7 @@ describe("minSizeRule validator", () => {
   });
 
   it("should handle zero size file correctly", async () => {
-    const rule = minSize(v(1));
+    const rule = buildMinSizeRule(v(1));
     const mockFile = createFile(0);
 
     const result = await minSizeRule({

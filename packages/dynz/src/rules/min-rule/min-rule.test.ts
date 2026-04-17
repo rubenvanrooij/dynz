@@ -3,36 +3,36 @@ import { v } from "../../functions";
 import { REFERENCE_TYPE, ref } from "../../reference";
 import { type NumberSchema, number } from "../../schemas";
 import type { Context } from "../../types";
-import { min, minRule } from "./index";
+import { buildMinRule, minRule } from "./index";
 
 describe("min rule", () => {
   it("should create min rule with number value", () => {
-    const rule = min(v(5));
+    const rule = buildMinRule(v(5));
 
     expect(rule).toEqual({ type: "min", min: v(5) });
   });
 
   it("should create min rule with decimal number", () => {
-    const rule = min(v(3.14));
+    const rule = buildMinRule(v(3.14));
 
     expect(rule).toEqual({ type: "min", min: v(3.14) });
   });
 
   it("should create min rule with zero", () => {
-    const rule = min(v(0));
+    const rule = buildMinRule(v(0));
 
     expect(rule).toEqual({ type: "min", min: v(0) });
   });
 
   it("should create min rule with negative number", () => {
-    const rule = min(v(-10));
+    const rule = buildMinRule(v(-10));
 
     expect(rule).toEqual({ type: "min", min: v(-10) });
   });
 
   it("should create min rule with reference", () => {
     const reference = ref("minimumValue");
-    const rule = min(reference);
+    const rule = buildMinRule(reference);
 
     expect(rule).toEqual({
       type: "min",
@@ -41,7 +41,7 @@ describe("min rule", () => {
   });
 
   it("should create min rule with cross-field reference", () => {
-    const rule = min(ref("$.startDate"));
+    const rule = buildMinRule(ref("$.startDate"));
 
     expect(rule).toEqual({
       type: "min",
@@ -50,7 +50,7 @@ describe("min rule", () => {
   });
 
   it("should create min rule with custom code", () => {
-    const rule = min(v(5), "CUSTOM_MIN_ERROR");
+    const rule = buildMinRule(v(5), "CUSTOM_MIN_ERROR");
 
     expect(rule).toEqual({ type: "min", min: v(5), code: "CUSTOM_MIN_ERROR" });
   });
@@ -61,7 +61,7 @@ describe("minRule validator", () => {
   const mockSchema = number();
 
   it("should return undefined when value meets minimum requirement", async () => {
-    const rule = min(v(10));
+    const rule = buildMinRule(v(10));
 
     const result = await minRule({
       rule,
@@ -75,7 +75,7 @@ describe("minRule validator", () => {
   });
 
   it("should return error when value is below minimum", async () => {
-    const rule = min(v(10));
+    const rule = buildMinRule(v(10));
 
     const result = await minRule({
       rule,
@@ -93,7 +93,7 @@ describe("minRule validator", () => {
 
   it("should return undefined when resolved min is undefined", async () => {
     // undefined ParamaterValue resolves to undefined, skipping validation
-    const rule = min(undefined);
+    const rule = buildMinRule(undefined);
 
     const result = await minRule({
       rule,
@@ -108,7 +108,7 @@ describe("minRule validator", () => {
 
   it("should handle reference objects correctly", async () => {
     // Test min with a specific resolved value
-    const rule = min(v(20));
+    const rule = buildMinRule(v(20));
 
     const result = await minRule({
       rule,
@@ -122,7 +122,7 @@ describe("minRule validator", () => {
   });
 
   it("should include correct error message format", async () => {
-    const rule = min(v(100));
+    const rule = buildMinRule(v(100));
 
     const result = await minRule({
       rule,
@@ -138,7 +138,7 @@ describe("minRule validator", () => {
   });
 
   it("should return undefined when value equals minimum", async () => {
-    const rule = min(v(42));
+    const rule = buildMinRule(v(42));
 
     const result = await minRule({
       rule,

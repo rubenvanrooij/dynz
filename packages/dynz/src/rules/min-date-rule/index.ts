@@ -17,7 +17,7 @@ export type MinDateRule<T extends ParamaterValue<Date> = ParamaterValue<Date>> =
 
 export type MinDateRuleErrorMessage = ErrorMessageFromRule<MinDateRule, Date, "min">;
 
-export function minDate<T extends ParamaterValue<Date>>(min: T, code?: string): MinDateRule<T> {
+export function buildMinDateRule<T extends ParamaterValue<Date>>(min: T, code?: string): MinDateRule<T> {
   return { min, type: "min_date", code };
 }
 

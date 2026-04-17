@@ -3,11 +3,11 @@ import { v } from "../../functions";
 import { REFERENCE_TYPE, ref } from "../../reference";
 import { type NumberSchema, number } from "../../schemas";
 import type { Context } from "../../types";
-import { max, maxRule } from "./index";
+import { buildMaxRule, maxRule } from "./index";
 
 describe("max rule", () => {
   it("should create max rule with number value", () => {
-    const rule = max(v(100));
+    const rule = buildMaxRule(v(100));
 
     expect(rule).toEqual({
       type: "max",
@@ -16,7 +16,7 @@ describe("max rule", () => {
   });
 
   it("should create max rule with decimal number", () => {
-    const rule = max(v(99.99));
+    const rule = buildMaxRule(v(99.99));
 
     expect(rule).toEqual({
       type: "max",
@@ -26,7 +26,7 @@ describe("max rule", () => {
 
   it("should create max rule with reference", () => {
     const reference = ref("maximumAllowed");
-    const rule = max(reference);
+    const rule = buildMaxRule(reference);
 
     expect(rule).toEqual({
       type: "max",
@@ -35,7 +35,7 @@ describe("max rule", () => {
   });
 
   it("should create max rule with array reference", () => {
-    const rule = max(ref("limits[0]"));
+    const rule = buildMaxRule(ref("limits[0]"));
 
     expect(rule).toEqual({
       type: "max",
@@ -44,7 +44,7 @@ describe("max rule", () => {
   });
 
   it("should create max rule with custom code", () => {
-    const rule = max(v(50), "CUSTOM_MAX_ERROR");
+    const rule = buildMaxRule(v(50), "CUSTOM_MAX_ERROR");
 
     expect(rule).toEqual({
       type: "max",
@@ -59,7 +59,7 @@ describe("maxRule validator", () => {
   const mockSchema = number();
 
   it("should return undefined when value is below maximum", () => {
-    const rule = max(v(100));
+    const rule = buildMaxRule(v(100));
 
     const result = maxRule({
       rule,
@@ -73,7 +73,7 @@ describe("maxRule validator", () => {
   });
 
   it("should return error when value exceeds maximum", async () => {
-    const rule = max(v(100));
+    const rule = buildMaxRule(v(100));
 
     const result = await maxRule({
       rule,
@@ -90,7 +90,7 @@ describe("maxRule validator", () => {
   });
 
   it("should return undefined when resolved max is undefined", () => {
-    const rule = max(undefined);
+    const rule = buildMaxRule(undefined);
 
     const result = maxRule({
       rule,
@@ -104,7 +104,7 @@ describe("maxRule validator", () => {
   });
 
   it("should handle reference objects correctly", () => {
-    const rule = max(v(200));
+    const rule = buildMaxRule(v(200));
 
     const result = maxRule({
       rule,
@@ -118,7 +118,7 @@ describe("maxRule validator", () => {
   });
 
   it("should include correct error message format", async () => {
-    const rule = max(v(75));
+    const rule = buildMaxRule(v(75));
 
     const result = await maxRule({
       rule,
@@ -134,7 +134,7 @@ describe("maxRule validator", () => {
   });
 
   it("should return undefined when value equals maximum", () => {
-    const rule = max(v(42));
+    const rule = buildMaxRule(v(42));
 
     const result = maxRule({
       rule,

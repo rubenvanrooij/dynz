@@ -14,8 +14,6 @@ async function runExample() {
       }),
   });
 
-  console.log(d.serialize(schema));
-
   const result = await d.validate(
     schema,
     undefined,

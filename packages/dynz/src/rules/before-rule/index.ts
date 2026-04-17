@@ -16,7 +16,7 @@ export type BeforeRule<T extends ParamaterValue<Date> = ParamaterValue<Date>> = 
 
 export type BeforeRuleErrorMessage = ErrorMessageFromRule<BeforeRule, Date, "before">;
 
-export function before<T extends ParamaterValue<Date>>(before: T, code?: string): BeforeRule<T> {
+export function buildBeforeRule<T extends ParamaterValue<Date>>(before: T, code?: string): BeforeRule<T> {
   return { before, type: "before", code };
 }
 

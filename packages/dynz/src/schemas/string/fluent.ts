@@ -1,24 +1,24 @@
 import type { ParamaterValue, Predicate } from "../../functions";
 import {
+  buildConditionalRule,
+  buildCustomRule,
+  buildEmailRule,
+  buildEqualsRule,
+  buildIsNumericRule,
+  buildMaxLengthRule,
+  buildMinLengthRule,
+  buildOneOfRule,
+  buildRegexRule,
   type ConditionalRule,
   type CustomRule,
-  conditional,
-  custom,
   type EmailRule,
   type EqualsRule,
-  email,
-  equals,
   type IsNumericRule,
-  isNumeric,
   type MaxLengthRule,
   type MinLengthRule,
-  maxLength,
-  minLength,
   type OneOfRule,
-  oneOf,
   type RegexRule,
   type Rule,
-  regex,
 } from "../../rules";
 import type { JsonRecord } from "../../types";
 import { SchemaType } from "../../types";
@@ -154,18 +154,18 @@ function createRuleBuilder<TRules extends Rule[]>(rules: TRules): StrRuleBuilder
     type: SchemaType.STRING,
     rules,
     min: <P extends ParamaterValue<number> | number>(min: P, code?: string) =>
-      push(minLength(toParamaterValue(min), code)),
+      push(buildMinLengthRule(toParamaterValue(min), code)),
     max: <P extends ParamaterValue<number> | number>(max: P, code?: string) =>
-      push(maxLength(toParamaterValue(max), code)),
-    regex: <P extends string>(pattern: P, flags?: string, code?: string) => push(regex(pattern, flags, code)),
-    email: (code?: string) => push(email(code)),
+      push(buildMaxLengthRule(toParamaterValue(max), code)),
+    regex: <P extends string>(pattern: P, flags?: string, code?: string) => push(buildRegexRule(pattern, flags, code)),
+    email: (code?: string) => push(buildEmailRule(code)),
     equals: <P extends ParamaterValue<string> | string>(value: P, code?: string) =>
-      push(equals(toParamaterValue(value), code)),
-    isNumeric: (code?: string) => push(isNumeric(code)),
-    oneOf: <P extends ParamaterValue[]>(values: P, code?: string) => push(oneOf(values, code)),
+      push(buildEqualsRule(toParamaterValue(value), code)),
+    isNumeric: (code?: string) => push(buildIsNumericRule(code)),
+    oneOf: <P extends ParamaterValue[]>(values: P, code?: string) => push(buildOneOfRule(values, code)),
     custom: <T extends Record<string, ParamaterValue>>(name: string, params?: T, code?: string) =>
       // @ts-expect-error - code can be undefined which is handled by the custom() implementation
-      push(custom(name, params || ({} as T), code)),
+      push(buildCustomRule(name, params || ({} as T), code)),
   };
 }
 
@@ -183,24 +183,25 @@ function createFluent<TRules extends Rule[], TProps>(rules: TRules, props: TProp
 
     // — Rule methods —
     min: <P extends ParamaterValue<number> | number>(min: P, code?: string) =>
-      pushRule(minLength(toParamaterValue(min), code)),
+      pushRule(buildMinLengthRule(toParamaterValue(min), code)),
     max: <P extends ParamaterValue<number> | number>(max: P, code?: string) =>
-      pushRule(maxLength(toParamaterValue(max), code)),
-    regex: <P extends string>(pattern: P, flags?: string, code?: string) => pushRule(regex(pattern, flags, code)),
-    email: (code?: string) => pushRule(email(code)),
+      pushRule(buildMaxLengthRule(toParamaterValue(max), code)),
+    regex: <P extends string>(pattern: P, flags?: string, code?: string) =>
+      pushRule(buildRegexRule(pattern, flags, code)),
+    email: (code?: string) => pushRule(buildEmailRule(code)),
     equals: <P extends ParamaterValue<string> | string>(value: P, code?: string) =>
-      pushRule(equals(toParamaterValue(value), code)),
-    isNumeric: (code?: string) => pushRule(isNumeric(code)),
-    oneOf: <P extends ParamaterValue[]>(values: P, code?: string) => pushRule(oneOf(values, code)),
+      pushRule(buildEqualsRule(toParamaterValue(value), code)),
+    isNumeric: (code?: string) => pushRule(buildIsNumericRule(code)),
+    oneOf: <P extends ParamaterValue[]>(values: P, code?: string) => pushRule(buildOneOfRule(values, code)),
     custom: <T extends Record<string, ParamaterValue>>(name: string, params?: T, code?: string) =>
       // @ts-expect-error - code can be undefined which is handled by the custom() implementation
-      pushRule(custom(name, params || ({} as T), code)),
+      pushRule(buildCustomRule(name, params || ({} as T), code)),
 
     // — Conditional rules —
     when: <WRules extends Rule[]>(pred: Predicate, cb: (b: StrRuleBuilder<[]>) => StrRuleBuilder<WRules>) => {
       const result = cb(createRuleBuilder([]));
       const conditionals = result.rules.map((rule) =>
-        conditional({
+        buildConditionalRule({
           when: pred,
           then: rule as Exclude<Rule, ConditionalRule>,
         })

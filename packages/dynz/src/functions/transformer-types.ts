@@ -4,6 +4,8 @@ import type { CosFunction } from "./cos-function";
 import type { DivideFunction } from "./divide-function";
 import type { FloorFunction } from "./floor-function";
 import type { LookupFunction } from "./lookup-function";
+import type { MaxFunction } from "./max-function";
+import type { MinFunction } from "./min-function";
 import type { MultiplyFunction } from "./multiply-function";
 import type { SinFunction } from "./sin-function";
 import type { SizeFunction } from "./size-function";
@@ -48,6 +50,8 @@ export type Transformer =
   | CeilFunction
   | CosFunction
   | FloorFunction
+  | MaxFunction
+  | MinFunction
   | SinFunction
   | SizeFunction
   | SumFunction

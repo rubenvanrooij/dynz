@@ -45,7 +45,7 @@ export type EqualsRuleErrorMessage = ErrorMessageFromRule<Omit<EqualsRule, "equa
  * @see {@link eq} - Equality predicate (for conditional logic, not validation)
  * @see {@link neq} - Not equals predicate
  */
-export function equals<T extends ParamaterValue>(equals: T, code?: string): EqualsRule<T> {
+export function buildEqualsRule<T extends ParamaterValue>(equals: T, code?: string): EqualsRule<T> {
   return { equals, type: "equals", code };
 }
 

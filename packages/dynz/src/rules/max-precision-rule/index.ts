@@ -10,7 +10,7 @@ export type MaxPrecisionRule<T extends ParamaterValue<number> = ParamaterValue<n
 
 export type MaxPrecisionRuleErrorMessage = ErrorMessageFromRule<MaxPrecisionRule, number, "maxPrecision">;
 
-export function maxPrecision<T extends ParamaterValue<number> = ParamaterValue<number>>(
+export function buildMaxPrecisionRule<T extends ParamaterValue<number> = ParamaterValue<number>>(
   maxPrecision: T,
   code?: string
 ): MaxPrecisionRule<T> {

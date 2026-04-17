@@ -12,11 +12,19 @@ export type CustomRuleErrorMessage = ErrorMessageFromRule<
   Omit<CustomRule, "params"> & { params: Record<string, unknown>; result: Record<string, unknown> }
 >;
 
-export function custom(name: string): CustomRule;
-export function custom(name: string): CustomRule;
-export function custom<T extends Record<string, ParamaterValue>>(name: string, params: T): CustomRule<T>;
-export function custom<T extends Record<string, ParamaterValue>>(name: string, params: T, code: string): CustomRule<T>;
-export function custom<T extends Record<string, ParamaterValue>>(name: string, params?: T, code?: string): CustomRule {
+export function buildCustomRule(name: string): CustomRule;
+export function buildCustomRule(name: string): CustomRule;
+export function buildCustomRule<T extends Record<string, ParamaterValue>>(name: string, params: T): CustomRule<T>;
+export function buildCustomRule<T extends Record<string, ParamaterValue>>(
+  name: string,
+  params: T,
+  code: string
+): CustomRule<T>;
+export function buildCustomRule<T extends Record<string, ParamaterValue>>(
+  name: string,
+  params?: T,
+  code?: string
+): CustomRule {
   return { type: "custom", name, params: params || {}, code };
 }
 

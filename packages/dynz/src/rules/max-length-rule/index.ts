@@ -42,7 +42,7 @@ export type MaxLengthRuleErrorMessage = ErrorMessageFromRule<MaxLengthRule, numb
  * @see {@link minLength} - Minimum length rule
  * @see {@link size} - Size transformer (for predicates)
  */
-export function maxLength<T extends ParamaterValue<number> = ParamaterValue<number>>(
+export function buildMaxLengthRule<T extends ParamaterValue<number> = ParamaterValue<number>>(
   max: T,
   code?: string
 ): MaxLengthRule<T> {

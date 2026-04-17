@@ -1,15 +1,15 @@
 import type { ParamaterValue, Predicate } from "../../functions";
 import {
   type AfterRule,
-  after,
   type BeforeRule,
-  before,
+  buildAfterRule,
+  buildBeforeRule,
+  buildConditionalRule,
+  buildMaxDateRule,
+  buildMinDateRule,
   type ConditionalRule,
-  conditional,
   type MaxDateRule,
   type MinDateRule,
-  maxDate,
-  minDate,
   type Rule,
 } from "../../rules";
 import type { JsonRecord } from "../../types";
@@ -112,10 +112,10 @@ function createRuleBuilder<TRules extends Rule[]>(rules: TRules): DateRuleBuilde
   return {
     type: SchemaType.DATE,
     rules,
-    after: <P extends ParamaterValue<Date>>(date: P, code?: string) => push(after(date, code)),
-    before: <P extends ParamaterValue<Date>>(date: P, code?: string) => push(before(date, code)),
-    min: <P extends ParamaterValue<Date>>(date: P, code?: string) => push(minDate(date, code)),
-    max: <P extends ParamaterValue<Date>>(date: P, code?: string) => push(maxDate(date, code)),
+    after: <P extends ParamaterValue<Date>>(date: P, code?: string) => push(buildAfterRule(date, code)),
+    before: <P extends ParamaterValue<Date>>(date: P, code?: string) => push(buildBeforeRule(date, code)),
+    min: <P extends ParamaterValue<Date>>(date: P, code?: string) => push(buildMinDateRule(date, code)),
+    max: <P extends ParamaterValue<Date>>(date: P, code?: string) => push(buildMaxDateRule(date, code)),
   };
 }
 
@@ -133,19 +133,19 @@ function createFluent<TRules extends Rule[], TProps>(rules: TRules, props: TProp
 
     // — Rule methods —
     after: <P extends ParamaterValue<Date> | Date>(date: P, code?: string) =>
-      pushRule(after(toParamaterValue(date), code)),
+      pushRule(buildAfterRule(toParamaterValue(date), code)),
     before: <P extends ParamaterValue<Date> | Date>(date: P, code?: string) =>
-      pushRule(before(toParamaterValue(date), code)),
+      pushRule(buildBeforeRule(toParamaterValue(date), code)),
     min: <P extends ParamaterValue<Date> | Date>(date: P, code?: string) =>
-      pushRule(minDate(toParamaterValue(date), code)),
+      pushRule(buildMinDateRule(toParamaterValue(date), code)),
     max: <P extends ParamaterValue<Date> | Date>(date: P, code?: string) =>
-      pushRule(maxDate(toParamaterValue(date), code)),
+      pushRule(buildMaxDateRule(toParamaterValue(date), code)),
 
     // — Conditional rules —
     when: <WRules extends Rule[]>(pred: Predicate, cb: (b: DateRuleBuilder<[]>) => DateRuleBuilder<WRules>) => {
       const result = cb(createRuleBuilder([]));
       const conditionals = result.rules.map((rule) =>
-        conditional({
+        buildConditionalRule({
           when: pred,
           then: rule as Exclude<Rule, ConditionalRule>,
         })

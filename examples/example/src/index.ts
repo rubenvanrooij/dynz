@@ -1,6 +1,12 @@
+import * as d from "dynz";
 import { runExample } from "./registration-form";
 
 runExample();
+
+// The basics
+const stringSchema = d.string().min(0).max(100).optional();
+
+console.log(`stringSchema result:`, d.validate(stringSchema, undefined, "foo"));
 
 // const ADDONS_PRICES = {
 //   legalAid: 10,

@@ -1,13 +1,13 @@
 import type { ParamaterValue, Predicate } from "../../functions";
 import {
+  buildConditionalRule,
+  buildMaxSizeRule,
+  buildMimeTypeRule,
+  buildMinSizeRule,
   type ConditionalRule,
-  conditional,
   type MaxSizeRule,
   type MimeTypeRule,
   type MinSizeRule,
-  maxSize,
-  mimeType,
-  minSize,
   type Rule,
 } from "../../rules";
 import type { JsonRecord } from "../../types";
@@ -103,9 +103,10 @@ function createRuleBuilder<TRules extends Rule[]>(rules: TRules): FileRuleBuilde
   return {
     type: SchemaType.FILE,
     rules,
-    minSize: <P extends ParamaterValue<number>>(min: P, code?: string) => push(minSize(min, code)),
-    maxSize: <P extends ParamaterValue<number>>(max: P, code?: string) => push(maxSize(max, code)),
-    mimeType: <P extends ParamaterValue<string | string[]>>(type: P, code?: string) => push(mimeType(type, code)),
+    minSize: <P extends ParamaterValue<number>>(min: P, code?: string) => push(buildMinSizeRule(min, code)),
+    maxSize: <P extends ParamaterValue<number>>(max: P, code?: string) => push(buildMaxSizeRule(max, code)),
+    mimeType: <P extends ParamaterValue<string | string[]>>(type: P, code?: string) =>
+      push(buildMimeTypeRule(type, code)),
   };
 }
 
@@ -123,17 +124,17 @@ function createFluent<TRules extends Rule[], TProps>(rules: TRules, props: TProp
 
     // — Rule methods —
     minSize: <P extends ParamaterValue<number> | number>(min: P, code?: string) =>
-      pushRule(minSize(toParamaterValue(min), code)),
+      pushRule(buildMinSizeRule(toParamaterValue(min), code)),
     maxSize: <P extends ParamaterValue<number> | number>(max: P, code?: string) =>
-      pushRule(maxSize(toParamaterValue(max), code)),
+      pushRule(buildMaxSizeRule(toParamaterValue(max), code)),
     mimeType: <P extends ParamaterValue<string | string[]> | string>(type: P, code?: string) =>
-      pushRule(mimeType(toParamaterValue(type), code)),
+      pushRule(buildMimeTypeRule(toParamaterValue(type), code)),
 
     // — Conditional rules —
     when: <WRules extends Rule[]>(pred: Predicate, cb: (b: FileRuleBuilder<[]>) => FileRuleBuilder<WRules>) => {
       const result = cb(createRuleBuilder([]));
       const conditionals = result.rules.map((rule) =>
-        conditional({
+        buildConditionalRule({
           when: pred,
           then: rule as Exclude<Rule, ConditionalRule>,
         })

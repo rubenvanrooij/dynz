@@ -3,11 +3,11 @@ import { v } from "../../functions";
 import { REFERENCE_TYPE, ref } from "../../reference";
 import { type NumberSchema, number, type StringSchema, string } from "../../schemas";
 import type { Context } from "../../types";
-import { equals, equalsRule } from "./index";
+import { buildEqualsRule, equalsRule } from "./index";
 
 describe("equals rule", () => {
   it("should create equals rule with string value", () => {
-    const rule = equals(v("admin"));
+    const rule = buildEqualsRule(v("admin"));
 
     expect(rule).toEqual({
       type: "equals",
@@ -16,7 +16,7 @@ describe("equals rule", () => {
   });
 
   it("should create equals rule with number value", () => {
-    const rule = equals(v(42));
+    const rule = buildEqualsRule(v(42));
 
     expect(rule).toEqual({
       type: "equals",
@@ -25,7 +25,7 @@ describe("equals rule", () => {
   });
 
   it("should create equals rule with boolean value", () => {
-    const rule = equals(v(true));
+    const rule = buildEqualsRule(v(true));
 
     expect(rule).toEqual({
       type: "equals",
@@ -35,7 +35,7 @@ describe("equals rule", () => {
 
   it("should create equals rule with reference", () => {
     const reference = ref("confirmPassword");
-    const rule = equals(reference);
+    const rule = buildEqualsRule(reference);
 
     expect(rule).toEqual({
       type: "equals",
@@ -44,7 +44,7 @@ describe("equals rule", () => {
   });
 
   it("should create equals rule with cross-field reference", () => {
-    const rule = equals(ref("$.user.expectedRole"));
+    const rule = buildEqualsRule(ref("$.user.expectedRole"));
 
     expect(rule).toEqual({
       type: "equals",
@@ -53,7 +53,7 @@ describe("equals rule", () => {
   });
 
   it("should create equals rule with custom error code", () => {
-    const rule = equals(v("admin"), "INVALID_ROLE");
+    const rule = buildEqualsRule(v("admin"), "INVALID_ROLE");
 
     expect(rule).toEqual({
       type: "equals",
@@ -68,7 +68,7 @@ describe("equalsRule validator", () => {
   const mockSchema = string();
 
   it("should return undefined when value equals expected value", async () => {
-    const rule = equals(v("admin"));
+    const rule = buildEqualsRule(v("admin"));
 
     const result = await equalsRule({
       rule,
@@ -82,7 +82,7 @@ describe("equalsRule validator", () => {
   });
 
   it("should return error when value does not equal expected value", async () => {
-    const rule = equals(v("admin"));
+    const rule = buildEqualsRule(v("admin"));
 
     const result = await equalsRule({
       rule,
@@ -101,7 +101,7 @@ describe("equalsRule validator", () => {
   it("should handle number values correctly", async () => {
     const numberMockContext = {} as unknown as Context<NumberSchema>;
     const numberMockSchema = number();
-    const rule = equals(v(42));
+    const rule = buildEqualsRule(v(42));
 
     const result = await equalsRule({
       rule,
@@ -115,7 +115,7 @@ describe("equalsRule validator", () => {
   });
 
   it("should include correct error message format", async () => {
-    const rule = equals(v("admin"));
+    const rule = buildEqualsRule(v("admin"));
 
     const result = await equalsRule({
       rule,

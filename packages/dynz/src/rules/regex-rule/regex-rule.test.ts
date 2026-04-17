@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { type StringSchema, string } from "../../schemas";
 import type { Context } from "../../types";
-import { regex, regexRule } from "./index";
+import { buildRegexRule, regexRule } from "./index";
 
 describe("regex rule", () => {
   it("should create regex rule for email validation", () => {
-    const rule = regex("^[^@]+@[^@]+\\.[^@]+$");
+    const rule = buildRegexRule("^[^@]+@[^@]+\\.[^@]+$");
 
     expect(rule).toEqual({
       type: "regex",
@@ -14,7 +14,7 @@ describe("regex rule", () => {
   });
 
   it("should create regex rule for phone number validation", () => {
-    const rule = regex("^\\+?[1-9]\\d{1,14}$");
+    const rule = buildRegexRule("^\\+?[1-9]\\d{1,14}$");
 
     expect(rule).toEqual({
       type: "regex",
@@ -23,7 +23,7 @@ describe("regex rule", () => {
   });
 
   it("should create regex rule for alphanumeric validation", () => {
-    const rule = regex("^[a-zA-Z0-9]+$");
+    const rule = buildRegexRule("^[a-zA-Z0-9]+$");
 
     expect(rule).toEqual({
       type: "regex",
@@ -34,7 +34,7 @@ describe("regex rule", () => {
   it("should create regex rule for URL validation", () => {
     const urlPattern =
       "^https?:\\/\\/(www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b([-a-zA-Z0-9()@:%_\\+.~#?&//=]*)$";
-    const rule = regex(urlPattern);
+    const rule = buildRegexRule(urlPattern);
 
     expect(rule).toEqual({
       type: "regex",
@@ -44,7 +44,7 @@ describe("regex rule", () => {
 
   it("should create regex rule for password strength", () => {
     const passwordPattern = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$";
-    const rule = regex(passwordPattern);
+    const rule = buildRegexRule(passwordPattern);
 
     expect(rule).toEqual({
       type: "regex",
@@ -53,7 +53,7 @@ describe("regex rule", () => {
   });
 
   it("should handle simple patterns", () => {
-    const rule = regex("[0-9]+");
+    const rule = buildRegexRule("[0-9]+");
 
     expect(rule).toEqual({
       type: "regex",
@@ -62,7 +62,7 @@ describe("regex rule", () => {
   });
 
   it("should create regex rule with custom code", () => {
-    const rule = regex("^[A-Z]+$", undefined, "UPPERCASE_ONLY");
+    const rule = buildRegexRule("^[A-Z]+$", undefined, "UPPERCASE_ONLY");
 
     expect(rule).toEqual({
       type: "regex",
@@ -81,7 +81,7 @@ describe("regexRule validator", () => {
   });
 
   it("should return undefined when value matches regex pattern", async () => {
-    const rule = regex("^[0-9]+$");
+    const rule = buildRegexRule("^[0-9]+$");
 
     const result = regexRule({
       rule,
@@ -95,7 +95,7 @@ describe("regexRule validator", () => {
   });
 
   it("should return error when value does not match regex pattern", async () => {
-    const rule = regex("^[0-9]+$");
+    const rule = buildRegexRule("^[0-9]+$");
 
     const result = await regexRule({
       rule,
@@ -111,7 +111,7 @@ describe("regexRule validator", () => {
   });
 
   it("should handle email regex validation", async () => {
-    const rule = regex("^[^@]+@[^@]+\\.[^@]+$");
+    const rule = buildRegexRule("^[^@]+@[^@]+\\.[^@]+$");
 
     const validEmail = await regexRule({
       rule,
@@ -135,7 +135,7 @@ describe("regexRule validator", () => {
   });
 
   it("should include correct error message format", async () => {
-    const rule = regex("^[A-Z]+$");
+    const rule = buildRegexRule("^[A-Z]+$");
 
     const result = await regexRule({
       rule,
@@ -153,7 +153,7 @@ describe("regexRule validator", () => {
 
   it("should handle complex regex patterns", async () => {
     const passwordPattern = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$";
-    const rule = regex(passwordPattern);
+    const rule = buildRegexRule(passwordPattern);
 
     const strongPassword = await regexRule({
       rule,
@@ -177,7 +177,7 @@ describe("regexRule validator", () => {
   });
 
   it("should handle case-sensitive patterns", async () => {
-    const rule = regex("^[a-z]+$");
+    const rule = buildRegexRule("^[a-z]+$");
 
     const lowercase = regexRule({
       rule,

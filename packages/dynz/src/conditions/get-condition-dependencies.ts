@@ -46,6 +46,8 @@ export function getConditionDependencies(input: Predicate | Transformer, path: s
     case "sub":
     case "multiply":
     case "divide":
+    case "min":
+    case "max":
       return input.value.reduce<string[]>((acc, cur) => {
         acc.push(...getParamaterDependencies(cur, path, schema));
         return acc;
