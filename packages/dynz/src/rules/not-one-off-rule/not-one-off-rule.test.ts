@@ -3,11 +3,11 @@ import { v } from "../../functions";
 import { REFERENCE_TYPE, ref } from "../../reference";
 import { type NumberSchema, number, type StringSchema, string } from "../../schemas";
 import type { Context } from "../../types";
-import { notOneOf, notOneOfRule } from "./index";
+import { buildNotOneOfRule, notOneOfRule } from "./index";
 
 describe("notOneOf rule", () => {
   it("should create notOneOf rule with string values", () => {
-    const rule = notOneOf([v("apple"), v("banana"), v("orange")]);
+    const rule = buildNotOneOfRule([v("apple"), v("banana"), v("orange")]);
 
     expect(rule).toEqual({
       type: "not_one_of",
@@ -16,7 +16,7 @@ describe("notOneOf rule", () => {
   });
 
   it("should create notOneOf rule with number values", () => {
-    const rule = notOneOf([v(1), v(2), v(3), v(5), v(8)]);
+    const rule = buildNotOneOfRule([v(1), v(2), v(3), v(5), v(8)]);
 
     expect(rule).toEqual({
       type: "not_one_of",
@@ -25,7 +25,7 @@ describe("notOneOf rule", () => {
   });
 
   it("should create notOneOf rule with reference value", () => {
-    const rule = notOneOf([ref("blockedValue")]);
+    const rule = buildNotOneOfRule([ref("blockedValue")]);
 
     expect(rule).toEqual({
       type: "not_one_of",
@@ -34,7 +34,7 @@ describe("notOneOf rule", () => {
   });
 
   it("should create notOneOf rule with custom code", () => {
-    const rule = notOneOf([v("red"), v("green"), v("blue")], "INVALID_COLOR");
+    const rule = buildNotOneOfRule([v("red"), v("green"), v("blue")], "INVALID_COLOR");
 
     expect(rule).toEqual({
       type: "not_one_of",
@@ -51,7 +51,7 @@ describe("notOneOfRule validator", () => {
   const mockNumberSchema = number();
 
   it("should return undefined when string value is not in blocked values", () => {
-    const rule = notOneOf([v("apple"), v("banana"), v("orange")]);
+    const rule = buildNotOneOfRule([v("apple"), v("banana"), v("orange")]);
 
     const result = notOneOfRule({
       rule,
@@ -65,7 +65,7 @@ describe("notOneOfRule validator", () => {
   });
 
   it("should return undefined when number value is not in blocked values", () => {
-    const rule = notOneOf([v(1), v(2), v(3), v(5), v(8)]);
+    const rule = buildNotOneOfRule([v(1), v(2), v(3), v(5), v(8)]);
 
     const result = notOneOfRule({
       rule,
@@ -79,7 +79,7 @@ describe("notOneOfRule validator", () => {
   });
 
   it("should return error when string value is in blocked values", async () => {
-    const rule = notOneOf([v("apple"), v("banana"), v("orange")]);
+    const rule = buildNotOneOfRule([v("apple"), v("banana"), v("orange")]);
 
     const result = await notOneOfRule({
       rule,
@@ -96,7 +96,7 @@ describe("notOneOfRule validator", () => {
   });
 
   it("should return error when number value is in blocked values", async () => {
-    const rule = notOneOf([v(1), v(2), v(3), v(5), v(8)]);
+    const rule = buildNotOneOfRule([v(1), v(2), v(3), v(5), v(8)]);
 
     const result = await notOneOfRule({
       rule,
@@ -112,7 +112,7 @@ describe("notOneOfRule validator", () => {
   });
 
   it("should return undefined when blocked values are empty", () => {
-    const rule = notOneOf([]);
+    const rule = buildNotOneOfRule([]);
 
     const result = notOneOfRule({
       rule,
@@ -126,7 +126,7 @@ describe("notOneOfRule validator", () => {
   });
 
   it("should handle single blocked value", async () => {
-    const rule = notOneOf([v("blocked")]);
+    const rule = buildNotOneOfRule([v("blocked")]);
 
     const result = await notOneOfRule({
       rule,

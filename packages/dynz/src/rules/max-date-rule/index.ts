@@ -16,7 +16,7 @@ export type MaxDateRule<T extends ParamaterValue<Date> = ParamaterValue<Date>> =
 
 export type MaxDateRuleErrorMessage = ErrorMessageFromRule<MaxDateRule, Date, "max">;
 
-export function maxDate<T extends ParamaterValue<Date>>(max: T, code?: string): MaxDateRule<T> {
+export function buildMaxDateRule<T extends ParamaterValue<Date>>(max: T, code?: string): MaxDateRule<T> {
   return { max, type: "max_date", code };
 }
 

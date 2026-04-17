@@ -33,7 +33,7 @@ export type RegexRuleErrorMessage = ErrorMessageFromRule<RegexRule>;
  * @see {@link minLength} - Minimum length validation
  * @see {@link maxLength} - Maximum length validation
  */
-export function regex<T extends string>(regex: T, flags?: string, code?: string): RegexRule<T> {
+export function buildRegexRule<T extends string>(regex: T, flags?: string, code?: string): RegexRule<T> {
   return { type: "regex", regex, code, flags };
 }
 

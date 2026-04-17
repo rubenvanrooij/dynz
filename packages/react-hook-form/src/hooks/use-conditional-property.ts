@@ -21,8 +21,6 @@ export function useConditionalProperty(
       ? []
       : getConditionDependencies(propertyValue, path, schema).map((field) => field.slice(2));
 
-  // ADD ALL PARRENTS AS DEPENDENCIES
-
   // Watch is just here to trigger a rerender when a value gets updated
   const watchedValues = useWatch({
     name: dependencies,

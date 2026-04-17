@@ -10,7 +10,7 @@ export type OneOfRule<T extends ParamaterValue[] = ParamaterValue[]> = {
 
 export type OneOfRuleErrorMessage = ErrorMessageFromRule<OneOfRule, (ValueType | undefined)[], "values">;
 
-export function oneOf<T extends ParamaterValue[]>(values: T, code?: string): OneOfRule<T> {
+export function buildOneOfRule<T extends ParamaterValue[]>(values: T, code?: string): OneOfRule<T> {
   return { values, type: "one_of", code };
 }
 

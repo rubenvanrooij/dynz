@@ -3,11 +3,11 @@ import { v } from "../../functions";
 import { REFERENCE_TYPE, ref } from "../../reference";
 import { type ObjectSchema, object } from "../../schemas";
 import type { Context } from "../../types";
-import { minEntries, minEntriesRule } from "./index";
+import { buildMinEntriesRule, minEntriesRule } from "./index";
 
 describe("minEntries rule", () => {
   it("should create minEntries rule with number value", () => {
-    const rule = minEntries(v(3));
+    const rule = buildMinEntriesRule(v(3));
 
     expect(rule).toEqual({
       type: "min_entries",
@@ -17,7 +17,7 @@ describe("minEntries rule", () => {
 
   it("should create minEntries rule with reference", () => {
     const reference = ref("$.minEntries");
-    const rule = minEntries(reference);
+    const rule = buildMinEntriesRule(reference);
 
     expect(rule).toEqual({
       type: "min_entries",
@@ -26,7 +26,7 @@ describe("minEntries rule", () => {
   });
 
   it("should create minEntries rule with custom code", () => {
-    const rule = minEntries(v(2), "INSUFFICIENT_ENTRIES");
+    const rule = buildMinEntriesRule(v(2), "INSUFFICIENT_ENTRIES");
 
     expect(rule).toEqual({
       type: "min_entries",
@@ -41,7 +41,7 @@ describe("minEntriesRule validator", () => {
   const mockSchema = object({});
 
   it("should return undefined when object has more entries than minimum", () => {
-    const rule = minEntries(v(2));
+    const rule = buildMinEntriesRule(v(2));
     const testObject = { name: "John", age: 30, city: "New York" };
 
     const result = minEntriesRule({
@@ -56,7 +56,7 @@ describe("minEntriesRule validator", () => {
   });
 
   it("should return undefined when object has exactly minimum entries", () => {
-    const rule = minEntries(v(2));
+    const rule = buildMinEntriesRule(v(2));
     const testObject = { name: "John", age: 30 };
 
     const result = minEntriesRule({
@@ -71,7 +71,7 @@ describe("minEntriesRule validator", () => {
   });
 
   it("should return error when object has fewer entries than minimum", async () => {
-    const rule = minEntries(v(3));
+    const rule = buildMinEntriesRule(v(3));
     const testObject = { name: "John" };
 
     const result = await minEntriesRule({
@@ -90,7 +90,7 @@ describe("minEntriesRule validator", () => {
   });
 
   it("should return undefined when resolved min is undefined", () => {
-    const rule = minEntries(undefined);
+    const rule = buildMinEntriesRule(undefined);
     const testObject = { name: "John" };
 
     const result = minEntriesRule({
@@ -105,7 +105,7 @@ describe("minEntriesRule validator", () => {
   });
 
   it("should include correct error message format", async () => {
-    const rule = minEntries(v(5));
+    const rule = buildMinEntriesRule(v(5));
     const testObject = { name: "John", age: 30 };
 
     const result = await minEntriesRule({
@@ -123,7 +123,7 @@ describe("minEntriesRule validator", () => {
   });
 
   it("should handle empty object correctly", async () => {
-    const rule = minEntries(v(1));
+    const rule = buildMinEntriesRule(v(1));
     const testObject = {};
 
     const result = await minEntriesRule({
@@ -140,7 +140,7 @@ describe("minEntriesRule validator", () => {
   });
 
   it("should return undefined when minimum is zero", () => {
-    const rule = minEntries(v(0));
+    const rule = buildMinEntriesRule(v(0));
     const testObject = {};
 
     const result = minEntriesRule({
@@ -155,7 +155,7 @@ describe("minEntriesRule validator", () => {
   });
 
   it("should handle object with nested properties correctly", () => {
-    const rule = minEntries(v(3));
+    const rule = buildMinEntriesRule(v(3));
     const testObject = {
       user: { name: "John", age: 30 },
       settings: { theme: "dark" },
@@ -174,7 +174,7 @@ describe("minEntriesRule validator", () => {
   });
 
   it("should handle large objects correctly", () => {
-    const rule = minEntries(v(10));
+    const rule = buildMinEntriesRule(v(10));
     const testObject: Record<string, unknown> = {};
     for (let i = 0; i < 15; i++) {
       testObject[`field${i}`] = `value${i}`;

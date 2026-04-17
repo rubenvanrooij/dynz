@@ -8,7 +8,7 @@ export type IsNumericRule = {
 
 export type IsNumericRuleErrorMessage = ErrorMessageFromRule<IsNumericRule>;
 
-export function isNumeric(code?: string): IsNumericRule {
+export function buildIsNumericRule(code?: string): IsNumericRule {
   return { type: "is_numeric", code };
 }
 

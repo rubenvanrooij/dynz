@@ -15,6 +15,8 @@ export * from "./lookup-function";
 export * from "./lower-than-function";
 export * from "./lower-than-or-equal-function";
 export * from "./matches-function";
+export * from "./max-function";
+export * from "./min-function";
 export * from "./multiply-function";
 export * from "./not-equals-function";
 export * from "./or-function";

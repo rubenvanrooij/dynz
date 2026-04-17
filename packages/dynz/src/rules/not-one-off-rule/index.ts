@@ -10,7 +10,7 @@ export type NotOneOfRule<T extends ParamaterValue[] = ParamaterValue[]> = {
 
 export type NotOneOfRuleErrorMessage = ErrorMessageFromRule<NotOneOfRule, (ValueType | undefined)[], "values">;
 
-export function notOneOf<T extends ParamaterValue[]>(values: T, code?: string): NotOneOfRule<T> {
+export function buildNotOneOfRule<T extends ParamaterValue[]>(values: T, code?: string): NotOneOfRule<T> {
   return { values, type: "not_one_of", code };
 }
 

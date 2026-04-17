@@ -1,11 +1,11 @@
 import type { ParamaterValue, Predicate } from "../../functions";
 import {
+  buildConditionalRule,
+  buildEqualsRule,
+  buildOneOfRule,
   type ConditionalRule,
-  conditional,
   type EqualsRule,
-  equals,
   type OneOfRule,
-  oneOf,
   type Rule,
 } from "../../rules";
 import type { JsonRecord } from "../../types";
@@ -106,8 +106,9 @@ function createRuleBuilder<TEnum extends Enum, TRules extends Rule[]>(
     type: SchemaType.ENUM,
     enum: theEnum,
     rules,
-    equals: <P extends ParamaterValue<EnumValues<TEnum>>>(value: P, code?: string) => push(equals(value, code)),
-    oneOf: <P extends ParamaterValue[]>(values: P, code?: string) => push(oneOf(values, code)),
+    equals: <P extends ParamaterValue<EnumValues<TEnum>>>(value: P, code?: string) =>
+      push(buildEqualsRule(value, code)),
+    oneOf: <P extends ParamaterValue[]>(values: P, code?: string) => push(buildOneOfRule(values, code)),
   };
 }
 
@@ -130,8 +131,8 @@ function createFluent<TEnum extends Enum, TRules extends Rule[], TProps>(
 
     // — Rule methods —
     equals: <P extends ParamaterValue<EnumValues<TEnum>> | EnumValues<TEnum>>(value: P, code?: string) =>
-      pushRule(equals(toParamaterValue(value), code)),
-    oneOf: <P extends ParamaterValue[]>(values: P, code?: string) => pushRule(oneOf(values, code)),
+      pushRule(buildEqualsRule(toParamaterValue(value), code)),
+    oneOf: <P extends ParamaterValue[]>(values: P, code?: string) => pushRule(buildOneOfRule(values, code)),
 
     // — Conditional rules —
     when: <WRules extends Rule[]>(
@@ -140,7 +141,7 @@ function createFluent<TEnum extends Enum, TRules extends Rule[], TProps>(
     ) => {
       const result = cb(createRuleBuilder(theEnum, []));
       const conditionals = result.rules.map((rule) =>
-        conditional({
+        buildConditionalRule({
           when: pred,
           then: rule as Exclude<Rule, ConditionalRule>,
         })

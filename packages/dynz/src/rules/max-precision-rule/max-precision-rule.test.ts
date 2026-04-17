@@ -3,11 +3,11 @@ import { v } from "../../functions";
 import { REFERENCE_TYPE, ref } from "../../reference";
 import { type NumberSchema, number } from "../../schemas";
 import type { Context } from "../../types";
-import { maxPrecision, maxPrecisionRule } from "./index";
+import { buildMaxPrecisionRule, maxPrecisionRule } from "./index";
 
 describe("maxPrecision rule", () => {
   it("should create maxPrecision rule with number value", () => {
-    const rule = maxPrecision(v(2));
+    const rule = buildMaxPrecisionRule(v(2));
 
     expect(rule).toEqual({
       type: "max_precision",
@@ -17,7 +17,7 @@ describe("maxPrecision rule", () => {
 
   it("should create maxPrecision rule with reference", () => {
     const reference = ref("$.maxPrecision");
-    const rule = maxPrecision(reference);
+    const rule = buildMaxPrecisionRule(reference);
 
     expect(rule).toEqual({
       type: "max_precision",
@@ -26,7 +26,7 @@ describe("maxPrecision rule", () => {
   });
 
   it("should create maxPrecision rule with custom code", () => {
-    const rule = maxPrecision(v(3), "PRECISION_TOO_HIGH");
+    const rule = buildMaxPrecisionRule(v(3), "PRECISION_TOO_HIGH");
 
     expect(rule).toEqual({
       type: "max_precision",
@@ -41,7 +41,7 @@ describe("maxPrecisionRule validator", () => {
   const mockSchema = number();
 
   it("should return undefined when precision is within maximum", () => {
-    const rule = maxPrecision(v(2));
+    const rule = buildMaxPrecisionRule(v(2));
 
     const result = maxPrecisionRule({
       rule,
@@ -55,7 +55,7 @@ describe("maxPrecisionRule validator", () => {
   });
 
   it("should return error when precision exceeds maximum", async () => {
-    const rule = maxPrecision(v(2));
+    const rule = buildMaxPrecisionRule(v(2));
 
     const result = await maxPrecisionRule({
       rule,
@@ -72,7 +72,7 @@ describe("maxPrecisionRule validator", () => {
   });
 
   it("should return undefined when resolved maxPrecision is undefined", () => {
-    const rule = maxPrecision(undefined);
+    const rule = buildMaxPrecisionRule(undefined);
 
     const result = maxPrecisionRule({
       rule,
@@ -86,7 +86,7 @@ describe("maxPrecisionRule validator", () => {
   });
 
   it("should handle larger threshold correctly", () => {
-    const rule = maxPrecision(v(4));
+    const rule = buildMaxPrecisionRule(v(4));
 
     const result = maxPrecisionRule({
       rule,
@@ -100,7 +100,7 @@ describe("maxPrecisionRule validator", () => {
   });
 
   it("should include correct error message format", async () => {
-    const rule = maxPrecision(v(1));
+    const rule = buildMaxPrecisionRule(v(1));
 
     const result = await maxPrecisionRule({
       rule,
@@ -117,7 +117,7 @@ describe("maxPrecisionRule validator", () => {
   });
 
   it("should handle whole numbers correctly", () => {
-    const rule = maxPrecision(v(2));
+    const rule = buildMaxPrecisionRule(v(2));
 
     const result = maxPrecisionRule({
       rule,
@@ -131,7 +131,7 @@ describe("maxPrecisionRule validator", () => {
   });
 
   it("should return undefined when precision equals maximum", () => {
-    const rule = maxPrecision(v(3));
+    const rule = buildMaxPrecisionRule(v(3));
 
     const result = maxPrecisionRule({
       rule,

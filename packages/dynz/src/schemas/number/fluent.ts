@@ -1,19 +1,19 @@
 import type { ParamaterValue, Predicate, Transformer } from "../../functions";
 import {
+  buildConditionalRule,
+  buildEqualsRule,
+  buildIsNumericRule,
+  buildMaxPrecisionRule,
+  buildMaxRule,
+  buildMinRule,
+  buildOneOfRule,
   type ConditionalRule,
-  conditional,
   type EqualsRule,
-  equals,
   type IsNumericRule,
-  isNumeric,
   type MaxPrecisionRule,
   type MaxRule,
   type MinRule,
-  max,
-  maxPrecision,
-  min,
   type OneOfRule,
-  oneOf,
   type Rule,
 } from "../../rules";
 import type { JsonRecord } from "../../types";
@@ -134,12 +134,13 @@ function createRuleBuilder<TRules extends Rule[]>(rules: TRules): NumRuleBuilder
       value: P,
       code?: string,
       transformer?: A
-    ) => push(min(value, code, transformer)),
-    max: <P extends ParamaterValue<number>>(value: P, code?: string) => push(max(value, code)),
-    maxPrecision: <P extends ParamaterValue<number>>(value: P, code?: string) => push(maxPrecision(value, code)),
-    equals: <P extends ParamaterValue<number>>(value: P, code?: string) => push(equals(value, code)),
-    isNumeric: (code?: string) => push(isNumeric(code)),
-    oneOf: <P extends ParamaterValue[]>(values: P, code?: string) => push(oneOf(values, code)),
+    ) => push(buildMinRule(value, code, transformer)),
+    max: <P extends ParamaterValue<number>>(value: P, code?: string) => push(buildMaxRule(value, code)),
+    maxPrecision: <P extends ParamaterValue<number>>(value: P, code?: string) =>
+      push(buildMaxPrecisionRule(value, code)),
+    equals: <P extends ParamaterValue<number>>(value: P, code?: string) => push(buildEqualsRule(value, code)),
+    isNumeric: (code?: string) => push(buildIsNumericRule(code)),
+    oneOf: <P extends ParamaterValue[]>(values: P, code?: string) => push(buildOneOfRule(values, code)),
   };
 }
 
@@ -160,21 +161,21 @@ function createFluent<TRules extends Rule[], TProps>(rules: TRules, props: TProp
       value: P,
       code?: string,
       transformer?: A
-    ) => pushRule(min(toParamaterValue(value), code, transformer)),
+    ) => pushRule(buildMinRule(toParamaterValue(value), code, transformer)),
     max: <P extends ParamaterValue<number> | number>(value: P, code?: string) =>
-      pushRule(max(toParamaterValue(value), code)),
+      pushRule(buildMaxRule(toParamaterValue(value), code)),
     maxPrecision: <P extends ParamaterValue<number> | number>(value: P, code?: string) =>
-      pushRule(maxPrecision(toParamaterValue(value), code)),
+      pushRule(buildMaxPrecisionRule(toParamaterValue(value), code)),
     equals: <P extends ParamaterValue<number> | number>(value: P, code?: string) =>
-      pushRule(equals(toParamaterValue(value), code)),
-    isNumeric: (code?: string) => pushRule(isNumeric(code)),
-    oneOf: <P extends ParamaterValue[]>(values: P, code?: string) => pushRule(oneOf(values, code)),
+      pushRule(buildEqualsRule(toParamaterValue(value), code)),
+    isNumeric: (code?: string) => pushRule(buildIsNumericRule(code)),
+    oneOf: <P extends ParamaterValue[]>(values: P, code?: string) => pushRule(buildOneOfRule(values, code)),
 
     // — Conditional rules —
     when: <WRules extends Rule[]>(pred: Predicate, cb: (b: NumRuleBuilder<[]>) => NumRuleBuilder<WRules>) => {
       const result = cb(createRuleBuilder([]));
       const conditionals = result.rules.map((rule) =>
-        conditional({
+        buildConditionalRule({
           when: pred,
           then: rule as Exclude<Rule, ConditionalRule>,
         })

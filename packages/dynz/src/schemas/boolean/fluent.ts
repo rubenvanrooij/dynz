@@ -1,5 +1,5 @@
 import type { ParamaterValue, Predicate } from "../../functions";
-import { type ConditionalRule, conditional, type EqualsRule, equals, type Rule } from "../../rules";
+import { buildConditionalRule, buildEqualsRule, type ConditionalRule, type EqualsRule, type Rule } from "../../rules";
 import type { JsonRecord } from "../../types";
 import { SchemaType } from "../../types";
 import { type ToParam, toParamaterValue } from "../shared";
@@ -82,7 +82,7 @@ function createRuleBuilder<TRules extends Rule[]>(rules: TRules): BoolRuleBuilde
   return {
     type: SchemaType.BOOLEAN,
     rules,
-    equals: <P extends ParamaterValue<boolean>>(value: P, code?: string) => push(equals(value, code)),
+    equals: <P extends ParamaterValue<boolean>>(value: P, code?: string) => push(buildEqualsRule(value, code)),
   };
 }
 
@@ -100,13 +100,13 @@ function createFluent<TRules extends Rule[], TProps>(rules: TRules, props: TProp
 
     // — Rule methods —
     equals: <P extends ParamaterValue<boolean> | boolean>(value: P, code?: string) =>
-      pushRule(equals(toParamaterValue(value), code)),
+      pushRule(buildEqualsRule(toParamaterValue(value), code)),
 
     // — Conditional rules —
     when: <WRules extends Rule[]>(pred: Predicate, cb: (b: BoolRuleBuilder<[]>) => BoolRuleBuilder<WRules>) => {
       const result = cb(createRuleBuilder([]));
       const conditionals = result.rules.map((rule) =>
-        conditional({
+        buildConditionalRule({
           when: pred,
           then: rule as Exclude<Rule, ConditionalRule>,
         })

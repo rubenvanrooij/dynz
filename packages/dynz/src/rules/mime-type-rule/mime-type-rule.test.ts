@@ -3,11 +3,11 @@ import { v } from "../../functions";
 import { REFERENCE_TYPE, ref } from "../../reference";
 import { type FileSchema, file } from "../../schemas";
 import type { Context } from "../../types";
-import { mimeType, mimeTypeRule } from "./index";
+import { buildMimeTypeRule, mimeTypeRule } from "./index";
 
 describe("mimeType rule", () => {
   it("should create mimeType rule with string value", () => {
-    const rule = mimeType(v("image/jpeg"));
+    const rule = buildMimeTypeRule(v("image/jpeg"));
 
     expect(rule).toEqual({
       type: "mime_type",
@@ -16,7 +16,7 @@ describe("mimeType rule", () => {
   });
 
   it("should create mimeType rule with array value", () => {
-    const rule = mimeType(v(["image/jpeg", "image/png", "image/gif"]));
+    const rule = buildMimeTypeRule(v(["image/jpeg", "image/png", "image/gif"]));
 
     expect(rule).toEqual({
       type: "mime_type",
@@ -26,7 +26,7 @@ describe("mimeType rule", () => {
 
   it("should create mimeType rule with reference", () => {
     const reference = ref("$.allowedMimeTypes");
-    const rule = mimeType(reference);
+    const rule = buildMimeTypeRule(reference);
 
     expect(rule).toEqual({
       type: "mime_type",
@@ -35,7 +35,7 @@ describe("mimeType rule", () => {
   });
 
   it("should create mimeType rule with custom code", () => {
-    const rule = mimeType(v("application/pdf"), "INVALID_FILE_TYPE");
+    const rule = buildMimeTypeRule(v("application/pdf"), "INVALID_FILE_TYPE");
 
     expect(rule).toEqual({
       type: "mime_type",
@@ -50,7 +50,7 @@ describe("mimeTypeRule validator", () => {
   const mockSchema = file();
 
   it("should return undefined when file type matches single allowed type", () => {
-    const rule = mimeType(v("image/jpeg"));
+    const rule = buildMimeTypeRule(v("image/jpeg"));
     const mockFile = new File([""], "test.jpg", { type: "image/jpeg" });
 
     const result = mimeTypeRule({
@@ -65,7 +65,7 @@ describe("mimeTypeRule validator", () => {
   });
 
   it("should return undefined when file type matches one of multiple allowed types", () => {
-    const rule = mimeType(v(["image/jpeg", "image/png"]));
+    const rule = buildMimeTypeRule(v(["image/jpeg", "image/png"]));
     const mockFile = new File([""], "test.png", { type: "image/png" });
 
     const result = mimeTypeRule({
@@ -80,7 +80,7 @@ describe("mimeTypeRule validator", () => {
   });
 
   it("should return error when file type does not match allowed type", async () => {
-    const rule = mimeType(v("image/jpeg"));
+    const rule = buildMimeTypeRule(v("image/jpeg"));
     const mockFile = new File([""], "test.pdf", { type: "application/pdf" });
 
     const result = await mimeTypeRule({
@@ -98,7 +98,7 @@ describe("mimeTypeRule validator", () => {
   });
 
   it("should return error when file type does not match any of multiple allowed types", async () => {
-    const rule = mimeType(v(["image/jpeg", "image/png"]));
+    const rule = buildMimeTypeRule(v(["image/jpeg", "image/png"]));
     const mockFile = new File([""], "test.txt", { type: "text/plain" });
 
     const result = await mimeTypeRule({
@@ -115,7 +115,7 @@ describe("mimeTypeRule validator", () => {
   });
 
   it("should return undefined when resolved mimeType is undefined", () => {
-    const rule = mimeType(undefined);
+    const rule = buildMimeTypeRule(undefined);
     const mockFile = new File([""], "test.pdf", { type: "application/pdf" });
 
     const result = mimeTypeRule({
@@ -130,7 +130,7 @@ describe("mimeTypeRule validator", () => {
   });
 
   it("should include correct error message format", async () => {
-    const rule = mimeType(v("video/mp4"));
+    const rule = buildMimeTypeRule(v("video/mp4"));
     const mockFile = new File([""], "test.mp3", { type: "audio/mp3" });
 
     const result = await mimeTypeRule({
@@ -148,7 +148,7 @@ describe("mimeTypeRule validator", () => {
   });
 
   it("should handle document mime types correctly", () => {
-    const rule = mimeType(v(["application/pdf", "application/msword"]));
+    const rule = buildMimeTypeRule(v(["application/pdf", "application/msword"]));
     const mockFile = new File([""], "test.pdf", { type: "application/pdf" });
 
     const result = mimeTypeRule({

@@ -16,7 +16,7 @@ export type MaxEntriesRule<T extends ParamaterValue<number> = ParamaterValue<num
 
 export type MaxEntriesRuleErrorMessage = ErrorMessageFromRule<MaxEntriesRule, number, "max">;
 
-export function maxEntries<T extends ParamaterValue<number> = ParamaterValue<number>>(
+export function buildMaxEntriesRule<T extends ParamaterValue<number> = ParamaterValue<number>>(
   max: T,
   code?: string
 ): MaxEntriesRule<T> {
