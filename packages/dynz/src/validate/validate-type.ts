@@ -39,6 +39,8 @@ export function validateType<T extends Schema>(
       return isOption(schema.options, value, path, context);
     case SchemaType.EXPRESSION:
       return true;
+    case SchemaType.LITERAL:
+      return value === schema.value;
   }
 }
 
@@ -75,6 +77,8 @@ export function validateShallowType<T extends SchemaType>(type: T, value: unknow
       return isNumber(value) || isString(value) || isBoolean(value);
     case SchemaType.EXPRESSION:
       return true;
+    case SchemaType.LITERAL:
+      return isString(value) || isNumber(value) || isBoolean(value) || value === null;
   }
 }
 
