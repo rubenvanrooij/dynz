@@ -59,6 +59,6 @@ export type ConditionalRule<T extends ConditionalRuleCase = ConditionalRuleCase>
  * @see {@link or} - Combine multiple predicates with OR
  * @see {@link equals} - Common rule for `then` clauses
  */
-export function conditional<T extends ConditionalRuleCase>(...cases: T[]): ConditionalRule<T> {
+export function buildConditionalRule<T extends ConditionalRuleCase>(...cases: T[]): ConditionalRule<T> {
   return { type: "conditional", cases };
 }

@@ -23,6 +23,10 @@ export function unpackRef<T extends SchemaType = SchemaType>(
     return undefined;
   }
 
+  if (schema.type === "expression") {
+    return resolve(schema.value, absolutePath, context) as ValueType<T>;
+  }
+
   if (expected.length > 0) {
     for (const expect of expected) {
       if (schema.type !== expect) {
@@ -135,6 +139,8 @@ export function resolveFunction(
     case "sub":
     case "divide":
     case "multiply":
+    case "min":
+    case "max":
       return FUNCTIONS[input.type](input.value.map((val) => resolve(val, path, context)));
     // expects single input value
     case "lookup":

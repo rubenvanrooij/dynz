@@ -3,12 +3,12 @@ import { v } from "../../functions";
 import { REFERENCE_TYPE, ref } from "../../reference";
 import { type DateSchema, date } from "../../schemas";
 import type { Context } from "../../types";
-import { after, afterRule } from "./index";
+import { afterRule, buildAfterRule } from "./index";
 
 describe("after rule", () => {
   it("should create after rule with Date object", () => {
     const dateObj = new Date("2024-01-01");
-    const rule = after(v(dateObj));
+    const rule = buildAfterRule(v(dateObj));
 
     expect(rule).toEqual({
       type: "after",
@@ -18,7 +18,7 @@ describe("after rule", () => {
 
   it("should create after rule with reference", () => {
     const reference = ref("$.startDate");
-    const rule = after(reference);
+    const rule = buildAfterRule(reference);
 
     expect(rule).toEqual({
       type: "after",
@@ -28,7 +28,7 @@ describe("after rule", () => {
 
   it("should create after rule with custom code", () => {
     const dateObj = new Date("2024-06-15");
-    const rule = after(v(dateObj), "CUSTOM_AFTER_ERROR");
+    const rule = buildAfterRule(v(dateObj), "CUSTOM_AFTER_ERROR");
 
     expect(rule).toEqual({
       type: "after",
@@ -45,7 +45,7 @@ describe("afterRule validator", () => {
   const mockSchema = date();
 
   it("should return undefined when value is after reference date", () => {
-    const rule = after(v(afterDate));
+    const rule = buildAfterRule(v(afterDate));
 
     const result = afterRule({
       rule,
@@ -60,7 +60,7 @@ describe("afterRule validator", () => {
 
   it("should return error when value is before reference date", async () => {
     const futureDate = new Date("2025-01-01");
-    const rule = after(v(futureDate));
+    const rule = buildAfterRule(v(futureDate));
 
     const result = await afterRule({
       rule,
@@ -77,7 +77,7 @@ describe("afterRule validator", () => {
   });
 
   it("should return undefined when resolved after is undefined", () => {
-    const rule = after(undefined);
+    const rule = buildAfterRule(undefined);
 
     const result = afterRule({
       rule,
@@ -91,7 +91,7 @@ describe("afterRule validator", () => {
   });
 
   it("should include correct error message format", async () => {
-    const rule = after(v(new Date("2025-06-01")));
+    const rule = buildAfterRule(v(new Date("2025-06-01")));
     const testValue = new Date("2023-11-01");
 
     const result = await afterRule({

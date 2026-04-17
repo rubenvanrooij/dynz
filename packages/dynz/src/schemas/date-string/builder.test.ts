@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { eq, v } from "../../functions";
 import { ref } from "../../reference";
-import { custom } from "../../rules";
+import { buildCustomRule } from "../../rules";
 import { SchemaType } from "../../types";
 import { dateString } from "./builder";
 
 describe("dateString builder", () => {
   it("should create date string schema with provided properties", () => {
     const condition = eq(ref("$.isRequired"), v(true));
-    const rule = custom("testRule");
+    const rule = buildCustomRule("testRule");
 
     const schema = dateString({
       format: "yyyy-MM-dd",

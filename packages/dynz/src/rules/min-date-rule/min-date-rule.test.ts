@@ -3,12 +3,12 @@ import { v } from "../../functions";
 import { REFERENCE_TYPE, ref } from "../../reference";
 import { type DateSchema, date } from "../../schemas";
 import type { Context } from "../../types";
-import { minDate, minDateRule } from "./index";
+import { buildMinDateRule, minDateRule } from "./index";
 
 describe("minDate rule", () => {
   it("should create minDate rule with Date object", () => {
     const dateObj = new Date("2024-01-01");
-    const rule = minDate(v(dateObj));
+    const rule = buildMinDateRule(v(dateObj));
 
     expect(rule).toEqual({
       type: "min_date",
@@ -18,7 +18,7 @@ describe("minDate rule", () => {
 
   it("should create minDate rule with reference", () => {
     const reference = ref("$.minDate");
-    const rule = minDate(reference);
+    const rule = buildMinDateRule(reference);
 
     expect(rule).toEqual({
       type: "min_date",
@@ -28,7 +28,7 @@ describe("minDate rule", () => {
 
   it("should create minDate rule with custom code", () => {
     const dateObj = new Date("2024-01-01");
-    const rule = minDate(v(dateObj), "CUSTOM_MIN_DATE_ERROR");
+    const rule = buildMinDateRule(v(dateObj), "CUSTOM_MIN_DATE_ERROR");
 
     expect(rule).toEqual({
       type: "min_date",
@@ -45,7 +45,7 @@ describe("minDateRule validator", () => {
   const mockSchema = date();
 
   it("should return undefined when value is after minimum date", () => {
-    const rule = minDate(v(minDateValue));
+    const rule = buildMinDateRule(v(minDateValue));
 
     const result = minDateRule({
       rule,
@@ -59,7 +59,7 @@ describe("minDateRule validator", () => {
   });
 
   it("should return error when value is before minimum date", async () => {
-    const rule = minDate(v(new Date("2024-12-31")));
+    const rule = buildMinDateRule(v(new Date("2024-12-31")));
 
     const result = await minDateRule({
       rule,
@@ -76,7 +76,7 @@ describe("minDateRule validator", () => {
   });
 
   it("should return undefined when resolved min is undefined", () => {
-    const rule = minDate(undefined);
+    const rule = buildMinDateRule(undefined);
 
     const result = minDateRule({
       rule,
@@ -90,7 +90,7 @@ describe("minDateRule validator", () => {
   });
 
   it("should include correct error message format", async () => {
-    const rule = minDate(v(new Date("2024-12-31")));
+    const rule = buildMinDateRule(v(new Date("2024-12-31")));
     const testValue = new Date("2024-01-01");
 
     const result = await minDateRule({
@@ -107,7 +107,7 @@ describe("minDateRule validator", () => {
   });
 
   it("should return undefined when value equals minimum date", () => {
-    const rule = minDate(v(testDate));
+    const rule = buildMinDateRule(v(testDate));
 
     const result = minDateRule({
       rule,
@@ -123,7 +123,7 @@ describe("minDateRule validator", () => {
   it("should handle same date with different time correctly", async () => {
     const sameDay = new Date("2024-06-15T15:30:00");
     const sameDayDifferentTime = new Date("2024-06-15T10:00:00");
-    const rule = minDate(v(sameDay));
+    const rule = buildMinDateRule(v(sameDay));
 
     const result = await minDateRule({
       rule,
@@ -138,7 +138,7 @@ describe("minDateRule validator", () => {
   });
 
   it("should return undefined when value is significantly after minimum", () => {
-    const rule = minDate(v(new Date("2024-01-01")));
+    const rule = buildMinDateRule(v(new Date("2024-01-01")));
     const futureDate = new Date("2025-12-31");
 
     const result = minDateRule({
@@ -153,7 +153,7 @@ describe("minDateRule validator", () => {
   });
 
   it("should handle past date validation correctly", async () => {
-    const rule = minDate(v(new Date("2024-06-15")));
+    const rule = buildMinDateRule(v(new Date("2024-06-15")));
     const pastDate = new Date("2020-01-01");
 
     const result = await minDateRule({

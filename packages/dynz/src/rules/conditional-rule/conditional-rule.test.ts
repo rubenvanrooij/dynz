@@ -1,15 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { and, eq, or, v } from "../../functions";
 import { REFERENCE_TYPE, ref } from "../../reference";
-import { custom, max, min, regex } from "..";
-import { equals } from "../equals-rule";
-import { conditional } from "./index";
+import { buildCustomRule, buildMaxRule, buildMinRule, buildRegexRule } from "..";
+import { buildEqualsRule } from "../equals-rule";
+import { buildConditionalRule } from "./index";
 
 describe("conditional rule", () => {
   it("should create conditional rule with simple condition", () => {
     const when = eq(v("$.type"), v("premium"));
-    const then = min(v(10));
-    const rule = conditional({ when, then });
+    const then = buildMinRule(v(10));
+    const rule = buildConditionalRule({ when, then });
 
     expect(rule).toEqual({
       type: "conditional",
@@ -19,8 +19,8 @@ describe("conditional rule", () => {
 
   it("should create conditional rule with complex condition", () => {
     const when = and(eq(v("$.accountType"), v("business")), eq(v("$.plan"), v("enterprise")));
-    const then = max(v(1000));
-    const rule = conditional({ when, then });
+    const then = buildMaxRule(v(1000));
+    const rule = buildConditionalRule({ when, then });
 
     expect(rule).toEqual({
       type: "conditional",
@@ -31,9 +31,9 @@ describe("conditional rule", () => {
   });
 
   it("should create conditional rule with OR condition", () => {
-    const rule = conditional({
+    const rule = buildConditionalRule({
       when: or(eq(v("$.role"), v("admin")), eq(v("$.role"), v("moderator"))),
-      then: regex("^[a-zA-Z0-9_-]+$"),
+      then: buildRegexRule("^[a-zA-Z0-9_-]+$"),
     });
 
     expect(rule.cases[0].when.type).toBe("or");
@@ -41,9 +41,9 @@ describe("conditional rule", () => {
   });
 
   it("should create conditional rule with custom rule", () => {
-    const rule = conditional({
+    const rule = buildConditionalRule({
       when: eq(v("$.requiresValidation"), v(true)),
-      then: custom("complexBusinessValidation", {
+      then: buildCustomRule("complexBusinessValidation", {
         level: v("strict"),
         timeout: v(5000),
       }),
@@ -68,9 +68,9 @@ describe("conditional rule", () => {
   });
 
   it("should create nested conditional rules scenario", () => {
-    const rule = conditional({
+    const rule = buildConditionalRule({
       when: and(eq(v("$.userType"), v("premium")), or(eq(v("$.region"), v("US")), eq(v("$.region"), v("EU")))),
-      then: equals(ref("$.settings.premiumValue")),
+      then: buildEqualsRule(ref("$.settings.premiumValue")),
     });
 
     expect(rule.cases[0].when.type).toBe("and");

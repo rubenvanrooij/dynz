@@ -10,7 +10,10 @@ export type MimeTypeRule<T extends ParamaterValue<string | string[]> = Paramater
 
 export type MimeTypeRuleErrorMessage = ErrorMessageFromRule<MimeTypeRule, ValueType[], "mimeType">;
 
-export function mimeType<T extends ParamaterValue<string | string[]>>(mimeType: T, code?: string): MimeTypeRule<T> {
+export function buildMimeTypeRule<T extends ParamaterValue<string | string[]>>(
+  mimeType: T,
+  code?: string
+): MimeTypeRule<T> {
   return { mimeType, type: "mime_type", code };
 }
 

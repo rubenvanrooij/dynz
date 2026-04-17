@@ -50,7 +50,7 @@ export type MinRuleErrorMessage = ErrorMessageFromRule<MinRule, number, "min">;
  * @see {@link gt} - Greater than predicate (for conditional logic)
  * @see {@link gte} - Greater than or equal predicate (for conditional logic)
  */
-export function min<T extends ParamaterValue<number>, A extends Transformer = Transformer>(
+export function buildMinRule<T extends ParamaterValue<number>, A extends Transformer = Transformer>(
   min: T,
   code?: string,
   transformer?: A

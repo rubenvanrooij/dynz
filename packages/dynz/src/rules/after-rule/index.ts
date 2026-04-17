@@ -16,7 +16,7 @@ export type AfterRule<T extends ParamaterValue<Date> = ParamaterValue<Date>> = {
 
 export type AfterRuleErrorMessage = ErrorMessageFromRule<AfterRule, Date, "after">;
 
-export function after<T extends ParamaterValue<Date>>(after: T, code?: string): AfterRule<T> {
+export function buildAfterRule<T extends ParamaterValue<Date>>(after: T, code?: string): AfterRule<T> {
   return { after, type: "after", code };
 }
 

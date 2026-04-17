@@ -3,11 +3,11 @@ import { v } from "../../functions";
 import { ref } from "../../reference";
 import { type StringSchema, string } from "../../schemas";
 import type { Context } from "../../types";
-import { custom, customRule } from "./index";
+import { buildCustomRule, customRule } from "./index";
 
 describe("custom rule", () => {
   it("should create custom rule with name only", () => {
-    const rule = custom("validateUniqueEmail");
+    const rule = buildCustomRule("validateUniqueEmail");
 
     expect(rule).toEqual({
       type: "custom",
@@ -17,7 +17,7 @@ describe("custom rule", () => {
   });
 
   it("should create custom rule with name and params", () => {
-    const rule = custom("validateLength", {
+    const rule = buildCustomRule("validateLength", {
       min: v(5),
       max: v(50),
     });
@@ -33,7 +33,7 @@ describe("custom rule", () => {
   });
 
   it("should create custom rule with reference parameters", () => {
-    const rule = custom("validateGreaterThan", {
+    const rule = buildCustomRule("validateGreaterThan", {
       threshold: ref("minimumValue"),
       strict: v(true),
     });
@@ -44,7 +44,7 @@ describe("custom rule", () => {
   });
 
   it("should handle empty params object", () => {
-    const rule = custom("simpleValidation", {});
+    const rule = buildCustomRule("simpleValidation", {});
 
     expect(rule).toEqual({
       type: "custom",
@@ -67,7 +67,7 @@ describe("customRule validator", () => {
   });
 
   it("should return undefined when custom validator returns true", async () => {
-    const rule = custom("validateEmail");
+    const rule = buildCustomRule("validateEmail");
     const mockValidator = vi.fn().mockResolvedValue(true);
     mockContext.validateOptions.customRules = {
       validateEmail: mockValidator,
@@ -94,7 +94,7 @@ describe("customRule validator", () => {
   });
 
   it("should return error when custom validator returns false", async () => {
-    const rule = custom("validateEmail");
+    const rule = buildCustomRule("validateEmail");
     const mockValidator = vi.fn().mockResolvedValue(false);
     mockContext.validateOptions.customRules = {
       validateEmail: mockValidator,
@@ -117,7 +117,7 @@ describe("customRule validator", () => {
   });
 
   it("should return custom error object when validator returns error object", async () => {
-    const rule = custom("validatePassword", {
+    const rule = buildCustomRule("validatePassword", {
       details: v({ requirement: "uppercase" }),
     });
     const customError = {
@@ -147,7 +147,7 @@ describe("customRule validator", () => {
   });
 
   it("should throw error when custom rule is not defined", async () => {
-    const rule = custom("undefinedRule");
+    const rule = buildCustomRule("undefinedRule");
     mockContext.validateOptions.customRules = {};
 
     await expect(() =>
@@ -162,7 +162,7 @@ describe("customRule validator", () => {
   });
 
   it("should unpack reference parameters correctly", async () => {
-    const rule = custom("validateLength", {
+    const rule = buildCustomRule("validateLength", {
       minLength: v(5),
       maxLength: v(20),
     });
@@ -194,7 +194,7 @@ describe("customRule validator", () => {
   });
 
   it("should handle empty custom rules object", async () => {
-    const rule = custom("missingRule");
+    const rule = buildCustomRule("missingRule");
     mockContext.validateOptions.customRules = undefined;
 
     await expect(() =>
@@ -209,7 +209,7 @@ describe("customRule validator", () => {
   });
 
   it("should include correct error message format for default error", async () => {
-    const rule = custom("validateFormat");
+    const rule = buildCustomRule("validateFormat");
     const mockValidator = vi.fn().mockResolvedValue(false);
     mockContext.validateOptions.customRules = {
       validateFormat: mockValidator,
@@ -233,7 +233,7 @@ describe("customRule validator", () => {
   });
 
   it("should handle validator with no parameters", async () => {
-    const rule = custom("simpleValidation");
+    const rule = buildCustomRule("simpleValidation");
     const mockValidator = vi.fn().mockResolvedValue(true);
     mockContext.validateOptions.customRules = {
       simpleValidation: mockValidator,

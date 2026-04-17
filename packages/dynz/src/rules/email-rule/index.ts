@@ -29,7 +29,7 @@ export type EmailRuleErrorMessage = ErrorMessageFromRule<EmailRule>;
  * @see {@link regex} - For custom pattern validation
  * @see {@link minLength} - For minimum length validation
  */
-export function email(code?: string): EmailRule {
+export function buildEmailRule(code?: string): EmailRule {
   return { type: "email", code };
 }
 

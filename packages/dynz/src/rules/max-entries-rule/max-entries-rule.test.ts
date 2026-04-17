@@ -3,11 +3,11 @@ import { v } from "../../functions";
 import { REFERENCE_TYPE, ref } from "../../reference";
 import { type ObjectSchema, object } from "../../schemas";
 import type { Context } from "../../types";
-import { maxEntries, maxEntriesRule } from "./index";
+import { buildMaxEntriesRule, maxEntriesRule } from "./index";
 
 describe("maxEntries rule", () => {
   it("should create maxEntries rule with number value", () => {
-    const rule = maxEntries(v(5));
+    const rule = buildMaxEntriesRule(v(5));
 
     expect(rule).toEqual({
       type: "max_entries",
@@ -17,7 +17,7 @@ describe("maxEntries rule", () => {
 
   it("should create maxEntries rule with reference", () => {
     const reference = ref("$.maxEntries");
-    const rule = maxEntries(reference);
+    const rule = buildMaxEntriesRule(reference);
 
     expect(rule).toEqual({
       type: "max_entries",
@@ -26,7 +26,7 @@ describe("maxEntries rule", () => {
   });
 
   it("should create maxEntries rule with custom code", () => {
-    const rule = maxEntries(v(3), "TOO_MANY_ENTRIES");
+    const rule = buildMaxEntriesRule(v(3), "TOO_MANY_ENTRIES");
 
     expect(rule).toEqual({
       type: "max_entries",
@@ -41,7 +41,7 @@ describe("maxEntriesRule validator", () => {
   const mockSchema = object({});
 
   it("should return undefined when object has fewer entries than maximum", () => {
-    const rule = maxEntries(v(5));
+    const rule = buildMaxEntriesRule(v(5));
     const testObject = { name: "John", age: 30, city: "New York" };
 
     const result = maxEntriesRule({
@@ -56,7 +56,7 @@ describe("maxEntriesRule validator", () => {
   });
 
   it("should return undefined when object has exactly maximum entries", () => {
-    const rule = maxEntries(v(2));
+    const rule = buildMaxEntriesRule(v(2));
     const testObject = { name: "John", age: 30 };
 
     const result = maxEntriesRule({
@@ -71,7 +71,7 @@ describe("maxEntriesRule validator", () => {
   });
 
   it("should return error when object has more entries than maximum", async () => {
-    const rule = maxEntries(v(2));
+    const rule = buildMaxEntriesRule(v(2));
     const testObject = { name: "John", age: 30, city: "New York" };
 
     const result = await maxEntriesRule({
@@ -90,7 +90,7 @@ describe("maxEntriesRule validator", () => {
   });
 
   it("should return undefined when resolved max is undefined", () => {
-    const rule = maxEntries(undefined);
+    const rule = buildMaxEntriesRule(undefined);
     const testObject = { name: "John", age: 30, city: "New York" };
 
     const result = maxEntriesRule({
@@ -105,7 +105,7 @@ describe("maxEntriesRule validator", () => {
   });
 
   it("should include correct error message format", async () => {
-    const rule = maxEntries(v(1));
+    const rule = buildMaxEntriesRule(v(1));
     const testObject = { name: "John", age: 30 };
 
     const result = await maxEntriesRule({
@@ -123,7 +123,7 @@ describe("maxEntriesRule validator", () => {
   });
 
   it("should handle empty object correctly", () => {
-    const rule = maxEntries(v(5));
+    const rule = buildMaxEntriesRule(v(5));
     const testObject = {};
 
     const result = maxEntriesRule({
@@ -138,7 +138,7 @@ describe("maxEntriesRule validator", () => {
   });
 
   it("should handle zero maximum correctly", async () => {
-    const rule = maxEntries(v(0));
+    const rule = buildMaxEntriesRule(v(0));
     const testObject = { name: "John" };
 
     const result = await maxEntriesRule({
@@ -155,7 +155,7 @@ describe("maxEntriesRule validator", () => {
   });
 
   it("should return undefined when zero maximum and empty object", () => {
-    const rule = maxEntries(v(0));
+    const rule = buildMaxEntriesRule(v(0));
     const testObject = {};
 
     const result = maxEntriesRule({
@@ -170,7 +170,7 @@ describe("maxEntriesRule validator", () => {
   });
 
   it("should handle object with nested properties correctly", () => {
-    const rule = maxEntries(v(2));
+    const rule = buildMaxEntriesRule(v(2));
     const testObject = {
       user: { name: "John", age: 30 },
       settings: { theme: "dark" },
@@ -188,7 +188,7 @@ describe("maxEntriesRule validator", () => {
   });
 
   it("should handle large objects correctly", async () => {
-    const rule = maxEntries(v(5));
+    const rule = buildMaxEntriesRule(v(5));
     const testObject: Record<string, unknown> = {};
     for (let i = 0; i < 10; i++) {
       testObject[`field${i}`] = `value${i}`;
@@ -208,7 +208,7 @@ describe("maxEntriesRule validator", () => {
   });
 
   it("should handle single entry object at limit", () => {
-    const rule = maxEntries(v(1));
+    const rule = buildMaxEntriesRule(v(1));
     const testObject = { onlyField: "value" };
 
     const result = maxEntriesRule({

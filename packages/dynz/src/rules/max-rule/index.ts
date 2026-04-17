@@ -48,7 +48,7 @@ export type MaxRuleErrorMessage = ErrorMessageFromRule<MaxRule, number, "max">;
  * @see {@link lt} - Less than predicate (for conditional logic)
  * @see {@link lte} - Less than or equal predicate (for conditional logic)
  */
-export function max<T extends ParamaterValue<number>>(max: T, code?: string): MaxRule<T> {
+export function buildMaxRule<T extends ParamaterValue<number>>(max: T, code?: string): MaxRule<T> {
   return { max, type: "max", code };
 }
 

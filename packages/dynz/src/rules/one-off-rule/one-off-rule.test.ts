@@ -3,11 +3,11 @@ import { v } from "../../functions";
 import { REFERENCE_TYPE, ref } from "../../reference";
 import { type NumberSchema, number, type StringSchema, string } from "../../schemas";
 import type { Context } from "../../types";
-import { oneOf, oneOfRule } from "./index";
+import { buildOneOfRule, oneOfRule } from "./index";
 
 describe("oneOf rule", () => {
   it("should create oneOf rule with string values", () => {
-    const rule = oneOf([v("apple"), v("banana"), v("orange")]);
+    const rule = buildOneOfRule([v("apple"), v("banana"), v("orange")]);
 
     expect(rule).toEqual({
       type: "one_of",
@@ -16,7 +16,7 @@ describe("oneOf rule", () => {
   });
 
   it("should create oneOf rule with number values", () => {
-    const rule = oneOf([v(1), v(2), v(3), v(5), v(8)]);
+    const rule = buildOneOfRule([v(1), v(2), v(3), v(5), v(8)]);
 
     expect(rule).toEqual({
       type: "one_of",
@@ -25,7 +25,7 @@ describe("oneOf rule", () => {
   });
 
   it("should create oneOf rule with reference value", () => {
-    const rule = oneOf([ref("allowedValue")]);
+    const rule = buildOneOfRule([ref("allowedValue")]);
 
     expect(rule).toEqual({
       type: "one_of",
@@ -34,7 +34,7 @@ describe("oneOf rule", () => {
   });
 
   it("should create oneOf rule with custom code", () => {
-    const rule = oneOf([v("red"), v("green"), v("blue")], "INVALID_COLOR");
+    const rule = buildOneOfRule([v("red"), v("green"), v("blue")], "INVALID_COLOR");
 
     expect(rule).toEqual({
       type: "one_of",
@@ -51,7 +51,7 @@ describe("oneOfRule validator", () => {
   const mockNumberSchema = number();
 
   it("should return undefined when string value is in allowed values", () => {
-    const rule = oneOf([v("apple"), v("banana"), v("orange")]);
+    const rule = buildOneOfRule([v("apple"), v("banana"), v("orange")]);
 
     const result = oneOfRule({
       rule,
@@ -65,7 +65,7 @@ describe("oneOfRule validator", () => {
   });
 
   it("should return undefined when number value is in allowed values", () => {
-    const rule = oneOf([v(1), v(2), v(3), v(5), v(8)]);
+    const rule = buildOneOfRule([v(1), v(2), v(3), v(5), v(8)]);
 
     const result = oneOfRule({
       rule,
@@ -79,7 +79,7 @@ describe("oneOfRule validator", () => {
   });
 
   it("should return error when string value is not in allowed values", async () => {
-    const rule = oneOf([v("apple"), v("banana"), v("orange")]);
+    const rule = buildOneOfRule([v("apple"), v("banana"), v("orange")]);
 
     const result = await oneOfRule({
       rule,
@@ -97,7 +97,7 @@ describe("oneOfRule validator", () => {
   });
 
   it("should return error when number value is not in allowed values", async () => {
-    const rule = oneOf([v(1), v(2), v(3), v(5), v(8)]);
+    const rule = buildOneOfRule([v(1), v(2), v(3), v(5), v(8)]);
 
     const result = await oneOfRule({
       rule,
@@ -114,7 +114,7 @@ describe("oneOfRule validator", () => {
   });
 
   it("should include correct error message format", async () => {
-    const rule = oneOf([v("small"), v("medium"), v("large")]);
+    const rule = buildOneOfRule([v("small"), v("medium"), v("large")]);
 
     const result = await oneOfRule({
       rule,
@@ -131,7 +131,7 @@ describe("oneOfRule validator", () => {
   });
 
   it("should handle empty allowed values array", async () => {
-    const rule = oneOf([]);
+    const rule = buildOneOfRule([]);
 
     const result = await oneOfRule({
       rule,
@@ -147,7 +147,7 @@ describe("oneOfRule validator", () => {
   });
 
   it("should handle single allowed value", () => {
-    const rule = oneOf([v("only-option")]);
+    const rule = buildOneOfRule([v("only-option")]);
 
     const result = oneOfRule({
       rule,

@@ -3,11 +3,11 @@ import { v } from "../../functions";
 import { REFERENCE_TYPE, ref } from "../../reference";
 import { type StringSchema, string } from "../../schemas";
 import type { Context } from "../../types";
-import { minLength, minLengthRule } from "./index";
+import { buildMinLengthRule, minLengthRule } from "./index";
 
 describe("minLength rule", () => {
   it("should create minLength rule with number value", () => {
-    const rule = minLength(v(5));
+    const rule = buildMinLengthRule(v(5));
 
     expect(rule).toEqual({
       type: "min_length",
@@ -17,7 +17,7 @@ describe("minLength rule", () => {
 
   it("should create minLength rule with reference", () => {
     const reference = ref("$.minLength");
-    const rule = minLength(reference);
+    const rule = buildMinLengthRule(reference);
 
     expect(rule).toEqual({
       type: "min_length",
@@ -26,7 +26,7 @@ describe("minLength rule", () => {
   });
 
   it("should create minLength rule with custom code", () => {
-    const rule = minLength(v(3), "CUSTOM_MIN_LENGTH_ERROR");
+    const rule = buildMinLengthRule(v(3), "CUSTOM_MIN_LENGTH_ERROR");
 
     expect(rule).toEqual({
       type: "min_length",
@@ -41,7 +41,7 @@ describe("minLengthRule validator", () => {
   const mockSchema = string();
 
   it("should return undefined when value meets minimum length requirement", () => {
-    const rule = minLength(v(5));
+    const rule = buildMinLengthRule(v(5));
 
     const result = minLengthRule({
       rule,
@@ -55,7 +55,7 @@ describe("minLengthRule validator", () => {
   });
 
   it("should return error when value is below minimum length", async () => {
-    const rule = minLength(v(10));
+    const rule = buildMinLengthRule(v(10));
 
     const result = await minLengthRule({
       rule,
@@ -72,7 +72,7 @@ describe("minLengthRule validator", () => {
   });
 
   it("should return undefined when resolved min is undefined", () => {
-    const rule = minLength(undefined);
+    const rule = buildMinLengthRule(undefined);
 
     const result = minLengthRule({
       rule,
@@ -86,7 +86,7 @@ describe("minLengthRule validator", () => {
   });
 
   it("should handle larger threshold correctly", () => {
-    const rule = minLength(v(3));
+    const rule = buildMinLengthRule(v(3));
 
     const result = minLengthRule({
       rule,
@@ -100,7 +100,7 @@ describe("minLengthRule validator", () => {
   });
 
   it("should include correct error message format", async () => {
-    const rule = minLength(v(15));
+    const rule = buildMinLengthRule(v(15));
 
     const result = await minLengthRule({
       rule,
@@ -116,7 +116,7 @@ describe("minLengthRule validator", () => {
   });
 
   it("should return undefined when value equals minimum length", () => {
-    const rule = minLength(v(7));
+    const rule = buildMinLengthRule(v(7));
 
     const result = minLengthRule({
       rule,
@@ -130,7 +130,7 @@ describe("minLengthRule validator", () => {
   });
 
   it("should handle empty string correctly", async () => {
-    const rule = minLength(v(1));
+    const rule = buildMinLengthRule(v(1));
 
     const result = await minLengthRule({
       rule,

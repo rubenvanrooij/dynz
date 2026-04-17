@@ -3,12 +3,12 @@ import { v } from "../../functions";
 import { REFERENCE_TYPE, ref } from "../../reference";
 import { type DateSchema, date } from "../../schemas";
 import type { Context } from "../../types";
-import { maxDate, maxDateRule } from "./index";
+import { buildMaxDateRule, maxDateRule } from "./index";
 
 describe("maxDate rule", () => {
   it("should create maxDate rule with Date object", () => {
     const dateObj = new Date("2024-12-31");
-    const rule = maxDate(v(dateObj));
+    const rule = buildMaxDateRule(v(dateObj));
 
     expect(rule).toEqual({
       type: "max_date",
@@ -18,7 +18,7 @@ describe("maxDate rule", () => {
 
   it("should create maxDate rule with reference", () => {
     const reference = ref("$.maxDate");
-    const rule = maxDate(reference);
+    const rule = buildMaxDateRule(reference);
 
     expect(rule).toEqual({
       type: "max_date",
@@ -28,7 +28,7 @@ describe("maxDate rule", () => {
 
   it("should create maxDate rule with custom code", () => {
     const dateObj = new Date("2024-06-15");
-    const rule = maxDate(v(dateObj), "CUSTOM_MAX_DATE_ERROR");
+    const rule = buildMaxDateRule(v(dateObj), "CUSTOM_MAX_DATE_ERROR");
 
     expect(rule).toEqual({
       type: "max_date",
@@ -45,7 +45,7 @@ describe("maxDateRule validator", () => {
   const mockSchema = date();
 
   it("should return undefined when value is before maximum date", () => {
-    const rule = maxDate(v(maxDateValue));
+    const rule = buildMaxDateRule(v(maxDateValue));
 
     const result = maxDateRule({
       rule,
@@ -59,7 +59,7 @@ describe("maxDateRule validator", () => {
   });
 
   it("should return error when value is after maximum date", async () => {
-    const rule = maxDate(v(new Date("2024-01-01")));
+    const rule = buildMaxDateRule(v(new Date("2024-01-01")));
 
     const result = await maxDateRule({
       rule,
@@ -76,7 +76,7 @@ describe("maxDateRule validator", () => {
   });
 
   it("should return undefined when resolved max is undefined", () => {
-    const rule = maxDate(undefined);
+    const rule = buildMaxDateRule(undefined);
 
     const result = maxDateRule({
       rule,
@@ -90,7 +90,7 @@ describe("maxDateRule validator", () => {
   });
 
   it("should include correct error message format", async () => {
-    const rule = maxDate(v(new Date("2024-01-01")));
+    const rule = buildMaxDateRule(v(new Date("2024-01-01")));
     const testValue = new Date("2024-12-31");
 
     const result = await maxDateRule({
@@ -107,7 +107,7 @@ describe("maxDateRule validator", () => {
   });
 
   it("should return undefined when value equals maximum date", () => {
-    const rule = maxDate(v(testDate));
+    const rule = buildMaxDateRule(v(testDate));
 
     const result = maxDateRule({
       rule,
@@ -123,7 +123,7 @@ describe("maxDateRule validator", () => {
   it("should handle same date with different time correctly", async () => {
     const sameDay = new Date("2024-06-15T10:00:00");
     const sameDayDifferentTime = new Date("2024-06-15T15:30:00");
-    const rule = maxDate(v(sameDay));
+    const rule = buildMaxDateRule(v(sameDay));
 
     const result = await maxDateRule({
       rule,
@@ -140,7 +140,7 @@ describe("maxDateRule validator", () => {
   it("should handle edge case with very close dates", async () => {
     const date1 = new Date("2024-06-15T23:59:59.999");
     const date2 = new Date("2024-06-16T00:00:00.000");
-    const rule = maxDate(v(date1));
+    const rule = buildMaxDateRule(v(date1));
 
     const result = await maxDateRule({
       rule,

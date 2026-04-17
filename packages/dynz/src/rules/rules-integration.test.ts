@@ -1,7 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { and, eq, or, v } from "../functions";
 import { REFERENCE_TYPE, ref } from "../reference/reference";
-import { conditional, custom, equals, max, maxDate, min, minDate, regex } from "./index";
+import {
+  buildConditionalRule,
+  buildCustomRule,
+  buildEqualsRule,
+  buildMaxDateRule,
+  buildMaxRule,
+  buildMinDateRule,
+  buildMinRule,
+  buildRegexRule,
+} from "./index";
 
 describe("rules integration", () => {
   describe("ref function", () => {
@@ -52,12 +61,12 @@ describe("rules integration", () => {
   describe("rule combinations", () => {
     it("should create complex rule set for password validation", () => {
       const passwordRules = [
-        min(v(8)),
-        max(v(128)),
-        regex("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]+$"),
-        conditional({
+        buildMinRule(v(8)),
+        buildMaxRule(v(128)),
+        buildRegexRule("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]+$"),
+        buildConditionalRule({
           when: eq(ref("$.securityLevel"), v("high")),
-          then: min(v(12)),
+          then: buildMinRule(v(12)),
         }),
       ];
 
@@ -70,9 +79,9 @@ describe("rules integration", () => {
 
     it("should create email validation rule set", () => {
       const emailRules = [
-        regex("^[^@]+@[^@]+\\.[^@]+$"),
-        max(v(320)), // RFC 5321 limit
-        custom("validateEmailDomain", {
+        buildRegexRule("^[^@]+@[^@]+\\.[^@]+$"),
+        buildMaxRule(v(320)), // RFC 5321 limit
+        buildCustomRule("validateEmailDomain", {
           allowedDomains: v(["company.com", "partner.org"]),
           blockDisposable: v(true),
         }),
@@ -86,9 +95,9 @@ describe("rules integration", () => {
     });
 
     it("should create nested conditional rules scenario", () => {
-      const rule = conditional({
+      const rule = buildConditionalRule({
         when: and(eq(v("$.userType"), v("premium")), or(eq(v("$.region"), v("US")), eq(v("$.region"), v("EU")))),
-        then: equals(ref("$.settings.premiumValue")),
+        then: buildEqualsRule(ref("$.settings.premiumValue")),
       });
 
       expect(rule.cases[0].when.type).toBe("and");
@@ -100,11 +109,11 @@ describe("rules integration", () => {
 
     it("should create age validation with cross-references", () => {
       const ageRules = [
-        min(ref("$.legalMinimumAge")),
-        max(ref("$.retirementAge")),
-        conditional({
+        buildMinRule(ref("$.legalMinimumAge")),
+        buildMaxRule(ref("$.retirementAge")),
+        buildConditionalRule({
           when: eq(ref("$.requiresParentalConsent"), v(true)),
-          then: custom("validateParentalConsent", {
+          then: buildCustomRule("validateParentalConsent", {
             guardianEmail: ref("$.guardian.email"),
           }),
         }),
@@ -118,11 +127,11 @@ describe("rules integration", () => {
 
     it("should create date range validation", () => {
       const dateRules = [
-        minDate(ref("$.startDate")),
-        maxDate(v(new Date("2030-12-31"))),
-        conditional({
+        buildMinDateRule(ref("$.startDate")),
+        buildMaxDateRule(v(new Date("2030-12-31"))),
+        buildConditionalRule({
           when: eq(ref("$.isRecurring"), v(true)),
-          then: custom("validateRecurrencePattern", {
+          then: buildCustomRule("validateRecurrencePattern", {
             maxOccurrences: ref("$.maxRecurrences"),
             endDate: ref("$.seriesEndDate"),
           }),

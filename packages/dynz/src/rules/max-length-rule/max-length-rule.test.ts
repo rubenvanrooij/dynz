@@ -3,11 +3,11 @@ import { v } from "../../functions";
 import { REFERENCE_TYPE, ref } from "../../reference";
 import { type StringSchema, string } from "../../schemas";
 import type { Context } from "../../types";
-import { maxLength, maxLengthRule } from "./index";
+import { buildMaxLengthRule, maxLengthRule } from "./index";
 
 describe("maxLength rule", () => {
   it("should create maxLength rule with number value", () => {
-    const rule = maxLength(v(10));
+    const rule = buildMaxLengthRule(v(10));
 
     expect(rule).toEqual({
       type: "max_length",
@@ -17,7 +17,7 @@ describe("maxLength rule", () => {
 
   it("should create maxLength rule with reference", () => {
     const reference = ref("$.maxLength");
-    const rule = maxLength(reference);
+    const rule = buildMaxLengthRule(reference);
 
     expect(rule).toEqual({
       type: "max_length",
@@ -26,7 +26,7 @@ describe("maxLength rule", () => {
   });
 
   it("should create maxLength rule with custom code", () => {
-    const rule = maxLength(v(50), "CUSTOM_MAX_LENGTH_ERROR");
+    const rule = buildMaxLengthRule(v(50), "CUSTOM_MAX_LENGTH_ERROR");
 
     expect(rule).toEqual({
       type: "max_length",
@@ -41,7 +41,7 @@ describe("maxLengthRule validator", () => {
   const mockSchema = string();
 
   it("should return undefined when value is below maximum length", () => {
-    const rule = maxLength(v(10));
+    const rule = buildMaxLengthRule(v(10));
 
     const result = maxLengthRule({
       rule,
@@ -55,7 +55,7 @@ describe("maxLengthRule validator", () => {
   });
 
   it("should return error when value exceeds maximum length", async () => {
-    const rule = maxLength(v(5));
+    const rule = buildMaxLengthRule(v(5));
 
     const result = await maxLengthRule({
       rule,
@@ -72,7 +72,7 @@ describe("maxLengthRule validator", () => {
   });
 
   it("should return undefined when resolved max is undefined", () => {
-    const rule = maxLength(undefined);
+    const rule = buildMaxLengthRule(undefined);
 
     const result = maxLengthRule({
       rule,
@@ -86,7 +86,7 @@ describe("maxLengthRule validator", () => {
   });
 
   it("should handle larger threshold correctly", () => {
-    const rule = maxLength(v(20));
+    const rule = buildMaxLengthRule(v(20));
 
     const result = maxLengthRule({
       rule,
@@ -100,7 +100,7 @@ describe("maxLengthRule validator", () => {
   });
 
   it("should include correct error message format", async () => {
-    const rule = maxLength(v(8));
+    const rule = buildMaxLengthRule(v(8));
 
     const result = await maxLengthRule({
       rule,
@@ -116,7 +116,7 @@ describe("maxLengthRule validator", () => {
   });
 
   it("should return undefined when value equals maximum length", () => {
-    const rule = maxLength(v(7));
+    const rule = buildMaxLengthRule(v(7));
 
     const result = maxLengthRule({
       rule,
@@ -130,7 +130,7 @@ describe("maxLengthRule validator", () => {
   });
 
   it("should handle empty string correctly", () => {
-    const rule = maxLength(v(5));
+    const rule = buildMaxLengthRule(v(5));
 
     const result = maxLengthRule({
       rule,

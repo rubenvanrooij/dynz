@@ -1,11 +1,11 @@
 import type { ParamaterValue, Predicate } from "../../functions";
 import {
+  buildConditionalRule,
+  buildMaxLengthRule,
+  buildMinLengthRule,
   type ConditionalRule,
-  conditional,
   type MaxLengthRule,
   type MinLengthRule,
-  maxLength,
-  minLength,
   type Rule,
 } from "../../rules";
 import type { JsonRecord } from "../../types";
@@ -108,8 +108,8 @@ function createRuleBuilder<TSchema extends Schema, TRules extends Rule[]>(
     type: SchemaType.ARRAY,
     schema,
     rules,
-    min: <P extends ParamaterValue<number>>(min: P, code?: string) => push(minLength(min, code)),
-    max: <P extends ParamaterValue<number>>(max: P, code?: string) => push(maxLength(max, code)),
+    min: <P extends ParamaterValue<number>>(min: P, code?: string) => push(buildMinLengthRule(min, code)),
+    max: <P extends ParamaterValue<number>>(max: P, code?: string) => push(buildMaxLengthRule(max, code)),
   };
 }
 
@@ -132,9 +132,9 @@ function createFluent<TSchema extends Schema, TRules extends Rule[], TProps>(
 
     // — Rule methods —
     min: <P extends ParamaterValue<number> | number>(min: P, code?: string) =>
-      pushRule(minLength(toParamaterValue(min), code)),
+      pushRule(buildMinLengthRule(toParamaterValue(min), code)),
     max: <P extends ParamaterValue<number> | number>(max: P, code?: string) =>
-      pushRule(maxLength(toParamaterValue(max), code)),
+      pushRule(buildMaxLengthRule(toParamaterValue(max), code)),
 
     // — Conditional rules —
     when: <WRules extends Rule[]>(
@@ -143,7 +143,7 @@ function createFluent<TSchema extends Schema, TRules extends Rule[], TProps>(
     ) => {
       const result = cb(createRuleBuilder(schema, []));
       const conditionals = result.rules.map((rule) =>
-        conditional({
+        buildConditionalRule({
           when: pred,
           then: rule as Exclude<Rule, ConditionalRule>,
         })

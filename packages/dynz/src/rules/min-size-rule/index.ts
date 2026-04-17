@@ -16,7 +16,7 @@ export type MinSizeRule<T extends ParamaterValue<number> = ParamaterValue<number
 
 export type MinSizeRuleErrorMessage = ErrorMessageFromRule<MinSizeRule, number, "min">;
 
-export function minSize<T extends ParamaterValue<number> = ParamaterValue<number>>(
+export function buildMinSizeRule<T extends ParamaterValue<number> = ParamaterValue<number>>(
   min: T,
   code?: string
 ): MinSizeRule<T> {

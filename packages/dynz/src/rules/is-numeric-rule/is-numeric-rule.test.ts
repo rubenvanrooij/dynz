@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { type StringSchema, string } from "../../schemas";
 import type { Context } from "../../types";
-import { isNumeric, isNumericRule } from "./index";
+import { buildIsNumericRule, isNumericRule } from "./index";
 
 describe("isNumeric rule", () => {
   it("should create isNumeric rule", () => {
-    const rule = isNumeric();
+    const rule = buildIsNumericRule();
 
     expect(rule).toEqual({
       type: "is_numeric",
@@ -13,14 +13,14 @@ describe("isNumeric rule", () => {
   });
 
   it("should create isNumeric rule without parameters", () => {
-    const rule = isNumeric();
+    const rule = buildIsNumericRule();
 
     expect(rule.type).toBe("is_numeric");
     expect(Object.keys(rule)).toHaveLength(2);
   });
 
   it("should create isNumeric rule with custom code", () => {
-    const rule = isNumeric("NOT_NUMERIC");
+    const rule = buildIsNumericRule("NOT_NUMERIC");
 
     expect(rule).toEqual({
       type: "is_numeric",
@@ -40,7 +40,7 @@ describe("isNumericRule validator", () => {
   it.each(["123", "0", "-123", "123.45", "-123.45", "0.001", "1e10", "1.5e-10"])(
     "should return undefined for valid '%s' numeric strings",
     async (value) => {
-      const rule = isNumeric();
+      const rule = buildIsNumericRule();
 
       const result = isNumericRule({
         rule,
@@ -57,7 +57,7 @@ describe("isNumericRule validator", () => {
   it.each(["abc", "123abc", "abc123", "", "12.34.56", "++123", "--123", "NaN"])(
     "should return error for '%s' strings",
     async (val) => {
-      const rule = isNumeric();
+      const rule = buildIsNumericRule();
 
       const result = await isNumericRule({
         rule,
@@ -74,7 +74,7 @@ describe("isNumericRule validator", () => {
   );
 
   it("should include correct error message format", async () => {
-    const rule = isNumeric();
+    const rule = buildIsNumericRule();
 
     const result = await isNumericRule({
       rule,
@@ -90,7 +90,7 @@ describe("isNumericRule validator", () => {
   });
 
   it("should handle edge cases with whitespace", async () => {
-    const rule = isNumeric();
+    const rule = buildIsNumericRule();
 
     const spaceWithNumberResult = isNumericRule({
       rule,
@@ -113,7 +113,7 @@ describe("isNumericRule validator", () => {
   });
 
   it("should handle Infinity values as valid", async () => {
-    const rule = isNumeric();
+    const rule = buildIsNumericRule();
 
     const infinityResult = isNumericRule({
       rule,
@@ -136,7 +136,7 @@ describe("isNumericRule validator", () => {
   });
 
   it("should handle zero correctly", async () => {
-    const rule = isNumeric();
+    const rule = buildIsNumericRule();
 
     const result = isNumericRule({
       rule,
@@ -150,7 +150,7 @@ describe("isNumericRule validator", () => {
   });
 
   it("should handle decimal numbers correctly", async () => {
-    const rule = isNumeric();
+    const rule = buildIsNumericRule();
 
     const result = isNumericRule({
       rule,
