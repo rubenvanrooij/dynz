@@ -3,17 +3,7 @@ import { isValueMasked, mask, plain } from "../private";
 import { array, date, number, object, string } from "../schemas";
 import { ErrorCode, SchemaType } from "../types";
 import { validate } from "./validate";
-import {
-  isArray,
-  isBoolean,
-  isDate,
-  isDateString,
-  isFile,
-  isNumber,
-  isObject,
-  isString,
-  validateShallowType,
-} from "./validate-type";
+import { isArray, isBoolean, isDate, isFile, isNumber, isObject, isString, validateShallowType } from "./validate-type";
 
 describe("validate", () => {
   beforeEach(() => {
@@ -384,13 +374,6 @@ describe("validate", () => {
       });
     });
 
-    describe("date string validation", () => {
-      it("should validate date string type", async () => {
-        expect(validateShallowType(SchemaType.DATE_STRING, "2023-01-01")).toBe(true);
-        expect(validateShallowType(SchemaType.DATE_STRING, "01/01/2023")).toBe(true);
-      });
-    });
-
     describe("options validation", () => {
       it("should validate options type", async () => {
         expect(validateShallowType(SchemaType.OPTIONS, "option1")).toBe(true);
@@ -510,22 +493,6 @@ describe("validate", () => {
         expect(isFile("file")).toBe(false);
         expect(isFile(null)).toBe(false);
         expect(isFile(undefined)).toBe(false);
-      });
-    });
-
-    describe("isDateString", () => {
-      it("should return true for valid date strings", async () => {
-        expect(isDateString("2023-01-01", "yyyy-MM-dd")).toBe(true);
-        expect(isDateString("01/01/2023", "MM/dd/yyyy")).toBe(true);
-        expect(isDateString("2023-12-25T10:30:00", "yyyy-MM-dd'T'HH:mm:ss")).toBe(true);
-      });
-
-      it("should return false for invalid date strings", async () => {
-        expect(isDateString("invalid-date", "yyyy-MM-dd")).toBe(false);
-        expect(isDateString("2023-01-01", "MM/dd/yyyy")).toBe(false);
-        expect(isDateString("13/32/2023", "MM/dd/yyyy")).toBe(false);
-        expect(isDateString(123, "yyyy-MM-dd")).toBe(false);
-        expect(isDateString(null, "yyyy-MM-dd")).toBe(false);
       });
     });
   });
