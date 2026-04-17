@@ -18,8 +18,6 @@ export type Filter<T extends unknown[], A> = T extends []
       : [H, ...Filter<R, A>]
     : T;
 
-export type DateString = string;
-
 export type JsonPrimitive = string | number | boolean;
 export type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue };
 export type JsonRecord = { [key: string]: JsonValue };

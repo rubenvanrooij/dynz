@@ -43,28 +43,3 @@ export const maxDateRule: RuleFn<
         message: `The value ${value} for schema ${path} is after or on ${max}`,
       };
 };
-
-// export const maxDateStringRule: RuleFn<
-//   DateStringSchema,
-//   Extract<ExtractResolvedRules<DateStringSchema>, MaxDateRule>,
-//   MaxDateRuleErrorMessage
-// > = ({ rule, value, path, context, schema }) => {
-//   const unpackedRef = unpackRef(rule.max, path, context, SchemaType.DATE, SchemaType.DATE_STRING);
-//   const max = unpackedRef.static
-//     ? parseDateString(unpackedRef.value, schema.format)
-//     : getDateFromDateOrDateStringRefeference(unpackedRef);
-
-//   if (max === undefined) {
-//     return undefined;
-//   }
-
-//   const valueDate = parseDateString(value, schema.format);
-
-//   return isBefore(valueDate, max) || valueDate.getTime() === max.getTime()
-//     ? undefined
-//     : {
-//       code: "max_date",
-//       max,
-//       message: `The value ${value} for schema ${path} is after or on ${max}`,
-//     };
-// };

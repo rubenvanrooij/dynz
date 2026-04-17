@@ -4,7 +4,6 @@ import type {
   ArraySchema,
   BooleanSchema,
   DateSchema,
-  DateStringSchema,
   EnumValue,
   EnumValues,
   FileSchema,
@@ -16,12 +15,11 @@ import type {
 import type { EnumSchema } from "../schemas/enum";
 import type { ExpressionSchema } from "../schemas/expression";
 import type { BaseRule } from "./rules";
-import type { DateString, Prettify, Unpacked } from "./utils";
+import type { Prettify, Unpacked } from "./utils";
 
 export const SchemaType = {
   STRING: "string",
   DATE: "date",
-  DATE_STRING: "date_string",
   NUMBER: "number",
   OBJECT: "object",
   ARRAY: "array",
@@ -55,7 +53,6 @@ export type Schema =
   | NumberSchema
   | BooleanSchema
   | ArraySchema<never>
-  | DateStringSchema
   | OptionsSchema
   | FileSchema
   | DateSchema
@@ -94,27 +91,25 @@ export type ApplyPrivacyMask<T extends Schema, V> = IsPrivate<T> extends true ? 
 
 export type ValueType<T extends SchemaType = SchemaType> = T extends typeof SchemaType.STRING
   ? string
-  : T extends typeof SchemaType.DATE_STRING
-    ? DateString
-    : T extends typeof SchemaType.DATE
-      ? Date
-      : T extends typeof SchemaType.NUMBER
-        ? number
-        : T extends typeof SchemaType.OBJECT
-          ? Record<string, unknown>
-          : T extends typeof SchemaType.ARRAY
-            ? ValueType[]
-            : T extends typeof SchemaType.BOOLEAN
-              ? boolean
-              : T extends typeof SchemaType.OPTIONS
-                ? string | number
-                : T extends typeof SchemaType.FILE
-                  ? File
-                  : T extends typeof SchemaType.ENUM
-                    ? EnumValue
-                    : T extends typeof SchemaType.EXPRESSION
-                      ? unknown
-                      : never;
+  : T extends typeof SchemaType.DATE
+    ? Date
+    : T extends typeof SchemaType.NUMBER
+      ? number
+      : T extends typeof SchemaType.OBJECT
+        ? Record<string, unknown>
+        : T extends typeof SchemaType.ARRAY
+          ? ValueType[]
+          : T extends typeof SchemaType.BOOLEAN
+            ? boolean
+            : T extends typeof SchemaType.OPTIONS
+              ? string | number
+              : T extends typeof SchemaType.FILE
+                ? File
+                : T extends typeof SchemaType.ENUM
+                  ? EnumValue
+                  : T extends typeof SchemaType.EXPRESSION
+                    ? unknown
+                    : never;
 
 export type ValueTypeOrUndefined = ValueType | undefined | Array<ValueType | undefined>;
 

@@ -5,7 +5,6 @@ import {
   isArray,
   isBoolean,
   isDate,
-  isDateString,
   isEnum,
   isFile,
   isNumber,
@@ -93,12 +92,6 @@ describe("type checking functions", () => {
     };
     expect(isOption(optionsList, "option1", "$", mockContext)).toBe(true);
     expect(isOption(optionsList, "invalid", "$", mockContext)).toBe(false);
-  });
-
-  it("should validate date strings correctly", () => {
-    expect(isDateString("2023-01-01", "yyyy-MM-dd")).toBe(true);
-    expect(isDateString("invalid", "yyyy-MM-dd")).toBe(false);
-    expect(isDateString(123, "yyyy-MM-dd")).toBe(false);
   });
 
   it("should validate files correctly", () => {

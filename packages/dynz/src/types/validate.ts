@@ -66,25 +66,12 @@ export type RequiredErrorMessage = BaseErrorMessage & {
   code: typeof ErrorCode.REQRUIED;
 };
 
-export type TypeErrorMessage = BaseErrorMessage & {
-  code: typeof ErrorCode.TYPE;
-  expectedType: Exclude<SchemaType, typeof SchemaType.DATE_STRING>;
-};
-
-export type DateStringTypeErrorMessage = BaseErrorMessage & {
-  code: typeof ErrorCode.TYPE;
-  expectedType: typeof SchemaType.DATE_STRING;
-  expectedFormat: string;
-};
-
 export type RulesErrorrMessages<T extends Schema = Schema> = T extends object ? ErrorMessageFromRule<T> : never;
 
 export type ErrorMessage =
   | ImmutableErrorMessage
   | IncludedErrorMessage
   | RequiredErrorMessage
-  | TypeErrorMessage
-  | DateStringTypeErrorMessage
   | AfterRuleErrorMessage
   | BeforeRuleErrorMessage
   | CustomRuleErrorMessage
