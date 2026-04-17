@@ -27,7 +27,7 @@ This is a TypeScript schema validation and form library called "dynz" with the f
 
 **packages/dynz/** - Main validation library
 - `types.ts` - Comprehensive type definitions for schemas, rules, conditions, and validation
-- `schema.ts` - Schema builders (string, number, object, array, dateString)
+- `schema.ts` - Schema builders (string, number, object, array)
 - `validate.ts` - Main validation logic and error handling
 - `resolve.ts` - Property resolution and conditional logic
 - `rules.ts` - Rule definitions and builders

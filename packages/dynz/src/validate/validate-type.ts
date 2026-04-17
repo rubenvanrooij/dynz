@@ -1,7 +1,6 @@
-import { parse } from "date-fns";
 import { resolvePredicate } from "../functions";
-import { DEFAULT_DATE_STRING_FORMAT, type Enum, type OptionValue } from "../schemas";
-import { type DateString, type ResolveContext, type Schema, SchemaType, type ValueType } from "../types";
+import type { Enum, OptionValue } from "../schemas";
+import { type ResolveContext, type Schema, SchemaType, type ValueType } from "../types";
 
 /**
  * Validates whether the value is of the correct type for a given schema
@@ -33,8 +32,6 @@ export function validateType<T extends Schema>(
       return isFile(value);
     case SchemaType.ENUM:
       return isEnum(schema.enum, value);
-    case SchemaType.DATE_STRING:
-      return isDateString(value, schema.format);
     case SchemaType.OPTIONS:
       return isOption(schema.options, value, path, context);
     case SchemaType.EXPRESSION:
@@ -71,8 +68,6 @@ export function validateShallowType<T extends SchemaType>(type: T, value: unknow
       return isFile(value);
     case SchemaType.ENUM:
       return isString(value) || isNumber(value);
-    case SchemaType.DATE_STRING:
-      return isString(value);
     case SchemaType.OPTIONS:
       return isNumber(value) || isString(value) || isBoolean(value);
     case SchemaType.EXPRESSION:
@@ -195,19 +190,4 @@ export function isObject(value: unknown): value is Record<string | number, unkno
  */
 export function isArray(value: unknown): value is unknown[] {
   return Array.isArray(value);
-}
-
-/**
- * Validates whether a value is a string date
- *
- * @param value the value to be validated
- * @returns true if the value is correct, false if not
- */
-export function isDateString(value: unknown, format: string): value is DateString {
-  const date = typeof value === "string" ? parse(value, format, new Date()) : undefined;
-  return date instanceof Date && !Number.isNaN(date.getTime());
-}
-
-export function parseDateString(value: DateString, format: string = DEFAULT_DATE_STRING_FORMAT): Date {
-  return parse(value, format, new Date());
 }

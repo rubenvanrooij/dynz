@@ -527,11 +527,11 @@ object({
 
 // const form = object({
 //   fields: {
-//     birthDate: dateString({
+//     birthDate: date({
 //       format: 'yyyy',
 //       rules: [min('2020')],
 //     }),
-//     now: dateString(),
+//     now: date(),
 //     multiplier: number({}),
 //     parentalApproval: number({
 //       // required: true,

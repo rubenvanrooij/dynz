@@ -324,7 +324,6 @@ const orderSchema = d.object({
 - `object(fields)` - Object schema with nested field schemas
 - `array(schema)` - Array schema with item validation
 - `date()` - Date validation schema with fluent methods
-- `dateString(format?)` - Date string validation with format support
 - `options(values)` - Enum-like validation for predefined values
 - `file()` - File validation schema with fluent methods
 

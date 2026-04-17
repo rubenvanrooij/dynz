@@ -62,7 +62,6 @@ The following table shows how Dynz types map to JSON types:
 | `object` | Object | JSON object with defined fields |
 | `array` | Array | JSON array of schema-validated items |
 | `date` | String | ISO 8601 date string |
-| `date_string` | String | Formatted date string |
 | `enum` | String/Number | Value from a defined enumeration |
 | `options` | String/Number | Value from a defined set of options |
 | `file` | Object | File metadata object (runtime only) |
@@ -294,47 +293,6 @@ Type identifier: `"date"`
   "rules": [
     { "type": "min_date", "min": "2024-01-01" },
     { "type": "max_date", "max": "2024-12-31" }
-  ]
-}
-```
-
-### 3.8 Date String Schema
-
-Type identifier: `"date_string"`
-
-```json
-{
-  "type": "date_string",
-  "format": "yyyy-MM-dd"
-}
-```
-
-| Property | Type | Required | Description |
-|----------|------|----------|-------------|
-| `format` | String | Yes | Date format using Unicode tokens |
-
-**Format Tokens:**
-
-| Token | Description | Example |
-|-------|-------------|---------|
-| `yyyy` | 4-digit year | 2024 |
-| `MM` | 2-digit month | 01-12 |
-| `dd` | 2-digit day | 01-31 |
-| `HH` | 2-digit hour (24h) | 00-23 |
-| `mm` | 2-digit minute | 00-59 |
-| `ss` | 2-digit second | 00-59 |
-
-**Allowed Rules:** `custom`, `equals`, `before`, `after`, `min_date`, `max_date`
-
-**Example:**
-
-```json
-{
-  "type": "date_string",
-  "format": "yyyy-MM-dd",
-  "required": true,
-  "rules": [
-    { "type": "before", "before": "2025-12-31" }
   ]
 }
 ```
@@ -1259,26 +1217,6 @@ Calculates the age from a date value.
         "FOOD": "food",
         "OTHER": "other"
       }
-    },
-    "expirationDate": {
-      "type": "date_string",
-      "format": "yyyy-MM-dd",
-      "required": {
-        "type": "eq",
-        "left": { "type": "_dref", "path": "$.category" },
-        "right": "food"
-      },
-      "included": {
-        "type": "eq",
-        "left": { "type": "_dref", "path": "$.category" },
-        "right": "food"
-      },
-      "rules": [
-        {
-          "type": "after",
-          "after": "2024-01-01"
-        }
-      ]
     },
     "tags": {
       "type": "array",
