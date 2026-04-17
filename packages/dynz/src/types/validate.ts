@@ -66,12 +66,18 @@ export type RequiredErrorMessage = BaseErrorMessage & {
   code: typeof ErrorCode.REQRUIED;
 };
 
+export type TypeErrorMessage = BaseErrorMessage & {
+  code: typeof ErrorCode.TYPE;
+  expectedType: SchemaType;
+};
+
 export type RulesErrorrMessages<T extends Schema = Schema> = T extends object ? ErrorMessageFromRule<T> : never;
 
 export type ErrorMessage =
   | ImmutableErrorMessage
   | IncludedErrorMessage
   | RequiredErrorMessage
+  | TypeErrorMessage
   | AfterRuleErrorMessage
   | BeforeRuleErrorMessage
   | CustomRuleErrorMessage

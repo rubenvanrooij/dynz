@@ -374,13 +374,6 @@ describe("validate", () => {
       });
     });
 
-    describe("date string validation", () => {
-      it("should validate date string type", async () => {
-        expect(validateShallowType(SchemaType.DATE_STRING, "2023-01-01")).toBe(true);
-        expect(validateShallowType(SchemaType.DATE_STRING, "01/01/2023")).toBe(true);
-      });
-    });
-
     describe("options validation", () => {
       it("should validate options type", async () => {
         expect(validateShallowType(SchemaType.OPTIONS, "option1")).toBe(true);

@@ -1,4 +1,3 @@
-import { parse } from "date-fns";
 import { resolvePredicate } from "../functions";
 import type { Enum, OptionValue } from "../schemas";
 import { type ResolveContext, type Schema, SchemaType, type ValueType } from "../types";
@@ -67,8 +66,6 @@ export function validateShallowType<T extends SchemaType>(type: T, value: unknow
       return isFile(value);
     case SchemaType.ENUM:
       return isString(value) || isNumber(value);
-    case SchemaType.DATE_STRING:
-      return isString(value);
     case SchemaType.OPTIONS:
       return isNumber(value) || isString(value) || isBoolean(value);
     case SchemaType.EXPRESSION:

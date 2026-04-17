@@ -155,23 +155,16 @@ export async function _validate<T extends Schema>(
       current: currentValue,
       customCode: ErrorCode.TYPE,
       code: ErrorCode.TYPE,
-    };
+    } as const;
 
     return {
       success: false,
       errors: [
-        schema.type === SchemaType.DATE_STRING
-          ? {
-              ...error,
-              expectedType: schema.type,
-              expectedFormat: schema.format,
-              message: `The value for schema ${path} is not a valid date string in the format ${schema.format}`,
-            }
-          : {
-              ...error,
-              expectedType: schema.type,
-              message: `The value for schema ${path} is not of type ${schema.type}`,
-            },
+        {
+          ...error,
+          expectedType: schema.type,
+          message: `The value for schema ${path} is not of type ${schema.type}`,
+        },
       ],
     };
   }
