@@ -4,6 +4,7 @@ export * from "./date";
 export * from "./enum";
 export * from "./expression";
 export * from "./file";
+export * from "./literal";
 export * from "./number";
 export * from "./object";
 export * from "./options";
