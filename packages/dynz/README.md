@@ -373,15 +373,54 @@ Array schemas:
 
 ### Predicates
 
-- `eq(left, right)` - Equals comparison
-- `neq(left, right)` - Not equals comparison
-- `gt(left, right)` - Greater than comparison
-- `gte(left, right)` - Greater than or equal comparison
-- `lt(left, right)` - Less than comparison
-- `lte(left, right)` - Less than or equal comparison
-- `matches(value, pattern)` - Regex pattern matching
+Predicates return a boolean and are used wherever a schema accepts a conditional expression: `.setRequired()`, `.setMutable()`, `.setIncluded()`, and `.when()`.
+
+Comparison:
+
+- `eq(left, right)` - Equals (`===`)
+- `neq(left, right)` - Not equals (`!==`)
+- `gt(left, right)` - Greater than (`>`)
+- `gte(left, right)` - Greater than or equal (`>=`)
+- `lt(left, right)` - Less than (`<`)
+- `lte(left, right)` - Less than or equal (`<=`)
+- `matches(value, pattern, flags?)` - Regex pattern matching
+
+Collection:
+
+- `isIn(value, array)` - Value is contained in array
+- `isNotIn(value, array)` - Value is not contained in array
+
+Logical combinators:
+
 - `and(...predicates)` - All predicates must be true
 - `or(...predicates)` - At least one predicate must be true
+
+### Transformers
+
+Transformers compute a value and can be used as an input to any predicate or validation rule.
+
+Arithmetic:
+
+- `sum(...values)` - Add values together
+- `sub(...values)` - Subtract values left to right
+- `multiply(...values)` - Multiply values together
+- `divide(...values)` - Divide values left to right
+- `min(...values)` - Smallest of the given values
+- `max(...values)` - Largest of the given values
+
+Math:
+
+- `ceil(value)` - Round up to nearest integer
+- `floor(value)` - Round down to nearest integer
+- `sin(value)` - Sine
+- `cos(value)` - Cosine
+- `tan(value)` - Tangent
+
+Utility:
+
+- `age(dateValue)` - Age in years derived from a date value
+- `size(value)` - Length of a string or array, size in bytes of a file
+- `lookup(value, table)` - Map a value through a lookup table
 
 ### Helpers
 
