@@ -1,11 +1,15 @@
 import type { ParamaterValue, Predicate } from "../../functions";
 import {
   buildConditionalRule,
+  buildIncludesRule,
   buildMaxLengthRule,
   buildMinLengthRule,
+  buildNotIncludesRule,
   type ConditionalRule,
+  type IncludesRule,
   type MaxLengthRule,
   type MinLengthRule,
+  type NotIncludesRule,
   type Rule,
 } from "../../rules";
 import type { JsonRecord } from "../../types";
@@ -40,6 +44,14 @@ export type ArrayRuleBuilder<TSchema extends Schema, TRules extends Rule[]> = {
     max: P,
     code?: string
   ) => ArrayRuleBuilder<TSchema, Push<TRules, MaxLengthRule<P>>>;
+  includes: <P extends ParamaterValue | string | number | boolean | Date>(
+    value: P,
+    code?: string
+  ) => ArrayRuleBuilder<TSchema, Push<TRules, IncludesRule<ToParam<P>>>>;
+  notIncludes: <P extends ParamaterValue | string | number | boolean | Date>(
+    value: P,
+    code?: string
+  ) => ArrayRuleBuilder<TSchema, Push<TRules, NotIncludesRule<ToParam<P>>>>;
 };
 
 // ---------------------------------------------------------------------------
@@ -68,6 +80,16 @@ export type ArrayFluent<TSchema extends Schema, TRules extends Rule[], TProps> =
       max: P,
       code?: string
     ) => ArrayFluent<TSchema, Push<TRules, MaxLengthRule<ToParam<P>>>, TProps>;
+    /** Validates array contains a given item. @param value - Item to find. @param code - Optional error code */
+    includes: <P extends ParamaterValue | string | number | boolean | Date>(
+      value: P,
+      code?: string
+    ) => ArrayFluent<TSchema, Push<TRules, IncludesRule<ToParam<P>>>, TProps>;
+    /** Validates array does not contain a given item. @param value - Item that must not appear. @param code - Optional error code */
+    notIncludes: <P extends ParamaterValue | string | number | boolean | Date>(
+      value: P,
+      code?: string
+    ) => ArrayFluent<TSchema, Push<TRules, NotIncludesRule<ToParam<P>>>, TProps>;
 
     // — Conditional rules —
     /** Applies rules conditionally based on a predicate. @param pred - Condition to evaluate. @param cb - Builder callback for conditional rules */
@@ -110,6 +132,10 @@ function createRuleBuilder<TSchema extends Schema, TRules extends Rule[]>(
     rules,
     min: <P extends ParamaterValue<number>>(min: P, code?: string) => push(buildMinLengthRule(min, code)),
     max: <P extends ParamaterValue<number>>(max: P, code?: string) => push(buildMaxLengthRule(max, code)),
+    includes: <P extends ParamaterValue | string | number | boolean | Date>(value: P, code?: string) =>
+      push(buildIncludesRule(toParamaterValue(value), code)),
+    notIncludes: <P extends ParamaterValue | string | number | boolean | Date>(value: P, code?: string) =>
+      push(buildNotIncludesRule(toParamaterValue(value), code)),
   };
 }
 
@@ -135,6 +161,10 @@ function createFluent<TSchema extends Schema, TRules extends Rule[], TProps>(
       pushRule(buildMinLengthRule(toParamaterValue(min), code)),
     max: <P extends ParamaterValue<number> | number>(max: P, code?: string) =>
       pushRule(buildMaxLengthRule(toParamaterValue(max), code)),
+    includes: <P extends ParamaterValue | string | number | boolean | Date>(value: P, code?: string) =>
+      pushRule(buildIncludesRule(toParamaterValue(value), code)),
+    notIncludes: <P extends ParamaterValue | string | number | boolean | Date>(value: P, code?: string) =>
+      pushRule(buildNotIncludesRule(toParamaterValue(value), code)),
 
     // — Conditional rules —
     when: <WRules extends Rule[]>(

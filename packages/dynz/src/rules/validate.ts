@@ -4,6 +4,7 @@ import { beforeRule } from "./before-rule";
 import { customRule } from "./custom-rule";
 import { emailRule } from "./email-rule";
 import { equalsRule } from "./equals-rule";
+import { includesRule } from "./includes-rule";
 import { isNumericRule } from "./is-numeric-rule";
 import { maxDateRule } from "./max-date-rule";
 import { maxEntriesRule } from "./max-entries-rule";
@@ -17,6 +18,7 @@ import { minEntriesRule } from "./min-entries-rule";
 import { minLengthRule } from "./min-length-rule";
 import { minRule } from "./min-rule";
 import { minSizeRule } from "./min-size-rule";
+import { notIncludesRule } from "./not-includes-rule";
 import { notOneOfRule } from "./not-one-off-rule";
 import { oneOfRule } from "./one-off-rule";
 import { regexRule } from "./regex-rule";
@@ -33,6 +35,8 @@ export function validateRule(context: ValidateRuleContextUnion<Schema>) {
       return emailRule(context);
     case "equals":
       return equalsRule(context);
+    case "includes":
+      return includesRule(context);
     case "is_numeric":
       return isNumericRule(context);
     case "max_date":
@@ -59,6 +63,8 @@ export function validateRule(context: ValidateRuleContextUnion<Schema>) {
       return minRule(context);
     case "min_size":
       return minSizeRule(context);
+    case "not_includes":
+      return notIncludesRule(context);
     case "one_of":
       return oneOfRule(context);
     case "regex":
