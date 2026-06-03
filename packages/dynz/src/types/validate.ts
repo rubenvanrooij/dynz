@@ -4,6 +4,7 @@ import type {
   CustomRuleErrorMessage,
   EmailRuleErrorMessage,
   EqualsRuleErrorMessage,
+  IncludesRuleErrorMessage,
   IsNumericRuleErrorMessage,
   MaxDateRuleErrorMessage,
   MaxEntriesRuleErrorMessage,
@@ -17,6 +18,7 @@ import type {
   MinLengthRuleErrorMessage,
   MinRuleErrorMessage,
   MinSizeRuleErrorMessage,
+  NotIncludesRuleErrorMessage,
   OneOfRuleErrorMessage,
   RegexRuleErrorMessage,
 } from "../rules";
@@ -83,6 +85,8 @@ export type ErrorMessage =
   | CustomRuleErrorMessage
   | EmailRuleErrorMessage
   | EqualsRuleErrorMessage
+  | IncludesRuleErrorMessage
+  | NotIncludesRuleErrorMessage
   | IsNumericRuleErrorMessage
   | MaxDateRuleErrorMessage
   | MaxEntriesRuleErrorMessage

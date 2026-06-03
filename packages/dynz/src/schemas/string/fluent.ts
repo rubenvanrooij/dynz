@@ -4,18 +4,22 @@ import {
   buildCustomRule,
   buildEmailRule,
   buildEqualsRule,
+  buildIncludesRule,
   buildIsNumericRule,
   buildMaxLengthRule,
   buildMinLengthRule,
+  buildNotIncludesRule,
   buildOneOfRule,
   buildRegexRule,
   type ConditionalRule,
   type CustomRule,
   type EmailRule,
   type EqualsRule,
+  type IncludesRule,
   type IsNumericRule,
   type MaxLengthRule,
   type MinLengthRule,
+  type NotIncludesRule,
   type OneOfRule,
   type RegexRule,
   type Rule,
@@ -59,6 +63,14 @@ export type StrRuleBuilder<TRules extends Rule[]> = {
   ) => StrRuleBuilder<Push<TRules, EqualsRule<ToParam<P>>>>;
   isNumeric: (code?: string) => StrRuleBuilder<Push<TRules, IsNumericRule>>;
   oneOf: <P extends ParamaterValue[]>(values: P, code?: string) => StrRuleBuilder<Push<TRules, OneOfRule<P>>>;
+  includes: <P extends ParamaterValue | string>(
+    value: P,
+    code?: string
+  ) => StrRuleBuilder<Push<TRules, IncludesRule<ToParam<P>>>>;
+  notIncludes: <P extends ParamaterValue | string>(
+    value: P,
+    code?: string
+  ) => StrRuleBuilder<Push<TRules, NotIncludesRule<ToParam<P>>>>;
   custom: <T extends Record<string, ParamaterValue>>(
     name: string,
     params?: T,
@@ -109,6 +121,16 @@ export type StrFluent<TRules extends Rule[], TProps> = {
     isNumeric: (code?: string) => StrFluent<Push<TRules, IsNumericRule>, TProps>;
     /** Validates string is one of allowed values. @param values - Array of allowed values. @param code - Optional error code */
     oneOf: <P extends ParamaterValue[]>(values: P, code?: string) => StrFluent<Push<TRules, OneOfRule<P>>, TProps>;
+    /** Validates string contains a given substring. @param value - Substring to find. @param code - Optional error code */
+    includes: <P extends ParamaterValue | string>(
+      value: P,
+      code?: string
+    ) => StrFluent<Push<TRules, IncludesRule<ToParam<P>>>, TProps>;
+    /** Validates string does not contain a given substring. @param value - Substring that must not appear. @param code - Optional error code */
+    notIncludes: <P extends ParamaterValue | string>(
+      value: P,
+      code?: string
+    ) => StrFluent<Push<TRules, NotIncludesRule<ToParam<P>>>, TProps>;
     /** Adds a custom validation rule. @param name - Rule name. @param params - Rule parameters. @param code - Optional error code */
     custom: <T extends Record<string, ParamaterValue>>(
       name: string,
@@ -163,6 +185,10 @@ function createRuleBuilder<TRules extends Rule[]>(rules: TRules): StrRuleBuilder
       push(buildEqualsRule(toParamaterValue(value), code)),
     isNumeric: (code?: string) => push(buildIsNumericRule(code)),
     oneOf: <P extends ParamaterValue[]>(values: P, code?: string) => push(buildOneOfRule(values, code)),
+    includes: <P extends ParamaterValue | string>(value: P, code?: string) =>
+      push(buildIncludesRule(toParamaterValue(value), code)),
+    notIncludes: <P extends ParamaterValue | string>(value: P, code?: string) =>
+      push(buildNotIncludesRule(toParamaterValue(value), code)),
     custom: <T extends Record<string, ParamaterValue>>(name: string, params?: T, code?: string) =>
       // @ts-expect-error - code can be undefined which is handled by the custom() implementation
       push(buildCustomRule(name, params || ({} as T), code)),
@@ -193,6 +219,10 @@ function createFluent<TRules extends Rule[], TProps>(rules: TRules, props: TProp
       pushRule(buildEqualsRule(toParamaterValue(value), code)),
     isNumeric: (code?: string) => pushRule(buildIsNumericRule(code)),
     oneOf: <P extends ParamaterValue[]>(values: P, code?: string) => pushRule(buildOneOfRule(values, code)),
+    includes: <P extends ParamaterValue | string>(value: P, code?: string) =>
+      pushRule(buildIncludesRule(toParamaterValue(value), code)),
+    notIncludes: <P extends ParamaterValue | string>(value: P, code?: string) =>
+      pushRule(buildNotIncludesRule(toParamaterValue(value), code)),
     custom: <T extends Record<string, ParamaterValue>>(name: string, params?: T, code?: string) =>
       // @ts-expect-error - code can be undefined which is handled by the custom() implementation
       pushRule(buildCustomRule(name, params || ({} as T), code)),

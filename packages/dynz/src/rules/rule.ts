@@ -4,6 +4,7 @@ import type { ConditionalRule } from "./conditional-rule";
 import type { CustomRule } from "./custom-rule";
 import type { EmailRule } from "./email-rule";
 import type { EqualsRule } from "./equals-rule";
+import type { IncludesRule } from "./includes-rule";
 import type { IsNumericRule } from "./is-numeric-rule";
 import type { MaxDateRule } from "./max-date-rule";
 import type { MaxEntriesRule } from "./max-entries-rule";
@@ -17,6 +18,7 @@ import type { MinEntriesRule } from "./min-entries-rule";
 import type { MinLengthRule } from "./min-length-rule";
 import type { MinRule } from "./min-rule";
 import type { MinSizeRule } from "./min-size-rule";
+import type { NotIncludesRule } from "./not-includes-rule";
 import type { NotOneOfRule } from "./not-one-off-rule";
 import type { OneOfRule } from "./one-off-rule";
 import type { RegexRule } from "./regex-rule";
@@ -28,6 +30,7 @@ export type Rule =
   | CustomRule
   | EmailRule
   | EqualsRule
+  | IncludesRule
   | IsNumericRule
   | MaxDateRule
   | MaxEntriesRule
@@ -41,6 +44,7 @@ export type Rule =
   | MinLengthRule
   | MinRule
   | MinSizeRule
+  | NotIncludesRule
   | OneOfRule
   | NotOneOfRule
   | RegexRule;
