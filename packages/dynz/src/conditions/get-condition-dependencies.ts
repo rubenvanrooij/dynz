@@ -34,6 +34,7 @@ export function getConditionDependencies(input: Predicate | Transformer, path: s
         ...getParamaterDependencies(input.right, path, schema),
       ];
     case "ceil":
+    case "atan":
     case "cos":
     case "floor":
     case "sin":

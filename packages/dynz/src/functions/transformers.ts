@@ -1,4 +1,5 @@
 import { ageFunction, ageFunctionType } from "./age-function";
+import { atanFunction, atanFunctionType } from "./atan-function";
 import { ceilFunction, ceilFunctionType } from "./ceil-function";
 import { cosFunction, cosFunctionType } from "./cos-function";
 import { divideFunction, divideFunctionType } from "./divide-function";
@@ -14,6 +15,7 @@ import { sumFunction, sumFunctionType } from "./sum-function";
 import { tanFunction, tanFunctionType } from "./tan-function";
 
 export const TRANSFORMERS = {
+  [atanFunctionType]: atanFunction,
   [ceilFunctionType]: ceilFunction,
   [cosFunctionType]: cosFunction,
   [floorFunctionType]: floorFunction,

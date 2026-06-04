@@ -1,4 +1,5 @@
 import type { AgeFunction } from "./age-function";
+import type { AtanFunction } from "./atan-function";
 import type { CeilFunction } from "./ceil-function";
 import type { CosFunction } from "./cos-function";
 import type { DivideFunction } from "./divide-function";
@@ -47,6 +48,7 @@ import type { TanFunction } from "./tan-function";
  * @see {@link size} - Size/length transformer
  */
 export type Transformer =
+  | AtanFunction
   | CeilFunction
   | CosFunction
   | FloorFunction

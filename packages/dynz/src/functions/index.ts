@@ -1,4 +1,5 @@
 export * from "./age-function";
+export * from "./atan-function";
 export * from "./and-function";
 export * from "./builders";
 export * from "./ceil-function";
