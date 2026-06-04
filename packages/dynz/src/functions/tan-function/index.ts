@@ -41,5 +41,5 @@ export function tan<const T extends ParamaterValue<number> | number>(value: T): 
 }
 
 export function tanFunction(value: ValueType | undefined): number {
-  return Math.sin((coerceNumber(value) * Math.PI) / 180);
+  return Math.tan((coerceNumber(value) * Math.PI) / 180);
 }
