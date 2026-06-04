@@ -1,5 +1,15 @@
 # dynz
 
+## 0.0.18
+
+### Patch Changes
+
+- c704855: added includes and not-includes rules to string an array schema
+- e2b2fd0: renamed rules builder names to remove ambuigity between rules/functions
+- 5e37967: added literal schema
+- b1bc4bf: fixed issue with tan function calling Math.sin instead of Math.tan
+- 594b3c9: removed date string schema
+
 ## 0.0.17
 
 ### Patch Changes
