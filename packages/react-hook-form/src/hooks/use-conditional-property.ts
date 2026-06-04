@@ -3,23 +3,45 @@ import { useMemo } from "react";
 import { useWatch } from "react-hook-form";
 import { useDynzFormContext } from "./use-dynz-form-context";
 
+type ConditionalProperty = "mutable" | "required" | "included";
+
+function getPropertyDependencies(
+  path: string,
+  property: ConditionalProperty,
+  schema: Parameters<typeof findSchemaByPath>[1]
+): string[] {
+  const segments = path.split(/[.[\]]/).filter(Boolean);
+  return segments.flatMap((_, i) => {
+    const ancestorPath = segments.slice(0, i + 1).join(".");
+    const ancestorPropertyValue = findSchemaByPath(ancestorPath, schema)[property];
+    if (ancestorPropertyValue === undefined || typeof ancestorPropertyValue === "boolean") {
+      return [];
+    }
+    return getConditionDependencies(ancestorPropertyValue, ancestorPath, schema).map((f) => f.slice(2));
+  });
+}
+
+export function useConditionalProperty(name: string, property: ConditionalProperty): boolean | undefined;
+export function useConditionalProperty(names: string[], property: ConditionalProperty): (boolean | undefined)[];
 export function useConditionalProperty(
-  name: string,
-  property: "mutable" | "required" | "included"
-): boolean | undefined {
+  name: string | string[],
+  property: ConditionalProperty
+): boolean | undefined | (boolean | undefined)[];
+export function useConditionalProperty(
+  name: string | string[],
+  property: ConditionalProperty
+): boolean | undefined | (boolean | undefined)[] {
   const { getValues, schema, control } = useDynzFormContext();
 
-  const path = `$.${name}`;
+  const names = Array.isArray(name) ? name : [name];
+  const paths = names.map((n) => `$.${n}`);
 
-  const innerSchema = findSchemaByPath(path, schema);
-
-  const propertyValue = innerSchema[property];
-
-  const dependencies =
-    // No need to watch for value changes if the schema has no conditions on the mutable property
-    propertyValue === undefined || typeof propertyValue === "boolean"
-      ? []
-      : getConditionDependencies(propertyValue, path, schema).map((field) => field.slice(2));
+  // Collect dependencies from each path AND all its ancestor paths.
+  // A leaf field may carry a static included/required/mutable value, but an
+  // ancestor may be conditionally excluded. resolveProperty short-circuits on the
+  // first excluded ancestor, so those ancestor conditions must also be watched —
+  // otherwise the hook never re-renders when the ancestor's controlling field changes.
+  const dependencies = [...new Set(paths.flatMap((path) => getPropertyDependencies(path, property, schema)))];
 
   // Watch is just here to trigger a rerender when a value gets updated
   const watchedValues = useWatch({
@@ -32,13 +54,10 @@ export function useConditionalProperty(
     disabled: dependencies.length === 0,
   });
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: watchedValues triggers the re evealuation
+  // biome-ignore lint/correctness/useExhaustiveDependencies: watchedValues triggers the re-evaluation
   return useMemo(() => {
     const values = getValues();
-
-    return resolveProperty(property, path, true, {
-      schema,
-      values,
-    });
-  }, [innerSchema, property, path, schema, watchedValues]);
+    const results = paths.map((path) => resolveProperty(property, path, true, { schema, values }));
+    return Array.isArray(name) ? results : results[0];
+  }, [name, property, schema, watchedValues]);
 }
