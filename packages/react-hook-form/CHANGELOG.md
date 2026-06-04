@@ -1,5 +1,18 @@
 # @dynz/react-hook-form-resolver
 
+## 0.0.21
+
+### Patch Changes
+
+- e2b2fd0: renamed rules builder names to remove ambuigity between rules/functions
+- bba62cd: Conditional property hooks (useIsIncluded, useConditionalProperty, useIsMutable and useIsRequired) now also traverse ancestor paths to build dependency list and take an optional array of names
+- Updated dependencies [c704855]
+- Updated dependencies [e2b2fd0]
+- Updated dependencies [5e37967]
+- Updated dependencies [b1bc4bf]
+- Updated dependencies [594b3c9]
+  - dynz@0.0.18
+
 ## 0.0.20
 
 ### Patch Changes
