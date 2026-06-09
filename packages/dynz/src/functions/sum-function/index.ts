@@ -1,13 +1,13 @@
-import { type ToParam, type ToParams, toParamaterValue, toParamaterValues } from "../../schemas";
+import { type ToParam, type ToParams, toParamaterValues } from "../../schemas";
 import type { ValueType } from "../../types";
 import { coerceNumber } from "../../utils";
 import type { ParamaterValue } from "../types";
 
 export const sumFunctionType = "sum";
 
-export type SumFunction<TValue extends ParamaterValue | ParamaterValue[] = never> = {
+export type SumFunction<TValue extends ParamaterValue[] = never> = {
   type: typeof sumFunctionType;
-  value: [TValue] extends [never] ? ParamaterValue | ParamaterValue[] : TValue;
+  value: [TValue] extends [never] ? ParamaterValue[] : TValue;
 };
 
 /**
@@ -36,11 +36,11 @@ export type SumFunction<TValue extends ParamaterValue | ParamaterValue[] = never
 export function sum<const T extends ParamaterValue<number> | number>(value: T): SumFunction<[ToParam<T>]>;
 export function sum<const T extends (ParamaterValue<number> | number)[]>(value: T): SumFunction<ToParams<T>>;
 export function sum<const T extends (ParamaterValue<number> | number)[]>(...value: T): SumFunction<ToParams<T>>;
-export function sum(...args: (ParamaterValue<number> | number | (ParamaterValue<number> | number))[]): SumFunction {
-  if (args.length === 1) {
-    return { type: sumFunctionType, value: toParamaterValue(args[0]) };
+export function sum(...args: (ParamaterValue<number> | number | (ParamaterValue<number> | number)[])[]): SumFunction {
+  if (args.length === 1 && Array.isArray(args[0])) {
+    return { type: sumFunctionType, value: toParamaterValues(args[0]) };
   }
-  return { type: sumFunctionType, value: toParamaterValues(args) };
+  return { type: sumFunctionType, value: toParamaterValues(args as (ParamaterValue<number> | number)[]) };
 }
 
 export function sumFunction(value: Array<ValueType | undefined>): number {
