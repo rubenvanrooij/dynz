@@ -1,6 +1,6 @@
 export * from "./age-function";
-export * from "./atan-function";
 export * from "./and-function";
+export * from "./atan-function";
 export * from "./builders";
 export * from "./ceil-function";
 export * from "./cos-function";
@@ -21,6 +21,7 @@ export * from "./min-function";
 export * from "./multiply-function";
 export * from "./not-equals-function";
 export * from "./or-function";
+export * from "./pluck-function";
 export * from "./predicate-types";
 export * from "./resolve";
 export * from "./sin-function";

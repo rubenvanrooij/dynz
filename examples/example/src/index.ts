@@ -3,10 +3,16 @@ import { runExample } from "./registration-form";
 
 runExample();
 
-// The basics
-const stringSchema = d.string().min(0).max(100).optional();
 
-console.log(`stringSchema result:`, d.validate(stringSchema, undefined, "foo"));
+// console.log(`stringSchema result:`, d.validate(stringSchema, undefined, {
+//   foo: [{
+//     length: 3,
+//     width: 10,
+//   }, {
+//     length: 4,
+//     width: 3,
+//   }]
+// }));
 
 // const ADDONS_PRICES = {
 //   legalAid: 10,

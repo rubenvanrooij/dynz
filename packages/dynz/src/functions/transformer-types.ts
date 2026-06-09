@@ -11,6 +11,7 @@ import type { MultiplyFunction } from "./multiply-function";
 import type { SinFunction } from "./sin-function";
 import type { SizeFunction } from "./size-function";
 import type { SubFunction } from "./sub-function";
+import type { PluckFunction } from "./pluck-function";
 import type { SumFunction } from "./sum-function";
 import type { TanFunction } from "./tan-function";
 
@@ -48,6 +49,7 @@ import type { TanFunction } from "./tan-function";
  * @see {@link size} - Size/length transformer
  */
 export type Transformer =
+  | PluckFunction
   | AtanFunction
   | CeilFunction
   | CosFunction
