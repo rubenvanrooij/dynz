@@ -1,5 +1,12 @@
 # dynz
 
+## 0.0.19
+
+### Patch Changes
+
+- 5ab0409: added pluck function to extract nested array properties
+- 5ab0409: feat: added atan function
+
 ## 0.0.18
 
 ### Patch Changes
