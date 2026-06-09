@@ -3,7 +3,6 @@ import { runExample } from "./registration-form";
 
 runExample();
 
-
 // console.log(`stringSchema result:`, d.validate(stringSchema, undefined, {
 //   foo: [{
 //     length: 3,
