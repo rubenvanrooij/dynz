@@ -1,4 +1,5 @@
 import { ageFunction, ageFunctionType } from "./age-function";
+import { atanFunction, atanFunctionType } from "./atan-function";
 import { ceilFunction, ceilFunctionType } from "./ceil-function";
 import { cosFunction, cosFunctionType } from "./cos-function";
 import { divideFunction, divideFunctionType } from "./divide-function";
@@ -7,6 +8,7 @@ import { lookupFunction, lookupFunctionType } from "./lookup-function";
 import { maxFunction, maxFunctionType } from "./max-function";
 import { minFunction, minFunctionType } from "./min-function";
 import { multiplyFunction, multiplyFunctionType } from "./multiply-function";
+import { pluckFunction, pluckFunctionType } from "./pluck-function";
 import { sinFunction, sinFunctionType } from "./sin-function";
 import { sizeFunction, sizeFunctionType } from "./size-function";
 import { subFunction, subFunctionType } from "./sub-function";
@@ -14,6 +16,7 @@ import { sumFunction, sumFunctionType } from "./sum-function";
 import { tanFunction, tanFunctionType } from "./tan-function";
 
 export const TRANSFORMERS = {
+  [atanFunctionType]: atanFunction,
   [ceilFunctionType]: ceilFunction,
   [cosFunctionType]: cosFunction,
   [floorFunctionType]: floorFunction,
@@ -28,4 +31,5 @@ export const TRANSFORMERS = {
   [subFunctionType]: subFunction,
   [multiplyFunctionType]: multiplyFunction,
   [lookupFunctionType]: lookupFunction,
+  [pluckFunctionType]: pluckFunction,
 } as const;

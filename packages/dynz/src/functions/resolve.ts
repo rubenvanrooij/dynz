@@ -140,8 +140,14 @@ export function resolveFunction(
     case "divide":
     case "multiply":
     case "min":
-    case "max":
-      return FUNCTIONS[input.type](input.value.map((val) => resolve(val, path, context)));
+    case "max": {
+      const resolved = Array.isArray(input.value)
+        ? input.value.map((val) => resolve(val, path, context))
+        : resolve(input.value, path, context);
+      return FUNCTIONS[input.type](Array.isArray(resolved) ? resolved : [resolved]);
+    }
+    case "pluck":
+      return FUNCTIONS[input.type](resolve(input.array, path, context), input.property);
     // expects single input value
     case "lookup":
       return FUNCTIONS[input.type](resolve(input.value, path, context), resolve(input.lookup, path, context));
