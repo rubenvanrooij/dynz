@@ -73,9 +73,39 @@ export async function _validate<T extends Schema>(
 
   // static schema types must be in front of validation
   if (schema.type === SchemaType.EXPRESSION) {
+    const resolvedValue = resolve(schema.value, path, context);
+
+    for (const rule of resolveRules(schema, path, context)) {
+      const result = await validateRule({
+        type: schema.type,
+        ruleType: rule.type,
+        schema,
+        path,
+        rule,
+        value: resolvedValue,
+        context,
+      } as unknown as ValidateRuleContextUnion<T>);
+
+      if (result !== undefined) {
+        return {
+          success: false,
+          errors: [
+            {
+              ...result,
+              schema,
+              path,
+              customCode: rule.code ? rule.code : result.code,
+              value: resolvedValue,
+              current: undefined,
+            },
+          ],
+        };
+      }
+    }
+
     return {
       success: true,
-      values: resolve(schema.value, path, context),
+      values: resolvedValue,
     };
   }
 

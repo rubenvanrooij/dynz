@@ -3,6 +3,25 @@ import { runExample } from "./registration-form";
 
 runExample();
 
+const schema = d.object({
+  width: d.number(),
+  items: d.array(d.object({
+    width: d.number()
+  })),
+  itemsTotalWidth: d.expr(
+    d.sum(d.pluck(d.ref('items'), 'width'))
+  ).setRules([
+    d.buildMaxRule(d.sub(d.ref('width'), 10))
+  ])
+})
+
+d.validate(schema, undefined, {
+  width: 100,
+  items: [{ width: 50 }, { width: 30 }]
+}).then((result) => {
+  console.log(result)
+})
+
 // console.log(`stringSchema result:`, d.validate(stringSchema, undefined, {
 //   foo: [{
 //     length: 3,

@@ -1,15 +1,13 @@
 import type { ParamaterValue, Predicate } from "../../functions";
+import type { Rule } from "../../rules";
 import type { JsonRecord } from "../../types";
 import { SchemaType } from "../../types";
 
 // ---------------------------------------------------------------------------
 // Full fluent builder
 //
-// Expression schemas carry a computed value (ref, transformer, static, …)
-// and have no validation rules (rules: never in ExpressionSchema).
-//
 // TValue — the ParamaterValue type (carried so the schema data stays complete)
-// TProps — the schema property bag (required, mutable, coerce, …)
+// TProps — the schema property bag (required, mutable, coerce, rules, …)
 // ---------------------------------------------------------------------------
 
 export type ExprFluent<TValue extends ParamaterValue, TProps> = {
@@ -32,6 +30,8 @@ export type ExprFluent<TValue extends ParamaterValue, TProps> = {
     setCoerce: <P extends boolean>(value: P) => ExprFluent<TValue, TProps & { coerce: P }>;
     /** Attaches UI metadata for form rendering. @param config - UI configuration object */
     setUi: <TUI extends JsonRecord>(config: TUI) => ExprFluent<TValue, TProps & { ui: TUI }>;
+    /** Attaches validation rules that run against the resolved expression value. */
+    setRules: <TRules extends Rule[]>(rules: TRules) => ExprFluent<TValue, TProps & { rules: TRules }>;
   };
 
 // ---------------------------------------------------------------------------
@@ -54,6 +54,7 @@ function createFluent<TValue extends ParamaterValue, TProps>(val: TValue, props:
     setPrivate: <P extends boolean>(value: P) => setProp("private", value),
     setCoerce: <P extends boolean>(value: P) => setProp("coerce", value),
     setUi: <TUI extends JsonRecord>(config: TUI) => setProp("ui", config),
+    setRules: <TRules extends Rule[]>(rules: TRules) => setProp("rules", rules),
   } as ExprFluent<TValue, TProps>;
 }
 
