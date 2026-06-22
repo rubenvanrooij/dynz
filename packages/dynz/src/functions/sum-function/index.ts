@@ -44,6 +44,5 @@ export function sum(...args: (ParamaterValue<number> | number | (ParamaterValue<
 }
 
 export function sumFunction(value: Array<ValueType | undefined>): number {
-  console.log("SUM FUNCIUT", value);
   return value?.reduce<number>((acc, cur) => acc + coerceNumber(cur), 0);
 }
