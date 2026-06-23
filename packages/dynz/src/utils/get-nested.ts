@@ -6,13 +6,17 @@ export function getNested<T extends Schema>(
   path: string,
   schema: T,
   value: unknown
-): { schema: Schema; value: unknown } {
+): { schema: Schema; value: unknown } | null {
   const result = path
     .split(/[.[\]]/)
     .filter(Boolean)
     .splice(1)
-    .reduce<{ schema: Schema; value: unknown }>(
+    .reduce<{ schema: Schema; value: unknown } | null>(
       (acc, cur) => {
+        if (acc === null) {
+          return null;
+        }
+
         if (acc.schema.type === SchemaType.ARRAY) {
           if (!Array.isArray(acc.value)) {
             throw new Error(`Expected an array at path ${path}, but got ${typeof acc.value}`);
@@ -45,13 +49,50 @@ export function getNested<T extends Schema>(
           };
         }
 
+        if (acc.schema.type === SchemaType.DISCRIMINATED_UNION) {
+          if (acc.value === undefined || acc.value === null) {
+            return null;
+          }
+
+          if (!isObject(acc.value)) {
+            throw new Error(`Expected an object at path ${path}, but got ${typeof acc.value}`);
+          }
+          const { key } = acc.schema;
+          const discriminatorValue = acc.value[key];
+          const matchingMember = acc.schema.schemas.find((s) => {
+            const discriminatorField = s.fields[key];
+            if (discriminatorField === undefined || discriminatorField.type !== SchemaType.LITERAL) {
+              return false;
+            }
+
+            return discriminatorField.value === discriminatorValue;
+          });
+
+          if (matchingMember === undefined) {
+            return null;
+          }
+
+          const childSchema = matchingMember.fields[cur];
+
+          if (childSchema === undefined) {
+            throw new Error(`No schema found for path ${path}`);
+          }
+
+          return {
+            value: acc.value,
+            schema: childSchema,
+          };
+        }
+
         throw new Error("Cannot get nested value on non array or non object");
       },
       { value, schema }
     );
 
-  return {
-    schema: result.schema,
-    value: coerceSchema(result.schema, result.value),
-  };
+  return result === null
+    ? null
+    : {
+        schema: result.schema,
+        value: coerceSchema(result.schema, result.value),
+      };
 }

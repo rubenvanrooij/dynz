@@ -9,4 +9,5 @@ export * from "./number";
 export * from "./object";
 export * from "./options";
 export * from "./shared";
+export * from "./discriminated-union";
 export * from "./string";

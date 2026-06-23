@@ -1,7 +1,36 @@
 import * as d from "dynz";
 import { runExample } from "./registration-form";
 
-runExample();
+// runExample();
+
+const unionSchema = d.object({
+  bar: d.number(),
+  foo: d.discriminatedUnion('type', [d.object({
+    type: d.literal('left'),
+    foo: d.string(),
+  }).setIncluded(false), d.object({
+    type: d.literal('right'),
+    bar: d.string()
+  })])
+})
+
+const fooIncluded = d.isIncluded(unionSchema, '$.foo.foo', { foo: { type: 'left', }, bar: 1 })
+
+type Foo = d.SchemaValues<typeof unionSchema>
+
+console.log('fooIncluded:', fooIncluded)
+
+d.validate(unionSchema, undefined, {
+  foo: {
+    type: 'left',
+    foo: 'sfs'
+  },
+  bar: 1
+}).then((e) => {
+
+  console.log(`stringSchema result:`, e);
+})
+
 
 // console.log(`stringSchema result:`, d.validate(stringSchema, undefined, {
 //   foo: [{

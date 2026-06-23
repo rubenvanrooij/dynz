@@ -1,4 +1,4 @@
-import { resolveProperty, resolveRules } from "../conditions";
+import { _resolveProperty, resolveProperty, resolveRules } from "../conditions";
 import { resolve } from "../functions";
 import { isPivateValue, isValueMasked, type PrivateValue } from "../private";
 import { validateRule } from "../rules";
@@ -326,40 +326,77 @@ export async function _validate<T extends Schema>(
     return acc;
   }
 
-  //   return newValue.reduce<ValidationResult<unknown[]>>(
-  //     (acc, cur, index) => {
-  //       const result = _validate(
-  //         schema.schema,
-  //         {
-  //           current: currentValue?.[index],
-  //           new: cur,
-  //         },
-  //         `${path}.[${index}]`,
-  //         newContext
-  //       );
+  /**
+   * Validate discriminated union - find the matching member by the discriminator key value.
+   */
+  if (schema.type === SchemaType.DISCRIMINATED_UNION) {
+    if (!isObject(newValue)) {
+      return {
+        success: false,
+        errors: [
+          {
+            path,
+            schema,
+            value: newValue,
+            current: currentValue,
+            customCode: ErrorCode.TYPE,
+            code: ErrorCode.TYPE,
+            expectedType: schema.type,
+            message: `The value for schema ${path} is not an object`,
+          },
+        ],
+      };
+    }
 
-  //       if (acc.success) {
-  //         if (result.success) {
-  //           acc.values.push(result.values);
-  //           return acc;
-  //         }
+    const discriminatorValue = newValue[schema.key];
+    const matchingMember = schema.schemas.find((s) => {
+      const discriminatorField = s.fields[schema.key];
+      if (discriminatorField === undefined || discriminatorField.type !== SchemaType.LITERAL) return false;
+      return discriminatorField.value === discriminatorValue;
+    });
 
-  //         return {
-  //           success: false,
-  //           errors: result.errors,
-  //         };
-  //       }
+    if (matchingMember === undefined) {
+      return {
+        success: false,
+        errors: [
+          {
+            path,
+            schema,
+            value: newValue,
+            current: currentValue,
+            customCode: ErrorCode.TYPE,
+            code: ErrorCode.TYPE,
+            expectedType: schema.type,
+            message: `The value for schema ${path} does not match any member of the discriminated union (key: ${schema.key}=${String(discriminatorValue)})`,
+          },
+        ],
+      };
+    }
 
-  //       if (result.success) {
-  //         return acc;
-  //       }
+    /**
+     * A matched member can be conditionally excluded via setIncluded(). Unlike a regular
+     * not-included field (which is silently stripped), a non-included member means the
+     * submitted discriminator value is not a valid choice — treat it as a hard error.
+     */
+    if (!_resolveProperty(matchingMember as unknown as Schema, "included", path, true, context)) {
+      return {
+        success: false,
+        errors: [
+          {
+            path,
+            schema,
+            value: newValue,
+            current: currentValue,
+            customCode: ErrorCode.INCLUDED,
+            code: ErrorCode.INCLUDED,
+            message: `The value for schema ${path} matches a member of the discriminated union that is not included (key: ${schema.key}=${String(discriminatorValue)})`,
+          },
+        ],
+      };
+    }
 
-  //       acc.errors.push(...result.errors);
-  //       return acc;
-  //     },
-  //     { success: true, values: [] }
-  //   );
-  // }
+    return _validate(matchingMember as unknown as Schema, { current: currentValue, new: newValue }, path, context);
+  }
 
   return {
     success: true,

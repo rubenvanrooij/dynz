@@ -4,6 +4,7 @@ import type {
   ArraySchema,
   BooleanSchema,
   DateSchema,
+  DiscriminatedUnionSchema,
   EnumValue,
   EnumValues,
   FileSchema,
@@ -30,6 +31,7 @@ export const SchemaType = {
   FILE: "file",
   EXPRESSION: "expression",
   LITERAL: "literal",
+  DISCRIMINATED_UNION: "discriminated_union",
 } as const;
 
 export type SchemaType = EnumValues<typeof SchemaType>;
@@ -60,7 +62,8 @@ export type Schema =
   | DateSchema
   | EnumSchema
   | ExpressionSchema
-  | LiteralSchema;
+  | LiteralSchema
+  | DiscriminatedUnionSchema<string, never>;
 
 export type IsIncluded<T extends Schema> = T extends { included: true }
   ? true
@@ -114,7 +117,9 @@ export type ValueType<T extends SchemaType = SchemaType> = T extends typeof Sche
                     ? unknown
                     : T extends typeof SchemaType.LITERAL
                       ? string | number | boolean | null
-                      : never;
+                      : T extends typeof SchemaType.DISCRIMINATED_UNION
+                        ? Record<string, unknown>
+                        : never;
 
 export type ValueTypeOrUndefined = ValueType | undefined | Array<ValueType | undefined>;
 
@@ -140,8 +145,10 @@ export type SchemaValuesInternal<T extends Schema> = T extends ObjectSchema<neve
       ? MakeOptional<T, EnumValues<T["enum"]>>
       : T extends OptionsSchema
         ? Unpacked<T["options"]>
-        : T extends LiteralSchema
-          ? MakeOptional<T, T["value"]>
-          : MakeOptional<T, ValueType<T["type"]>>;
+        : T extends DiscriminatedUnionSchema
+          ? MakeOptional<T, SchemaValuesInternal<T["schemas"][number]>>
+          : T extends LiteralSchema
+            ? MakeOptional<T, T["value"]>
+            : MakeOptional<T, ValueType<T["type"]>>;
 
 export type SchemaValues<T extends Schema> = Prettify<ApplyPrivacyMask<T, SchemaValuesInternal<T>>>;

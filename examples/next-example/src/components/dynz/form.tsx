@@ -35,7 +35,7 @@ export function DynzForm<T extends ObjectSchema<never>, A extends SchemaValues<T
     resolverOptions: {
       messageTransformer: (error: ErrorMessage) => {
         const customErrorMessagePath = `${name}.${error.path.slice(2)}.errors.${error.customCode}`;
-
+        console.log(error)
         return t.has(customErrorMessagePath)
           ? t(customErrorMessagePath, error as unknown as Record<string, string | number | Date>)
           : t(`errors.${error.customCode}`, error as unknown as Record<string, string | number | Date>);
@@ -45,7 +45,7 @@ export function DynzForm<T extends ObjectSchema<never>, A extends SchemaValues<T
 
   return (
     <DynzFormProvider {...methods}>
-      <form id={name} onSubmit={methods.handleSubmit((values) => onSubmit?.(values))}>
+      <form id={name} onSubmit={methods.handleSubmit((values) => onSubmit?.(values), (err) => console.log(err))}>
         {children}
       </form>
     </DynzFormProvider>
