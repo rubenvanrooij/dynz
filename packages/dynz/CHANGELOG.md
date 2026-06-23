@@ -1,5 +1,15 @@
 # dynz
 
+## 1.0.0
+
+### Major Changes
+
+- 11ba2bb: fixed issue with options schema values inference
+
+### Patch Changes
+
+- fa23320: removed log
+
 ## 0.0.19
 
 ### Patch Changes
