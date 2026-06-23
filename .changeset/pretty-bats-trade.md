@@ -1,0 +1,5 @@
+---
+"dynz": patch
+---
+
+removed log
