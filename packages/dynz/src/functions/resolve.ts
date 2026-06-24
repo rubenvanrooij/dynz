@@ -16,6 +16,11 @@ export function unpackRef<T extends SchemaType = SchemaType>(
   ...expected: T[]
 ): ValueType<T> | undefined {
   const absolutePath = ensureAbsolutePath(ref.path, path);
+
+  // getNested returns null when the path cannot be resolved — this happens when
+  // navigating through a discriminated union whose discriminator value does not
+  // match any member (e.g. the field is empty or the current value is an excluded
+  // member). Treat this as "not accessible" → behave as if not included.
   const ret = getNested(absolutePath, context.schema, context.values);
 
   if (ret === null) {
