@@ -1,36 +1,57 @@
 import * as d from "dynz";
 
-
 // runExample();
 
-const unionSchema = d.object({
-  name: d.string(),
-  contactDetails: d.discriminatedUnion("type", [
-    {
-      type: "email",
-      email: d.string(),
-    },
-    {
-      type: "phone",
-      phone: d.string(),
-    },
-  ]),
-});
+async function oldExample() {
+  const schema = d.object({
+    type: d.options(["aluminium-side-wall", "glass-sliding-door"]),
 
-const fooIncluded = d.isIncluded(unionSchema, '$.contactDetails.type', { contactDetails: { type: "email", }, name: "da" })
-const fooFooIncluded = d.isIncluded(unionSchema, '$.contactDetails.email', { contactDetails: { type: "email", }, name: "fo" })
+    aluminium_side_wall: d
+      .object({
+        shiplap_color: d.options(["color_a", "color_b"]),
+      })
+      .setIncluded(d.eq(d.ref("type"), "aluminium-side-wall")),
 
-type Foo = d.SchemaValues<typeof unionSchema>
+    glass_sliding_door: d
+      .object({
+        rail_type: d.options(["2-rails", "3-rails", "4-rails", "5-rails", "6-rails"]),
+      })
+      .setIncluded(d.eq(d.ref("type"), "glass-sliding-door")),
+  });
 
-console.log('fooIncluded:', fooIncluded, fooFooIncluded)
-// async function foo() {
-//   const res = await d.validate(unionSchema, undefined, {
-//     foo: {
-//       type: 1,
-//       foo: 1
-//     },
-//     bar: 1
-//   })
+  const result = await d.validate(schema, undefined, {});
+
+  if (result.success) {
+    const values = result.values;
+    // console.log(result.values.wall)
+  }
+}
+
+async function runExample() {
+  const schema = d.object({
+    wall: d.discriminatedUnion("type", [
+      {
+        type: "aluminium-side-wall",
+        shiplap_color: d.options(["color_a", "color_b"]),
+      },
+      {
+        type: "glass-sliding-door",
+        foo: d.string().setRequired(false),
+        rail_type: d.options(["2-rails", "3-rails", "4-rails", "5-rails", "6-rails"]).setIncluded(false),
+      },
+    ]),
+  });
+
+  const result = await d.validate(schema, undefined, {});
+
+  if (result.success) {
+    const values = result.values;
+
+    if (values.wall.type === "glass-sliding-door") {
+      values.wall.rail_type;
+    }
+  }
+}
 
 //   console.log(res)
 
@@ -44,7 +65,6 @@ console.log('fooIncluded:', fooIncluded, fooFooIncluded)
 // }
 
 // foo().then(() => console.log('damn..'))
-
 
 // console.log(`stringSchema result:`, d.validate(stringSchema, undefined, {
 //   foo: [{

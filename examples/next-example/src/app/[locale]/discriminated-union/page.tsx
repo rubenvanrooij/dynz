@@ -28,8 +28,8 @@ export default function Home() {
         <DynzForm name="contactForm" schema={schema}>
           <DynzInput name="name" type="text" />
           <DynzUnionKey name="contactDetails.type" />
-           <DynzInput name="contactDetails.email" type="text" />
-           <DynzInput name="contactDetails.phone" type="text" />
+          <DynzInput name="contactDetails.email" type="text" />
+          <DynzInput name="contactDetails.phone" type="text" />
           <Button type="submit">Submit</Button>
         </DynzForm>
       </CardContent>
