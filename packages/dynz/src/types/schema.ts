@@ -5,6 +5,7 @@ import type {
   BooleanSchema,
   DateSchema,
   DiscriminatedUnionSchema,
+  DynamicOptionValue,
   EnumValue,
   EnumValues,
   FileSchema,
@@ -13,6 +14,7 @@ import type {
   OptionsSchema,
   StringSchema,
 } from "../schemas";
+
 import type { EnumSchema } from "../schemas/enum";
 import type { ExpressionSchema } from "../schemas/expression";
 import type { LiteralSchema } from "../schemas/literal";
@@ -93,6 +95,8 @@ export type IsOptionalField<T extends Schema> = IsMandatory<T> extends false ? t
 // === Value Transformers ===
 export type MakeOptional<T extends Schema, V> = IsOptionalField<T> extends true ? V | undefined : V;
 
+type UnwrapOptionValue<T> = T extends DynamicOptionValue ? T["value"] : T;
+
 export type ApplyPrivacyMask<T extends Schema, V> = IsPrivate<T> extends true ? PrivateValue<V> : V;
 
 export type ValueType<T extends SchemaType = SchemaType> = T extends typeof SchemaType.STRING
@@ -157,7 +161,7 @@ export type SchemaValuesInternal<T extends Schema> = T extends ObjectSchema<neve
     : T extends EnumSchema
       ? MakeOptional<T, EnumValues<T["enum"]>>
       : T extends OptionsSchema
-        ? Unpacked<T["options"]>
+        ? MakeOptional<T, UnwrapOptionValue<Unpacked<T["options"]>>>
         : T extends DiscriminatedUnionSchema<infer TKey, infer TSchemas>
           ? MakeOptional<T, DiscriminatedMemberValue<TKey, TSchemas[number]>>
           : T extends LiteralSchema
