@@ -1,11 +1,15 @@
 import type { Predicate } from "../../functions";
-import type { JsonRecord } from "../../types";
+import type { JsonRecord, Schema } from "../../types";
 import { SchemaType } from "../../types";
-import type { DiscriminatedUnionSchema, ObjectSchemaWithDiscriminator } from "./types";
+import { object } from "../object";
+import { string } from "../string/fluent";
+import type { CheckMember, DiscriminatedUnionSchema } from "./types";
+
+type SchemaMember = Record<string, Schema | string | number | boolean>;
 
 export type DiscriminatedUnionFluent<
   TKey extends string,
-  TSchemas extends ObjectSchemaWithDiscriminator<TKey>[],
+  TSchemas extends SchemaMember[],
   TProps,
 > = DiscriminatedUnionSchema<TKey, TSchemas> &
   TProps & {
@@ -23,7 +27,7 @@ export type DiscriminatedUnionFluent<
     setUi: <TUI extends JsonRecord>(config: TUI) => DiscriminatedUnionFluent<TKey, TSchemas, TProps & { ui: TUI }>;
   };
 
-function createFluent<TKey extends string, TMembers extends ObjectSchemaWithDiscriminator<TKey>[], TProps>(
+function createFluent<TKey extends string, TMembers extends SchemaMember[], TProps>(
   key: TKey,
   schemas: TMembers,
   props: TProps
@@ -47,7 +51,22 @@ function createFluent<TKey extends string, TMembers extends ObjectSchemaWithDisc
 
 export function discriminatedUnion<
   const TKey extends string,
-  const TSchemas extends ObjectSchemaWithDiscriminator<TKey>[],
->(key: TKey, schemas: TSchemas): DiscriminatedUnionFluent<TKey, TSchemas, Record<never, never>> {
-  return createFluent(key, schemas, {} as Record<never, never>);
+  const TSchemas extends { [I in keyof TSchemas]: CheckMember<TKey, TSchemas[I]> },
+>(key: TKey, schemas: TSchemas): DiscriminatedUnionFluent<TKey, TSchemas & SchemaMember[], Record<never, never>> {
+  return createFluent(key, schemas as TSchemas & SchemaMember[], {} as Record<never, never>);
 }
+
+// LEAVE THIS HERE AS AN EXAMPLE FOR NOW
+const unionSchema = object({
+  foo: string(),
+  bar: discriminatedUnion("type", [
+    {
+      type: "left",
+      foo: string(),
+    },
+    {
+      type: "right",
+      bar: string(),
+    },
+  ]),
+});

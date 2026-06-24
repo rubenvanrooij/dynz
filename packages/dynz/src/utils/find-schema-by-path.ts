@@ -29,8 +29,16 @@ export function findSchemaByPath<T extends Schema = Schema>(path: string, schema
 
       if (prev.type === SchemaType.DISCRIMINATED_UNION) {
         for (const member of prev.schemas) {
-          const childSchema = member.fields[cur];
+          const childSchema = member[cur];
           if (childSchema !== undefined) {
+            if (
+              typeof childSchema === "boolean" ||
+              typeof childSchema === "number" ||
+              typeof childSchema === "string"
+            ) {
+              return prev;
+            }
+
             return childSchema;
           }
         }

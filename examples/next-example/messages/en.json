@@ -3,6 +3,25 @@
     "title": "Hello world!",
     "about": "Go to the about page"
   },
+  "contactForm": {
+    "name": {
+      "label": "Naam",
+      "placeholder": "Bijv. Jan"
+    },
+    "contactDetails": {
+      "type": {
+         "label": "Type"
+      },
+      "email": {
+         "label": "Email",
+         "placeholder": "Bijv. Jan"
+      },
+      "phone": {
+         "label": "Phone",
+         "placeholder": "Bijv. Jan"
+      }
+    }
+  },
   "pensionPersonalInfo": {
     "firstName": {
       "label": "Voornaam",

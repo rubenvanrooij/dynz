@@ -50,6 +50,15 @@ export function getNested<T extends Schema>(
         }
 
         if (acc.schema.type === SchemaType.DISCRIMINATED_UNION) {
+          // if the key is referenced return the schema of the union type
+          console.log("curssss", cur, acc.schema.key);
+          if (cur === acc.schema.key) {
+            return {
+              value: isObject(acc.value) ? acc.value[acc.schema.key] : undefined,
+              schema: acc.schema,
+            };
+          }
+
           if (acc.value === undefined || acc.value === null) {
             return null;
           }
@@ -58,24 +67,25 @@ export function getNested<T extends Schema>(
             throw new Error(`Expected an object at path ${path}, but got ${typeof acc.value}`);
           }
           const { key } = acc.schema;
-          const discriminatorValue = acc.value[key];
-          const matchingMember = acc.schema.schemas.find((s) => {
-            const discriminatorField = s.fields[key];
-            if (discriminatorField === undefined || discriminatorField.type !== SchemaType.LITERAL) {
-              return false;
-            }
 
-            return discriminatorField.value === discriminatorValue;
-          });
+          const discriminatorValue = acc.value[key];
+          const matchingMember = acc.schema.schemas.find((s) => s[key] === discriminatorValue);
 
           if (matchingMember === undefined) {
             return null;
           }
 
-          const childSchema = matchingMember.fields[cur];
+          const childSchema = matchingMember[cur];
 
           if (childSchema === undefined) {
-            throw new Error(`No schema found for path ${path}`);
+            return null;
+          }
+
+          if (typeof childSchema === "string" || typeof childSchema === "number" || typeof childSchema === "boolean") {
+            return {
+              value: isObject(acc.value) ? acc.value[acc.schema.key] : undefined,
+              schema: acc.schema,
+            };
           }
 
           return {

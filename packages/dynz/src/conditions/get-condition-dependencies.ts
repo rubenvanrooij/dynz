@@ -112,6 +112,7 @@ export function getRulesDependencies(schema: Schema, path: string): string[] {
 }
 
 function _getRulesDependenciesMap(schema: Schema, path: string, root: Schema): RulesDependencyMap {
+  console.log("_getRulesDependenciesMap", schema, path);
   const result: RulesDependencyMap = {
     dependencies: {},
     reverse: {},
@@ -157,7 +158,16 @@ function _getRulesDependenciesMap(schema: Schema, path: string, root: Schema): R
     }
     case SchemaType.DISCRIMINATED_UNION: {
       for (const member of schema.schemas) {
-        for (const [fieldKey, fieldSchema] of Object.entries(member.fields)) {
+        for (const [fieldKey, fieldSchema] of Object.entries(member)) {
+          if (typeof fieldSchema === "string" || typeof fieldSchema === "number" || typeof fieldSchema === "boolean") {
+            continue;
+          }
+
+          console.log("building map: ", schema);
+
+          // add discriminated union key as a dependency
+          addDependencies(`${path}.${schema.key}`, [`${path}.${fieldKey}`]);
+
           const childDependencies = _getRulesDependenciesMap(fieldSchema, `${path}.${fieldKey}`, root);
           Object.assign(result.dependencies, childDependencies.dependencies);
           for (const [dep, dependents] of Object.entries(childDependencies.reverse)) {
@@ -173,6 +183,8 @@ function _getRulesDependenciesMap(schema: Schema, path: string, root: Schema): R
       break;
     }
   }
+
+  console.log("result", result);
 
   return result;
 }

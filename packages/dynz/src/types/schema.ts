@@ -137,6 +137,19 @@ type RequiredFields<T extends ObjectSchema<never>> = {
 
 export type ObjectValue<T extends ObjectSchema<never>> = OptionalFields<T> & RequiredFields<T>;
 
+type DiscriminatedMemberValue<
+  TKey extends string,
+  TMember extends Record<string, Schema | string | number | boolean>,
+> = TMember extends Record<string, Schema | string | number | boolean>
+  ? {
+      [K in keyof TMember as K extends TKey ? K : TMember[K] extends Schema ? K : never]: K extends TKey
+        ? TMember[K]
+        : TMember[K] extends Schema
+          ? SchemaValuesInternal<TMember[K]>
+          : never;
+    }
+  : never;
+
 export type SchemaValuesInternal<T extends Schema> = T extends ObjectSchema<never>
   ? Prettify<ObjectValue<T>>
   : T extends ArraySchema<never>
@@ -145,8 +158,8 @@ export type SchemaValuesInternal<T extends Schema> = T extends ObjectSchema<neve
       ? MakeOptional<T, EnumValues<T["enum"]>>
       : T extends OptionsSchema
         ? Unpacked<T["options"]>
-        : T extends DiscriminatedUnionSchema
-          ? MakeOptional<T, SchemaValuesInternal<T["schemas"][number]>>
+        : T extends DiscriminatedUnionSchema<infer TKey, infer TSchemas>
+          ? MakeOptional<T, DiscriminatedMemberValue<TKey, TSchemas[number]>>
           : T extends LiteralSchema
             ? MakeOptional<T, T["value"]>
             : MakeOptional<T, ValueType<T["type"]>>;

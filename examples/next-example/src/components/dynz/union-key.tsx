@@ -9,16 +9,21 @@ export type DynzSelectProps = {
 };
 
 export function DynzUnionKey({ name }: DynzSelectProps) {
-  // const { schema } = useDynzFormContext();
+  const { watch } = useDynzFormContext();
+
+  const vals = watch()
+  console.log('val', vals)
+
   // const innerSchema = findSchemaByPath<DiscriminatedUnionSchema>(`$.${name}`, schema, SchemaType.DISCRIMINATED_UNION);
 
   // Get options from schema if not provided via props
-  const options = useDiscriminatedUnionKeyValues(name.split(".").slice(0, -1).join("."));
+  const options = useDiscriminatedUnionKeyValues(name);
 
+  console.log('options', options)
   return (
     <DynzFormField
-      name={name.split(".").slice(0, -1).join(".")}
-      rhfName={name}
+      name={name}
+      // rhfName={name}
       render={({ field, translations, required, readOnly }) => (
         <FormItem>
           <FormLabel>

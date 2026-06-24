@@ -10,14 +10,14 @@ import { Card, CardContent } from "@/components/ui/card";
 const schema = object({
   name: string(),
   contactDetails: discriminatedUnion("type", [
-    object({
-      type: literal("email"),
+    {
+      type: "email",
       email: string(),
-    }),
-    object({
-      type: literal("phone"),
+    },
+    {
+      type: "phone",
       phone: string(),
-    }),
+    },
   ]),
 });
 

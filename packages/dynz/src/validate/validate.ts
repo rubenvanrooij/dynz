@@ -11,6 +11,7 @@ import {
   type ValidateOptions,
   type ValidateRuleContextUnion,
   type ValidationResult,
+  type ValidationSuccesResult,
 } from "../types";
 import { coerceSchema } from "../utils";
 import { isArray, isObject, validateType } from "./validate-type";
@@ -331,29 +332,15 @@ export async function _validate<T extends Schema>(
    */
   if (schema.type === SchemaType.DISCRIMINATED_UNION) {
     if (!isObject(newValue)) {
-      return {
-        success: false,
-        errors: [
-          {
-            path,
-            schema,
-            value: newValue,
-            current: currentValue,
-            customCode: ErrorCode.TYPE,
-            code: ErrorCode.TYPE,
-            expectedType: schema.type,
-            message: `The value for schema ${path} is not an object`,
-          },
-        ],
-      };
+      throw new Error(`new value is not an object: ${newValue}`);
+    }
+
+    if (isDefined(currentValue) && !isObject(currentValue)) {
+      throw new Error(`current value is not an object: ${currentValue}`);
     }
 
     const discriminatorValue = newValue[schema.key];
-    const matchingMember = schema.schemas.find((s) => {
-      const discriminatorField = s.fields[schema.key];
-      if (discriminatorField === undefined || discriminatorField.type !== SchemaType.LITERAL) return false;
-      return discriminatorField.value === discriminatorValue;
-    });
+    const matchingMember = schema.schemas.find((s) => s[schema.key] === discriminatorValue);
 
     if (matchingMember === undefined) {
       return {
@@ -373,29 +360,45 @@ export async function _validate<T extends Schema>(
       };
     }
 
-    /**
-     * A matched member can be conditionally excluded via setIncluded(). Unlike a regular
-     * not-included field (which is silently stripped), a non-included member means the
-     * submitted discriminator value is not a valid choice — treat it as a hard error.
-     */
-    if (!_resolveProperty(matchingMember as unknown as Schema, "included", path, true, context)) {
-      return {
-        success: false,
-        errors: [
-          {
-            path,
-            schema,
-            value: newValue,
-            current: currentValue,
-            customCode: ErrorCode.INCLUDED,
-            code: ErrorCode.INCLUDED,
-            message: `The value for schema ${path} matches a member of the discriminated union that is not included (key: ${schema.key}=${String(discriminatorValue)})`,
-          },
-        ],
-      };
+    const entries = await Promise.all(
+      Object.entries(matchingMember).map(async ([key, innerSchema]) => {
+        if (typeof innerSchema === "string" || typeof innerSchema === "boolean" || typeof innerSchema === "number") {
+          return {
+            key,
+            result: {
+              success: true,
+              values: innerSchema,
+            } as ValidationSuccesResult<unknown>,
+          };
+        }
+
+        return {
+          key,
+          result: await _validate(
+            innerSchema,
+            { current: currentValue?.[key], new: newValue[key] },
+            `${path}.${key}`,
+            context
+          ),
+        };
+      })
+    );
+
+    let acc = { success: true, values: {} } as ValidationResult<Record<string, unknown>>;
+
+    for (const { key, result } of entries) {
+      if (acc.success) {
+        if (result.success) {
+          acc.values[key] = result.values;
+        } else {
+          acc = { success: false, errors: result.errors };
+        }
+      } else if (!result.success) {
+        acc.errors.push(...result.errors);
+      }
     }
 
-    return _validate(matchingMember as unknown as Schema, { current: currentValue, new: newValue }, path, context);
+    return acc;
   }
 
   return {

@@ -16,7 +16,13 @@ export function unpackRef<T extends SchemaType = SchemaType>(
   ...expected: T[]
 ): ValueType<T> | undefined {
   const absolutePath = ensureAbsolutePath(ref.path, path);
-  const { schema, value } = getNested(absolutePath, context.schema, context.values);
+  const ret = getNested(absolutePath, context.schema, context.values);
+
+  if (ret === null) {
+    return undefined;
+  }
+
+  const { schema, value } = ret;
 
   // only return when the schema is actually included
   if (!isIncluded(context.schema, absolutePath, context.values)) {

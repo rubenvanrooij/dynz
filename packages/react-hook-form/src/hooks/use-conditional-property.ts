@@ -1,4 +1,4 @@
-import { findSchemaByPath, getConditionDependencies, resolveProperty } from "dynz";
+import { findSchemaByPath, getConditionDependencies, resolveProperty, SchemaType } from "dynz";
 import { useMemo } from "react";
 import { useWatch } from "react-hook-form";
 import { useDynzFormContext } from "./use-dynz-form-context";
@@ -13,7 +13,13 @@ function getPropertyDependencies(
   const segments = path.split(/[.[\]]/).filter(Boolean);
   return segments.flatMap((_, i) => {
     const ancestorPath = segments.slice(0, i + 1).join(".");
-    const ancestorPropertyValue = findSchemaByPath(ancestorPath, schema)[property];
+    const ancestor = findSchemaByPath(ancestorPath, schema);
+
+    if (ancestor.type === SchemaType.DISCRIMINATED_UNION) {
+      return [`${ancestorPath}.${ancestor.key}`.slice(2)];
+    }
+
+    const ancestorPropertyValue = ancestor[property];
     if (ancestorPropertyValue === undefined || typeof ancestorPropertyValue === "boolean") {
       return [];
     }
@@ -42,6 +48,8 @@ export function useConditionalProperty(
   // first excluded ancestor, so those ancestor conditions must also be watched —
   // otherwise the hook never re-renders when the ancestor's controlling field changes.
   const dependencies = [...new Set(paths.flatMap((path) => getPropertyDependencies(path, property, schema)))];
+
+  console.log("useConditionalProperty:", name, property, dependencies);
 
   // Watch is just here to trigger a rerender when a value gets updated
   const watchedValues = useWatch({

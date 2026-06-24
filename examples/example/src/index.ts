@@ -1,35 +1,49 @@
 import * as d from "dynz";
-import { runExample } from "./registration-form";
+
 
 // runExample();
 
 const unionSchema = d.object({
-  bar: d.number(),
-  foo: d.discriminatedUnion('type', [d.object({
-    type: d.literal('left'),
-    foo: d.string(),
-  }).setIncluded(false), d.object({
-    type: d.literal('right'),
-    bar: d.string()
-  })])
-})
+  name: d.string(),
+  contactDetails: d.discriminatedUnion("type", [
+    {
+      type: "email",
+      email: d.string(),
+    },
+    {
+      type: "phone",
+      phone: d.string(),
+    },
+  ]),
+});
 
-const fooIncluded = d.isIncluded(unionSchema, '$.foo.foo', { foo: { type: 'left', }, bar: 1 })
+const fooIncluded = d.isIncluded(unionSchema, '$.contactDetails.type', { contactDetails: { type: "email", }, name: "da" })
+const fooFooIncluded = d.isIncluded(unionSchema, '$.contactDetails.email', { contactDetails: { type: "email", }, name: "fo" })
 
 type Foo = d.SchemaValues<typeof unionSchema>
 
-console.log('fooIncluded:', fooIncluded)
+console.log('fooIncluded:', fooIncluded, fooFooIncluded)
+// async function foo() {
+//   const res = await d.validate(unionSchema, undefined, {
+//     foo: {
+//       type: 1,
+//       foo: 1
+//     },
+//     bar: 1
+//   })
 
-d.validate(unionSchema, undefined, {
-  foo: {
-    type: 'left',
-    foo: 'sfs'
-  },
-  bar: 1
-}).then((e) => {
+//   console.log(res)
 
-  console.log(`stringSchema result:`, e);
-})
+//   if (res.success) {
+
+//     // if (res.values.foo.type === 1) {
+//     //   const a = res.values.foo.foo
+//     // }
+
+//   }
+// }
+
+// foo().then(() => console.log('damn..'))
 
 
 // console.log(`stringSchema result:`, d.validate(stringSchema, undefined, {
