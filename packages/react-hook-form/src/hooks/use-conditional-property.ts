@@ -15,15 +15,21 @@ function getPropertyDependencies(
     const ancestorPath = segments.slice(0, i + 1).join(".");
     const ancestor = findSchemaByPath(ancestorPath, schema);
 
-    if (ancestor.type === SchemaType.DISCRIMINATED_UNION) {
-      return [`${ancestorPath}.${ancestor.key}`.slice(2)];
-    }
+    // When ancestor is a discriminuted union the 'key' of the union
+    // must always be added as an implicit dependency
+    const dependencies =
+      ancestor.type === SchemaType.DISCRIMINATED_UNION ? [`${ancestorPath}.${ancestor.key}`.slice(2)] : [];
 
     const ancestorPropertyValue = ancestor[property];
+
     if (ancestorPropertyValue === undefined || typeof ancestorPropertyValue === "boolean") {
-      return [];
+      return dependencies;
     }
-    return getConditionDependencies(ancestorPropertyValue, ancestorPath, schema).map((f) => f.slice(2));
+
+    return [
+      ...dependencies,
+      ...getConditionDependencies(ancestorPropertyValue, ancestorPath, schema).map((f) => f.slice(2)),
+    ];
   });
 }
 
@@ -48,8 +54,6 @@ export function useConditionalProperty(
   // first excluded ancestor, so those ancestor conditions must also be watched —
   // otherwise the hook never re-renders when the ancestor's controlling field changes.
   const dependencies = [...new Set(paths.flatMap((path) => getPropertyDependencies(path, property, schema)))];
-
-  console.log("useConditionalProperty:", name, property, dependencies);
 
   // Watch is just here to trigger a rerender when a value gets updated
   const watchedValues = useWatch({

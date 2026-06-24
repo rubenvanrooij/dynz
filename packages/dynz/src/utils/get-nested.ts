@@ -51,7 +51,6 @@ export function getNested<T extends Schema>(
 
         if (acc.schema.type === SchemaType.DISCRIMINATED_UNION) {
           // if the key is referenced return the schema of the union type
-          console.log("curssss", cur, acc.schema.key);
           if (cur === acc.schema.key) {
             return {
               value: isObject(acc.value) ? acc.value[acc.schema.key] : undefined,

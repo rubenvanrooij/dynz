@@ -1,5 +1,4 @@
-import { useDiscriminatedUnionKeyValues, useDynzFormContext } from "@dynz/react-hook-form";
-import { type DiscriminatedUnionSchema, findSchemaByPath, type OptionsSchema, SchemaType } from "dynz";
+import { useDiscriminatedUnionKeyValues } from "@dynz/react-hook-form";
 import { FormControl, FormDescription, FormItem, FormLabel, FormMessage } from "../ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { DynzFormField } from "./dynz-form-field";
@@ -9,17 +8,9 @@ export type DynzSelectProps = {
 };
 
 export function DynzUnionKey({ name }: DynzSelectProps) {
-  const { watch } = useDynzFormContext();
-
-  const vals = watch()
-  console.log('val', vals)
-
-  // const innerSchema = findSchemaByPath<DiscriminatedUnionSchema>(`$.${name}`, schema, SchemaType.DISCRIMINATED_UNION);
-
   // Get options from schema if not provided via props
   const options = useDiscriminatedUnionKeyValues(name);
 
-  console.log('options', options)
   return (
     <DynzFormField
       name={name}

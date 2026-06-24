@@ -24,12 +24,11 @@ export function resolveProperty<T extends Schema>(
     // match any member (e.g. the field is empty or the current value is an excluded
     // member). Treat this as "not accessible" → behave as if not included.
     if (nested === null) {
-      console.log("reslolveProperty === null: ", path);
       return false;
     }
 
     const ret = _resolveProperty(nested.schema, property, currentPath, defaultValue, context);
-    console.log("ret: ", path, ret);
+
     if (ret === false) {
       return false;
     }

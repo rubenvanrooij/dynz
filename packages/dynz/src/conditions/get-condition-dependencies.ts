@@ -112,7 +112,6 @@ export function getRulesDependencies(schema: Schema, path: string): string[] {
 }
 
 function _getRulesDependenciesMap(schema: Schema, path: string, root: Schema): RulesDependencyMap {
-  console.log("_getRulesDependenciesMap", schema, path);
   const result: RulesDependencyMap = {
     dependencies: {},
     reverse: {},
@@ -163,8 +162,6 @@ function _getRulesDependenciesMap(schema: Schema, path: string, root: Schema): R
             continue;
           }
 
-          console.log("building map: ", schema);
-
           // add discriminated union key as a dependency
           addDependencies(`${path}.${schema.key}`, [`${path}.${fieldKey}`]);
 
@@ -183,8 +180,6 @@ function _getRulesDependenciesMap(schema: Schema, path: string, root: Schema): R
       break;
     }
   }
-
-  console.log("result", result);
 
   return result;
 }
