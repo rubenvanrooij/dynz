@@ -18,7 +18,6 @@ type TranslationsObject = {
 
 type DynzFormFieldProps = {
   name: string;
-  rhfName?: string
   render: ({
     field,
     translations,
@@ -35,7 +34,7 @@ type DynzFormFieldProps = {
   }) => React.ReactElement;
 };
 
-export const DynzFormField = ({ name, rhfName, render }: DynzFormFieldProps) => {
+export const DynzFormField = ({ name, render }: DynzFormFieldProps) => {
   const { control, getDependencies, name: i18nPath } = useDynzFormContext();
   const t = useTranslations();
   const isMutable = useIsMutable(name);
@@ -59,7 +58,6 @@ export const DynzFormField = ({ name, rhfName, render }: DynzFormFieldProps) => 
   return (
     <DynzFormFieldInner
       name={name}
-      rhfName={rhfName}
       control={control}
       dependencies={dependencies}
       readOnly={isMutable === false}
@@ -77,7 +75,6 @@ export const DynzFormField = ({ name, rhfName, render }: DynzFormFieldProps) => 
 const DynzFormFieldInner = memo(
   ({
     name,
-    rhfName,
     control,
     dependencies,
     readOnly,
@@ -87,7 +84,6 @@ const DynzFormFieldInner = memo(
     render,
   }: {
     name: string;
-    rhfName?: string;
     control: Control<FieldValues>;
     dependencies: string[] | undefined;
     readOnly: boolean;
@@ -103,7 +99,7 @@ const DynzFormFieldInner = memo(
     return (
       <FormField
         control={control}
-        name={rhfName || name}
+        name={name}
         rules={{
           deps: dependencies,
         }}

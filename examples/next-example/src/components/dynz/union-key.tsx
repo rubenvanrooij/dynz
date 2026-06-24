@@ -14,7 +14,6 @@ export function DynzUnionKey({ name }: DynzSelectProps) {
   return (
     <DynzFormField
       name={name}
-      // rhfName={name}
       render={({ field, translations, required, readOnly }) => (
         <FormItem>
           <FormLabel>
