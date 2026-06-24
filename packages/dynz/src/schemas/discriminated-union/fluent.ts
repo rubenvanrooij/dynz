@@ -1,8 +1,6 @@
 import type { Predicate } from "../../functions";
 import type { JsonRecord, Schema } from "../../types";
 import { SchemaType } from "../../types";
-import { object } from "../object";
-import { string } from "../string/fluent";
 import type { CheckMember, DiscriminatedUnionSchema } from "./types";
 
 type SchemaMember = Record<string, Schema | string | number | boolean>;
@@ -55,18 +53,3 @@ export function discriminatedUnion<
 >(key: TKey, schemas: TSchemas): DiscriminatedUnionFluent<TKey, TSchemas & SchemaMember[], Record<never, never>> {
   return createFluent(key, schemas as TSchemas & SchemaMember[], {} as Record<never, never>);
 }
-
-// LEAVE THIS HERE AS AN EXAMPLE FOR NOW
-const unionSchema = object({
-  foo: string(),
-  bar: discriminatedUnion("type", [
-    {
-      type: "left",
-      foo: string(),
-    },
-    {
-      type: "right",
-      bar: string(),
-    },
-  ]),
-});
