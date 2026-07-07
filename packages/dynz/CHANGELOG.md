@@ -1,5 +1,11 @@
 # dynz
 
+## 1.1.0
+
+### Minor Changes
+
+- c8effd5: added discriminated union schema
+
 ## 1.0.0
 
 ### Major Changes
