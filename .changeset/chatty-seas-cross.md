@@ -3,4 +3,4 @@
 "dynz": minor
 ---
 
-add discriminated union types
+added discriminated union schema
