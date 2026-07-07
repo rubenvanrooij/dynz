@@ -11,6 +11,7 @@
     "lint": "eslint . --max-warnings 0"
   },
   "dependencies": {
+    "@dynz/to-json-schema": "workspace:*",
     "dynz": "workspace:*",
     "nodemon": "^3.1.10",
     "ts-node": "^10.9.2",

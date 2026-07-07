@@ -1,0 +1,55 @@
+{
+  "name": "@dynz/to-json-schema",
+  "version": "0.0.1",
+  "private": false,
+  "license": "BUSL-1.1",
+  "type": "module",
+  "sideEffects": false,
+  "keywords": [
+    "typescript",
+    "schema",
+    "validation",
+    "json-schema",
+    "form",
+    "type-safe"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rubenvanrooij/dynz"
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "author": "Ruben van Rooij <ruben.van.rooij@gmail.com>",
+  "description": "Convert dynz schemas to standard JSON Schema.",
+  "main": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "scripts": {
+    "build": "tsdown",
+    "dev": "tsdown --watch",
+    "check-types": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest run --watch"
+  },
+  "peerDependencies": {
+    "dynz": "^1.0.0"
+  },
+  "devDependencies": {
+    "tsdown": "^0.16.5"
+  }
+}
