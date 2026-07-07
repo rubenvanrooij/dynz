@@ -1,5 +1,16 @@
 # @dynz/react-hook-form-resolver
 
+## 1.0.1
+
+### Minor Changes
+
+- c8effd5: added support for discriminated union schema
+
+### Patch Changes
+
+- Updated dependencies [c8effd5]
+  - dynz@1.1.0
+
 ## 1.0.0
 
 ### Patch Changes
