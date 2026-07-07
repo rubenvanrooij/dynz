@@ -1,7 +1,70 @@
 import * as d from "dynz";
-import { runExample } from "./registration-form";
 
-runExample();
+// runExample();
+
+async function oldExample() {
+  const schema = d.object({
+    type: d.options(["aluminium-side-wall", "glass-sliding-door"]),
+
+    aluminium_side_wall: d
+      .object({
+        shiplap_color: d.options(["color_a", "color_b"]),
+      })
+      .setIncluded(d.eq(d.ref("type"), "aluminium-side-wall")),
+
+    glass_sliding_door: d
+      .object({
+        rail_type: d.options(["2-rails", "3-rails", "4-rails", "5-rails", "6-rails"]),
+      })
+      .setIncluded(d.eq(d.ref("type"), "glass-sliding-door")),
+  });
+
+  const result = await d.validate(schema, undefined, {});
+
+  if (result.success) {
+    const values = result.values;
+    // console.log(result.values.wall)
+  }
+}
+
+async function runExample() {
+  const schema = d.object({
+    wall: d.discriminatedUnion("type", [
+      {
+        type: "aluminium-side-wall",
+        shiplap_color: d.options(["color_a", "color_b"]),
+      },
+      {
+        type: "glass-sliding-door",
+        foo: d.string().setRequired(false),
+        rail_type: d.options(["2-rails", "3-rails", "4-rails", "5-rails", "6-rails"]).setIncluded(false),
+      },
+    ]),
+  });
+
+  const result = await d.validate(schema, undefined, {});
+
+  if (result.success) {
+    const values = result.values;
+
+    if (values.wall.type === "glass-sliding-door") {
+      values.wall.rail_type;
+    }
+  }
+}
+
+//   console.log(res)
+
+//   if (res.success) {
+
+//     // if (res.values.foo.type === 1) {
+//     //   const a = res.values.foo.foo
+//     // }
+
+//   }
+// }
+
+// foo().then(() => console.log('damn..'))
 
 // console.log(`stringSchema result:`, d.validate(stringSchema, undefined, {
 //   foo: [{

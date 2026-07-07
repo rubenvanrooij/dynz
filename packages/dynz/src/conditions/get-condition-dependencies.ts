@@ -155,6 +155,30 @@ function _getRulesDependenciesMap(schema: Schema, path: string, root: Schema): R
       }
       break;
     }
+    case SchemaType.DISCRIMINATED_UNION: {
+      for (const member of schema.schemas) {
+        for (const [fieldKey, fieldSchema] of Object.entries(member)) {
+          if (typeof fieldSchema === "string" || typeof fieldSchema === "number" || typeof fieldSchema === "boolean") {
+            continue;
+          }
+
+          // add discriminated union key as a dependency
+          addDependencies(`${path}.${schema.key}`, [`${path}.${fieldKey}`]);
+
+          const childDependencies = _getRulesDependenciesMap(fieldSchema, `${path}.${fieldKey}`, root);
+          Object.assign(result.dependencies, childDependencies.dependencies);
+          for (const [dep, dependents] of Object.entries(childDependencies.reverse)) {
+            if (!result.reverse[dep]) {
+              result.reverse[dep] = new Set();
+            }
+            for (const dependent of dependents) {
+              result.reverse[dep].add(dependent);
+            }
+          }
+        }
+      }
+      break;
+    }
   }
 
   return result;

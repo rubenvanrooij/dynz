@@ -1,4 +1,4 @@
-import { resolveProperty, resolveRules } from "../conditions";
+import { _resolveProperty, resolveProperty, resolveRules } from "../conditions";
 import { resolve } from "../functions";
 import { isPivateValue, isValueMasked, type PrivateValue } from "../private";
 import { validateRule } from "../rules";
@@ -11,6 +11,7 @@ import {
   type ValidateOptions,
   type ValidateRuleContextUnion,
   type ValidationResult,
+  type ValidationSuccesResult,
 } from "../types";
 import { coerceSchema } from "../utils";
 import { isArray, isObject, validateType } from "./validate-type";
@@ -326,40 +327,79 @@ export async function _validate<T extends Schema>(
     return acc;
   }
 
-  //   return newValue.reduce<ValidationResult<unknown[]>>(
-  //     (acc, cur, index) => {
-  //       const result = _validate(
-  //         schema.schema,
-  //         {
-  //           current: currentValue?.[index],
-  //           new: cur,
-  //         },
-  //         `${path}.[${index}]`,
-  //         newContext
-  //       );
+  /**
+   * Validate discriminated union - find the matching member by the discriminator key value.
+   */
+  if (schema.type === SchemaType.DISCRIMINATED_UNION) {
+    if (!isObject(newValue)) {
+      throw new Error(`new value is not an object: ${newValue}`);
+    }
 
-  //       if (acc.success) {
-  //         if (result.success) {
-  //           acc.values.push(result.values);
-  //           return acc;
-  //         }
+    if (isDefined(currentValue) && !isObject(currentValue)) {
+      throw new Error(`current value is not an object: ${currentValue}`);
+    }
 
-  //         return {
-  //           success: false,
-  //           errors: result.errors,
-  //         };
-  //       }
+    const discriminatorValue = newValue[schema.key];
+    const matchingMember = schema.schemas.find((s) => s[schema.key] === discriminatorValue);
 
-  //       if (result.success) {
-  //         return acc;
-  //       }
+    if (matchingMember === undefined) {
+      return {
+        success: false,
+        errors: [
+          {
+            path,
+            schema,
+            value: newValue,
+            current: currentValue,
+            customCode: ErrorCode.TYPE,
+            code: ErrorCode.TYPE,
+            expectedType: schema.type,
+            message: `The value for schema ${path} does not match any member of the discriminated union (key: ${schema.key}=${String(discriminatorValue)})`,
+          },
+        ],
+      };
+    }
 
-  //       acc.errors.push(...result.errors);
-  //       return acc;
-  //     },
-  //     { success: true, values: [] }
-  //   );
-  // }
+    const entries = await Promise.all(
+      Object.entries(matchingMember).map(async ([key, innerSchema]) => {
+        if (typeof innerSchema === "string" || typeof innerSchema === "boolean" || typeof innerSchema === "number") {
+          return {
+            key,
+            result: {
+              success: true,
+              values: innerSchema,
+            } as ValidationSuccesResult<unknown>,
+          };
+        }
+
+        return {
+          key,
+          result: await _validate(
+            innerSchema,
+            { current: currentValue?.[key], new: newValue[key] },
+            `${path}.${key}`,
+            context
+          ),
+        };
+      })
+    );
+
+    let acc = { success: true, values: {} } as ValidationResult<Record<string, unknown>>;
+
+    for (const { key, result } of entries) {
+      if (acc.success) {
+        if (result.success) {
+          acc.values[key] = result.values;
+        } else {
+          acc = { success: false, errors: result.errors };
+        }
+      } else if (!result.success) {
+        acc.errors.push(...result.errors);
+      }
+    }
+
+    return acc;
+  }
 
   return {
     success: true,

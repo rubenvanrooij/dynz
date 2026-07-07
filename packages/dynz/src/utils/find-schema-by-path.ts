@@ -27,6 +27,30 @@ export function findSchemaByPath<T extends Schema = Schema>(path: string, schema
         return childSchema;
       }
 
+      if (prev.type === SchemaType.DISCRIMINATED_UNION) {
+        for (const member of prev.schemas) {
+          const childSchema = member[cur];
+
+          if (childSchema !== undefined) {
+            /**
+             * When the childSchema is a primitive type then we need
+             * to return the union schema since the union type doesnt
+             * have an actual schema attached to it.
+             */
+            if (
+              typeof childSchema === "boolean" ||
+              typeof childSchema === "number" ||
+              typeof childSchema === "string"
+            ) {
+              return prev;
+            }
+
+            return childSchema;
+          }
+        }
+        throw new Error(`No schema found for path ${path}`);
+      }
+
       throw new Error(`Cannot find schema at path ${path}`);
     }, schema);
 

@@ -38,6 +38,8 @@ export function validateType<T extends Schema>(
       return true;
     case SchemaType.LITERAL:
       return value === schema.value;
+    case SchemaType.DISCRIMINATED_UNION:
+      return isObject(value);
   }
 }
 
@@ -74,6 +76,8 @@ export function validateShallowType<T extends SchemaType>(type: T, value: unknow
       return true;
     case SchemaType.LITERAL:
       return isString(value) || isNumber(value) || isBoolean(value) || value === null;
+    case SchemaType.DISCRIMINATED_UNION:
+      return true;
   }
 }
 

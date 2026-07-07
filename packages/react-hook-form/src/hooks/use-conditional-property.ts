@@ -1,4 +1,4 @@
-import { findSchemaByPath, getConditionDependencies, resolveProperty } from "dynz";
+import { findSchemaByPath, getConditionDependencies, resolveProperty, SchemaType } from "dynz";
 import { useMemo } from "react";
 import { useWatch } from "react-hook-form";
 import { useDynzFormContext } from "./use-dynz-form-context";
@@ -13,11 +13,23 @@ function getPropertyDependencies(
   const segments = path.split(/[.[\]]/).filter(Boolean);
   return segments.flatMap((_, i) => {
     const ancestorPath = segments.slice(0, i + 1).join(".");
-    const ancestorPropertyValue = findSchemaByPath(ancestorPath, schema)[property];
+    const ancestor = findSchemaByPath(ancestorPath, schema);
+
+    // When ancestor is a discriminuted union the 'key' of the union
+    // must always be added as an implicit dependency
+    const dependencies =
+      ancestor.type === SchemaType.DISCRIMINATED_UNION ? [`${ancestorPath}.${ancestor.key}`.slice(2)] : [];
+
+    const ancestorPropertyValue = ancestor[property];
+
     if (ancestorPropertyValue === undefined || typeof ancestorPropertyValue === "boolean") {
-      return [];
+      return dependencies;
     }
-    return getConditionDependencies(ancestorPropertyValue, ancestorPath, schema).map((f) => f.slice(2));
+
+    return [
+      ...dependencies,
+      ...getConditionDependencies(ancestorPropertyValue, ancestorPath, schema).map((f) => f.slice(2)),
+    ];
   });
 }
 

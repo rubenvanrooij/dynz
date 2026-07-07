@@ -4,6 +4,7 @@ import type {
   ArraySchema,
   BooleanSchema,
   DateSchema,
+  DiscriminatedUnionSchema,
   DynamicOptionValue,
   EnumValue,
   EnumValues,
@@ -13,6 +14,7 @@ import type {
   OptionsSchema,
   StringSchema,
 } from "../schemas";
+
 import type { EnumSchema } from "../schemas/enum";
 import type { ExpressionSchema } from "../schemas/expression";
 import type { LiteralSchema } from "../schemas/literal";
@@ -31,6 +33,7 @@ export const SchemaType = {
   FILE: "file",
   EXPRESSION: "expression",
   LITERAL: "literal",
+  DISCRIMINATED_UNION: "discriminated_union",
 } as const;
 
 export type SchemaType = EnumValues<typeof SchemaType>;
@@ -61,7 +64,8 @@ export type Schema =
   | DateSchema
   | EnumSchema
   | ExpressionSchema
-  | LiteralSchema;
+  | LiteralSchema
+  | DiscriminatedUnionSchema<string, never>;
 
 export type IsIncluded<T extends Schema> = T extends { included: true }
   ? true
@@ -117,7 +121,9 @@ export type ValueType<T extends SchemaType = SchemaType> = T extends typeof Sche
                     ? unknown
                     : T extends typeof SchemaType.LITERAL
                       ? string | number | boolean | null
-                      : never;
+                      : T extends typeof SchemaType.DISCRIMINATED_UNION
+                        ? Record<string, unknown>
+                        : never;
 
 export type ValueTypeOrUndefined = ValueType | undefined | Array<ValueType | undefined>;
 
@@ -135,6 +141,19 @@ type RequiredFields<T extends ObjectSchema<never>> = {
 
 export type ObjectValue<T extends ObjectSchema<never>> = OptionalFields<T> & RequiredFields<T>;
 
+type DiscriminatedMemberValue<
+  TKey extends string,
+  TMember extends Record<string, Schema | string | number | boolean>,
+> = TMember extends Record<string, Schema | string | number | boolean>
+  ? {
+      [K in keyof TMember as K extends TKey ? K : TMember[K] extends Schema ? K : never]: K extends TKey
+        ? TMember[K]
+        : TMember[K] extends Schema
+          ? SchemaValuesInternal<TMember[K]>
+          : never;
+    }
+  : never;
+
 export type SchemaValuesInternal<T extends Schema> = T extends ObjectSchema<never>
   ? Prettify<ObjectValue<T>>
   : T extends ArraySchema<never>
@@ -143,8 +162,10 @@ export type SchemaValuesInternal<T extends Schema> = T extends ObjectSchema<neve
       ? MakeOptional<T, EnumValues<T["enum"]>>
       : T extends OptionsSchema
         ? MakeOptional<T, UnwrapOptionValue<Unpacked<T["options"]>>>
-        : T extends LiteralSchema
-          ? MakeOptional<T, T["value"]>
-          : MakeOptional<T, ValueType<T["type"]>>;
+        : T extends DiscriminatedUnionSchema<infer TKey, infer TSchemas>
+          ? MakeOptional<T, DiscriminatedMemberValue<TKey, TSchemas[number]>>
+          : T extends LiteralSchema
+            ? MakeOptional<T, T["value"]>
+            : MakeOptional<T, ValueType<T["type"]>>;
 
 export type SchemaValues<T extends Schema> = Prettify<ApplyPrivacyMask<T, SchemaValuesInternal<T>>>;

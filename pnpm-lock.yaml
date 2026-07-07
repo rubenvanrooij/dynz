@@ -116,7 +116,7 @@ importers:
     dependencies:
       '@hookform/resolvers':
         specifier: ^5.2.1
-        version: 5.2.2(react-hook-form@7.63.0(react@19.2.0))
+        version: 5.2.2(react-hook-form@7.80.0(react@19.2.0))
       '@radix-ui/react-label':
         specifier: ^2.1.7
         version: 2.1.7(@types/react-dom@19.1.9(@types/react@19.1.15))(@types/react@19.1.15)(react-dom@19.1.1(react@19.2.0))(react@19.2.0)
@@ -142,8 +142,8 @@ importers:
         specifier: ^4.3.4
         version: 4.3.9(next@15.3.5(react-dom@19.1.1(react@19.2.0))(react@19.2.0))(react@19.2.0)(typescript@5.9.2)
       react-hook-form:
-        specifier: ^7.62.0
-        version: 7.63.0(react@19.2.0)
+        specifier: ^7.75.0
+        version: 7.80.0(react@19.2.0)
       tailwind-merge:
         specifier: ^3.3.1
         version: 3.3.1
@@ -3868,6 +3868,12 @@ packages:
     peerDependencies:
       react: ^16.8.0 || ^17 || ^18 || ^19
 
+  react-hook-form@7.80.0:
+    resolution: {integrity: sha512-4P+fk6oXsxY+6xSj7Euhc2sumQD8zQqCuVHoJwoyp9EchP+IUW9OESB7uHFJOKsIBQ4MQqYE84INJFqUCYNoOg==}
+    engines: {node: '>=18.0.0'}
+    peerDependencies:
+      react: ^16.8.0 || ^17 || ^18 || ^19
+
   react-is@16.13.1:
     resolution: {integrity: sha512-24e6ynE2H+OKt4kqsOvNd8kBpV65zoxbA4BVsEOB3ARVWQki/DHzaUoC5KuON/BiccDaCCTZBuOcfZs70kR8bQ==}
 
@@ -5116,6 +5122,11 @@ snapshots:
     dependencies:
       '@standard-schema/utils': 0.3.0
       react-hook-form: 7.63.0(react@19.2.0)
+
+  '@hookform/resolvers@5.2.2(react-hook-form@7.80.0(react@19.2.0))':
+    dependencies:
+      '@standard-schema/utils': 0.3.0
+      react-hook-form: 7.80.0(react@19.2.0)
 
   '@humanfs/core@0.19.1': {}
 
@@ -8917,6 +8928,10 @@ snapshots:
       scheduler: 0.26.0
 
   react-hook-form@7.63.0(react@19.2.0):
+    dependencies:
+      react: 19.2.0
+
+  react-hook-form@7.80.0(react@19.2.0):
     dependencies:
       react: 19.2.0
 
