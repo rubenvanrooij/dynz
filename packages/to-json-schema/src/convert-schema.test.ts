@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { convertSchema } from "./convert-schema";
 import type { ConversionContext } from "./types";
 
-const ctx: ConversionContext = { errorMode: "ignore" };
+const ctx: ConversionContext = { errorMode: "ignore", mode: "input" };
 
 describe("convertSchema", () => {
   it("converts primitive schemas", () => {
@@ -41,7 +41,7 @@ describe("convertSchema", () => {
       options: [{ enabled: eq(ref("type"), v("x")), value: "d" }],
     };
 
-    expect(convertSchema(schema, { errorMode: "warn" })).toEqual({ type: "string", enum: ["d"] });
+    expect(convertSchema(schema, { errorMode: "warn", mode: "input" })).toEqual({ type: "string", enum: ["d"] });
     expect(warn).toHaveBeenCalled();
     warn.mockRestore();
   });
@@ -86,6 +86,53 @@ describe("convertSchema", () => {
         hidden: { type: "string" },
       },
       required: ["name"],
+    });
+  });
+
+  it("omits expression fields from an object in 'input' mode (default) but includes them in 'output' mode", () => {
+    const schema = object({
+      name: string(),
+      computed: { type: "expression", value: v(1) },
+    });
+
+    expect(convertSchema(schema, { errorMode: "ignore", mode: "input" })).toEqual({
+      type: "object",
+      properties: { name: { type: "string" } },
+      required: ["name"],
+    });
+
+    expect(convertSchema(schema, { errorMode: "ignore", mode: "output" })).toEqual({
+      type: "object",
+      properties: { name: { type: "string" }, computed: {} },
+      required: ["name", "computed"],
+    });
+  });
+
+  it("omits expression fields from a discriminated union member in 'input' mode but includes them in 'output' mode", () => {
+    const schema: Schema = {
+      type: "discriminated_union",
+      key: "kind",
+      schemas: [{ kind: "a", value: string(), computed: { type: "expression", value: v(1) } }],
+    };
+
+    expect(convertSchema(schema, { errorMode: "ignore", mode: "input" })).toEqual({
+      oneOf: [
+        {
+          type: "object",
+          properties: { kind: { const: "a" }, value: { type: "string" } },
+          required: ["kind", "value"],
+        },
+      ],
+    });
+
+    expect(convertSchema(schema, { errorMode: "ignore", mode: "output" })).toEqual({
+      oneOf: [
+        {
+          type: "object",
+          properties: { kind: { const: "a" }, value: { type: "string" }, computed: {} },
+          required: ["kind", "value", "computed"],
+        },
+      ],
     });
   });
 

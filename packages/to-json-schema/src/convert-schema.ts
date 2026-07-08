@@ -57,6 +57,10 @@ function isSchema(value: Schema | string | number | boolean): value is Schema {
   return typeof value === "object" && value !== null && "type" in value;
 }
 
+function shouldOmitField(schema: Schema, context: ConversionContext): boolean {
+  return context.mode === "input" && schema.type === SchemaType.EXPRESSION;
+}
+
 function applyPrivacyWrapper(schema: Schema, innerSchema: JsonSchema): JsonSchema {
   if (schema.private !== true) {
     return innerSchema;
@@ -151,6 +155,8 @@ function convertSchemaKind(schema: Schema, context: ConversionContext): JsonSche
 
     case SchemaType.EXPRESSION: {
       // Expression values are computed at runtime; their type can't be known ahead of time.
+      // As an object/discriminated-union field, this is only reached in "output" mode —
+      // in "input" mode such fields are omitted entirely by shouldOmitField().
       return {};
     }
 
@@ -168,6 +174,10 @@ function convertSchemaKind(schema: Schema, context: ConversionContext): JsonSche
       const required: string[] = [];
 
       for (const [key, fieldSchema] of Object.entries(schema.fields)) {
+        if (shouldOmitField(fieldSchema, context)) {
+          continue;
+        }
+
         properties[key] = convertSchema(fieldSchema, context);
         if (isMandatory(fieldSchema)) {
           required.push(key);
@@ -190,7 +200,7 @@ function convertSchemaKind(schema: Schema, context: ConversionContext): JsonSche
         const required: string[] = [schema.key];
 
         for (const [key, value] of Object.entries(member)) {
-          if (key === schema.key || !isSchema(value)) {
+          if (key === schema.key || !isSchema(value) || shouldOmitField(value, context)) {
             continue;
           }
 

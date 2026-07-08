@@ -7,9 +7,14 @@ import type { ConversionConfig, JsonSchema } from "./types";
  *
  * Rule values that depend on runtime data (references, predicates,
  * transformers) and schema kinds without a JSON Schema equivalent are
- * handled according to `config.errorMode` (default `"warn"`).
+ * handled according to `config.errorMode` (default `"warn"`). Whether
+ * `expression` fields are included is controlled by `config.mode`
+ * (default `"input"`, which omits them).
  */
 export function toStandardJsonSchema<T extends Schema>(schema: T, config: ConversionConfig = {}): JsonSchema {
-  const jsonSchema = convertSchema(schema, { errorMode: config.errorMode ?? "warn" });
+  const jsonSchema = convertSchema(schema, {
+    errorMode: config.errorMode ?? "warn",
+    mode: config.mode ?? "input",
+  });
   return { $schema: "https://json-schema.org/draft/2020-12/schema", ...jsonSchema };
 }

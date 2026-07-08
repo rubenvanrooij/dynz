@@ -45,4 +45,32 @@ describe("toStandardJsonSchema", () => {
 
     expect(() => toStandardJsonSchema(schema, { errorMode: "throw" })).toThrow();
   });
+
+  it("defaults to mode 'input', omitting expression fields", () => {
+    const schema = object({
+      name: string(),
+      fullName: { type: "expression", value: v(1) },
+    });
+
+    expect(toStandardJsonSchema(schema)).toEqual({
+      $schema: "https://json-schema.org/draft/2020-12/schema",
+      type: "object",
+      properties: { name: { type: "string" } },
+      required: ["name"],
+    });
+  });
+
+  it("includes expression fields when mode is 'output'", () => {
+    const schema = object({
+      name: string(),
+      fullName: { type: "expression", value: v(1) },
+    });
+
+    expect(toStandardJsonSchema(schema, { mode: "output" })).toEqual({
+      $schema: "https://json-schema.org/draft/2020-12/schema",
+      type: "object",
+      properties: { name: { type: "string" }, fullName: {} },
+      required: ["name", "fullName"],
+    });
+  });
 });

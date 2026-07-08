@@ -35,14 +35,28 @@ export interface JsonSchema {
  */
 export type ErrorMode = "throw" | "warn" | "ignore";
 
+/**
+ * Whether the conversion targets the data a consumer sends in (`"input"`)
+ * or the data dynz produces after validation (`"output"`). `expression`
+ * schemas are computed/derived values that are never part of the input, so
+ * in `"input"` mode they're silently removed from the generated schema; in
+ * `"output"` mode they're included (using their best-effort mapping).
+ */
+export type ConversionMode = "input" | "output";
+
 export interface ConversionConfig {
   /**
    * Policy for handling unsupported/unresolvable rule values and schema
    * kinds. Defaults to `"warn"`.
    */
   errorMode?: ErrorMode;
+  /**
+   * Whether to convert for input or output data. Defaults to `"input"`.
+   */
+  mode?: ConversionMode;
 }
 
 export interface ConversionContext {
   readonly errorMode: ErrorMode;
+  readonly mode: ConversionMode;
 }
