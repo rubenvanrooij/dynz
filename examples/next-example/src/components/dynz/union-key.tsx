@@ -28,7 +28,11 @@ export function DynzUnionKey({ name }: DynzSelectProps) {
             </FormControl>
             <SelectContent>
               {options.map((option) => (
-                <SelectItem key={option.value?.toString()} value={option.value?.toString() || ""}>
+                <SelectItem
+                  key={option.value?.toString()}
+                  value={option.value?.toString() || ""}
+                  disabled={!option.enabled}
+                >
                   {option.value?.toString()}
                 </SelectItem>
               ))}

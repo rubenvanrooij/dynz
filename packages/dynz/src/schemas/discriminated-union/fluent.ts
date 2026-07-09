@@ -1,9 +1,32 @@
 import type { Predicate } from "../../functions";
 import type { JsonRecord, Schema } from "../../types";
 import { SchemaType } from "../../types";
-import type { CheckMember, DiscriminatedUnionSchema } from "./types";
+import type { DynamicOptionValue } from "../options/types";
+import {
+  type CheckMember,
+  type DiscriminatedUnionSchema,
+  DISCRIMINATOR_TYPE,
+  type Discriminator,
+  type NormalizeMember,
+} from "./types";
 
-type SchemaMember = Record<string, Schema | string | number | boolean>;
+type SchemaMember = Record<string, Schema | Discriminator>;
+
+type NormalizeMembers<TKey extends string, TSchemas> = {
+  [I in keyof TSchemas]: NormalizeMember<TKey, TSchemas[I]>;
+};
+
+/**
+ * Normalizes an authoring-time discriminator value (a raw primitive or a `DynamicOptionValue`,
+ * exactly like an `options()` value) into the stored `Discriminator` shape.
+ */
+function normalizeDiscriminatorEntry(raw: string | number | boolean | DynamicOptionValue): Discriminator {
+  if (typeof raw === "object") {
+    return { type: DISCRIMINATOR_TYPE, value: raw.value, enabled: raw.enabled };
+  }
+
+  return { type: DISCRIMINATOR_TYPE, value: raw };
+}
 
 export type DiscriminatedUnionFluent<
   TKey extends string,
@@ -50,6 +73,18 @@ function createFluent<TKey extends string, TMembers extends SchemaMember[], TPro
 export function discriminatedUnion<
   const TKey extends string,
   const TSchemas extends { [I in keyof TSchemas]: CheckMember<TKey, TSchemas[I]> },
->(key: TKey, schemas: TSchemas): DiscriminatedUnionFluent<TKey, TSchemas & SchemaMember[], Record<never, never>> {
-  return createFluent(key, schemas as TSchemas & SchemaMember[], {} as Record<never, never>);
+>(
+  key: TKey,
+  schemas: TSchemas
+): DiscriminatedUnionFluent<TKey, NormalizeMembers<TKey, TSchemas> & SchemaMember[], Record<never, never>> {
+  const normalizedSchemas = (schemas as unknown as Record<string, unknown>[]).map((member) => ({
+    ...member,
+    [key]: normalizeDiscriminatorEntry(member[key] as string | number | boolean | DynamicOptionValue),
+  }));
+
+  return createFluent(
+    key,
+    normalizedSchemas as NormalizeMembers<TKey, TSchemas> & SchemaMember[],
+    {} as Record<never, never>
+  );
 }

@@ -1,4 +1,4 @@
-import { findSchemaByPath, getConditionDependencies, resolveProperty, SchemaType } from "dynz";
+import { findSchemaByPath, getConditionDependencies, isDiscriminatorKey, resolveProperty, SchemaType } from "dynz";
 import { useMemo } from "react";
 import { useWatch } from "react-hook-form";
 import { useDynzFormContext } from "./use-dynz-form-context";
@@ -11,9 +11,18 @@ function getPropertyDependencies(
   schema: Parameters<typeof findSchemaByPath>[1]
 ): string[] {
   const segments = path.split(/[.[\]]/).filter(Boolean);
+
   return segments.flatMap((_, i) => {
     const ancestorPath = segments.slice(0, i + 1).join(".");
     const ancestor = findSchemaByPath(ancestorPath, schema);
+
+    // A discriminated union's discriminator-key path (e.g. "$.left_side.type") isn't a real
+    // nested field — its included/required/mutable predicate was already handled at the
+    // union's own (shallower) ancestor path, so skip reprocessing it here. Reprocessing it
+    // would also resolve any relative refs it contains against the wrong (deeper) base path.
+    if (isDiscriminatorKey(ancestor)) {
+      return [];
+    }
 
     // When ancestor is a discriminuted union the 'key' of the union
     // must always be added as an implicit dependency

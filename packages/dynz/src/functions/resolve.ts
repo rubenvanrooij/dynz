@@ -1,7 +1,7 @@
 import { isIncluded } from "../conditions";
 import type { Reference } from "../reference";
 import type { ResolveContext, Schema, SchemaType, ValueType } from "../types";
-import { coerce, coerceSchema, ensureAbsolutePath, getNested } from "../utils";
+import { coerce, coerceSchema, ensureAbsolutePath, getNested, isDiscriminatorKey } from "../utils";
 import { validateShallowType, validateType } from "../validate/validate-type";
 import type { Predicate } from "./predicate-types";
 import { PREDICATES } from "./predicates";
@@ -32,6 +32,15 @@ export function unpackRef<T extends SchemaType = SchemaType>(
   // only return when the schema is actually included
   if (!isIncluded(context.schema, absolutePath, context.values)) {
     return undefined;
+  }
+
+  // A discriminator key (e.g. "$.union.kind") has no single canonical Schema to coerce/validate
+  // against — instead its value is only ever one of the union's own declared discriminator
+  // values, so check membership directly rather than running it through coerceSchema/validateType.
+  if (isDiscriminatorKey(schema)) {
+    return schema.discriminators.find((discriminator) => discriminator.value === value)?.value as
+      | ValueType<T>
+      | undefined;
   }
 
   if (schema.type === "expression") {

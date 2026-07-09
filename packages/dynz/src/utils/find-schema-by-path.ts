@@ -1,14 +1,55 @@
+import type { Predicate } from "../functions";
+import { type Discriminator, isDiscriminator } from "../schemas";
 import { type Schema, SchemaType } from "../types";
 import { isNumber } from "../validate/validate-type";
 
-export function findSchemaByPath(path: string, schema: Schema): Schema;
-export function findSchemaByPath<T extends Schema = Schema>(path: string, schema: Schema, type: T["type"]): T;
-export function findSchemaByPath<T extends Schema = Schema>(path: string, schema: Schema, type?: T["type"]): Schema {
+export const DISCRIMINATOR_KEY_TYPE = "discriminator_key" as const;
+
+/**
+ * What `findSchemaByPath` returns when asked for a discriminated union's own discriminator-key
+ * path (e.g. "$.union.kind") rather than a member field. There's no single canonical schema for
+ * that position — each member has its own (possibly conditionally-enabled) discriminant — so
+ * this represents the set of all of them, carrying the parent union's own conditional
+ * properties (a `ref()` to this path is really referencing the union's own inclusion state).
+ */
+export type DiscriminatorKey<TKey extends string = string> = {
+  type: typeof DISCRIMINATOR_KEY_TYPE;
+  key: TKey;
+  /** Every member's discriminator entry, in declaration order. */
+  schemas: Record<string, Schema | Discriminator>[];
+  discriminators: Discriminator[];
+  included?: boolean | Predicate | undefined;
+  required?: boolean | Predicate | undefined;
+  mutable?: boolean | Predicate | undefined;
+};
+
+export function isDiscriminatorKey(schema: Schema | DiscriminatorKey): schema is DiscriminatorKey {
+  return schema.type === DISCRIMINATOR_KEY_TYPE;
+}
+
+export type ReturnSchema = Schema | DiscriminatorKey;
+
+export function findSchemaByPath(path: string, schema: Schema): ReturnSchema;
+export function findSchemaByPath<T extends ReturnSchema = ReturnSchema>(
+  path: string,
+  schema: Schema,
+  type: T["type"]
+): T;
+export function findSchemaByPath<T extends ReturnSchema = ReturnSchema>(
+  path: string,
+  schema: Schema,
+  ...type: Array<T["type"]>
+): T;
+export function findSchemaByPath<T extends ReturnSchema = ReturnSchema>(
+  path: string,
+  schema: Schema,
+  ...types: Array<T["type"]>
+): ReturnSchema {
   const nestedSchema = path
     .split(/[.[\]]/)
     .filter(Boolean)
     .splice(1)
-    .reduce<Schema>((prev, cur) => {
+    .reduce<ReturnSchema>((prev, cur) => {
       if (prev.type === SchemaType.ARRAY) {
         if (!isNumber(+cur)) {
           throw new Error(`Expected an array index at path ${path}, but got ${cur}`);
@@ -28,21 +69,28 @@ export function findSchemaByPath<T extends Schema = Schema>(path: string, schema
       }
 
       if (prev.type === SchemaType.DISCRIMINATED_UNION) {
+        // The discriminator key itself has no single canonical schema across members (each
+        // member's discriminator value may differ) — return the set of possible discriminators,
+        // carrying the union's own conditional properties.
+        if (cur === prev.key) {
+          return {
+            type: DISCRIMINATOR_KEY_TYPE,
+            key: prev.key,
+            schemas: prev.schemas,
+            discriminators: prev.schemas.map((member) => member[prev.key] as Discriminator),
+            included: prev.included,
+            required: prev.required,
+            mutable: prev.mutable,
+          };
+        }
+
         for (const member of prev.schemas) {
           const childSchema = member[cur];
 
           if (childSchema !== undefined) {
-            /**
-             * When the childSchema is a primitive type then we need
-             * to return the union schema since the union type doesnt
-             * have an actual schema attached to it.
-             */
-            if (
-              typeof childSchema === "boolean" ||
-              typeof childSchema === "number" ||
-              typeof childSchema === "string"
-            ) {
-              return prev;
+            if (isDiscriminator(childSchema)) {
+              // Structurally unreachable: cur !== prev.key was already handled above.
+              throw new Error(`Unexpected discriminator schema at path ${path}`);
             }
 
             return childSchema;
@@ -54,8 +102,8 @@ export function findSchemaByPath<T extends Schema = Schema>(path: string, schema
       throw new Error(`Cannot find schema at path ${path}`);
     }, schema);
 
-  if (type !== undefined && nestedSchema.type !== type) {
-    throw new Error(`Expected schema of type ${type} at path ${path}, but got ${nestedSchema.type}`);
+  if (types.length > 0 && !types.some((t) => t === nestedSchema.type)) {
+    throw new Error(`Expected schema of type ${types.join(",")} at path ${path}, but got ${nestedSchema.type}`);
   }
 
   return nestedSchema;

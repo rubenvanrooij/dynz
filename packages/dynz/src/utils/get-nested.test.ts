@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { DISCRIMINATOR_TYPE } from "../schemas";
 import { SchemaType } from "../types";
 import { getNested } from "./get-nested";
 
@@ -308,6 +309,53 @@ describe("getNested", () => {
         schema: { type: SchemaType.BOOLEAN, coerce: true },
         value: true, // coerced from "true" to true
       });
+    });
+  });
+
+  describe("discriminated union traversal", () => {
+    const memberValueSchema = { type: SchemaType.STRING };
+
+    it("should traverse into the matching member for a discriminator with no enabled flag", () => {
+      const schema = {
+        type: SchemaType.DISCRIMINATED_UNION,
+        key: "kind",
+        schemas: [
+          { kind: { type: DISCRIMINATOR_TYPE, value: "a" }, value: memberValueSchema },
+          { kind: { type: DISCRIMINATOR_TYPE, value: "b" }, value: { type: SchemaType.NUMBER } },
+        ],
+      };
+      const value = { kind: "a", value: "hello" };
+
+      const result = getNested("$.value", schema, value);
+
+      expect(result).toEqual({ schema: memberValueSchema, value: "hello" });
+    });
+
+    it("should traverse into the matching member for a statically enabled discriminator", () => {
+      const schema = {
+        type: SchemaType.DISCRIMINATED_UNION,
+        key: "kind",
+        schemas: [
+          { kind: { type: DISCRIMINATOR_TYPE, value: "a", enabled: true }, value: memberValueSchema },
+          { kind: { type: DISCRIMINATOR_TYPE, value: "b" }, value: { type: SchemaType.NUMBER } },
+        ],
+      };
+      const value = { kind: "a", value: "hello" };
+
+      const result = getNested("$.value", schema, value);
+
+      expect(result).toEqual({ schema: memberValueSchema, value: "hello" });
+    });
+
+    it("should return null when no member matches the discriminator value", () => {
+      const schema = {
+        type: SchemaType.DISCRIMINATED_UNION,
+        key: "kind",
+        schemas: [{ kind: { type: DISCRIMINATOR_TYPE, value: "a", enabled: true }, value: memberValueSchema }],
+      };
+      const value = { kind: "unknown", value: "hello" };
+
+      expect(getNested("$.value", schema, value)).toBeNull();
     });
   });
 });

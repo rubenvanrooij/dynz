@@ -5,6 +5,7 @@ import type {
   BooleanSchema,
   DateSchema,
   DiscriminatedUnionSchema,
+  Discriminator,
   DynamicOptionValue,
   EnumValue,
   EnumValues,
@@ -143,11 +144,13 @@ export type ObjectValue<T extends ObjectSchema<never>> = OptionalFields<T> & Req
 
 type DiscriminatedMemberValue<
   TKey extends string,
-  TMember extends Record<string, Schema | string | number | boolean>,
-> = TMember extends Record<string, Schema | string | number | boolean>
+  TMember extends Record<string, Schema | Discriminator>,
+> = TMember extends Record<string, Schema | Discriminator>
   ? {
       [K in keyof TMember as K extends TKey ? K : TMember[K] extends Schema ? K : never]: K extends TKey
-        ? TMember[K]
+        ? TMember[K] extends Discriminator<infer V>
+          ? V
+          : never
         : TMember[K] extends Schema
           ? SchemaValuesInternal<TMember[K]>
           : never;
