@@ -1,18 +1,19 @@
-import { getDiscriminatorLiteral, isDynamicDiscriminatorValue } from "../schemas";
+import { type Discriminator, isDiscriminator } from "../schemas";
 import { type Schema, SchemaType } from "../types";
 import { isObject } from "../validate/validate-type";
 import { coerceSchema } from "./coerce";
+import { DISCRIMINATOR_KEY_TYPE, type DiscriminatorKey, isDiscriminatorKey } from "./find-schema-by-path";
 
 export function getNested<T extends Schema>(
   path: string,
   schema: T,
   value: unknown
-): { schema: Schema; value: unknown } | null {
+): { schema: Schema | DiscriminatorKey; value: unknown } | null {
   const result = path
     .split(/[.[\]]/)
     .filter(Boolean)
     .splice(1)
-    .reduce<{ schema: Schema; value: unknown } | null>(
+    .reduce<{ schema: Schema | DiscriminatorKey; value: unknown } | null>(
       (acc, cur) => {
         if (acc === null) {
           return null;
@@ -51,25 +52,43 @@ export function getNested<T extends Schema>(
         }
 
         if (acc.schema.type === SchemaType.DISCRIMINATED_UNION) {
-          // if the key is referenced return the schema of the union type
-          if (cur === acc.schema.key) {
+          // The discriminator key itself has no single canonical schema across members — return
+          // a DiscriminatorKey (same shape findSchemaByPath produces), paired with the raw
+          // discriminator value actually present.
+          const { schema, value } = acc;
+
+          if (cur === schema.key) {
             return {
-              value: isObject(acc.value) ? acc.value[acc.schema.key] : undefined,
-              schema: acc.schema,
+              value: isObject(acc.value) ? acc.value[schema.key] : undefined,
+              schema: {
+                type: DISCRIMINATOR_KEY_TYPE,
+                key: schema.key,
+                discriminators: schema.schemas.map((member) => member[schema.key] as Discriminator),
+                included: schema.included,
+                required: schema.required,
+                mutable: schema.mutable,
+              },
             };
           }
 
-          if (acc.value === undefined || acc.value === null) {
+          /**
+           * If value is undefined or null we cannot determine
+           * which schema to use for the given union; returning null in that case
+           */
+          if (value === undefined || value === null) {
             return null;
           }
 
-          if (!isObject(acc.value)) {
-            throw new Error(`Expected an object at path ${path}, but got ${typeof acc.value}`);
+          if (!isObject(value)) {
+            throw new Error(`Expected an object at path ${path}, but got ${typeof value}`);
           }
-          const { key } = acc.schema;
 
-          const discriminatorValue = acc.value[key];
-          const matchingMember = acc.schema.schemas.find((s) => getDiscriminatorLiteral(s[key]) === discriminatorValue);
+          const { key } = schema;
+          const discriminatorValue = value[key];
+          const matchingMember = schema.schemas.find((s) => {
+            const discriminator = s[key];
+            return isDiscriminator(discriminator) && discriminator.value === discriminatorValue;
+          });
 
           if (matchingMember === undefined) {
             return null;
@@ -81,20 +100,14 @@ export function getNested<T extends Schema>(
             return null;
           }
 
-          if (
-            typeof childSchema === "string" ||
-            typeof childSchema === "number" ||
-            typeof childSchema === "boolean" ||
-            isDynamicDiscriminatorValue(childSchema)
-          ) {
-            return {
-              value: isObject(acc.value) ? acc.value[acc.schema.key] : undefined,
-              schema: acc.schema,
-            };
+          if (isDiscriminator(childSchema)) {
+            // Structurally unreachable: cur !== key was already handled above, and only the
+            // discriminator key's entry is ever a Discriminator.
+            throw new Error(`Unexpected discriminator schema at path ${path}`);
           }
 
           return {
-            value: acc.value[cur],
+            value: value[cur],
             schema: childSchema,
           };
         }
@@ -104,10 +117,11 @@ export function getNested<T extends Schema>(
       { value, schema }
     );
 
-  return result === null
-    ? null
-    : {
-        schema: result.schema,
-        value: coerceSchema(result.schema, result.value),
-      };
+  if (result === null) {
+    return null;
+  }
+
+  return isDiscriminatorKey(result.schema)
+    ? { schema: result.schema, value: result.value }
+    : { schema: result.schema, value: coerceSchema(result.schema, result.value) };
 }

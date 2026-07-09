@@ -2,9 +2,8 @@ import {
   type DiscriminatedUnionSchema,
   findSchemaByPath,
   getConditionDependencies,
-  getDiscriminatorLiteral,
-  isDynamicDiscriminatorValue,
-  resolvePredicate,
+  isDiscriminator,
+  isDiscriminatorEnabled,
   SchemaType,
 } from "dynz";
 import { useWatch } from "react-hook-form";
@@ -18,10 +17,17 @@ export function useDiscriminatedUnionKeyValues(name: string) {
 
   // TODO: memoize
   const dependencies = unionSchema.schemas.reduce<string[]>((acc, member) => {
-    const raw = member[unionSchema.key];
-    if (isDynamicDiscriminatorValue(raw) && typeof raw.enabled !== "boolean") {
-      acc.push(...getConditionDependencies(raw.enabled, "$", schema));
+    const discriminator = member[unionSchema.key];
+
+    if (
+      !isDiscriminator(discriminator) ||
+      discriminator.enabled === undefined ||
+      typeof discriminator.enabled === "boolean"
+    ) {
+      return acc;
     }
+
+    acc.push(...getConditionDependencies(discriminator.enabled, "$", schema));
     return acc;
   }, []);
 
@@ -34,21 +40,15 @@ export function useDiscriminatedUnionKeyValues(name: string) {
   const values = getValues();
 
   return unionSchema.schemas.map((member) => {
-    const raw = member[unionSchema.key];
+    const discriminator = member[unionSchema.key];
 
-    if (!isDynamicDiscriminatorValue(raw)) {
-      return {
-        enabled: true,
-        value: raw as string | number | boolean,
-      };
+    if (!isDiscriminator(discriminator)) {
+      throw new Error(`No discriminator schema found for member of union "${name}"`);
     }
 
-    const enabled =
-      typeof raw.enabled === "boolean" ? raw.enabled : resolvePredicate(raw.enabled, "$", { schema, values });
-
     return {
-      enabled: Boolean(enabled),
-      value: getDiscriminatorLiteral(raw),
+      enabled: isDiscriminatorEnabled(discriminator, "$", { schema, values }),
+      value: discriminator.value,
     };
   });
 }

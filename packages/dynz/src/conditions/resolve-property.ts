@@ -1,6 +1,6 @@
 import { type Predicate, resolvePredicate } from "../functions";
 import type { ResolveContext, Schema } from "../types";
-import { getNested } from "../utils";
+import { getNested, isDiscriminatorKey } from "../utils";
 
 export function resolveProperty<T extends Schema>(
   property: "required" | "mutable" | "included",
@@ -25,6 +25,15 @@ export function resolveProperty<T extends Schema>(
     // member). Treat this as "not accessible" → behave as if not included.
     if (nested === null) {
       return false;
+    }
+
+    // A discriminated union's key-path alias (e.g. "$.left_side.type") isn't a real nested
+    // field — its included/required/mutable predicate is anchored to the union's own
+    // (shallower) path, which was already processed one iteration earlier in this same loop.
+    // Reprocessing it here would resolve any relative refs it contains against the wrong
+    // (deeper) base path.
+    if (isDiscriminatorKey(nested.schema)) {
+      continue;
     }
 
     const ret = _resolveProperty(nested.schema, property, currentPath, defaultValue, context);

@@ -1,9 +1,9 @@
 import type { ParamaterValue, Predicate, Transformer } from "../functions";
 import { isReference } from "../reference";
 import type { Rule } from "../rules";
-import { isDynamicDiscriminatorValue } from "../schemas";
+import { isDiscriminator } from "../schemas";
 import { type Schema, SchemaType } from "../types";
-import { ensureAbsolutePath, findSchemaByPath } from "../utils";
+import { ensureAbsolutePath, findSchemaByPath, isDiscriminatorKey } from "../utils";
 import type { RulesDependencyMap } from "./types";
 
 /**
@@ -62,8 +62,19 @@ export function getConditionDependencies(input: Predicate | Transformer, path: s
 export function getParamaterDependencies(param: ParamaterValue, path: string, schema: Schema): string[] {
   if (isReference(param)) {
     const referencePath = ensureAbsolutePath(param.path, path);
-
     const inner = findSchemaByPath(referencePath, schema);
+
+    if (isDiscriminatorKey(inner)) {
+      // A discriminated union's discriminator-key path (e.g. "$.left_side.type") isn't a real
+      // nested field — its included/required/mutable predicate is anchored to the union's own
+      // (shallower) path, so recursing with the alias path would resolve any relative refs it
+      // contains against the wrong (deeper) base path.
+      const ownPath = referencePath.split(".").slice(0, -1).join(".");
+
+      return inner.included !== undefined && typeof inner.included !== "boolean"
+        ? [referencePath, ...getConditionDependencies(inner.included, ownPath, schema)]
+        : [referencePath];
+    }
 
     if (inner.included !== undefined && typeof inner.included !== "boolean") {
       return [referencePath, ...getConditionDependencies(inner.included, referencePath, schema)];
@@ -160,14 +171,10 @@ function _getRulesDependenciesMap(schema: Schema, path: string, root: Schema): R
     case SchemaType.DISCRIMINATED_UNION: {
       for (const member of schema.schemas) {
         for (const [fieldKey, fieldSchema] of Object.entries(member)) {
-          if (typeof fieldSchema === "string" || typeof fieldSchema === "number" || typeof fieldSchema === "boolean") {
-            continue;
-          }
-
-          if (isDynamicDiscriminatorValue(fieldSchema)) {
+          if (isDiscriminator(fieldSchema)) {
             // A predicate-based "enabled" flag means whether this member can match depends on
             // other fields — track those as dependencies of the discriminator key itself.
-            if (typeof fieldSchema.enabled !== "boolean") {
+            if (fieldSchema.enabled !== undefined && typeof fieldSchema.enabled !== "boolean") {
               addDependencies(`${path}.${schema.key}`, getConditionDependencies(fieldSchema.enabled, path, root));
             }
             continue;

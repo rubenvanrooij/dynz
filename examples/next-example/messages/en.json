@@ -8,6 +8,9 @@
       "label": "Naam",
       "placeholder": "Bijv. Jan"
     },
+    "allowPhone": {
+      "label": "Allow phone contact"
+    },
     "contactDetails": {
       "type": {
          "label": "Type"

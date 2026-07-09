@@ -1,4 +1,4 @@
-import { findSchemaByPath, getConditionDependencies, resolveProperty, SchemaType } from "dynz";
+import { findSchemaByPath, getConditionDependencies, isDiscriminatorKey, resolveProperty, SchemaType } from "dynz";
 import { useMemo } from "react";
 import { useWatch } from "react-hook-form";
 import { useDynzFormContext } from "./use-dynz-form-context";
@@ -11,21 +11,18 @@ function getPropertyDependencies(
   schema: Parameters<typeof findSchemaByPath>[1]
 ): string[] {
   const segments = path.split(/[.[\]]/).filter(Boolean);
-  let previousAncestor: ReturnType<typeof findSchemaByPath> | undefined;
 
   return segments.flatMap((_, i) => {
     const ancestorPath = segments.slice(0, i + 1).join(".");
     const ancestor = findSchemaByPath(ancestorPath, schema);
 
-    // A discriminated union's key-path alias (e.g. "$.left_side.type") resolves to the
-    // SAME schema object as its own path ("$.left_side"), since the key isn't a real
-    // nested field. Skip reprocessing it here: its included/required/mutable predicate
-    // was already handled at its true (shallower) path, and reprocessing it here would
-    // resolve any relative refs it contains against the wrong (deeper) base path.
-    if (ancestor === previousAncestor) {
+    // A discriminated union's discriminator-key path (e.g. "$.left_side.type") isn't a real
+    // nested field — its included/required/mutable predicate was already handled at the
+    // union's own (shallower) ancestor path, so skip reprocessing it here. Reprocessing it
+    // would also resolve any relative refs it contains against the wrong (deeper) base path.
+    if (isDiscriminatorKey(ancestor)) {
       return [];
     }
-    previousAncestor = ancestor;
 
     // When ancestor is a discriminuted union the 'key' of the union
     // must always be added as an implicit dependency

@@ -2,7 +2,7 @@ import { _resolveProperty, resolveProperty, resolveRules } from "../conditions";
 import { resolve } from "../functions";
 import { isPivateValue, isValueMasked, type PrivateValue } from "../private";
 import { validateRule } from "../rules";
-import { getDiscriminatorLiteral, isDiscriminatorEnabled, isDynamicDiscriminatorValue } from "../schemas";
+import { isDiscriminatorEnabled, isDiscriminator } from "../schemas";
 import {
   type Context,
   ErrorCode,
@@ -341,11 +341,14 @@ export async function _validate<T extends Schema>(
     }
 
     const discriminatorValue = newValue[schema.key];
-    const matchingMember = schema.schemas.find(
-      (s) =>
-        getDiscriminatorLiteral(s[schema.key]) === discriminatorValue &&
-        isDiscriminatorEnabled(s[schema.key], path, context)
-    );
+    const matchingMember = schema.schemas.find((s) => {
+      const discriminator = s[schema.key];
+      return (
+        isDiscriminator(discriminator) &&
+        discriminator.value === discriminatorValue &&
+        isDiscriminatorEnabled(discriminator, path, context)
+      );
+    });
 
     if (matchingMember === undefined) {
       return {
@@ -367,17 +370,12 @@ export async function _validate<T extends Schema>(
 
     const entries = await Promise.all(
       Object.entries(matchingMember).map(async ([key, innerSchema]) => {
-        if (
-          typeof innerSchema === "string" ||
-          typeof innerSchema === "boolean" ||
-          typeof innerSchema === "number" ||
-          isDynamicDiscriminatorValue(innerSchema)
-        ) {
+        if (isDiscriminator(innerSchema)) {
           return {
             key,
             result: {
               success: true,
-              values: isDynamicDiscriminatorValue(innerSchema) ? innerSchema.value : innerSchema,
+              values: innerSchema.value,
             } as ValidationSuccesResult<unknown>,
           };
         }

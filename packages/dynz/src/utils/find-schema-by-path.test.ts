@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { DISCRIMINATOR_TYPE } from "../schemas";
 import { SchemaType } from "../types";
-import { findSchemaByPath } from "./find-schema-by-path";
+import { DISCRIMINATOR_KEY_TYPE, findSchemaByPath } from "./find-schema-by-path";
 
 describe("findSchemaByPath", () => {
   describe("object schema traversal", () => {
@@ -239,36 +240,73 @@ describe("findSchemaByPath", () => {
   });
 
   describe("discriminated union traversal", () => {
-    it("should return the union schema itself for a plain-primitive discriminator key path", () => {
-      const unionSchema = {
-        type: SchemaType.DISCRIMINATED_UNION,
-        key: "kind",
-        schemas: [
-          { kind: "a", value: { type: SchemaType.STRING } },
-          { kind: "b", value: { type: SchemaType.NUMBER } },
-        ],
+    it("should return a DiscriminatorKey collecting every member's discriminator for the key path", () => {
+      const schema = {
+        type: SchemaType.OBJECT,
+        fields: {
+          union: {
+            type: SchemaType.DISCRIMINATED_UNION,
+            key: "kind",
+            schemas: [
+              { kind: { type: DISCRIMINATOR_TYPE, value: "a" }, value: { type: SchemaType.STRING } },
+              { kind: { type: DISCRIMINATOR_TYPE, value: "b" }, value: { type: SchemaType.NUMBER } },
+            ],
+          },
+        },
       };
-      const schema = { type: SchemaType.OBJECT, fields: { union: unionSchema } };
 
       const result = findSchemaByPath("$.union.kind", schema);
 
-      expect(result).toEqual(unionSchema);
+      expect(result).toEqual({
+        type: DISCRIMINATOR_KEY_TYPE,
+        key: "kind",
+        discriminators: [
+          { type: DISCRIMINATOR_TYPE, value: "a" },
+          { type: DISCRIMINATOR_TYPE, value: "b" },
+        ],
+        included: undefined,
+        required: undefined,
+        mutable: undefined,
+      });
     });
 
-    it("should return the union schema itself for a DynamicOptionValue discriminator key path", () => {
-      const unionSchema = {
-        type: SchemaType.DISCRIMINATED_UNION,
-        key: "kind",
-        schemas: [
-          { kind: { enabled: true, value: "a" }, value: { type: SchemaType.STRING } },
-          { kind: "b", value: { type: SchemaType.NUMBER } },
-        ],
+    it("carries over the union's own included/required/mutable onto the DiscriminatorKey", () => {
+      const schema = {
+        type: SchemaType.OBJECT,
+        fields: {
+          union: {
+            type: SchemaType.DISCRIMINATED_UNION,
+            key: "kind",
+            included: true,
+            required: false,
+            mutable: true,
+            schemas: [
+              { kind: { type: DISCRIMINATOR_TYPE, value: "a", enabled: true }, value: { type: SchemaType.STRING } },
+            ],
+          },
+        },
       };
-      const schema = { type: SchemaType.OBJECT, fields: { union: unionSchema } };
 
       const result = findSchemaByPath("$.union.kind", schema);
 
-      expect(result).toEqual(unionSchema);
+      expect(result).toMatchObject({ included: true, required: false, mutable: true });
+    });
+
+    it("throws when explicitly asked for a discriminated_union but the path resolves to the discriminator key", () => {
+      const schema = {
+        type: SchemaType.OBJECT,
+        fields: {
+          union: {
+            type: SchemaType.DISCRIMINATED_UNION,
+            key: "kind",
+            schemas: [{ kind: { type: DISCRIMINATOR_TYPE, value: "a" }, value: { type: SchemaType.STRING } }],
+          },
+        },
+      };
+
+      expect(() => findSchemaByPath("$.union.kind", schema, SchemaType.DISCRIMINATED_UNION)).toThrow(
+        "Expected schema of type discriminated_union at path $.union.kind, but got discriminator_key"
+      );
     });
 
     it("should find a member's field schema", () => {
@@ -278,7 +316,9 @@ describe("findSchemaByPath", () => {
           union: {
             type: SchemaType.DISCRIMINATED_UNION,
             key: "kind",
-            schemas: [{ kind: { enabled: true, value: "a" }, value: { type: SchemaType.STRING } }],
+            schemas: [
+              { kind: { type: DISCRIMINATOR_TYPE, value: "a", enabled: true }, value: { type: SchemaType.STRING } },
+            ],
           },
         },
       };

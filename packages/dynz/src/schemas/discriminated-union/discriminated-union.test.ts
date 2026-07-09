@@ -4,6 +4,29 @@ import { ref } from "../../reference";
 import { ErrorCode } from "../../types";
 import { validate } from "../../validate";
 import { discriminatedUnion, number, object, string } from "..";
+import { DISCRIMINATOR_TYPE } from "./types";
+
+describe("discriminatedUnion()", () => {
+  it("normalizes a raw primitive discriminator value into a Discriminator", () => {
+    const schema = discriminatedUnion("kind", [{ kind: "a", value: string() }]);
+
+    expect(schema.schemas[0]?.kind).toEqual({ type: DISCRIMINATOR_TYPE, value: "a" });
+  });
+
+  it("normalizes a DynamicOptionValue discriminator value into a Discriminator", () => {
+    const enabled = eq(ref("country"), v("NL"));
+    const schema = discriminatedUnion("kind", [{ kind: { enabled, value: "a" }, value: string() }]);
+
+    expect(schema.schemas[0]?.kind).toEqual({ type: DISCRIMINATOR_TYPE, value: "a", enabled });
+  });
+
+  it("leaves non-discriminator fields untouched", () => {
+    const valueSchema = string();
+    const schema = discriminatedUnion("kind", [{ kind: "a", value: valueSchema }]);
+
+    expect(schema.schemas[0]?.value).toBe(valueSchema);
+  });
+});
 
 describe("discriminated union validation", () => {
   const schema = object({

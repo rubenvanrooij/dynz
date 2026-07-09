@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { DISCRIMINATOR_TYPE } from "../schemas";
 import { SchemaType } from "../types";
 import { getNested } from "./get-nested";
 
@@ -314,13 +315,13 @@ describe("getNested", () => {
   describe("discriminated union traversal", () => {
     const memberValueSchema = { type: SchemaType.STRING };
 
-    it("should traverse into the matching member for a plain-primitive discriminator", () => {
+    it("should traverse into the matching member for a discriminator with no enabled flag", () => {
       const schema = {
         type: SchemaType.DISCRIMINATED_UNION,
         key: "kind",
         schemas: [
-          { kind: "a", value: memberValueSchema },
-          { kind: "b", value: { type: SchemaType.NUMBER } },
+          { kind: { type: DISCRIMINATOR_TYPE, value: "a" }, value: memberValueSchema },
+          { kind: { type: DISCRIMINATOR_TYPE, value: "b" }, value: { type: SchemaType.NUMBER } },
         ],
       };
       const value = { kind: "a", value: "hello" };
@@ -330,13 +331,13 @@ describe("getNested", () => {
       expect(result).toEqual({ schema: memberValueSchema, value: "hello" });
     });
 
-    it("should traverse into the matching member for a DynamicOptionValue discriminator", () => {
+    it("should traverse into the matching member for a statically enabled discriminator", () => {
       const schema = {
         type: SchemaType.DISCRIMINATED_UNION,
         key: "kind",
         schemas: [
-          { kind: { enabled: true, value: "a" }, value: memberValueSchema },
-          { kind: "b", value: { type: SchemaType.NUMBER } },
+          { kind: { type: DISCRIMINATOR_TYPE, value: "a", enabled: true }, value: memberValueSchema },
+          { kind: { type: DISCRIMINATOR_TYPE, value: "b" }, value: { type: SchemaType.NUMBER } },
         ],
       };
       const value = { kind: "a", value: "hello" };
@@ -350,7 +351,7 @@ describe("getNested", () => {
       const schema = {
         type: SchemaType.DISCRIMINATED_UNION,
         key: "kind",
-        schemas: [{ kind: { enabled: true, value: "a" }, value: memberValueSchema }],
+        schemas: [{ kind: { type: DISCRIMINATOR_TYPE, value: "a", enabled: true }, value: memberValueSchema }],
       };
       const value = { kind: "unknown", value: "hello" };
 

@@ -303,4 +303,29 @@ describe("getRulesDependenciesMap", () => {
       expect(result.dependencies["$.kind.kind"]).toEqual(new Set(["$.country", "$.kind.value"]));
     });
   });
+
+  describe("a ref() pointing at a discriminator key path", () => {
+    it("includes the ref itself plus the union's own included predicate's dependencies", () => {
+      const schema = object({
+        country: string(),
+        union: discriminatedUnion("kind", [{ kind: "a", value: string() }]).setIncluded(eq(ref("country"), v("NL"))),
+      });
+
+      const condition = eq(ref("union.kind"), v("a"));
+      const result = getConditionDependencies(condition, "$", schema);
+
+      expect(result).toEqual(["$.union.kind", "$.country"]);
+    });
+
+    it("only includes the ref itself when the union has no conditional included predicate", () => {
+      const schema = object({
+        union: discriminatedUnion("kind", [{ kind: "a", value: string() }]),
+      });
+
+      const condition = eq(ref("union.kind"), v("a"));
+      const result = getConditionDependencies(condition, "$", schema);
+
+      expect(result).toEqual(["$.union.kind"]);
+    });
+  });
 });
