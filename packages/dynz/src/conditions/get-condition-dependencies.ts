@@ -1,6 +1,7 @@
 import type { ParamaterValue, Predicate, Transformer } from "../functions";
 import { isReference } from "../reference";
 import type { Rule } from "../rules";
+import { isDynamicDiscriminatorValue } from "../schemas";
 import { type Schema, SchemaType } from "../types";
 import { ensureAbsolutePath, findSchemaByPath } from "../utils";
 import type { RulesDependencyMap } from "./types";
@@ -117,14 +118,15 @@ function _getRulesDependenciesMap(schema: Schema, path: string, root: Schema): R
     reverse: {},
   };
   const addDependencies = (path: string, deps: string[]) => {
-    if (deps.length > 0) {
-      result.dependencies[path] = new Set(deps);
-    }
-
     for (const dep of deps) {
+      if (!result.dependencies[path]) {
+        result.dependencies[path] = new Set();
+      }
       if (!result.reverse[dep]) {
         result.reverse[dep] = new Set();
       }
+
+      result.dependencies[path].add(dep);
       result.reverse[dep].add(path);
     }
   };
@@ -159,6 +161,15 @@ function _getRulesDependenciesMap(schema: Schema, path: string, root: Schema): R
       for (const member of schema.schemas) {
         for (const [fieldKey, fieldSchema] of Object.entries(member)) {
           if (typeof fieldSchema === "string" || typeof fieldSchema === "number" || typeof fieldSchema === "boolean") {
+            continue;
+          }
+
+          if (isDynamicDiscriminatorValue(fieldSchema)) {
+            // A predicate-based "enabled" flag means whether this member can match depends on
+            // other fields — track those as dependencies of the discriminator key itself.
+            if (typeof fieldSchema.enabled !== "boolean") {
+              addDependencies(`${path}.${schema.key}`, getConditionDependencies(fieldSchema.enabled, path, root));
+            }
             continue;
           }
 

@@ -310,4 +310,51 @@ describe("getNested", () => {
       });
     });
   });
+
+  describe("discriminated union traversal", () => {
+    const memberValueSchema = { type: SchemaType.STRING };
+
+    it("should traverse into the matching member for a plain-primitive discriminator", () => {
+      const schema = {
+        type: SchemaType.DISCRIMINATED_UNION,
+        key: "kind",
+        schemas: [
+          { kind: "a", value: memberValueSchema },
+          { kind: "b", value: { type: SchemaType.NUMBER } },
+        ],
+      };
+      const value = { kind: "a", value: "hello" };
+
+      const result = getNested("$.value", schema, value);
+
+      expect(result).toEqual({ schema: memberValueSchema, value: "hello" });
+    });
+
+    it("should traverse into the matching member for a DynamicOptionValue discriminator", () => {
+      const schema = {
+        type: SchemaType.DISCRIMINATED_UNION,
+        key: "kind",
+        schemas: [
+          { kind: { enabled: true, value: "a" }, value: memberValueSchema },
+          { kind: "b", value: { type: SchemaType.NUMBER } },
+        ],
+      };
+      const value = { kind: "a", value: "hello" };
+
+      const result = getNested("$.value", schema, value);
+
+      expect(result).toEqual({ schema: memberValueSchema, value: "hello" });
+    });
+
+    it("should return null when no member matches the discriminator value", () => {
+      const schema = {
+        type: SchemaType.DISCRIMINATED_UNION,
+        key: "kind",
+        schemas: [{ kind: { enabled: true, value: "a" }, value: memberValueSchema }],
+      };
+      const value = { kind: "unknown", value: "hello" };
+
+      expect(getNested("$.value", schema, value)).toBeNull();
+    });
+  });
 });

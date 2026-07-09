@@ -143,11 +143,11 @@ export type ObjectValue<T extends ObjectSchema<never>> = OptionalFields<T> & Req
 
 type DiscriminatedMemberValue<
   TKey extends string,
-  TMember extends Record<string, Schema | string | number | boolean>,
-> = TMember extends Record<string, Schema | string | number | boolean>
+  TMember extends Record<string, Schema | string | number | boolean | DynamicOptionValue>,
+> = TMember extends Record<string, Schema | string | number | boolean | DynamicOptionValue>
   ? {
       [K in keyof TMember as K extends TKey ? K : TMember[K] extends Schema ? K : never]: K extends TKey
-        ? TMember[K]
+        ? UnwrapOptionValue<TMember[K]>
         : TMember[K] extends Schema
           ? SchemaValuesInternal<TMember[K]>
           : never;

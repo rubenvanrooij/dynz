@@ -1,3 +1,4 @@
+import { getDiscriminatorLiteral, isDynamicDiscriminatorValue } from "../schemas";
 import { type Schema, SchemaType } from "../types";
 import { isObject } from "../validate/validate-type";
 import { coerceSchema } from "./coerce";
@@ -68,7 +69,7 @@ export function getNested<T extends Schema>(
           const { key } = acc.schema;
 
           const discriminatorValue = acc.value[key];
-          const matchingMember = acc.schema.schemas.find((s) => s[key] === discriminatorValue);
+          const matchingMember = acc.schema.schemas.find((s) => getDiscriminatorLiteral(s[key]) === discriminatorValue);
 
           if (matchingMember === undefined) {
             return null;
@@ -80,7 +81,12 @@ export function getNested<T extends Schema>(
             return null;
           }
 
-          if (typeof childSchema === "string" || typeof childSchema === "number" || typeof childSchema === "boolean") {
+          if (
+            typeof childSchema === "string" ||
+            typeof childSchema === "number" ||
+            typeof childSchema === "boolean" ||
+            isDynamicDiscriminatorValue(childSchema)
+          ) {
             return {
               value: isObject(acc.value) ? acc.value[acc.schema.key] : undefined,
               schema: acc.schema,
@@ -88,7 +94,7 @@ export function getNested<T extends Schema>(
           }
 
           return {
-            value: acc.value,
+            value: acc.value[cur],
             schema: childSchema,
           };
         }

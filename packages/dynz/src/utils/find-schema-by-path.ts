@@ -1,3 +1,4 @@
+import { isDynamicDiscriminatorValue } from "../schemas";
 import { type Schema, SchemaType } from "../types";
 import { isNumber } from "../validate/validate-type";
 
@@ -40,7 +41,8 @@ export function findSchemaByPath<T extends Schema = Schema>(path: string, schema
             if (
               typeof childSchema === "boolean" ||
               typeof childSchema === "number" ||
-              typeof childSchema === "string"
+              typeof childSchema === "string" ||
+              isDynamicDiscriminatorValue(childSchema)
             ) {
               return prev;
             }

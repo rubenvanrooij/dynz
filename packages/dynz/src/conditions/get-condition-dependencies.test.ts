@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { and, eq, gt, gte, isIn, isNotIn, lt, lte, matches, neq, or, v } from "../functions";
 import { ref } from "../reference";
-import { object, string } from "../schemas";
+import { discriminatedUnion, number, object, string } from "../schemas";
 import { getConditionDependencies, getRulesDependenciesMap } from "./get-condition-dependencies";
 
 // Root schema containing all fields referenced in getConditionDependencies tests
@@ -256,6 +256,51 @@ describe("getRulesDependenciesMap", () => {
           "$.global.allowedValue2": new Set(["$.choice"]),
         },
       });
+    });
+  });
+
+  describe("discriminated union with a DynamicOptionValue discriminator", () => {
+    // Members here intentionally have no fields besides the discriminator itself, so the only
+    // possible source of a "$.kind.kind" dependency is the enabled predicate being tested —
+    // members with other Schema fields independently make the discriminator key depend on
+    // those fields too (see "tracks per-field dependencies" below).
+    it("tracks the enabled predicate's references as dependencies of the discriminator key", () => {
+      const schema = object({
+        country: string(),
+        kind: discriminatedUnion("kind", [
+          { kind: { enabled: eq(ref("$.country"), v("NL")), value: "a" } },
+          { kind: "b" },
+        ]),
+      });
+
+      const result = getRulesDependenciesMap(schema, "$");
+
+      expect(result.dependencies["$.kind.kind"]).toEqual(new Set(["$.country"]));
+      expect(result.reverse["$.country"]).toContain("$.kind.kind");
+    });
+
+    it("does not add a dependency for a statically enabled/disabled discriminator", () => {
+      const schema = object({
+        kind: discriminatedUnion("kind", [{ kind: { enabled: true, value: "a" } }, { kind: "b" }]),
+      });
+
+      const result = getRulesDependenciesMap(schema, "$");
+
+      expect(result.dependencies["$.kind.kind"]).toBeUndefined();
+    });
+
+    it("also tracks dependencies on the member's other Schema fields, merged with the enabled predicate's", () => {
+      const schema = object({
+        country: string(),
+        kind: discriminatedUnion("kind", [
+          { kind: { enabled: eq(ref("$.country"), v("NL")), value: "a" }, value: string() },
+          { kind: "b", value: number() },
+        ]),
+      });
+
+      const result = getRulesDependenciesMap(schema, "$");
+
+      expect(result.dependencies["$.kind.kind"]).toEqual(new Set(["$.country", "$.kind.value"]));
     });
   });
 });

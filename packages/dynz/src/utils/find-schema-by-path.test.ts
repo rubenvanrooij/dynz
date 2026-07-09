@@ -237,4 +237,55 @@ describe("findSchemaByPath", () => {
       expect(result).toEqual(schema);
     });
   });
+
+  describe("discriminated union traversal", () => {
+    it("should return the union schema itself for a plain-primitive discriminator key path", () => {
+      const unionSchema = {
+        type: SchemaType.DISCRIMINATED_UNION,
+        key: "kind",
+        schemas: [
+          { kind: "a", value: { type: SchemaType.STRING } },
+          { kind: "b", value: { type: SchemaType.NUMBER } },
+        ],
+      };
+      const schema = { type: SchemaType.OBJECT, fields: { union: unionSchema } };
+
+      const result = findSchemaByPath("$.union.kind", schema);
+
+      expect(result).toEqual(unionSchema);
+    });
+
+    it("should return the union schema itself for a DynamicOptionValue discriminator key path", () => {
+      const unionSchema = {
+        type: SchemaType.DISCRIMINATED_UNION,
+        key: "kind",
+        schemas: [
+          { kind: { enabled: true, value: "a" }, value: { type: SchemaType.STRING } },
+          { kind: "b", value: { type: SchemaType.NUMBER } },
+        ],
+      };
+      const schema = { type: SchemaType.OBJECT, fields: { union: unionSchema } };
+
+      const result = findSchemaByPath("$.union.kind", schema);
+
+      expect(result).toEqual(unionSchema);
+    });
+
+    it("should find a member's field schema", () => {
+      const schema = {
+        type: SchemaType.OBJECT,
+        fields: {
+          union: {
+            type: SchemaType.DISCRIMINATED_UNION,
+            key: "kind",
+            schemas: [{ kind: { enabled: true, value: "a" }, value: { type: SchemaType.STRING } }],
+          },
+        },
+      };
+
+      const result = findSchemaByPath("$.union.value", schema);
+
+      expect(result).toEqual({ type: SchemaType.STRING });
+    });
+  });
 });

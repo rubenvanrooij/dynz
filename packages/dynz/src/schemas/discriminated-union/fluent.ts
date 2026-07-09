@@ -1,9 +1,10 @@
 import type { Predicate } from "../../functions";
 import type { JsonRecord, Schema } from "../../types";
 import { SchemaType } from "../../types";
+import type { DynamicOptionValue } from "../options/types";
 import type { CheckMember, DiscriminatedUnionSchema } from "./types";
 
-type SchemaMember = Record<string, Schema | string | number | boolean>;
+type SchemaMember = Record<string, Schema | string | number | boolean | DynamicOptionValue>;
 
 export type DiscriminatedUnionFluent<
   TKey extends string,
