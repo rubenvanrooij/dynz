@@ -260,6 +260,7 @@ describe("findSchemaByPath", () => {
       expect(result).toEqual({
         type: DISCRIMINATOR_KEY_TYPE,
         key: "kind",
+        schemas: schema.fields.union.schemas,
         discriminators: [
           { type: DISCRIMINATOR_TYPE, value: "a" },
           { type: DISCRIMINATOR_TYPE, value: "b" },

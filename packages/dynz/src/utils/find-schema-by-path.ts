@@ -16,6 +16,7 @@ export type DiscriminatorKey<TKey extends string = string> = {
   type: typeof DISCRIMINATOR_KEY_TYPE;
   key: TKey;
   /** Every member's discriminator entry, in declaration order. */
+  schemas: Record<string, Schema | Discriminator>[];
   discriminators: Discriminator[];
   included?: boolean | Predicate | undefined;
   required?: boolean | Predicate | undefined;
@@ -29,11 +30,20 @@ export function isDiscriminatorKey(schema: Schema | DiscriminatorKey): schema is
 export type ReturnSchema = Schema | DiscriminatorKey;
 
 export function findSchemaByPath(path: string, schema: Schema): ReturnSchema;
-export function findSchemaByPath<T extends Schema = Schema>(path: string, schema: Schema, type: T["type"]): T;
-export function findSchemaByPath<T extends Schema = Schema>(
+export function findSchemaByPath<T extends ReturnSchema = ReturnSchema>(
   path: string,
   schema: Schema,
-  type?: T["type"]
+  type: T["type"]
+): T;
+export function findSchemaByPath<T extends ReturnSchema = ReturnSchema>(
+  path: string,
+  schema: Schema,
+  ...type: Array<T["type"]>
+): T;
+export function findSchemaByPath<T extends ReturnSchema = ReturnSchema>(
+  path: string,
+  schema: Schema,
+  ...types: Array<T["type"]>
 ): ReturnSchema {
   const nestedSchema = path
     .split(/[.[\]]/)
@@ -66,6 +76,7 @@ export function findSchemaByPath<T extends Schema = Schema>(
           return {
             type: DISCRIMINATOR_KEY_TYPE,
             key: prev.key,
+            schemas: prev.schemas,
             discriminators: prev.schemas.map((member) => member[prev.key] as Discriminator),
             included: prev.included,
             required: prev.required,
@@ -91,8 +102,8 @@ export function findSchemaByPath<T extends Schema = Schema>(
       throw new Error(`Cannot find schema at path ${path}`);
     }, schema);
 
-  if (type !== undefined && nestedSchema.type !== type) {
-    throw new Error(`Expected schema of type ${type} at path ${path}, but got ${nestedSchema.type}`);
+  if (types.length > 0 && !types.some((t) => t === nestedSchema.type)) {
+    throw new Error(`Expected schema of type ${types.join(",")} at path ${path}, but got ${nestedSchema.type}`);
   }
 
   return nestedSchema;

@@ -1,5 +1,7 @@
 import {
+  DISCRIMINATOR_KEY_TYPE,
   type DiscriminatedUnionSchema,
+  type DiscriminatorKey,
   findSchemaByPath,
   getConditionDependencies,
   isDiscriminator,
@@ -13,7 +15,12 @@ export function useDiscriminatedUnionKeyValues(name: string) {
   const { control, getValues, schema } = useDynzFormContext();
 
   // TODO: memoize
-  const unionSchema = findSchemaByPath<DiscriminatedUnionSchema>(`$.${name}`, schema, SchemaType.DISCRIMINATED_UNION);
+  const unionSchema = findSchemaByPath<DiscriminatedUnionSchema | DiscriminatorKey>(
+    `$.${name}`,
+    schema,
+    SchemaType.DISCRIMINATED_UNION,
+    DISCRIMINATOR_KEY_TYPE
+  );
 
   // TODO: memoize
   const dependencies = unionSchema.schemas.reduce<string[]>((acc, member) => {

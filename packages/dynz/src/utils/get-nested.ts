@@ -63,6 +63,7 @@ export function getNested<T extends Schema>(
               schema: {
                 type: DISCRIMINATOR_KEY_TYPE,
                 key: schema.key,
+                schemas: schema.schemas,
                 discriminators: schema.schemas.map((member) => member[schema.key] as Discriminator),
                 included: schema.included,
                 required: schema.required,
