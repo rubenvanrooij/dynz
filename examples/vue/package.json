@@ -1,0 +1,23 @@
+{
+  "name": "@dynz/vue-example",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "check-types": "vue-tsc --noEmit"
+  },
+  "dependencies": {
+    "vue": "^3.5.41"
+  },
+  "devDependencies": {
+    "@dynz/vue": "workspace:*",
+    "@vitejs/plugin-vue": "^6.0.1",
+    "dynz": "workspace:*",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.7",
+    "vue-tsc": "^3.1.1"
+  }
+}
