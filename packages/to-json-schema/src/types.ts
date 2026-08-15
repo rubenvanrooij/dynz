@@ -25,6 +25,7 @@ export interface JsonSchema {
   contains?: JsonSchema;
   not?: JsonSchema;
   oneOf?: JsonSchema[];
+  allOf?: JsonSchema[];
   default?: unknown;
   [key: string]: unknown;
 }

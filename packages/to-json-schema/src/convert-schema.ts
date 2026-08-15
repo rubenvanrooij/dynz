@@ -58,6 +58,13 @@ function isSchema(value: Schema | string | number | boolean): value is Schema {
 }
 
 function shouldOmitField(schema: Schema, context: ConversionContext): boolean {
+  // A statically excluded field is not part of the document in either direction: dynz
+  // errors on any value present for it, or strips it under `stripNotIncludedValues`.
+  // Emitting it would describe a document the validator refuses.
+  if (schema.included === false) {
+    return true;
+  }
+
   return context.mode === "input" && schema.type === SchemaType.EXPRESSION;
 }
 

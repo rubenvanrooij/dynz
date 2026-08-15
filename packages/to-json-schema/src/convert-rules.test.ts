@@ -184,6 +184,59 @@ describe("applyRule", () => {
     }
   });
 
+  it("keeps both constraints when two rules want the same keyword", () => {
+    const jsonSchema: JsonSchema = {};
+    applyRule(jsonSchema, { type: "regex", regex: "^[A-Z]" }, "string", { errorMode: "ignore", mode: "input" });
+    applyRule(jsonSchema, { type: "regex", regex: "\\d$" }, "string", { errorMode: "ignore", mode: "input" });
+
+    // The second pattern would otherwise have silently overwritten the first.
+    expect(jsonSchema).toEqual({ pattern: "^[A-Z]", allOf: [{ pattern: "\\d$" }] });
+  });
+
+  it("moves a third writer of the same keyword into allOf as well", () => {
+    const jsonSchema: JsonSchema = {};
+    applyRule(jsonSchema, { type: "is_numeric" }, "string", { errorMode: "ignore", mode: "input" });
+    applyRule(jsonSchema, { type: "regex", regex: "^1" }, "string", { errorMode: "ignore", mode: "input" });
+    applyRule(jsonSchema, { type: "includes", includes: v("2") }, "string", { errorMode: "ignore", mode: "input" });
+
+    expect(jsonSchema).toEqual({
+      pattern: "^[+-]?\\d+(\\.\\d+)?$",
+      allOf: [{ pattern: "^1" }, { pattern: "2" }],
+    });
+  });
+
+  it("keeps both negations when not_includes and not_one_of are combined", () => {
+    const jsonSchema: JsonSchema = {};
+    applyRule(jsonSchema, { type: "not_includes", notIncludes: v("bad") }, "string", {
+      errorMode: "ignore",
+      mode: "input",
+    });
+    applyRule(jsonSchema, { type: "not_one_of", values: [v("nope")] }, "string", {
+      errorMode: "ignore",
+      mode: "input",
+    });
+
+    expect(jsonSchema).toEqual({
+      not: { pattern: "bad" },
+      allOf: [{ not: { enum: ["nope"] } }],
+    });
+  });
+
+  it("intersects a one_of rule with an enum that is already present", () => {
+    // An options schema has already written its own `enum` before the rules are applied.
+    const jsonSchema: JsonSchema = { enum: ["a", "b", "c"], type: "string" };
+    applyRule(jsonSchema, { type: "one_of", values: [v("a"), v("b")] }, "options", {
+      errorMode: "ignore",
+      mode: "input",
+    });
+
+    expect(jsonSchema).toEqual({
+      enum: ["a", "b", "c"],
+      type: "string",
+      allOf: [{ enum: ["a", "b"] }],
+    });
+  });
+
   it("throws when errorMode is 'throw' and a rule value is not static", () => {
     expect(() =>
       applyRule({}, { type: "min", min: ref("other") }, "number", { errorMode: "throw", mode: "input" })

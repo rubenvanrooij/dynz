@@ -74,7 +74,7 @@ describe("convertSchema", () => {
       name: string(),
       nickname: string().optional(),
       role: string().setRequired(eq(ref("type"), v("admin"))),
-      hidden: string().setIncluded(false),
+      conditional: string().setIncluded(eq(ref("type"), v("admin"))),
     });
 
     expect(convertSchema(schema, ctx)).toEqual({
@@ -83,9 +83,52 @@ describe("convertSchema", () => {
         name: { type: "string" },
         nickname: { type: "string" },
         role: { type: "string" },
-        hidden: { type: "string" },
+        conditional: { type: "string" },
       },
       required: ["name"],
+    });
+  });
+
+  it("omits statically excluded fields entirely", () => {
+    const schema = object({
+      name: string(),
+      hidden: string().setIncluded(false),
+    });
+
+    // dynz errors on any value present for an excluded field (or strips it), so emitting
+    // it would describe a document the validator refuses.
+    expect(convertSchema(schema, ctx)).toEqual({
+      type: "object",
+      properties: { name: { type: "string" } },
+      required: ["name"],
+    });
+  });
+
+  it("omits statically excluded fields in 'output' mode too", () => {
+    const schema = object({ name: string(), hidden: string().setIncluded(false) });
+
+    expect(convertSchema(schema, { errorMode: "ignore", mode: "output" })).toEqual({
+      type: "object",
+      properties: { name: { type: "string" } },
+      required: ["name"],
+    });
+  });
+
+  it("omits statically excluded fields from a discriminated union member", () => {
+    const schema: Schema = {
+      type: "discriminated_union",
+      key: "kind",
+      schemas: [{ kind: "a", value: string(), hidden: string().setIncluded(false) }],
+    };
+
+    expect(convertSchema(schema, ctx)).toEqual({
+      oneOf: [
+        {
+          type: "object",
+          properties: { kind: { const: "a" }, value: { type: "string" } },
+          required: ["kind", "value"],
+        },
+      ],
     });
   });
 

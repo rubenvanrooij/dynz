@@ -8,6 +8,24 @@ function escapeRegExp(value: string): string {
 }
 
 /**
+ * Writes a keyword, preserving whatever constraint is already there.
+ *
+ * Several dynz rules map onto the same JSON Schema keyword: two `regex` rules both want
+ * `pattern`, `one_of` wants the `enum` an options schema has already produced,
+ * `not_includes` and `not_one_of` both want `not`. A plain assignment would silently drop
+ * the constraint that got there first, so a second writer is moved into `allOf` — where
+ * both still have to hold.
+ */
+function setKeyword(jsonSchema: JsonSchema, keyword: string, value: unknown): void {
+  if (jsonSchema[keyword] === undefined) {
+    jsonSchema[keyword] = value;
+    return;
+  }
+
+  jsonSchema.allOf = [...(jsonSchema.allOf ?? []), { [keyword]: value }];
+}
+
+/**
  * Applies a dynz rule to a JSON Schema in place. Rules whose value can't be
  * statically resolved (references, predicates, transformers) or that have
  * no JSON Schema equivalent are skipped and reported via `reportIssue`.
@@ -22,7 +40,7 @@ export function applyRule(
     case "min": {
       const min = resolveStatic(rule.min);
       if (min.ok) {
-        jsonSchema.minimum = min.value as number;
+        setKeyword(jsonSchema, "minimum", min.value as number);
       } else {
         reportIssue(context, `"min" rule with a non-static value cannot be converted to JSON Schema.`);
       }
@@ -32,7 +50,7 @@ export function applyRule(
     case "max": {
       const max = resolveStatic(rule.max);
       if (max.ok) {
-        jsonSchema.maximum = max.value as number;
+        setKeyword(jsonSchema, "maximum", max.value as number);
       } else {
         reportIssue(context, `"max" rule with a non-static value cannot be converted to JSON Schema.`);
       }
@@ -45,9 +63,9 @@ export function applyRule(
       const min = resolveStatic(rule.min);
       if (min.ok) {
         if (schemaType === "array") {
-          jsonSchema.minItems = min.value as number;
+          setKeyword(jsonSchema, "minItems", min.value as number);
         } else {
-          jsonSchema.minLength = min.value as number;
+          setKeyword(jsonSchema, "minLength", min.value as number);
         }
       } else {
         reportIssue(context, `"min_length" rule with a non-static value cannot be converted to JSON Schema.`);
@@ -59,9 +77,9 @@ export function applyRule(
       const max = resolveStatic(rule.max);
       if (max.ok) {
         if (schemaType === "array") {
-          jsonSchema.maxItems = max.value as number;
+          setKeyword(jsonSchema, "maxItems", max.value as number);
         } else {
-          jsonSchema.maxLength = max.value as number;
+          setKeyword(jsonSchema, "maxLength", max.value as number);
         }
       } else {
         reportIssue(context, `"max_length" rule with a non-static value cannot be converted to JSON Schema.`);
@@ -74,7 +92,7 @@ export function applyRule(
       // the number of keys — i.e. JSON Schema's "minProperties"/"maxProperties".
       const min = resolveStatic(rule.min);
       if (min.ok) {
-        jsonSchema.minProperties = min.value as number;
+        setKeyword(jsonSchema, "minProperties", min.value as number);
       } else {
         reportIssue(context, `"min_entries" rule with a non-static value cannot be converted to JSON Schema.`);
       }
@@ -84,7 +102,7 @@ export function applyRule(
     case "max_entries": {
       const max = resolveStatic(rule.max);
       if (max.ok) {
-        jsonSchema.maxProperties = max.value as number;
+        setKeyword(jsonSchema, "maxProperties", max.value as number);
       } else {
         reportIssue(context, `"max_entries" rule with a non-static value cannot be converted to JSON Schema.`);
       }
@@ -94,7 +112,7 @@ export function applyRule(
     case "max_precision": {
       const maxPrecision = resolveStatic(rule.maxPrecision);
       if (maxPrecision.ok) {
-        jsonSchema.multipleOf = 1 / 10 ** (maxPrecision.value as number);
+        setKeyword(jsonSchema, "multipleOf", 1 / 10 ** (maxPrecision.value as number));
       } else {
         reportIssue(context, `"max_precision" rule with a non-static value cannot be converted to JSON Schema.`);
       }
@@ -102,7 +120,7 @@ export function applyRule(
     }
 
     case "regex": {
-      jsonSchema.pattern = rule.regex;
+      setKeyword(jsonSchema, "pattern", rule.regex);
       if (rule.flags) {
         reportIssue(
           context,
@@ -113,20 +131,20 @@ export function applyRule(
     }
 
     case "email": {
-      jsonSchema.format = "email";
+      setKeyword(jsonSchema, "format", "email");
       break;
     }
 
     case "is_numeric": {
       // Best-effort approximation: JSON Schema has no dedicated "numeric string" keyword.
-      jsonSchema.pattern = "^[+-]?\\d+(\\.\\d+)?$";
+      setKeyword(jsonSchema, "pattern", "^[+-]?\\d+(\\.\\d+)?$");
       break;
     }
 
     case "equals": {
       const equals = resolveStatic(rule.equals);
       if (equals.ok) {
-        jsonSchema.const = equals.value;
+        setKeyword(jsonSchema, "const", equals.value);
       } else {
         reportIssue(context, `"equals" rule with a non-static value cannot be converted to JSON Schema.`);
       }
@@ -141,9 +159,9 @@ export function applyRule(
       }
 
       if (schemaType === "array") {
-        jsonSchema.contains = { const: includes.value };
+        setKeyword(jsonSchema, "contains", { const: includes.value });
       } else {
-        jsonSchema.pattern = escapeRegExp(String(includes.value));
+        setKeyword(jsonSchema, "pattern", escapeRegExp(String(includes.value)));
       }
       break;
     }
@@ -155,10 +173,13 @@ export function applyRule(
         break;
       }
 
-      jsonSchema.not =
+      setKeyword(
+        jsonSchema,
+        "not",
         schemaType === "array"
           ? { contains: { const: notIncludes.value } }
-          : { pattern: escapeRegExp(String(notIncludes.value)) };
+          : { pattern: escapeRegExp(String(notIncludes.value)) }
+      );
       break;
     }
 
@@ -172,7 +193,7 @@ export function applyRule(
         }
         values.push(resolved.value);
       }
-      jsonSchema.enum = values;
+      setKeyword(jsonSchema, "enum", values);
       break;
     }
 
@@ -186,7 +207,7 @@ export function applyRule(
         }
         values.push(resolved.value);
       }
-      jsonSchema.not = { enum: values };
+      setKeyword(jsonSchema, "not", { enum: values });
       break;
     }
 
@@ -198,9 +219,9 @@ export function applyRule(
       }
 
       if (typeof mimeType.value === "string") {
-        jsonSchema.contentMediaType = mimeType.value;
+        setKeyword(jsonSchema, "contentMediaType", mimeType.value);
       } else if (Array.isArray(mimeType.value) && mimeType.value.length === 1) {
-        jsonSchema.contentMediaType = mimeType.value[0];
+        setKeyword(jsonSchema, "contentMediaType", mimeType.value[0]);
       } else {
         reportIssue(context, `"mime_type" rule with multiple mime types has no JSON Schema equivalent.`);
       }
