@@ -13,7 +13,7 @@ import {
   type ValidationResult,
   type ValidationSuccesResult,
 } from "../types";
-import { coerceSchema } from "../utils";
+import { coerceSchema, withDefault } from "../utils";
 import { isArray, isObject, validateType } from "./validate-type";
 
 export function validate<T extends Schema>(
@@ -88,8 +88,14 @@ export async function _validate<T extends Schema>(
     };
   }
 
-  const newValue = coerceSchema(schema, getValue(schema, path, values.new));
-  const currentValue = getValue(schema, path, values.current);
+  // A value left empty (undefined/null) falls back to the schema's `default`, so a
+  // default now actually reaches `required`, the type check, the rules, and the
+  // validated output — not just references to this field from elsewhere (see
+  // `withDefault`). The mutability check just below deliberately keeps using the raw
+  // `values.current`/`values.new`, not these: it needs to tell "genuinely resubmitted
+  // the same value" apart from "value was masked", which only the raw shapes carry.
+  const newValue = coerceSchema(schema, withDefault(schema, getValue(schema, path, values.new)));
+  const currentValue = withDefault(schema, getValue(schema, path, values.current));
 
   /**
    * if the schema is marked as not mutable; the value shuld still be the same

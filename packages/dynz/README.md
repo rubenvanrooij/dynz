@@ -222,6 +222,158 @@ const registrationSchema = d.object({
 });
 ```
 
+### Default Values
+
+`.setDefault(value)` fills a field in whenever it's left empty (`undefined` or `null`) — on any schema type, including `object()` and `array()`.
+
+```typescript
+import * as d from "dynz";
+
+const settingsSchema = d.object({
+  theme: d.options(["light", "dark"] as const).setDefault("light"),
+  notifications: d.boolean().setDefault(true),
+});
+
+await d.validate(settingsSchema, undefined, {});
+// { success: true, values: { theme: "light", notifications: true } }
+```
+
+A default satisfies `required` — a required field left empty validates successfully with
+the default in the output, instead of failing:
+
+```typescript
+const schema = d.string().setRequired(true).setDefault("Anonymous");
+
+await d.validate(schema, undefined, undefined);
+// { success: true, values: "Anonymous" }
+```
+
+**Rules still apply to a default, the same way they apply to a supplied value.** A
+default doesn't bypass validation — it's checked against the field's own rules like
+anything else, so an invalid default surfaces as a real error rather than being
+silently accepted:
+
+```typescript
+const schema = d.string().min(5).setDefault("hi"); // "hi" is shorter than min(5)
+
+await d.validate(schema, undefined, undefined);
+// { success: false, errors: [{ code: "min_length", path: "$", ... }] }
+```
+
+**`ref()` still works against a defaulted field.** When a field is left empty, a
+sibling's `ref()` to it resolves to the exact same value that field's own validation
+produces — the two can never disagree:
+
+```typescript
+const schema = d.object({
+  plan: d.options(["free", "pro"] as const).setDefault("free"),
+  companyName: d.string().setRequired(d.eq(d.ref("plan"), "free")),
+});
+
+await d.validate(schema, undefined, { companyName: "Acme" });
+// { success: true, values: { plan: "free", companyName: "Acme" } }
+```
+
+#### Object and array defaults
+
+A default on `object()`/`array()` only fires when the object or array itself is
+**entirely absent** (`undefined`/`null`) — not when it's present but partial, and not
+when it's an explicitly-submitted empty object or array. Once it fires, the
+substituted value is handed to completely ordinary validation, exactly as if it had
+been submitted that way: every field's own default still gets applied independently for
+whatever the object's default doesn't mention.
+
+```typescript
+const profileSchema = d
+  .object({
+    displayName: d.string().setDefault("New user"),
+    bio: d.string(),
+  })
+  .setDefault({});
+
+// The whole object is missing -> its default ({}) fires, then normal validation runs
+// on it: `bio` (no default, required) still fails, `displayName` fills itself in.
+await d.validate(profileSchema, undefined, undefined);
+// { success: false, errors: [{ path: "$.bio", code: "required", ... }] }
+```
+
+`.setDefault({})` is a common, useful pattern precisely because of this: it materializes
+the object so each field's _own_ default gets a chance to run, without needing to repeat
+every field's fallback value in the object's own literal.
+
+```typescript
+const profileSchema = d
+  .object({
+    displayName: d.string().setDefault("New user"),
+    bio: d.string().setDefault(""),
+  })
+  .setDefault({});
+
+await d.validate(profileSchema, undefined, undefined);
+// { success: true, values: { displayName: "New user", bio: "" } }
+```
+
+If you want a field to always have a sensible fallback — whether its parent object is
+missing entirely or just doesn't happen to include that field — give the field its own
+`.setDefault(...)` rather than relying on the parent's. A parent's default is not merged
+into a partially-submitted object; it only ever describes what happens when the parent
+itself is missing.
+
+A `Date` nested inside a default — at any depth — survives a schema that's gone through
+`serialize()` and `JSON.parse()` (e.g. shipped to a browser as JSON and validated there);
+it's coerced back into a real `Date` wherever it's used.
+
+#### Discriminated union defaults
+
+`discriminatedUnion()` follows the exact same rule: a default only fires when the union
+itself is entirely absent, and the discriminator key is required in the default value —
+it's what picks which member applies, so there's no other way to know which member's
+shape the rest of the default should match.
+
+```typescript
+const contactSchema = d
+  .discriminatedUnion("type", [
+    { type: "email", email: d.string() },
+    { type: "phone", phone: d.string() },
+  ])
+  .setDefault({ type: "email", email: "hello@example.com" });
+
+await d.validate(contactSchema, undefined, undefined);
+// { success: true, values: { type: "email", email: "hello@example.com" } }
+```
+
+Just like an object default, a union default only needs to set the discriminator — every
+other field of that member falls back to its own default, if it has one:
+
+```typescript
+const contactSchema = d
+  .discriminatedUnion("type", [
+    { type: "email", email: d.string().setDefault("hello@example.com") },
+    { type: "phone", phone: d.string() },
+  ])
+  .setDefault({ type: "email" });
+
+await d.validate(contactSchema, undefined, undefined);
+// { success: true, values: { type: "email", email: "hello@example.com" } }
+```
+
+`ref()` resolves consistently here too, including into the discriminator itself:
+
+```typescript
+const schema = d.object({
+  contact: d
+    .discriminatedUnion("type", [
+      { type: "email", email: d.string() },
+      { type: "phone", phone: d.string() },
+    ])
+    .setDefault({ type: "email", email: "hello@example.com" }),
+  note: d.string().setRequired(d.eq(d.ref("contact.type"), "email")),
+});
+
+await d.validate(schema, undefined, { note: "hi" });
+// { success: true, values: { contact: { type: "email", email: "hello@example.com" }, note: "hi" } }
+```
+
 ## Advanced Usage
 
 ### Custom Rules

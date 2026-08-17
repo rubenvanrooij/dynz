@@ -113,7 +113,16 @@ export type NumFluent<TRules extends Rule[], TProps> = {
     setPrivate: <P extends boolean>(value: P) => NumFluent<TRules, TProps & { private: P }>;
     /** Enables automatic type coercion. @param value - Boolean flag */
     setCoerce: <P extends boolean>(value: P) => NumFluent<TRules, TProps & { coerce: P }>;
-    /** Sets a default value when field is empty. @param value - Default number value */
+    /**
+     * Sets a default value used whenever the field is left empty.
+     *
+     * The default satisfies `required`, is validated against the field's own rules just
+     * like a supplied value would be, and appears in the validated output. A `ref()` to
+     * this field from elsewhere in the schema resolves to the default too, when the
+     * field itself is empty.
+     *
+     * @param value - Default number value
+     */
     setDefault: (value: number) => NumFluent<TRules, TProps & { default: number }>;
     /** Attaches UI metadata for form rendering. @param config - UI configuration object */
     setUi: <TUI extends JsonRecord>(config: TUI) => NumFluent<TRules, TProps & { ui: TUI }>;

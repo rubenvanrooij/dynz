@@ -1,6 +1,7 @@
 import { type Schema, SchemaType } from "../types";
 import { isObject } from "../validate/validate-type";
 import { coerceSchema } from "./coerce";
+import { withDefault } from "./with-default";
 
 export function getNested<T extends Schema>(
   path: string,
@@ -18,25 +19,39 @@ export function getNested<T extends Schema>(
         }
 
         if (acc.schema.type === SchemaType.ARRAY) {
-          if (!Array.isArray(acc.value)) {
-            throw new Error(`Expected an array at path ${path}, but got ${typeof acc.value}`);
+          // Resolve the array's own default first, the same way OBJECT/DISCRIMINATED_UNION
+          // do below — without this, an array reached without going through a parent
+          // OBJECT field lookup (e.g. the root schema of a ref()) never sees its own
+          // default when it's entirely absent.
+          const resolvedValue = withDefault(acc.schema, acc.value);
+
+          if (!Array.isArray(resolvedValue)) {
+            throw new Error(`Expected an array at path ${path}, but got ${typeof resolvedValue}`);
           }
 
-          const index = +cur;
-          const val = acc.value[index];
+          const val = resolvedValue[+cur];
 
+          // A missing index falls back to the *item* schema's default, not the array
+          // schema's own — the array's own default is a whole-array substitute, resolved
+          // above; this is a per-index fallback, a different thing entirely.
           return {
-            value: val === undefined ? acc.schema.default : val,
+            value: withDefault(acc.schema.schema, val),
             schema: acc.schema.schema,
           };
         }
 
         if (acc.schema.type === SchemaType.OBJECT) {
-          if (acc.value !== undefined && acc.value !== null && !isObject(acc.value)) {
-            throw new Error(`Expected an object at path ${path}, but got ${typeof acc.value}`);
+          // Resolve the object's own default first — without this, a field only ever
+          // supplied by the *parent* object's default (not the field's own) would be
+          // invisible here, and ref() would silently fall back to the field's own
+          // default (or undefined) instead.
+          const resolvedValue = withDefault(acc.schema, acc.value);
+
+          if (resolvedValue !== undefined && resolvedValue !== null && !isObject(resolvedValue)) {
+            throw new Error(`Expected an object at path ${path}, but got ${typeof resolvedValue}`);
           }
 
-          const val = acc.value === undefined || acc.value === null ? undefined : acc.value[cur];
+          const val = resolvedValue === undefined || resolvedValue === null ? undefined : resolvedValue[cur];
           const childSchema = acc.schema.fields[cur];
 
           if (childSchema === undefined) {
@@ -44,30 +59,35 @@ export function getNested<T extends Schema>(
           }
 
           return {
-            value: val === undefined ? acc.schema.fields[cur]?.default : val,
+            value: withDefault(childSchema, val),
             schema: childSchema,
           };
         }
 
         if (acc.schema.type === SchemaType.DISCRIMINATED_UNION) {
+          // A missing union falls back to its own default, the same way OBJECT/ARRAY
+          // do above — without this, `ref()` into an absent-but-defaulted union's
+          // member would never resolve.
+          const resolvedValue = withDefault(acc.schema, acc.value);
+
           // if the key is referenced return the schema of the union type
           if (cur === acc.schema.key) {
             return {
-              value: isObject(acc.value) ? acc.value[acc.schema.key] : undefined,
+              value: isObject(resolvedValue) ? resolvedValue[acc.schema.key] : undefined,
               schema: acc.schema,
             };
           }
 
-          if (acc.value === undefined || acc.value === null) {
+          if (resolvedValue === undefined || resolvedValue === null) {
             return null;
           }
 
-          if (!isObject(acc.value)) {
-            throw new Error(`Expected an object at path ${path}, but got ${typeof acc.value}`);
+          if (!isObject(resolvedValue)) {
+            throw new Error(`Expected an object at path ${path}, but got ${typeof resolvedValue}`);
           }
           const { key } = acc.schema;
 
-          const discriminatorValue = acc.value[key];
+          const discriminatorValue = resolvedValue[key];
           const matchingMember = acc.schema.schemas.find((s) => s[key] === discriminatorValue);
 
           if (matchingMember === undefined) {
@@ -82,13 +102,15 @@ export function getNested<T extends Schema>(
 
           if (typeof childSchema === "string" || typeof childSchema === "number" || typeof childSchema === "boolean") {
             return {
-              value: isObject(acc.value) ? acc.value[acc.schema.key] : undefined,
+              value: isObject(resolvedValue) ? resolvedValue[acc.schema.key] : undefined,
               schema: acc.schema,
             };
           }
 
           return {
-            value: acc.value,
+            // The field's own value, not the whole union object — falling back to that
+            // field's own default if it's absent, same as the OBJECT branch above.
+            value: withDefault(childSchema, resolvedValue[cur]),
             schema: childSchema,
           };
         }

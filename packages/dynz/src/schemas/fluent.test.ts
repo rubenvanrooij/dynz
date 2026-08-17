@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { eq, sum, v } from "../functions";
 import { ref } from "../reference";
-import { object, string } from "../schemas";
+import { array, discriminatedUnion, object, string } from "../schemas";
 
 describe("Fluent API", () => {
   describe("StringSchemaFluent", () => {
@@ -190,6 +190,71 @@ describe("Fluent API", () => {
       expect(schema.fields.address.type).toBe("object");
       expect(schema.fields.address.fields.street.type).toBe("string");
       expect(schema.fields.address.fields.zip.rules).toHaveLength(1);
+    });
+
+    it("sets default value", () => {
+      const schema = object({ name: string() }).setDefault({ name: "Anonymous" });
+      expect(schema.default).toEqual({ name: "Anonymous" });
+    });
+
+    it("accepts a partial default value, not just a complete one", () => {
+      const schema = object({ name: string(), age: string() }).setDefault({ name: "Anonymous" });
+      expect(schema.default).toEqual({ name: "Anonymous" });
+    });
+
+    it("accepts an empty default value", () => {
+      const schema = object({ name: string() }).setDefault({});
+      expect(schema.default).toEqual({});
+    });
+  });
+
+  describe("ArraySchemaFluent", () => {
+    it("creates an array schema with an item schema", () => {
+      const schema = array(string());
+
+      expect(schema.type).toBe("array");
+      expect(schema.schema.type).toBe("string");
+    });
+
+    it("sets default value", () => {
+      const schema = array(string()).setDefault(["a", "b"]);
+      expect(schema.default).toEqual(["a", "b"]);
+    });
+
+    it("accepts an empty default value", () => {
+      const schema = array(string()).setDefault([]);
+      expect(schema.default).toEqual([]);
+    });
+  });
+
+  describe("DiscriminatedUnionSchemaFluent", () => {
+    it("creates a discriminated union schema with members", () => {
+      const schema = discriminatedUnion("type", [
+        { type: "email", email: string() },
+        { type: "phone", phone: string() },
+      ]);
+
+      expect(schema.type).toBe("discriminated_union");
+      expect(schema.key).toBe("type");
+      expect(schema.schemas).toHaveLength(2);
+    });
+
+    it("sets a default with a full member value", () => {
+      const schema = discriminatedUnion("type", [
+        { type: "email", email: string() },
+        { type: "phone", phone: string() },
+      ]).setDefault({ type: "email", email: "a@b.com" });
+
+      expect(schema.default).toEqual({ type: "email", email: "a@b.com" });
+    });
+
+    it("accepts a default with just the discriminator, deferring the rest to member field defaults", () => {
+      const schema = discriminatedUnion("type", [
+        { type: "email", email: string() },
+        { type: "phone", phone: string() },
+      ]).setDefault({ type: "email" });
+
+      expect(schema.default).toEqual({ type: "email" });
     });
   });
 
