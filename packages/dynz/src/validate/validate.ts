@@ -1,4 +1,4 @@
-import { _resolveProperty, resolveProperty, resolveRules } from "../conditions";
+import { resolveProperty, resolveRules } from "../conditions";
 import { resolve } from "../functions";
 import { isPivateValue, isValueMasked, type PrivateValue } from "../private";
 import { validateRule } from "../rules";
