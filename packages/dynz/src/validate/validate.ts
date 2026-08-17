@@ -88,12 +88,10 @@ export async function _validate<T extends Schema>(
     };
   }
 
-  // A value left empty (undefined/null) falls back to the schema's `default`, so a
-  // default now actually reaches `required`, the type check, the rules, and the
-  // validated output — not just references to this field from elsewhere (see
-  // `withDefault`). The mutability check just below deliberately keeps using the raw
-  // `values.current`/`values.new`, not these: it needs to tell "genuinely resubmitted
-  // the same value" apart from "value was masked", which only the raw shapes carry.
+  // Empty (undefined/null) values fall back to the schema default, so defaults reach
+  // `required`, type checks, rules, and output — not just other fields' references
+  // (see `withDefault`). Mutability check below still uses raw `values.current`/`new`
+  // to distinguish "resubmitted same value" from "value was masked".
   const newValue = coerceSchema(schema, withDefault(schema, getValue(schema, path, values.new)));
   const currentValue = withDefault(schema, getValue(schema, path, values.current));
 

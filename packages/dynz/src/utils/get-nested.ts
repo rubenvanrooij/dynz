@@ -19,10 +19,6 @@ export function getNested<T extends Schema>(
         }
 
         if (acc.schema.type === SchemaType.ARRAY) {
-          // Resolve the array's own default first, the same way OBJECT/DISCRIMINATED_UNION
-          // do below — without this, an array reached without going through a parent
-          // OBJECT field lookup (e.g. the root schema of a ref()) never sees its own
-          // default when it's entirely absent.
           const resolvedValue = withDefault(acc.schema, acc.value);
 
           if (!Array.isArray(resolvedValue)) {
@@ -31,9 +27,6 @@ export function getNested<T extends Schema>(
 
           const val = resolvedValue[+cur];
 
-          // A missing index falls back to the *item* schema's default, not the array
-          // schema's own — the array's own default is a whole-array substitute, resolved
-          // above; this is a per-index fallback, a different thing entirely.
           return {
             value: withDefault(acc.schema.schema, val),
             schema: acc.schema.schema,
@@ -41,10 +34,6 @@ export function getNested<T extends Schema>(
         }
 
         if (acc.schema.type === SchemaType.OBJECT) {
-          // Resolve the object's own default first — without this, a field only ever
-          // supplied by the *parent* object's default (not the field's own) would be
-          // invisible here, and ref() would silently fall back to the field's own
-          // default (or undefined) instead.
           const resolvedValue = withDefault(acc.schema, acc.value);
 
           if (resolvedValue !== undefined && resolvedValue !== null && !isObject(resolvedValue)) {
@@ -108,8 +97,6 @@ export function getNested<T extends Schema>(
           }
 
           return {
-            // The field's own value, not the whole union object — falling back to that
-            // field's own default if it's absent, same as the OBJECT branch above.
             value: withDefault(childSchema, resolvedValue[cur]),
             schema: childSchema,
           };

@@ -4,23 +4,10 @@ import { Hono } from "hono";
 import {
   APPROVAL_REQUIRED_FROM,
   CLIENT_REFERENCE_REQUIRED_FROM,
-  RECEIPT_REQUIRED_FROM,
   expenseClaimSchema,
+  RECEIPT_REQUIRED_FROM,
 } from "./expense-claim-schema";
 import { buildOpenApiDocument } from "./openapi";
-
-/**
- * Stands in for whatever your auth layer provides. The point is that `employeeId` is
- * decided here and marked immutable in the schema, so a client cannot claim on someone
- * else's behalf — the browser hides the field, and the server rejects a changed one.
- */
-const session = { employeeId: "EMP-2291" };
-
-const defaults = {
-  employeeId: session.employeeId,
-  currency: "EUR",
-  billable: false,
-} as const;
 
 /**
  * Mounted into Next.js at `src/app/api/[[...route]]/route.ts`, so Hono and Next share
@@ -33,7 +20,6 @@ const routes = app
   .get("/forms/expense-claim", (c) =>
     c.json({
       schema: expenseClaimSchema,
-      defaults,
       // The thresholds are already inside the schema; these are only here so the page
       // can spell the policy out in prose.
       policy: {

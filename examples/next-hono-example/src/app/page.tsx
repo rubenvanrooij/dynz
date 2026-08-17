@@ -13,7 +13,7 @@ export default async function Home() {
   // Runs the Hono handler in-process. No HTTP, no loading state, no client-side
   // waterfall — the form arrives already rendered.
   const response = await serverClient.api.forms["expense-claim"].$get();
-  const { schema, defaults, policy } = await response.json();
+  const { schema, policy } = await response.json();
 
   return (
     <main>
@@ -36,7 +36,7 @@ export default async function Home() {
           A dynz schema is plain data, so it crosses the server/client boundary as-is —
           no serialization step, no code shipped, nothing to keep in sync.
         */}
-        <ExpenseClaimForm schema={schema as unknown as ObjectSchema<never>} defaults={defaults} policy={policy} />
+        <ExpenseClaimForm schema={schema as unknown as ObjectSchema<never>} policy={policy} />
       </div>
     </main>
   );

@@ -6,11 +6,10 @@ import type { ConversionContext, JsonSchema } from "./types";
 function isMandatory(schema: Schema): boolean {
   const isIncluded = schema.included === undefined || schema.included === true;
   const isRequired = schema.required === undefined || schema.required === true;
-  // dynz now fills a static default in whenever a field is left empty (it satisfies
-  // `required` there too — see @dynz/dynz's withDefault), so a field with one can
-  // always be omitted from the document. Listing it in `required` anyway would
-  // contradict its own `default` keyword, which every JSON Schema / OpenAPI consumer
-  // reads as "omit me and this is what you get".
+  // dynz fills in a static default when a field is left empty (satisfies `required`
+  // too — see withDefault), so a field with a default can be omitted from the
+  // document. Listing it in `required` anyway contradicts `default`, which every
+  // JSON Schema / OpenAPI consumer reads as "omit me and this is what you get".
   const hasDefault = "default" in schema && schema.default !== undefined;
   return isIncluded && isRequired && !hasDefault;
 }
