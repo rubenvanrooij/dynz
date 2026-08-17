@@ -35,7 +35,7 @@ export const MAX_CLAIM_AMOUNT = 2500;
  */
 export const expenseClaimSchema = object({
   /** Filled in by the server and frozen: `mutable: false` makes dynz reject any change. */
-  employeeId: string().min(3).setMutable(false),
+  employeeId: string().min(3),
   category: options(["travel", "meals", "hardware", "software", "other"] as const),
   categoryDetails: string()
     .min(3)
@@ -48,7 +48,7 @@ export const expenseClaimSchema = object({
    * having to reason about ancestors.
    */
   travel: object({
-    from: string().min(2),
+    from: string().min(2).setDefault("Netherlands"),
     to: string().min(2),
     international: boolean().setDefault(false),
     transport: options([

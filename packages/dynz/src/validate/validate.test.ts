@@ -1,6 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { eq, size } from "../functions";
 import { isValueMasked, mask, plain } from "../private";
-import { array, date, number, object, string } from "../schemas";
+import { ref } from "../reference";
+import { array, date, discriminatedUnion, expr, number, object, options, string } from "../schemas";
+import { serialize } from "../serialize";
 import { ErrorCode, SchemaType } from "../types";
 import { validate } from "./validate";
 import { isArray, isBoolean, isDate, isFile, isNumber, isObject, isString, validateShallowType } from "./validate-type";
@@ -100,6 +103,298 @@ describe("validate", () => {
       const result = await validate(schema, undefined, undefined);
 
       expect(result.success).toBe(true);
+    });
+  });
+
+  describe("default value", () => {
+    it("satisfies a required field left empty, and the default appears in the output", async () => {
+      const schema = string().setRequired(true).setDefault("Anonymous");
+      const result = await validate(schema, undefined, undefined);
+
+      expect(result).toEqual({ success: true, values: "Anonymous" });
+    });
+
+    it("fills an optional field left empty, instead of leaving it absent", async () => {
+      const schema = number().optional().setDefault(42);
+      const result = await validate(schema, undefined, undefined);
+
+      expect(result).toEqual({ success: true, values: 42 });
+    });
+
+    it("does not touch a value that was actually supplied", async () => {
+      const schema = string().setDefault("Anonymous");
+      const result = await validate(schema, undefined, "Ada");
+
+      expect(result).toEqual({ success: true, values: "Ada" });
+    });
+
+    it("fills each field independently inside an object", async () => {
+      const schema = object({
+        name: string().optional().setDefault("Anonymous"),
+        role: string(),
+      });
+      const result = await validate(schema, undefined, { role: "admin" });
+
+      expect(result).toEqual({ success: true, values: { name: "Anonymous", role: "admin" } });
+    });
+
+    it("fills a defaulted item inside an array, without inventing missing items", async () => {
+      const schema = array(string().optional().setDefault("n/a"));
+      const result = await validate(schema, undefined, [undefined, "b"]);
+
+      expect(result).toEqual({ success: true, values: ["n/a", "b"] });
+    });
+
+    it("is itself checked against the schema's own rules", async () => {
+      // A default that violates the schema's own rules is a schema-authoring mistake,
+      // not something that should be silently accepted.
+      const schema = string().min(5).setDefault("hi");
+      const result = await validate(schema, undefined, undefined);
+
+      expect(result).toEqual({
+        success: false,
+        errors: [expect.objectContaining({ code: "min_length" })],
+      });
+    });
+
+    it("is what a sibling field's ref() to the empty field also resolves to", async () => {
+      const schema = object({
+        plan: options(["free", "pro"] as const)
+          .optional()
+          .setDefault("free"),
+        note: string().setRequired(eq(ref("plan"), "free")),
+      });
+
+      // `plan` omitted entirely — its default makes `note` required, and that default
+      // is also what ends up in `plan`'s own validated value below.
+      const result = await validate(schema, undefined, { note: "hi" });
+
+      expect(result).toEqual({ success: true, values: { plan: "free", note: "hi" } });
+    });
+
+    it("keeps a required field failing when it has no default at all", async () => {
+      const schema = string().setRequired(true);
+      const result = await validate(schema, undefined, undefined);
+
+      expect(result).toEqual({
+        success: false,
+        errors: [expect.objectContaining({ code: ErrorCode.REQRUIED })],
+      });
+    });
+
+    it("a coerced date default keeps resolving after the schema has been through serialize()", async () => {
+      const original = object({
+        createdAt: date().optional().setDefault(new Date("2024-01-01T00:00:00.000Z")),
+        isNew: string().setRequired(eq(ref("createdAt"), new Date("2024-01-01T00:00:00.000Z"))),
+      });
+
+      // Mirrors a schema that crossed a wire as JSON: the Date default is now an ISO string.
+      const roundTripped = JSON.parse(serialize(original));
+
+      const result = await validate(roundTripped, undefined, { isNew: "yes" });
+
+      expect(result).toEqual({
+        success: true,
+        values: { createdAt: new Date("2024-01-01T00:00:00.000Z"), isNew: "yes" },
+      });
+    });
+
+    it("validates a round-tripped date default's own field the same way", async () => {
+      const original = object({
+        createdAt: date().optional().setDefault(new Date("2024-01-01T00:00:00.000Z")),
+      });
+      const roundTripped = JSON.parse(serialize(original));
+
+      const result = await validate(roundTripped, undefined, {});
+
+      expect(result).toEqual({ success: true, values: { createdAt: new Date("2024-01-01T00:00:00.000Z") } });
+    });
+  });
+
+  describe("object and array defaults — prefault semantics, not verbatim substitution", () => {
+    it("lets every field's own default fire independently once the object itself is bootstrapped", async () => {
+      // Root absent -> substitutes {} -> ordinary recursion finds both fields missing
+      // *within a present object* -> each applies its own default. Mirrors zod's
+      // documented .prefault() output for the equivalent schema.
+      const schema = object({
+        foo: string().optional().setDefault("foo"),
+        bar: string().optional().setDefault("bar"),
+      }).setDefault({});
+
+      const result = await validate(schema, undefined, undefined);
+
+      expect(result).toEqual({ success: true, values: { foo: "foo", bar: "bar" } });
+    });
+
+    it("a field mentioned in the object's own default is used for itself; an unmentioned sibling still gets its own default", async () => {
+      const schema = object({
+        foo: string(),
+        bar: string().optional().setDefault("bar"),
+      }).setDefault({ foo: "x" });
+
+      const result = await validate(schema, undefined, undefined);
+
+      expect(result).toEqual({ success: true, values: { foo: "x", bar: "bar" } });
+    });
+
+    it("does not consult the object's own default at all once the object is genuinely (even partially) present", async () => {
+      const schema = object({
+        foo: string().optional().setDefault("x"),
+        bar: string(),
+      }).setDefault({ foo: "should not be used" });
+
+      const result = await validate(schema, undefined, { bar: "submitted" });
+
+      // foo is missing from the *input*, not the object itself -> foo's own default
+      // applies, exactly as it would with no object-level default at all.
+      expect(result).toEqual({ success: true, values: { foo: "x", bar: "submitted" } });
+    });
+
+    it("a ref() into a field with its own default resolves correctly once an absent ancestor bootstraps", async () => {
+      const schema = object({
+        plan: options(["free", "pro"] as const)
+          .optional()
+          .setDefault("free"),
+        note: string().setRequired(eq(ref("plan"), "free")),
+      }).setDefault({});
+
+      const result = await validate(schema, undefined, { note: "hi" });
+
+      expect(result).toEqual({ success: true, values: { plan: "free", note: "hi" } });
+    });
+
+    it("a ref() resolves the value the object's own default supplies for a field, not that field's own (different) default", async () => {
+      // Regression test for the exact reported repro: an expression referencing `name`
+      // used to see the *field's* default ("jan") instead of "kees", the value the
+      // *object's* own default actually supplies for that field.
+      const schema = object({
+        name: string().setDefault("jan"),
+        surname: string(),
+        nameSize: expr(size(ref("name"))),
+      }).setDefault({ name: "kees", surname: "van Rooij" });
+
+      const result = await validate(schema, undefined, undefined);
+
+      expect(result).toEqual({
+        success: true,
+        values: { name: "kees", surname: "van Rooij", nameSize: 4 },
+      });
+    });
+
+    it("repairs a date nested inside an object default after a serialize() + JSON.parse() round trip", async () => {
+      const original = object({
+        meta: object({
+          createdAt: date().optional().setDefault(new Date("2024-01-01T00:00:00.000Z")),
+        }).setDefault({}),
+      });
+      const roundTripped = JSON.parse(serialize(original));
+
+      const result = await validate(roundTripped, undefined, {});
+
+      expect(result).toEqual({
+        success: true,
+        values: { meta: { createdAt: new Date("2024-01-01T00:00:00.000Z") } },
+      });
+    });
+
+    it("substitutes an empty array default when the array itself is absent", async () => {
+      const schema = object({ tags: array(string()).optional().setDefault([]) });
+
+      const result = await validate(schema, undefined, {});
+
+      expect(result).toEqual({ success: true, values: { tags: [] } });
+    });
+
+    it("still fills a sparse array item's own default independently of the array-level default", async () => {
+      const schema = array(string().optional().setDefault("n/a")).setDefault([]);
+
+      const result = await validate(schema, undefined, [undefined, "b"]);
+
+      expect(result).toEqual({ success: true, values: ["n/a", "b"] });
+    });
+  });
+
+  describe("discriminated union defaults", () => {
+    it("fires when the union is entirely absent, using the matching member's own rules", async () => {
+      const schema = discriminatedUnion("type", [
+        { type: "email", email: string() },
+        { type: "phone", phone: string() },
+      ]).setDefault({ type: "email", email: "a@b.com" });
+
+      const result = await validate(schema, undefined, undefined);
+
+      expect(result).toEqual({ success: true, values: { type: "email", email: "a@b.com" } });
+    });
+
+    it("lets a member field's own default compose when the union default only sets the discriminator", async () => {
+      const schema = discriminatedUnion("type", [
+        { type: "email", email: string().optional().setDefault("default@b.com") },
+        { type: "phone", phone: string() },
+      ]).setDefault({ type: "email" });
+
+      const result = await validate(schema, undefined, undefined);
+
+      expect(result).toEqual({ success: true, values: { type: "email", email: "default@b.com" } });
+    });
+
+    it("does not consult the union's own default once the union is genuinely (even partially) present", async () => {
+      const schema = discriminatedUnion("type", [
+        { type: "email", email: string().optional().setDefault("default@b.com") },
+        { type: "phone", phone: string() },
+      ]).setDefault({ type: "phone", phone: "000" });
+
+      // Submitted with the discriminator only — the union itself is present, so its
+      // own default never fires; `email`'s own default still applies independently.
+      const result = await validate(schema, undefined, { type: "email" });
+
+      expect(result).toEqual({ success: true, values: { type: "email", email: "default@b.com" } });
+    });
+
+    it("satisfies the required check for a defaulted union left entirely empty", async () => {
+      const schema = object({
+        contact: discriminatedUnion("type", [{ type: "email", email: string() }]).setDefault({
+          type: "email",
+          email: "a@b.com",
+        }),
+      });
+
+      const result = await validate(schema, undefined, {});
+
+      expect(result).toEqual({ success: true, values: { contact: { type: "email", email: "a@b.com" } } });
+    });
+
+    it("is what a sibling field's ref() into a defaulted union's member resolves to", async () => {
+      const schema = object({
+        contact: discriminatedUnion("type", [
+          { type: "email", email: string() },
+          { type: "phone", phone: string() },
+        ]).setDefault({ type: "email", email: "a@b.com" }),
+        note: string().setRequired(eq(ref("contact.email"), "a@b.com")),
+      });
+
+      const result = await validate(schema, undefined, { note: "hi" });
+
+      expect(result).toEqual({
+        success: true,
+        values: { contact: { type: "email", email: "a@b.com" }, note: "hi" },
+      });
+    });
+
+    it("repairs a date nested inside a union member's default after a serialize()/JSON.parse() round trip", async () => {
+      const original = object({
+        reminder: discriminatedUnion("type", [{ type: "once", remindAt: date() }]).setDefault({
+          type: "once",
+          remindAt: new Date("2024-01-01T00:00:00.000Z"),
+        }),
+      });
+      const roundTripped = JSON.parse(serialize(original));
+
+      const result = await validate(roundTripped, undefined, {});
+
+      expect(result).toEqual({
+        success: true,
+        values: { reminder: { type: "once", remindAt: new Date("2024-01-01T00:00:00.000Z") } },
+      });
     });
   });
 

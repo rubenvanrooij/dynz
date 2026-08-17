@@ -65,7 +65,16 @@ export type BoolFluent<TRules extends Rule[], TProps> = {
     setPrivate: <P extends boolean>(value: P) => BoolFluent<TRules, TProps & { private: P }>;
     /** Enables automatic type coercion. @param value - Boolean flag */
     setCoerce: <P extends boolean>(value: P) => BoolFluent<TRules, TProps & { coerce: P }>;
-    /** Sets a default value when field is empty. @param value - Default boolean value */
+    /**
+     * Sets a default value used whenever the field is left empty.
+     *
+     * The default satisfies `required`, is validated against the field's own rules just
+     * like a supplied value would be, and appears in the validated output. A `ref()` to
+     * this field from elsewhere in the schema resolves to the default too, when the
+     * field itself is empty.
+     *
+     * @param value - Default boolean value
+     */
     setDefault: (value: boolean) => BoolFluent<TRules, TProps & { default: boolean }>;
     /** Attaches UI metadata for form rendering. @param config - UI configuration object */
     setUi: <TUI extends JsonRecord>(config: TUI) => BoolFluent<TRules, TProps & { ui: TUI }>;

@@ -54,6 +54,41 @@ describe("getNested", () => {
       });
     });
 
+    it("resolves a field's value from the *parent* object's own default, not the field's own default", () => {
+      // Regression test: the parent object's own default used to be ignored entirely
+      // here — the field's own default ("jan") was returned instead of the value the
+      // parent's default actually supplies for that field ("kees").
+      const schema = {
+        type: SchemaType.OBJECT,
+        fields: {
+          name: { type: SchemaType.STRING, default: "jan" },
+          surname: { type: SchemaType.STRING },
+        },
+        default: { name: "kees", surname: "van Rooij" },
+      };
+
+      const result = getNested("$.name", schema, undefined);
+
+      expect(result).toEqual({
+        schema: { type: SchemaType.STRING, default: "jan" },
+        value: "kees",
+      });
+    });
+
+    it("prefers the parent object's default over the field's own default when both supply a value", () => {
+      const schema = {
+        type: SchemaType.OBJECT,
+        fields: {
+          name: { type: SchemaType.STRING, default: "jan" },
+        },
+        default: { name: "kees" },
+      };
+
+      const result = getNested("$.name", schema, undefined);
+
+      expect(result).toEqual({ schema: { type: SchemaType.STRING, default: "jan" }, value: "kees" });
+    });
+
     it("should handle undefined nested object", () => {
       const schema = {
         type: SchemaType.OBJECT,
@@ -137,7 +172,7 @@ describe("getNested", () => {
       });
     });
 
-    it("should return default value when array element is undefined", () => {
+    it("should return the item schema's default value when an array element is undefined", () => {
       const schema = {
         type: SchemaType.OBJECT,
         fields: {
@@ -147,7 +182,10 @@ describe("getNested", () => {
               type: SchemaType.STRING,
               default: "default",
             },
-            default: ["default"],
+            // The array's own default (a whole-array substitute, applied when the array
+            // itself is missing) must not be confused with a missing element falling
+            // back to the *item* schema's default — two different things.
+            default: ["should not be used"],
           },
         },
       };
@@ -157,7 +195,7 @@ describe("getNested", () => {
 
       expect(result).toEqual({
         schema: { type: SchemaType.STRING, default: "default" },
-        value: ["default"], // This returns the schema.default (the array), not the element default
+        value: "default",
       });
     });
 
@@ -205,6 +243,106 @@ describe("getNested", () => {
         schema: { type: SchemaType.STRING },
         value: "Bob",
       });
+    });
+
+    it("resolves an array's own default when it's the root schema, instead of throwing", () => {
+      // Regression test: root-level arrays aren't shielded by a parent OBJECT field
+      // lookup (which is what applies an array's own default in the common nested
+      // case), so the ARRAY branch has to resolve its own default itself.
+      const schema = {
+        type: SchemaType.ARRAY,
+        schema: { type: SchemaType.STRING },
+        default: ["a", "b"],
+      };
+
+      const result = getNested("$[0]", schema, undefined);
+
+      expect(result).toEqual({ schema: { type: SchemaType.STRING }, value: "a" });
+    });
+  });
+
+  describe("discriminated union traversal", () => {
+    const contactSchema = {
+      type: SchemaType.DISCRIMINATED_UNION,
+      key: "type",
+      schemas: [
+        { type: "email", email: { type: SchemaType.STRING } },
+        { type: "phone", phone: { type: SchemaType.STRING } },
+      ],
+    };
+
+    it("resolves the discriminator key", () => {
+      const schema = { type: SchemaType.OBJECT, fields: { contact: contactSchema } };
+      const value = { contact: { type: "email", email: "a@b.com" } };
+
+      const result = getNested("$.contact.type", schema, value);
+
+      expect(result).toEqual({ schema: contactSchema, value: "email" });
+    });
+
+    it("resolves a real member field's own value, not the whole union object", () => {
+      // Regression test: this used to return the entire { type, email } object instead
+      // of just the email field's value.
+      const schema = { type: SchemaType.OBJECT, fields: { contact: contactSchema } };
+      const value = { contact: { type: "email", email: "a@b.com" } };
+
+      const result = getNested("$.contact.email", schema, value);
+
+      expect(result).toEqual({ schema: { type: SchemaType.STRING }, value: "a@b.com" });
+    });
+
+    it("falls back to the union's own default when the union itself is absent", () => {
+      const defaultedContact = { ...contactSchema, default: { type: "email", email: "default@b.com" } };
+      const schema = { type: SchemaType.OBJECT, fields: { contact: defaultedContact } };
+
+      const result = getNested("$.contact.email", schema, {});
+
+      expect(result).toEqual({ schema: { type: SchemaType.STRING }, value: "default@b.com" });
+    });
+
+    it("resolves the discriminator key from the union's own default too", () => {
+      const defaultedContact = { ...contactSchema, default: { type: "email", email: "default@b.com" } };
+      const schema = { type: SchemaType.OBJECT, fields: { contact: defaultedContact } };
+
+      const result = getNested("$.contact.type", schema, {});
+
+      expect(result).toEqual({ schema: defaultedContact, value: "email" });
+    });
+
+    it("falls back to a member field's own default when the union is present but that field is absent", () => {
+      // Regression test: this used to return `undefined` for the missing field instead
+      // of consulting its own default — inconsistent with the OBJECT branch's per-field
+      // fallback.
+      const withFieldDefault = {
+        type: SchemaType.DISCRIMINATED_UNION,
+        key: "type",
+        schemas: [
+          { type: "email", email: { type: SchemaType.STRING, default: "fallback@b.com" } },
+          { type: "phone", phone: { type: SchemaType.STRING } },
+        ],
+      };
+      const schema = { type: SchemaType.OBJECT, fields: { contact: withFieldDefault } };
+      const value = { contact: { type: "email" } };
+
+      const result = getNested("$.contact.email", schema, value);
+
+      expect(result).toEqual({
+        schema: { type: SchemaType.STRING, default: "fallback@b.com" },
+        value: "fallback@b.com",
+      });
+    });
+
+    it("returns null when the union is absent and has no default", () => {
+      const schema = { type: SchemaType.OBJECT, fields: { contact: contactSchema } };
+
+      expect(getNested("$.contact.email", schema, {})).toBeNull();
+    });
+
+    it("returns null when the discriminator value doesn't match any member", () => {
+      const schema = { type: SchemaType.OBJECT, fields: { contact: contactSchema } };
+      const value = { contact: { type: "fax", number: "123" } };
+
+      expect(getNested("$.contact.email", schema, value)).toBeNull();
     });
   });
 

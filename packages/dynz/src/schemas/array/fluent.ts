@@ -12,7 +12,7 @@ import {
   type NotIncludesRule,
   type Rule,
 } from "../../rules";
-import type { JsonRecord } from "../../types";
+import type { JsonRecord, SchemaValuesInternal } from "../../types";
 import { type Schema, SchemaType } from "../../types";
 import { type ToParam, toParamaterValue } from "../shared";
 
@@ -111,6 +111,17 @@ export type ArrayFluent<TSchema extends Schema, TRules extends Rule[], TProps> =
     setPrivate: <P extends boolean>(value: P) => ArrayFluent<TSchema, TRules, TProps & { private: P }>;
     /** Enables automatic type coercion. @param value - Boolean flag */
     setCoerce: <P extends boolean>(value: P) => ArrayFluent<TSchema, TRules, TProps & { coerce: P }>;
+    /**
+     * Sets a default value used whenever the array is left empty (e.g.
+     * `.setDefault([])` for "no items yet"). Unlike object defaults, this has no
+     * per-key merge story — an array default is the whole array, substituted
+     * wholesale when absent.
+     *
+     * @param value - Default array value
+     */
+    setDefault: (
+      value: SchemaValuesInternal<TSchema>[]
+    ) => ArrayFluent<TSchema, TRules, TProps & { default: SchemaValuesInternal<TSchema>[] }>;
     /** Attaches UI metadata for form rendering. @param config - UI configuration object */
     setUi: <TUI extends JsonRecord>(config: TUI) => ArrayFluent<TSchema, TRules, TProps & { ui: TUI }>;
   };
@@ -188,6 +199,7 @@ function createFluent<TSchema extends Schema, TRules extends Rule[], TProps>(
     setIncluded: <P extends boolean | Predicate>(value: P) => setProp("included", value),
     setPrivate: <P extends boolean>(value: P) => setProp("private", value),
     setCoerce: <P extends boolean>(value: P) => setProp("coerce", value),
+    setDefault: (value: SchemaValuesInternal<TSchema>[]) => setProp("default", value),
     setUi: <TUI extends JsonRecord>(config: TUI) => setProp("ui", config),
   } as ArrayFluent<TSchema, TRules, TProps>;
 }

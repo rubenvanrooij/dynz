@@ -8,9 +8,21 @@ import {
   type MinEntriesRule,
   type Rule,
 } from "../../rules";
-import type { JsonRecord } from "../../types";
+import type { JsonRecord, SchemaValuesInternal } from "../../types";
 import { type Schema, SchemaType } from "../../types";
 import { type ToParam, toParamaterValue } from "../shared";
+
+/**
+ * The value type for an object's own `.setDefault(...)`: a partial map over its
+ * fields, not a requirement to specify every one. A field with its own default is
+ * already optional here (see `HasDefault`/`IsMandatory`) — `.setDefault({})` is a
+ * valid, common pattern for "materialize the object so its fields' own defaults can
+ * run," and any field this default does mention still only supplies that field's
+ * value, nothing more.
+ */
+type ObjectDefaultValue<TFields extends Record<string, Schema>> = Partial<{
+  [K in keyof TFields]: SchemaValuesInternal<TFields[K]>;
+}>;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -87,6 +99,19 @@ export type ObjectFluent<TFields extends Record<string, Schema>, TRules extends 
     setIncluded: <P extends boolean | Predicate>(value: P) => ObjectFluent<TFields, TRules, TProps & { included: P }>;
     /** Marks field as private (masked in output). @param value - Boolean flag */
     setPrivate: <P extends boolean>(value: P) => ObjectFluent<TFields, TRules, TProps & { private: P }>;
+    /**
+     * Sets a default value used whenever the object is left empty. Continues through
+     * completely normal validation afterward — every field's own default (if it has
+     * one) still gets applied independently for whatever this default doesn't
+     * specify, exactly as it would for a genuinely-submitted partial object.
+     * `.setDefault({})` is a valid, common pattern for "materialize the object so its
+     * fields' own defaults can run."
+     *
+     * @param value - Default value; may specify any subset of fields.
+     */
+    setDefault: <V extends ObjectDefaultValue<TFields>>(
+      value: V
+    ) => ObjectFluent<TFields, TRules, TProps & { default: V }>;
     /** Attaches UI metadata for form rendering. @param config - UI configuration object */
     setUi: <TUI extends JsonRecord>(config: TUI) => ObjectFluent<TFields, TRules, TProps & { ui: TUI }>;
   };
@@ -155,6 +180,7 @@ function createFluent<TFields extends Record<string, Schema>, TRules extends Rul
     setMutable: <P extends boolean | Predicate>(value: P) => setProp("mutable", value),
     setIncluded: <P extends boolean | Predicate>(value: P) => setProp("included", value),
     setPrivate: <P extends boolean>(value: P) => setProp("private", value),
+    setDefault: <V extends ObjectDefaultValue<TFields>>(value: V) => setProp("default", value),
     setUi: <TUI extends JsonRecord>(config: TUI) => setProp("ui", config),
   } as ObjectFluent<TFields, TRules, TProps>;
 }

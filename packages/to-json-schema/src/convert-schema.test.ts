@@ -1,5 +1,19 @@
-import { array, boolean, date, eq, file, literal, number, object, ref, string, v } from "dynz";
 import type { Schema } from "dynz";
+import {
+  array,
+  boolean,
+  date,
+  discriminatedUnion,
+  eq,
+  file,
+  literal,
+  number,
+  object,
+  options,
+  ref,
+  string,
+  v,
+} from "dynz";
 import { describe, expect, it, vi } from "vitest";
 import { convertSchema } from "./convert-schema";
 import type { ConversionContext } from "./types";
@@ -237,6 +251,78 @@ describe("convertSchema", () => {
       type: "string",
       format: "date-time",
       default: defaultDate.toISOString(),
+    });
+  });
+
+  it("does not list a defaulted field as required, even though dynz treats it as required by default", () => {
+    // dynz now fills a static default in whenever a field is left empty, and that
+    // default satisfies `required` there too — so listing the field as `required`
+    // *and* handing it a `default` would tell every JSON Schema / OpenAPI consumer two
+    // contradictory things at once.
+    const schema = object({
+      currency: options(["EUR", "USD"] as const).setDefault("EUR"),
+      amount: number(),
+    });
+
+    expect(convertSchema(schema, ctx)).toEqual({
+      type: "object",
+      properties: {
+        currency: { enum: ["EUR", "USD"], type: "string", default: "EUR" },
+        amount: { type: "number" },
+      },
+      required: ["amount"],
+    });
+  });
+
+  it("excludes a defaulted field from required even when .setRequired(true) was called explicitly", () => {
+    // required: true (explicit) and required left unset both resolve identically at
+    // validate() time — dynz has no way to tell "explicitly required" apart from
+    // "required by default", so this stays consistent with the unset case above rather
+    // than treating the explicit call as a stronger signal it isn't.
+    const schema = object({
+      currency: options(["EUR", "USD"] as const)
+        .setRequired(true)
+        .setDefault("EUR"),
+    });
+
+    expect(convertSchema(schema, ctx)).toEqual({
+      type: "object",
+      properties: {
+        currency: { enum: ["EUR", "USD"], type: "string", default: "EUR" },
+      },
+    });
+  });
+
+  it("excludes a defaulted discriminated union from required and carries its default over", () => {
+    // isMandatory excludes any schema with `default !== undefined` from `required`
+    // generically, with no type-specific logic — this confirms that already covers
+    // discriminatedUnion()'s .setDefault() with no changes needed on this side.
+    const schema = object({
+      contact: discriminatedUnion("kind", [
+        { kind: "email", value: string() },
+        { kind: "phone", value: string() },
+      ]).setDefault({ kind: "email", value: "a@b.com" }),
+    });
+
+    expect(convertSchema(schema, ctx)).toEqual({
+      type: "object",
+      properties: {
+        contact: {
+          oneOf: [
+            {
+              type: "object",
+              properties: { kind: { const: "email" }, value: { type: "string" } },
+              required: ["kind", "value"],
+            },
+            {
+              type: "object",
+              properties: { kind: { const: "phone" }, value: { type: "string" } },
+              required: ["kind", "value"],
+            },
+          ],
+          default: { kind: "email", value: "a@b.com" },
+        },
+      },
     });
   });
 });

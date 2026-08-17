@@ -1,7 +1,7 @@
 "use client";
 
 import { DynzFormProvider, useDynzForm } from "@dynz/react-hook-form";
-import type { ObjectSchema, SchemaValues } from "dynz";
+import { getDefaultValues, type ObjectSchema } from "dynz";
 import { useState } from "react";
 import { client } from "@/lib/client";
 import { SchemaField } from "./fields";
@@ -20,11 +20,10 @@ type Props = {
    * beyond "it is a dynz object schema" — which is the whole point.
    */
   schema: ObjectSchema<never>;
-  defaults: Record<string, unknown>;
   policy: Policy;
 };
 
-export function ExpenseClaimForm({ schema, defaults, policy }: Props) {
+export function ExpenseClaimForm({ schema, policy }: Props) {
   const [accepted, setAccepted] = useState<{ id: string; values: unknown } | undefined>(undefined);
   const [serverErrors, setServerErrors] = useState<ServerError[]>([]);
 
@@ -32,8 +31,7 @@ export function ExpenseClaimForm({ schema, defaults, policy }: Props) {
     schema,
     // The server owns `employeeId`, so hand dynz the current values it must be checked
     // against — that is what turns on mutability enforcement in the browser too.
-    currentValues: defaults as SchemaValues<typeof schema>,
-    defaultValues: defaults,
+    defaultValues: getDefaultValues(schema),
     mode: "onBlur",
     reValidateMode: "onChange",
     schemaOptions: { stripNotIncludedValues: true },
@@ -93,7 +91,7 @@ export function ExpenseClaimForm({ schema, defaults, policy }: Props) {
                 type="button"
                 className="secondary"
                 onClick={() => {
-                  methods.reset(defaults);
+                  methods.reset(getDefaultValues(schema));
                   setAccepted(undefined);
                   setServerErrors([]);
                 }}
