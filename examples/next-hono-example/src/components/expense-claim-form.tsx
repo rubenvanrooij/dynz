@@ -27,8 +27,6 @@ export function ExpenseClaimForm({ schema, policy }: Props) {
   const [accepted, setAccepted] = useState<{ id: string; values: unknown } | undefined>(undefined);
   const [serverErrors, setServerErrors] = useState<ServerError[]>([]);
 
-  console.log('default: ', getDefaultValues(schema))
-
   const methods = useDynzForm({
     schema,
     // The server owns `employeeId`, so hand dynz the current values it must be checked

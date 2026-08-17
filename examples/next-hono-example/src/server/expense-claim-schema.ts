@@ -48,7 +48,7 @@ export const expenseClaimSchema = object({
    * having to reason about ancestors.
    */
   travel: object({
-    from: string().min(2).setDefault('Netherlands'),
+    from: string().min(2).setDefault("Netherlands"),
     to: string().min(2),
     international: boolean().setDefault(false),
     transport: options([
