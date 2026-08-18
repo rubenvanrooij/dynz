@@ -46,8 +46,10 @@
     "test": "vitest run",
     "test:watch": "vitest run --watch"
   },
+  "dependencies": {
+    "dynz": "workspace:*"
+  },
   "peerDependencies": {
-    "dynz": "^1.1.0",
     "@hookform/resolvers": "^5.0.0",
     "react-hook-form": "^7.0.0"
   },
