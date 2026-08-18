@@ -46,8 +46,8 @@
     "test": "vitest run",
     "test:watch": "vitest run --watch"
   },
-  "peerDependencies": {
-    "dynz": "^1.0.0"
+  "dependencies": {
+    "dynz": "workspace:*"
   },
   "devDependencies": {
     "tsdown": "^0.16.5"
