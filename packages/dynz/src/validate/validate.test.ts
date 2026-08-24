@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { eq, size } from "../functions";
-import { global } from "../global";
+import { GlobalType, global } from "../global";
 import { isValueMasked, mask, plain } from "../private";
 import { ref } from "../reference";
 import { array, date, discriminatedUnion, expr, number, object, options, string } from "../schemas";
@@ -1133,7 +1133,7 @@ describe("validate", () => {
   describe("global variables", () => {
     it("includes a field only when a global-gated predicate is true", async () => {
       const schema = object({
-        betaFieldValue: string().setIncluded(eq(global("betaFeaturesEnabled"), true)),
+        betaFieldValue: string().setIncluded(eq(global("betaFeaturesEnabled", GlobalType.BOOLEAN), true)),
       });
 
       const enabled = await validate(
@@ -1160,7 +1160,7 @@ describe("validate", () => {
       // No `globals` option at all — a missing global is a configuration error, not a
       // silent "not included": the caller forgot to supply a value the schema depends on.
       const schema = object({
-        betaFieldValue: string().setIncluded(eq(global("betaFeaturesEnabled"), true)),
+        betaFieldValue: string().setIncluded(eq(global("betaFeaturesEnabled", GlobalType.BOOLEAN), true)),
       });
 
       await expect(validate(schema, undefined, {})).rejects.toThrow(
@@ -1170,7 +1170,7 @@ describe("validate", () => {
 
     it("behaves identically after a serialize()/JSON.parse() round-trip", async () => {
       const original = object({
-        betaFieldValue: string().setIncluded(eq(global("betaFeaturesEnabled"), true)),
+        betaFieldValue: string().setIncluded(eq(global("betaFeaturesEnabled", GlobalType.BOOLEAN), true)),
       });
       const roundTripped = JSON.parse(serialize(original));
 

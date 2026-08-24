@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { eq, sum, v } from "../functions";
+import { eq, STATIC_TYPE, sum, v } from "../functions";
 import { ref } from "../reference";
 import { array, discriminatedUnion, object, string } from "../schemas";
 
@@ -20,7 +20,7 @@ describe("Fluent API", () => {
       expect(schema.rules).toHaveLength(1);
       expect(schema.rules[0]).toEqual({
         type: "min_length",
-        min: { type: "st", value: 3 },
+        min: { type: STATIC_TYPE, value: 3 },
         code: undefined,
       });
     });
@@ -81,7 +81,7 @@ describe("Fluent API", () => {
       expect(schema.required).toEqual({
         type: "eq",
         left: { type: "_dref", path: "type" },
-        right: { type: "st", value: "required" },
+        right: { type: STATIC_TYPE, value: "required" },
       });
     });
 
@@ -125,9 +125,9 @@ describe("Fluent API", () => {
       expect(schema.rules[0]).toEqual({
         type: "one_of",
         values: [
-          { type: "st", value: "a" },
-          { type: "st", value: "b" },
-          { type: "st", value: "c" },
+          { type: STATIC_TYPE, value: "a" },
+          { type: STATIC_TYPE, value: "b" },
+          { type: STATIC_TYPE, value: "c" },
         ],
         code: undefined,
       });
@@ -271,7 +271,7 @@ describe("Fluent API", () => {
       expect(parsed.rules).toHaveLength(2);
       expect(parsed.rules[0]).toEqual({
         type: "min_length",
-        min: { type: "st", value: 3 },
+        min: { type: "_dstatic", value: 3 },
         code: undefined,
       });
     });

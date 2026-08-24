@@ -1,6 +1,6 @@
 import { resolveProperty } from "../conditions";
-import type { GlobalReference } from "../global";
-import type { Reference } from "../reference";
+import { GLOBAL_TYPE, type GlobalReference } from "../global";
+import { REFERENCE_TYPE, type Reference } from "../reference";
 import type { ResolveContext, Schema, SchemaType, ValueType } from "../types";
 import { coerce, coerceSchema, ensureAbsolutePath, getNested } from "../utils";
 import { validateShallowType, validateType } from "../validate/validate-type";
@@ -8,7 +8,7 @@ import type { Predicate } from "./predicate-types";
 import { PREDICATES } from "./predicates";
 import type { Transformer } from "./transformer-types";
 import { TRANSFORMERS } from "./transformers";
-import type { ParamaterValue } from "./types";
+import { type ParamaterValue, STATIC_TYPE } from "./types";
 
 export function unpackRef<T extends SchemaType = SchemaType>(
   ref: Reference,
@@ -72,7 +72,21 @@ export function unpackGlobal<T = unknown>(ref: GlobalReference, context: Resolve
     );
   }
 
-  return globals[ref.key] as T | undefined;
+  const value = globals[ref.key];
+
+  // Untyped globals (created via the bare `global()` escape hatch) carry no
+  // `globalType` — pass the value through as-is, exactly as before typed globals existed.
+  if (ref.globalType === undefined || value === undefined) {
+    return value as T | undefined;
+  }
+
+  if (!validateShallowType(ref.globalType, value)) {
+    throw new Error(
+      `Global variable "${ref.key}" was declared as "${ref.globalType}" via createGlobals(), but the supplied value (${JSON.stringify(value)}) does not match. Check the value passed via validate(schema, current, new, { globals: { "${ref.key}": ... } }).`
+    );
+  }
+
+  return value as T;
 }
 
 export function resolveExpected<T extends SchemaType = SchemaType>(
@@ -107,15 +121,15 @@ export function resolve<TParam extends ParamaterValue, TPath extends string, TSc
     return undefined;
   }
 
-  if (input.type === "_dref") {
+  if (input.type === REFERENCE_TYPE) {
     return unpackRef(input, path, context);
   }
 
-  if (input.type === "_dglobal") {
+  if (input.type === GLOBAL_TYPE) {
     return unpackGlobal(input, context);
   }
 
-  if (input.type === "st") {
+  if (input.type === STATIC_TYPE) {
     return input.value;
   }
 

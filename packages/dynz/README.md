@@ -166,6 +166,72 @@ const signupSchema = d.object({
 });
 ```
 
+### Global Variables
+
+Reference a value that lives outside the schema's own data — the current date, the
+current user's id, a feature flag — supplied at `validate()`-call time instead of read
+from the submitted values:
+
+```typescript
+import * as d from "dynz";
+
+const orderSchema = d.object({
+  submittedAt: d.date(),
+  discountCode: d
+    .string()
+    .setIncluded(
+      d.eq(d.global("betaFeaturesEnabled", d.GlobalType.BOOLEAN), true),
+    ),
+});
+
+await d.validate(
+  orderSchema,
+  undefined,
+  { submittedAt: new Date() },
+  { globals: { betaFeaturesEnabled: true } },
+);
+```
+
+A global's declared type (`d.GlobalType.STRING`/`NUMBER`/`BOOLEAN`/`DATE`) is checked
+strictly — unlike `ref()`, a global's value is **not coerced**, so it must be supplied as
+the exact JS type. A missing key throws instead of silently resolving to `undefined`:
+it's treated as a configuration error, not a legitimately absent value.
+
+```typescript
+await d.validate(orderSchema, undefined, { submittedAt: new Date() }, {});
+// Throws: Global variable "betaFeaturesEnabled" could not be found. Make sure to
+// supply it via validate(schema, current, new, { globals: { "betaFeaturesEnabled": ... } }).
+```
+
+#### `createGlobals()` — a shared, typo-checked contract
+
+For a schema that uses the same globals in several places, `createGlobals()` binds a
+fixed set of keys to their types once — a typo in a key is then caught at compile time,
+and each call site no longer needs to repeat the type:
+
+```typescript
+const { global, values } = d.createGlobals({
+  now: d.GlobalType.DATE,
+  minAmount: d.GlobalType.NUMBER,
+});
+
+const schema = d.object({
+  submittedAt: d.date().max(global("now")),
+  amount: d.number().min(global("minAmount")),
+});
+
+await d.validate(
+  schema,
+  undefined,
+  { submittedAt: new Date(), amount: 100 },
+  { globals: values({ now: new Date(), minAmount: 50 }) },
+);
+```
+
+`values()` returns its argument unchanged — it exists purely to type-check the globals
+map passed to `validate()` against the contract, so a wrong type or a missing key is a
+compile-time error instead of a runtime one.
+
 ### Mutability Controls
 
 Control when fields can be modified based on conditions:
@@ -578,11 +644,14 @@ Utility:
 
 - `ref(path)` - Reference another field's value
 - `v(value)` - Wrap a static/constant value
+- `global(key, type)` - Reference an externally supplied global variable
+- `createGlobals(contract)` - Bind a fixed, typo-checked set of global keys and types
 
 ### Validation
 
 - `validate(schema, currentValues?, newValues, options?)` - Main validation function
 - `validateMutable` option - Check field mutability constraints (defaults to true)
+- `globals` option - Values for any `global()`/`createGlobals()` references in the schema
 - `customRules` option - Provide custom rule implementations
 
 ## Type Safety
