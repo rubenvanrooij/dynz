@@ -1,8 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { and, eq, gt, gte, isIn, isNotIn, lt, lte, matches, neq, or, v } from "../functions";
+import { global } from "../global";
 import { ref } from "../reference";
 import { object, string } from "../schemas";
-import { getConditionDependencies, getRulesDependenciesMap } from "./get-condition-dependencies";
+import {
+  getConditionDependencies,
+  getParamaterDependencies,
+  getRulesDependenciesMap,
+} from "./get-condition-dependencies";
 
 // Root schema containing all fields referenced in getConditionDependencies tests
 const rootSchema = object({
@@ -78,6 +83,27 @@ describe("getConditionDependencies", () => {
       const result = getConditionDependencies(condition, "$.local.field", rootSchema);
 
       expect(result).toEqual(["$.global.setting"]);
+    });
+  });
+
+  describe("global references", () => {
+    it("should contribute zero dependencies for a bare global reference", () => {
+      const result = getParamaterDependencies(global("featureFlag"), "$.user", rootSchema);
+      expect(result).toEqual([]);
+    });
+
+    it("should only report the ref()'s path when a condition mixes ref() and global()", () => {
+      const condition = eq(ref("email"), global("expectedEmail"));
+      const result = getConditionDependencies(condition, "$.user", rootSchema);
+
+      expect(result).toEqual(["$.email"]);
+    });
+
+    it("should not crash a rule's fallback dependency scan when it references a global", () => {
+      const schema = string().min(global("minLength"));
+      const result = getRulesDependenciesMap(schema, "$.field");
+
+      expect(result).toEqual({ dependencies: {}, reverse: {} });
     });
   });
 

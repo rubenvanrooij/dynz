@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { eq, size } from "../functions";
+import { global } from "../global";
 import { isValueMasked, mask, plain } from "../private";
 import { ref } from "../reference";
 import { array, date, discriminatedUnion, expr, number, object, options, string } from "../schemas";
@@ -1126,6 +1127,72 @@ describe("validate", () => {
       if (!result.success) {
         expect(result.errors[0]?.code).toBe(ErrorCode.IMMUTABLE);
       }
+    });
+  });
+
+  describe("global variables", () => {
+    it("includes a field only when a global-gated predicate is true", async () => {
+      const schema = object({
+        betaFieldValue: string().setIncluded(eq(global("betaFeaturesEnabled"), true)),
+      });
+
+      const enabled = await validate(
+        schema,
+        undefined,
+        { betaFieldValue: "hi" },
+        { globals: { betaFeaturesEnabled: true } }
+      );
+      expect(enabled).toEqual({ success: true, values: { betaFieldValue: "hi" } });
+
+      const disabled = await validate(
+        schema,
+        undefined,
+        { betaFieldValue: "hi" },
+        { globals: { betaFeaturesEnabled: false } }
+      );
+      expect(disabled.success).toBe(false);
+      if (!disabled.success) {
+        expect(disabled.errors[0]?.code).toBe(ErrorCode.INCLUDED);
+      }
+    });
+
+    it("rejects when a referenced global is never supplied", async () => {
+      // No `globals` option at all — a missing global is a configuration error, not a
+      // silent "not included": the caller forgot to supply a value the schema depends on.
+      const schema = object({
+        betaFieldValue: string().setIncluded(eq(global("betaFeaturesEnabled"), true)),
+      });
+
+      await expect(validate(schema, undefined, {})).rejects.toThrow(
+        /Global variable "betaFeaturesEnabled" could not be found/
+      );
+    });
+
+    it("behaves identically after a serialize()/JSON.parse() round-trip", async () => {
+      const original = object({
+        betaFieldValue: string().setIncluded(eq(global("betaFeaturesEnabled"), true)),
+      });
+      const roundTripped = JSON.parse(serialize(original));
+
+      const originalResult = await validate(
+        original,
+        undefined,
+        { betaFieldValue: "hi" },
+        {
+          globals: { betaFeaturesEnabled: true },
+        }
+      );
+      const roundTrippedResult = await validate(
+        roundTripped,
+        undefined,
+        { betaFieldValue: "hi" },
+        {
+          globals: { betaFeaturesEnabled: true },
+        }
+      );
+
+      expect(roundTrippedResult).toEqual(originalResult);
+      expect(roundTrippedResult).toEqual({ success: true, values: { betaFieldValue: "hi" } });
     });
   });
 });

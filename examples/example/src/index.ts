@@ -6,7 +6,7 @@ async function example() {
   const schema = d
     .object({
       name: d.object({
-        first: d.string().setDefault("jan"),
+        first: d.string().min(d.global('min')).setDefault("jan"),
         last: d.string().setRequired(false).setDefault("naam"),
       }),
       nameSize: d.expr(d.sum(d.size(d.ref("name.first")), d.size(d.ref("name.last")))),
@@ -14,7 +14,11 @@ async function example() {
     .setDefault({
       name: { first: "kees" },
     });
-  const result = await d.validate(schema, undefined, undefined);
+  const result = await d.validate(schema, undefined, undefined, {
+    globals: {
+      min: 10
+    }
+  });
 
   console.log(result);
 }

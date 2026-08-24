@@ -1,3 +1,4 @@
+import type { GlobalReference } from "../global";
 // import type { Reference } from "../reference";
 import type { Reference } from "../reference";
 import type { ValueType } from "../types";
@@ -52,6 +53,7 @@ export type Static<T extends ValueType = ValueType> = {
  * This union type represents all possible value types:
  * - {@link Static} - A constant value wrapped with `v()`
  * - {@link Reference} - A reference to another field with `ref()`
+ * - {@link GlobalReference} - A reference to an externally supplied global with `global()`
  * - {@link Predicate} - A boolean expression
  * - {@link Transformer} - A computed/transformed value
  * - `undefined` - No value
@@ -62,6 +64,7 @@ export type ParamaterValue<T extends ValueType = ValueType> =
   | Static<T>
   | undefined
   | Reference
+  | GlobalReference
   | Predicate
   | Transformer;
 

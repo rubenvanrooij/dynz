@@ -1,4 +1,5 @@
-import { isIncluded } from "../conditions";
+import { resolveProperty } from "../conditions";
+import type { GlobalReference } from "../global";
 import type { Reference } from "../reference";
 import type { ResolveContext, Schema, SchemaType, ValueType } from "../types";
 import { coerce, coerceSchema, ensureAbsolutePath, getNested } from "../utils";
@@ -30,7 +31,7 @@ export function unpackRef<T extends SchemaType = SchemaType>(
   const { schema, value } = ret;
 
   // only return when the schema is actually included
-  if (!isIncluded(context.schema, absolutePath, context.values)) {
+  if (!resolveProperty("included", absolutePath, true, context)) {
     return undefined;
   }
 
@@ -60,6 +61,18 @@ export function unpackRef<T extends SchemaType = SchemaType>(
   }
 
   return undefined;
+}
+
+export function unpackGlobal<T = unknown>(ref: GlobalReference, context: ResolveContext): T | undefined {
+  const globals = context.globals ?? {};
+
+  if (!Object.hasOwn(globals, ref.key)) {
+    throw new Error(
+      `Global variable "${ref.key}" could not be found. Make sure to supply it via validate(schema, current, new, { globals: { "${ref.key}": ... } }).`
+    );
+  }
+
+  return globals[ref.key] as T | undefined;
 }
 
 export function resolveExpected<T extends SchemaType = SchemaType>(
@@ -96,6 +109,10 @@ export function resolve<TParam extends ParamaterValue, TPath extends string, TSc
 
   if (input.type === "_dref") {
     return unpackRef(input, path, context);
+  }
+
+  if (input.type === "_dglobal") {
+    return unpackGlobal(input, context);
   }
 
   if (input.type === "st") {
