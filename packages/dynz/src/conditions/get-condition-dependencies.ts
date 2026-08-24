@@ -60,7 +60,6 @@ export function getConditionDependencies(input: Predicate | Transformer, path: s
 }
 
 export function getParamaterDependencies(param: ParamaterValue, path: string, schema: Schema): string[] {
-  // globals are supplied at validate()-call time, not a field in the schema's value tree
   if (isGlobalReference(param)) {
     return [];
   }
