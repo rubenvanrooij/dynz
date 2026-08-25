@@ -85,7 +85,16 @@ export type EnumFluent<TEnum extends Enum, TRules extends Rule[], TProps> = {
     setIncluded: <P extends boolean | Predicate>(value: P) => EnumFluent<TEnum, TRules, TProps & { included: P }>;
     /** Marks field as private (masked in output). @param value - Boolean flag */
     setPrivate: <P extends boolean>(value: P) => EnumFluent<TEnum, TRules, TProps & { private: P }>;
-    /** Sets a default value when field is empty. @param value - Default enum value */
+    /**
+     * Sets a default value used whenever the field is left empty.
+     *
+     * The default satisfies `required`, is validated against the field's own rules just
+     * like a supplied value would be, and appears in the validated output. A `ref()` to
+     * this field from elsewhere in the schema resolves to the default too, when the
+     * field itself is empty.
+     *
+     * @param value - Default enum value
+     */
     setDefault: (value: EnumValues<TEnum>) => EnumFluent<TEnum, TRules, TProps & { default: EnumValues<TEnum> }>;
     /** Attaches UI metadata for form rendering. @param config - UI configuration object */
     setUi: <TUI extends JsonRecord>(config: TUI) => EnumFluent<TEnum, TRules, TProps & { ui: TUI }>;

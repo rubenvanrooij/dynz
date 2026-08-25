@@ -90,7 +90,16 @@ export type OptionsFluent<TOptions extends OptionsValue, TRules extends Rule[], 
     setPrivate: <P extends boolean>(value: P) => OptionsFluent<TOptions, TRules, TProps & { private: P }>;
     /** Enables automatic type coercion. @param value - Boolean flag */
     setCoerce: <P extends boolean>(value: P) => OptionsFluent<TOptions, TRules, TProps & { coerce: P }>;
-    /** Sets a default value when field is empty. @param value - Default option value */
+    /**
+     * Sets a default value used whenever the field is left empty.
+     *
+     * The default satisfies `required`, is validated against the field's own rules just
+     * like a supplied value would be, and appears in the validated output. A `ref()` to
+     * this field from elsewhere in the schema resolves to the default too, when the
+     * field itself is empty.
+     *
+     * @param value - Default option value
+     */
     setDefault: <V extends TOptions[number]>(value: V) => OptionsFluent<TOptions, TRules, TProps & { default: V }>;
     /** Attaches UI metadata for form rendering. @param config - UI configuration object */
     setUi: <TUI extends JsonRecord>(config: TUI) => OptionsFluent<TOptions, TRules, TProps & { ui: TUI }>;

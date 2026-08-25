@@ -1,0 +1,29 @@
+{
+  "name": "next-hono-example",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@dynz/react-hook-form": "workspace:*",
+    "@dynz/to-json-schema": "workspace:*",
+    "@hono/swagger-ui": "^0.6.1",
+    "@hookform/resolvers": "5.2.2",
+    "dynz": "workspace:*",
+    "hono": "^4.13.1",
+    "next": "15.5.21",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "react-hook-form": "7.63.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "typescript": "^5"
+  }
+}

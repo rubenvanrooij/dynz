@@ -6,7 +6,6 @@ on:
     branches: [main]
 
 jobs:
-
   setup_environment:
     name: Install packages
     runs-on: ubuntu-latest
@@ -15,7 +14,7 @@ jobs:
         uses: actions/checkout@v4
       - name: Setup environment
         uses: ./.github/actions/environment
-      
+
   library_preview:
     name: Publish library via pkg.pr.new
     runs-on: ubuntu-latest
@@ -26,7 +25,7 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/environment
       - name: Publish dynz library
-        run: pnpx pkg-pr-new publish --comment=update --pnpm './packages/dynz' './packages/react-hook-form'
+        run: pnpx pkg-pr-new publish --comment=update --pnpm './packages/dynz' './packages/react-hook-form' './packages/to-json-schema'
 
   format_check:
     name: Run format in library
@@ -39,7 +38,7 @@ jobs:
         uses: ./.github/actions/environment
       - name: Format check
         run: pnpm format:check
-  
+
   lint:
     name: Run lint in library
     needs: setup_environment

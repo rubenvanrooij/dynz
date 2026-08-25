@@ -1,4 +1,4 @@
-import { _resolveProperty, resolveProperty, resolveRules } from "../conditions";
+import { resolveProperty, resolveRules } from "../conditions";
 import { resolve } from "../functions";
 import { isPivateValue, isValueMasked, type PrivateValue } from "../private";
 import { validateRule } from "../rules";
@@ -13,7 +13,7 @@ import {
   type ValidationResult,
   type ValidationSuccesResult,
 } from "../types";
-import { coerceSchema } from "../utils";
+import { coerceSchema, withDefault } from "../utils";
 import { isArray, isObject, validateType } from "./validate-type";
 
 export function validate<T extends Schema>(
@@ -88,8 +88,12 @@ export async function _validate<T extends Schema>(
     };
   }
 
-  const newValue = coerceSchema(schema, getValue(schema, path, values.new));
-  const currentValue = getValue(schema, path, values.current);
+  // Empty (undefined/null) values fall back to the schema default, so defaults reach
+  // `required`, type checks, rules, and output — not just other fields' references
+  // (see `withDefault`). Mutability check below still uses raw `values.current`/`new`
+  // to distinguish "resubmitted same value" from "value was masked".
+  const newValue = coerceSchema(schema, withDefault(schema, getValue(schema, path, values.new)));
+  const currentValue = withDefault(schema, getValue(schema, path, values.current));
 
   /**
    * if the schema is marked as not mutable; the value shuld still be the same

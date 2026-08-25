@@ -87,8 +87,31 @@ export type IsRequired<T extends Schema> = T extends { required: true }
 
 export type IsPrivate<T extends Schema> = T extends { private: true } ? true : false;
 
+/**
+ * True if `T`'s type proves `.setDefault(...)` was called — i.e. `default` is a
+ * *required* key on `T`, not just the optional one every schema has by default.
+ *
+ * Uses the standard `{} extends Pick<T, "default">` trick to check "is this key
+ * optional/missing" — false only when the key is required.
+ *
+ * For a widened generic `Schema`, `default` always looks optional, so this returns
+ * `false` — the safe direction, since a false positive would wrongly mark a required
+ * field as optional in `SchemaValues<T>`.
+ */
+export type HasDefault<T extends Schema> = "default" extends keyof T
+  ? Record<never, never> extends Pick<T, "default">
+    ? false
+    : true
+  : false;
+
 // === Computed Properties ===
-export type IsMandatory<T extends Schema> = IsIncluded<T> extends true ? IsRequired<T> : false;
+export type IsMandatory<T extends Schema> = IsIncluded<T> extends true
+  ? IsRequired<T> extends true
+    ? HasDefault<T> extends true
+      ? false // a default satisfies `required` at runtime, so the field may be omitted
+      : true
+    : false
+  : false;
 
 export type IsOptionalField<T extends Schema> = IsMandatory<T> extends false ? true : false;
 
@@ -141,7 +164,7 @@ type RequiredFields<T extends ObjectSchema<never>> = {
 
 export type ObjectValue<T extends ObjectSchema<never>> = OptionalFields<T> & RequiredFields<T>;
 
-type DiscriminatedMemberValue<
+export type DiscriminatedMemberValue<
   TKey extends string,
   TMember extends Record<string, Schema | string | number | boolean>,
 > = TMember extends Record<string, Schema | string | number | boolean>
