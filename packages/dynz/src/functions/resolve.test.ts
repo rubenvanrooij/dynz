@@ -22,7 +22,7 @@ describe("resolve — global references", () => {
     expect(result).toBe("2026-01-01");
   });
 
-  it("resolves a global whose value is explicitly undefined (present, just empty)", () => {
+  it("throws when a global's value is explicitly undefined (present, just empty) - undefined isn't a valid date", () => {
     const schema = string();
     const context: ResolveContext = {
       schema,
@@ -30,9 +30,9 @@ describe("resolve — global references", () => {
       globals: { today: undefined },
     };
 
-    const result = resolve(global("today", GlobalType.DATE), "$", context);
-
-    expect(result).toBeUndefined();
+    expect(() => resolve(global("today", GlobalType.DATE), "$", context)).toThrow(
+      /Global variable "today" was declared as "date"/
+    );
   });
 
   it("throws when a global key isn't in the globals map", () => {
@@ -138,7 +138,7 @@ describe("resolve — typed global references (createGlobals)", () => {
     );
   });
 
-  it("passes an explicitly undefined value through without type-checking it", () => {
+  it("throws when a typed global's value is explicitly undefined - undefined isn't a valid number", () => {
     const schema = string();
     const context: ResolveContext = {
       schema,
@@ -146,7 +146,9 @@ describe("resolve — typed global references (createGlobals)", () => {
       globals: { minAmount: undefined },
     };
 
-    expect(resolve(typedGlobal("minAmount"), "$", context)).toBeUndefined();
+    expect(() => resolve(typedGlobal("minAmount"), "$", context)).toThrow(
+      /Global variable "minAmount" was declared as "number"/
+    );
   });
 
   it("still throws when a typed global key is missing entirely", () => {
