@@ -74,12 +74,6 @@ export function unpackGlobal<T = unknown>(ref: GlobalReference, context: Resolve
 
   const value = globals[ref.key];
 
-  // Untyped globals (created via the bare `global()` escape hatch) carry no
-  // `globalType` — pass the value through as-is, exactly as before typed globals existed.
-  if (ref.globalType === undefined || value === undefined) {
-    return value as T | undefined;
-  }
-
   if (!validateShallowType(ref.globalType, value)) {
     throw new Error(
       `Global variable "${ref.key}" was declared as "${ref.globalType}" via createGlobals(), but the supplied value (${JSON.stringify(value)}) does not match. Check the value passed via validate(schema, current, new, { globals: { "${ref.key}": ... } }).`
