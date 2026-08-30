@@ -3,7 +3,7 @@
 "@dynz/to-json-schema": minor
 ---
 
-Every schema builder now supports zod-like metadata via `.setMeta(...)` and `.describe(...)`:
+Every schema builder now supports metadata via `.setMeta(...)` and `.describe(...)`:
 
 ```ts
 string()
