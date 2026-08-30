@@ -24,7 +24,7 @@ import {
   type RegexRule,
   type Rule,
 } from "../../rules";
-import type { JsonRecord } from "../../types";
+import type { JsonRecord, SchemaMeta } from "../../types";
 import { SchemaType } from "../../types";
 import { type ToParam, toParamaterValue } from "../shared";
 
@@ -171,6 +171,10 @@ export type StrFluent<TRules extends Rule[], TProps> = {
     setDefault: (value: string) => StrFluent<TRules, TProps & { default: string }>;
     /** Attaches UI metadata for form rendering. @param config - UI configuration object */
     setUi: <TUI extends JsonRecord>(config: TUI) => StrFluent<TRules, TProps & { ui: TUI }>;
+    /** Merges metadata (id, title, description, deprecated, custom keys) onto the schema. @param meta - Partial metadata object */
+    setMeta: <M extends SchemaMeta>(meta: M) => StrFluent<TRules, TProps & { meta: M }>;
+    /** Sets the description metadata field (shorthand for setMeta({ description })). @param description - Human-readable description */
+    describe: (description: string) => StrFluent<TRules, TProps & { meta: SchemaMeta }>;
   };
 
 // ---------------------------------------------------------------------------
@@ -257,6 +261,8 @@ function createFluent<TRules extends Rule[], TProps>(rules: TRules, props: TProp
     setCoerce: <P extends boolean>(value: P) => setProp("coerce", value),
     setDefault: (value: string) => setProp("default", value),
     setUi: <TUI extends JsonRecord>(config: TUI) => setProp("ui", config),
+    setMeta: <M extends SchemaMeta>(meta: M) => setProp("meta", { ...(props as { meta?: SchemaMeta }).meta, ...meta }),
+    describe: (description: string) => setProp("meta", { ...(props as { meta?: SchemaMeta }).meta, description }),
   } as StrFluent<TRules, TProps>;
 }
 

@@ -8,7 +8,7 @@ import {
   type OneOfRule,
   type Rule,
 } from "../../rules";
-import type { JsonRecord } from "../../types";
+import type { JsonRecord, SchemaMeta } from "../../types";
 import { SchemaType } from "../../types";
 import { type ToParam, toParamaterValue } from "../shared";
 import type { OptionsValue } from "./types";
@@ -103,6 +103,8 @@ export type OptionsFluent<TOptions extends OptionsValue, TRules extends Rule[], 
     setDefault: <V extends TOptions[number]>(value: V) => OptionsFluent<TOptions, TRules, TProps & { default: V }>;
     /** Attaches UI metadata for form rendering. @param config - UI configuration object */
     setUi: <TUI extends JsonRecord>(config: TUI) => OptionsFluent<TOptions, TRules, TProps & { ui: TUI }>;
+    setMeta: <M extends SchemaMeta>(meta: M) => OptionsFluent<TOptions, TRules, TProps & { meta: M }>;
+    describe: (description: string) => OptionsFluent<TOptions, TRules, TProps & { meta: SchemaMeta }>;
   };
 
 // ---------------------------------------------------------------------------
@@ -171,6 +173,8 @@ function createFluent<TOptions extends OptionsValue, TRules extends Rule[], TPro
     setCoerce: <P extends boolean>(value: P) => setProp("coerce", value),
     setDefault: <V extends TOptions[number]>(value: V) => setProp("default", value),
     setUi: <TUI extends JsonRecord>(config: TUI) => setProp("ui", config),
+    setMeta: <M extends SchemaMeta>(meta: M) => setProp("meta", { ...(props as { meta?: SchemaMeta }).meta, ...meta }),
+    describe: (description: string) => setProp("meta", { ...(props as { meta?: SchemaMeta }).meta, description }),
   } as OptionsFluent<TOptions, TRules, TProps>;
 }
 

@@ -12,7 +12,7 @@ import {
   type NotIncludesRule,
   type Rule,
 } from "../../rules";
-import type { JsonRecord, SchemaValuesInternal } from "../../types";
+import type { JsonRecord, SchemaMeta, SchemaValuesInternal } from "../../types";
 import { type Schema, SchemaType } from "../../types";
 import { type ToParam, toParamaterValue } from "../shared";
 
@@ -124,6 +124,8 @@ export type ArrayFluent<TSchema extends Schema, TRules extends Rule[], TProps> =
     ) => ArrayFluent<TSchema, TRules, TProps & { default: SchemaValuesInternal<TSchema>[] }>;
     /** Attaches UI metadata for form rendering. @param config - UI configuration object */
     setUi: <TUI extends JsonRecord>(config: TUI) => ArrayFluent<TSchema, TRules, TProps & { ui: TUI }>;
+    setMeta: <M extends SchemaMeta>(meta: M) => ArrayFluent<TSchema, TRules, TProps & { meta: M }>;
+    describe: (description: string) => ArrayFluent<TSchema, TRules, TProps & { meta: SchemaMeta }>;
   };
 
 // ---------------------------------------------------------------------------
@@ -201,6 +203,8 @@ function createFluent<TSchema extends Schema, TRules extends Rule[], TProps>(
     setCoerce: <P extends boolean>(value: P) => setProp("coerce", value),
     setDefault: (value: SchemaValuesInternal<TSchema>[]) => setProp("default", value),
     setUi: <TUI extends JsonRecord>(config: TUI) => setProp("ui", config),
+    setMeta: <M extends SchemaMeta>(meta: M) => setProp("meta", { ...(props as { meta?: SchemaMeta }).meta, ...meta }),
+    describe: (description: string) => setProp("meta", { ...(props as { meta?: SchemaMeta }).meta, description }),
   } as ArrayFluent<TSchema, TRules, TProps>;
 }
 

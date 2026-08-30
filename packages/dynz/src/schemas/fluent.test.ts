@@ -153,6 +153,32 @@ describe("Fluent API", () => {
       expect(schema2.rules).toHaveLength(1);
       expect(schema3.rules).toHaveLength(2);
     });
+
+    it("describe() sets the description metadata field", () => {
+      const schema = string().describe("A user's name");
+
+      expect(schema.meta).toEqual({ description: "A user's name" });
+    });
+
+    it("setMeta() sets arbitrary metadata fields", () => {
+      const schema = string().setMeta({ id: "userName", title: "User name", deprecated: true, custom: "value" });
+
+      expect(schema.meta).toEqual({ id: "userName", title: "User name", deprecated: true, custom: "value" });
+    });
+
+    it("merges metadata across repeated calls instead of replacing", () => {
+      const schema = string().setMeta({ id: "x", title: "X" }).describe("A description");
+
+      expect(schema.meta).toEqual({ id: "x", title: "X", description: "A description" });
+    });
+
+    it("describe() after setMeta() preserves previously-set fields", () => {
+      const withoutDescribe = string().setMeta({ id: "x" });
+      const withDescribe = withoutDescribe.describe("desc");
+
+      expect(withoutDescribe.meta).toEqual({ id: "x" });
+      expect(withDescribe.meta).toEqual({ id: "x", description: "desc" });
+    });
   });
 
   describe("ObjectSchemaFluent", () => {

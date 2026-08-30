@@ -1,5 +1,5 @@
 import type { Predicate } from "../../functions";
-import type { JsonRecord } from "../../types";
+import type { JsonRecord, SchemaMeta } from "../../types";
 import { SchemaType } from "../../types";
 import type { LiteralValue } from "./types";
 
@@ -18,6 +18,8 @@ export type LiteralFluent<TValue extends LiteralValue, TProps> = {
     setPrivate: <P extends boolean>(value: P) => LiteralFluent<TValue, TProps & { private: P }>;
     setDefault: (value: TValue) => LiteralFluent<TValue, TProps & { default: TValue }>;
     setUi: <TUI extends JsonRecord>(config: TUI) => LiteralFluent<TValue, TProps & { ui: TUI }>;
+    setMeta: <M extends SchemaMeta>(meta: M) => LiteralFluent<TValue, TProps & { meta: M }>;
+    describe: (description: string) => LiteralFluent<TValue, TProps & { meta: SchemaMeta }>;
   };
 
 // ---------------------------------------------------------------------------
@@ -43,6 +45,8 @@ function createFluent<TValue extends LiteralValue, TProps>(
     setPrivate: <P extends boolean>(v: P) => setProp("private", v),
     setDefault: (v: TValue) => setProp("default", v),
     setUi: <TUI extends JsonRecord>(config: TUI) => setProp("ui", config),
+    setMeta: <M extends SchemaMeta>(meta: M) => setProp("meta", { ...(props as { meta?: SchemaMeta }).meta, ...meta }),
+    describe: (description: string) => setProp("meta", { ...(props as { meta?: SchemaMeta }).meta, description }),
   } as LiteralFluent<TValue, TProps>;
 }
 

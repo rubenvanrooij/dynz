@@ -1,4 +1,4 @@
-import { type OptionsValue, type OptionValue, type Schema, SchemaType } from "dynz";
+import { type OptionsValue, type OptionValue, type Schema, type SchemaMeta, SchemaType } from "dynz";
 import { applyRules } from "./convert-rules";
 import { reportIssue } from "./report-issue";
 import type { ConversionContext, JsonSchema } from "./types";
@@ -102,6 +102,28 @@ function applyDefault(schema: Schema, jsonSchema: JsonSchema): void {
   jsonSchema.default = schema.default instanceof Date ? schema.default.toISOString() : schema.default;
 }
 
+function applyMeta(schema: Schema, jsonSchema: JsonSchema): void {
+  const meta = (schema as { meta?: SchemaMeta }).meta;
+  if (!meta) {
+    return;
+  }
+
+  const { id, title, description, deprecated, ...rest } = meta;
+  if (id !== undefined) {
+    jsonSchema.$id = id;
+  }
+  if (title !== undefined) {
+    jsonSchema.title = title;
+  }
+  if (description !== undefined) {
+    jsonSchema.description = description;
+  }
+  if (deprecated !== undefined) {
+    jsonSchema.deprecated = deprecated;
+  }
+  Object.assign(jsonSchema, rest);
+}
+
 /**
  * Converts a dynz schema to a JSON Schema (2020-12) document. Rule values
  * and schema kinds without a JSON Schema equivalent are handled per
@@ -110,6 +132,7 @@ function applyDefault(schema: Schema, jsonSchema: JsonSchema): void {
 export function convertSchema(schema: Schema, context: ConversionContext): JsonSchema {
   const jsonSchema = convertSchemaKind(schema, context);
   applyDefault(schema, jsonSchema);
+  applyMeta(schema, jsonSchema);
   return applyPrivacyWrapper(schema, jsonSchema);
 }
 

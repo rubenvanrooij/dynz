@@ -254,6 +254,26 @@ describe("convertSchema", () => {
     });
   });
 
+  it("maps meta.title, meta.description and meta.deprecated onto the same-named JSON Schema keys", () => {
+    const schema = string().setMeta({ title: "Name", description: "The user's name", deprecated: true });
+    expect(convertSchema(schema, ctx)).toEqual({
+      type: "string",
+      title: "Name",
+      description: "The user's name",
+      deprecated: true,
+    });
+  });
+
+  it("maps meta.id onto the JSON Schema $id keyword", () => {
+    const schema = string().setMeta({ id: "userName" });
+    expect(convertSchema(schema, ctx)).toEqual({ type: "string", $id: "userName" });
+  });
+
+  it("passes unknown custom meta keys through onto the JSON Schema output", () => {
+    const schema = string().setMeta({ examples: ["Jane"] });
+    expect(convertSchema(schema, ctx)).toEqual({ type: "string", examples: ["Jane"] });
+  });
+
   it("does not list a defaulted field as required, even though dynz treats it as required by default", () => {
     // dynz now fills a static default in whenever a field is left empty, and that
     // default satisfies `required` there too — so listing the field as `required`

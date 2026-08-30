@@ -53,6 +53,14 @@ export type PrivateSchema = {
   private?: boolean | undefined;
 };
 
+export type SchemaMeta = {
+  id?: string;
+  title?: string;
+  description?: string;
+  deprecated?: boolean;
+  [key: string]: unknown;
+};
+
 export type Schema =
   | StringSchema
   | ObjectSchema<never>

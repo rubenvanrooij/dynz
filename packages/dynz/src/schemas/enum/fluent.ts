@@ -8,7 +8,7 @@ import {
   type OneOfRule,
   type Rule,
 } from "../../rules";
-import type { JsonRecord } from "../../types";
+import type { JsonRecord, SchemaMeta } from "../../types";
 import { SchemaType } from "../../types";
 import { type ToParam, toParamaterValue } from "../shared";
 import type { Enum, EnumValues } from "./types";
@@ -98,6 +98,8 @@ export type EnumFluent<TEnum extends Enum, TRules extends Rule[], TProps> = {
     setDefault: (value: EnumValues<TEnum>) => EnumFluent<TEnum, TRules, TProps & { default: EnumValues<TEnum> }>;
     /** Attaches UI metadata for form rendering. @param config - UI configuration object */
     setUi: <TUI extends JsonRecord>(config: TUI) => EnumFluent<TEnum, TRules, TProps & { ui: TUI }>;
+    setMeta: <M extends SchemaMeta>(meta: M) => EnumFluent<TEnum, TRules, TProps & { meta: M }>;
+    describe: (description: string) => EnumFluent<TEnum, TRules, TProps & { meta: SchemaMeta }>;
   };
 
 // ---------------------------------------------------------------------------
@@ -166,6 +168,8 @@ function createFluent<TEnum extends Enum, TRules extends Rule[], TProps>(
     setPrivate: <P extends boolean>(value: P) => setProp("private", value),
     setDefault: (value: EnumValues<TEnum>) => setProp("default", value),
     setUi: <TUI extends JsonRecord>(config: TUI) => setProp("ui", config),
+    setMeta: <M extends SchemaMeta>(meta: M) => setProp("meta", { ...(props as { meta?: SchemaMeta }).meta, ...meta }),
+    describe: (description: string) => setProp("meta", { ...(props as { meta?: SchemaMeta }).meta, description }),
   } as EnumFluent<TEnum, TRules, TProps>;
 }
 
