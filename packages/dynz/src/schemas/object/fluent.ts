@@ -8,7 +8,7 @@ import {
   type MinEntriesRule,
   type Rule,
 } from "../../rules";
-import type { JsonRecord, SchemaValuesInternal } from "../../types";
+import type { JsonRecord, SchemaMeta, SchemaValuesInternal } from "../../types";
 import { type Schema, SchemaType } from "../../types";
 import { type ToParam, toParamaterValue } from "../shared";
 
@@ -114,6 +114,8 @@ export type ObjectFluent<TFields extends Record<string, Schema>, TRules extends 
     ) => ObjectFluent<TFields, TRules, TProps & { default: V }>;
     /** Attaches UI metadata for form rendering. @param config - UI configuration object */
     setUi: <TUI extends JsonRecord>(config: TUI) => ObjectFluent<TFields, TRules, TProps & { ui: TUI }>;
+    setMeta: <M extends SchemaMeta>(meta: M) => ObjectFluent<TFields, TRules, TProps & { meta: M }>;
+    describe: (description: string) => ObjectFluent<TFields, TRules, TProps & { meta: SchemaMeta }>;
   };
 
 // ---------------------------------------------------------------------------
@@ -182,6 +184,8 @@ function createFluent<TFields extends Record<string, Schema>, TRules extends Rul
     setPrivate: <P extends boolean>(value: P) => setProp("private", value),
     setDefault: <V extends ObjectDefaultValue<TFields>>(value: V) => setProp("default", value),
     setUi: <TUI extends JsonRecord>(config: TUI) => setProp("ui", config),
+    setMeta: <M extends SchemaMeta>(meta: M) => setProp("meta", { ...(props as { meta?: SchemaMeta }).meta, ...meta }),
+    describe: (description: string) => setProp("meta", { ...(props as { meta?: SchemaMeta }).meta, description }),
   } as ObjectFluent<TFields, TRules, TProps>;
 }
 

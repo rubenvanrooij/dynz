@@ -1,5 +1,5 @@
 import type { Predicate } from "../../functions";
-import type { DiscriminatedMemberValue, JsonRecord, Schema } from "../../types";
+import type { DiscriminatedMemberValue, JsonRecord, Schema, SchemaMeta } from "../../types";
 import { SchemaType } from "../../types";
 import type { CheckMember, DiscriminatedUnionSchema } from "./types";
 
@@ -50,6 +50,8 @@ export type DiscriminatedUnionFluent<
       value: V
     ) => DiscriminatedUnionFluent<TKey, TSchemas, TProps & { default: V }>;
     setUi: <TUI extends JsonRecord>(config: TUI) => DiscriminatedUnionFluent<TKey, TSchemas, TProps & { ui: TUI }>;
+    setMeta: <M extends SchemaMeta>(meta: M) => DiscriminatedUnionFluent<TKey, TSchemas, TProps & { meta: M }>;
+    describe: (description: string) => DiscriminatedUnionFluent<TKey, TSchemas, TProps & { meta: SchemaMeta }>;
   };
 
 function createFluent<TKey extends string, TMembers extends SchemaMember[], TProps>(
@@ -72,6 +74,8 @@ function createFluent<TKey extends string, TMembers extends SchemaMember[], TPro
     setPrivate: <P extends boolean>(v: P) => setProp("private", v),
     setDefault: <V extends DiscriminatedUnionDefaultValue<TKey, TMembers[number]>>(v: V) => setProp("default", v),
     setUi: <TUI extends JsonRecord>(config: TUI) => setProp("ui", config),
+    setMeta: <M extends SchemaMeta>(meta: M) => setProp("meta", { ...(props as { meta?: SchemaMeta }).meta, ...meta }),
+    describe: (description: string) => setProp("meta", { ...(props as { meta?: SchemaMeta }).meta, description }),
   } as DiscriminatedUnionFluent<TKey, TMembers, TProps>;
 }
 

@@ -1,6 +1,6 @@
 import type { ParamaterValue, Predicate } from "../../functions";
 import { buildConditionalRule, buildEqualsRule, type ConditionalRule, type EqualsRule, type Rule } from "../../rules";
-import type { JsonRecord } from "../../types";
+import type { JsonRecord, SchemaMeta } from "../../types";
 import { SchemaType } from "../../types";
 import { type ToParam, toParamaterValue } from "../shared";
 
@@ -78,6 +78,8 @@ export type BoolFluent<TRules extends Rule[], TProps> = {
     setDefault: (value: boolean) => BoolFluent<TRules, TProps & { default: boolean }>;
     /** Attaches UI metadata for form rendering. @param config - UI configuration object */
     setUi: <TUI extends JsonRecord>(config: TUI) => BoolFluent<TRules, TProps & { ui: TUI }>;
+    setMeta: <M extends SchemaMeta>(meta: M) => BoolFluent<TRules, TProps & { meta: M }>;
+    describe: (description: string) => BoolFluent<TRules, TProps & { meta: SchemaMeta }>;
   };
 
 // ---------------------------------------------------------------------------
@@ -132,6 +134,8 @@ function createFluent<TRules extends Rule[], TProps>(rules: TRules, props: TProp
     setCoerce: <P extends boolean>(value: P) => setProp("coerce", value),
     setDefault: (value: boolean) => setProp("default", value),
     setUi: <TUI extends JsonRecord>(config: TUI) => setProp("ui", config),
+    setMeta: <M extends SchemaMeta>(meta: M) => setProp("meta", { ...(props as { meta?: SchemaMeta }).meta, ...meta }),
+    describe: (description: string) => setProp("meta", { ...(props as { meta?: SchemaMeta }).meta, description }),
   } as BoolFluent<TRules, TProps>;
 }
 

@@ -1,5 +1,5 @@
 import type { ParamaterValue, Predicate } from "../../functions";
-import type { JsonRecord } from "../../types";
+import type { JsonRecord, SchemaMeta } from "../../types";
 import { SchemaType } from "../../types";
 
 // ---------------------------------------------------------------------------
@@ -32,6 +32,8 @@ export type ExprFluent<TValue extends ParamaterValue, TProps> = {
     setCoerce: <P extends boolean>(value: P) => ExprFluent<TValue, TProps & { coerce: P }>;
     /** Attaches UI metadata for form rendering. @param config - UI configuration object */
     setUi: <TUI extends JsonRecord>(config: TUI) => ExprFluent<TValue, TProps & { ui: TUI }>;
+    setMeta: <M extends SchemaMeta>(meta: M) => ExprFluent<TValue, TProps & { meta: M }>;
+    describe: (description: string) => ExprFluent<TValue, TProps & { meta: SchemaMeta }>;
   };
 
 // ---------------------------------------------------------------------------
@@ -54,6 +56,8 @@ function createFluent<TValue extends ParamaterValue, TProps>(val: TValue, props:
     setPrivate: <P extends boolean>(value: P) => setProp("private", value),
     setCoerce: <P extends boolean>(value: P) => setProp("coerce", value),
     setUi: <TUI extends JsonRecord>(config: TUI) => setProp("ui", config),
+    setMeta: <M extends SchemaMeta>(meta: M) => setProp("meta", { ...(props as { meta?: SchemaMeta }).meta, ...meta }),
+    describe: (description: string) => setProp("meta", { ...(props as { meta?: SchemaMeta }).meta, description }),
   } as ExprFluent<TValue, TProps>;
 }
 

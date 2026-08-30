@@ -4,6 +4,10 @@
  */
 export interface JsonSchema {
   $schema?: string;
+  $id?: string;
+  title?: string;
+  description?: string;
+  deprecated?: boolean;
   type?: string | string[];
   properties?: Record<string, JsonSchema>;
   required?: string[];

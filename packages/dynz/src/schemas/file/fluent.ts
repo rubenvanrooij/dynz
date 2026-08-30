@@ -10,7 +10,7 @@ import {
   type MinSizeRule,
   type Rule,
 } from "../../rules";
-import type { JsonRecord } from "../../types";
+import type { JsonRecord, SchemaMeta } from "../../types";
 import { SchemaType } from "../../types";
 import { type ToParam, toParamaterValue } from "../shared";
 
@@ -90,6 +90,8 @@ export type FileFluent<TRules extends Rule[], TProps> = {
     setPrivate: <P extends boolean>(value: P) => FileFluent<TRules, TProps & { private: P }>;
     /** Attaches UI metadata for form rendering. @param config - UI configuration object */
     setUi: <TUI extends JsonRecord>(config: TUI) => FileFluent<TRules, TProps & { ui: TUI }>;
+    setMeta: <M extends SchemaMeta>(meta: M) => FileFluent<TRules, TProps & { meta: M }>;
+    describe: (description: string) => FileFluent<TRules, TProps & { meta: SchemaMeta }>;
   };
 
 // ---------------------------------------------------------------------------
@@ -149,6 +151,8 @@ function createFluent<TRules extends Rule[], TProps>(rules: TRules, props: TProp
     setIncluded: <P extends boolean | Predicate>(value: P) => setProp("included", value),
     setPrivate: <P extends boolean>(value: P) => setProp("private", value),
     setUi: <TUI extends JsonRecord>(config: TUI) => setProp("ui", config),
+    setMeta: <M extends SchemaMeta>(meta: M) => setProp("meta", { ...(props as { meta?: SchemaMeta }).meta, ...meta }),
+    describe: (description: string) => setProp("meta", { ...(props as { meta?: SchemaMeta }).meta, description }),
   } as FileFluent<TRules, TProps>;
 }
 
