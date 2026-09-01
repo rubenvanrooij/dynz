@@ -28,6 +28,7 @@ runs:
           ${{ github.workspace }}/packages/dynz/dist
           ${{ github.workspace }}/packages/react-hook-form/dist
           ${{ github.workspace }}/packages/to-json-schema/dist
+          ${{ github.workspace }}/packages/vue/dist
         key: library-build-cache-${{ hashFiles('packages/**/*.ts', '!packages/**/*.test.ts') }}
 
     - name: Build packages
