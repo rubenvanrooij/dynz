@@ -1,5 +1,6 @@
-import { isIncluded } from "../conditions";
-import type { Reference } from "../reference";
+import { resolveProperty } from "../conditions";
+import { GLOBAL_TYPE, type GlobalReference } from "../global";
+import { REFERENCE_TYPE, type Reference } from "../reference";
 import type { ResolveContext, Schema, SchemaType, ValueType } from "../types";
 import { coerce, coerceSchema, ensureAbsolutePath, getNested } from "../utils";
 import { validateShallowType, validateType } from "../validate/validate-type";
@@ -7,7 +8,7 @@ import type { Predicate } from "./predicate-types";
 import { PREDICATES } from "./predicates";
 import type { Transformer } from "./transformer-types";
 import { TRANSFORMERS } from "./transformers";
-import type { ParamaterValue } from "./types";
+import { type ParamaterValue, STATIC_TYPE } from "./types";
 
 export function unpackRef<T extends SchemaType = SchemaType>(
   ref: Reference,
@@ -30,7 +31,7 @@ export function unpackRef<T extends SchemaType = SchemaType>(
   const { schema, value } = ret;
 
   // only return when the schema is actually included
-  if (!isIncluded(context.schema, absolutePath, context.values)) {
+  if (!resolveProperty("included", absolutePath, true, context)) {
     return undefined;
   }
 
@@ -60,6 +61,26 @@ export function unpackRef<T extends SchemaType = SchemaType>(
   }
 
   return undefined;
+}
+
+export function unpackGlobal<T = unknown>(ref: GlobalReference, context: ResolveContext): T | undefined {
+  const globals = context.globals ?? {};
+
+  if (!Object.hasOwn(globals, ref.key)) {
+    throw new Error(
+      `Global variable "${ref.key}" could not be found. Make sure to supply it via validate(schema, current, new, { globals: { "${ref.key}": ... } }).`
+    );
+  }
+
+  const value = globals[ref.key];
+
+  if (!validateShallowType(ref.globalType, value)) {
+    throw new Error(
+      `Global variable "${ref.key}" was declared as "${ref.globalType}" via createGlobals(), but the supplied value (${JSON.stringify(value)}) does not match. Check the value passed via validate(schema, current, new, { globals: { "${ref.key}": ... } }).`
+    );
+  }
+
+  return value as T;
 }
 
 export function resolveExpected<T extends SchemaType = SchemaType>(
@@ -94,11 +115,15 @@ export function resolve<TParam extends ParamaterValue, TPath extends string, TSc
     return undefined;
   }
 
-  if (input.type === "_dref") {
+  if (input.type === REFERENCE_TYPE) {
     return unpackRef(input, path, context);
   }
 
-  if (input.type === "st") {
+  if (input.type === GLOBAL_TYPE) {
+    return unpackGlobal(input, context);
+  }
+
+  if (input.type === STATIC_TYPE) {
     return input.value;
   }
 

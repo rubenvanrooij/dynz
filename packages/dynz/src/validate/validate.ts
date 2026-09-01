@@ -4,7 +4,9 @@ import { isPivateValue, isValueMasked, type PrivateValue } from "../private";
 import { validateRule } from "../rules";
 import {
   type Context,
+  type CustomRuleMap,
   ErrorCode,
+  type GlobalsMap,
   type Schema,
   SchemaType,
   type SchemaValues,
@@ -16,11 +18,11 @@ import {
 import { coerceSchema, withDefault } from "../utils";
 import { isArray, isObject, validateType } from "./validate-type";
 
-export function validate<T extends Schema>(
+export function validate<T extends Schema, TGlobals extends GlobalsMap = GlobalsMap>(
   schema: T,
   currentValues: SchemaValues<T> | undefined,
   newValues: unknown,
-  options: ValidateOptions = {}
+  options: ValidateOptions<CustomRuleMap, TGlobals> = {}
 ): Promise<ValidationResult<SchemaValues<T>>> {
   return _validate(schema, { current: currentValues, new: newValues }, "$", {
     type: "validate",
@@ -29,6 +31,7 @@ export function validate<T extends Schema>(
     validateMutable: currentValues !== undefined,
     currentValues: currentValues,
     values: newValues,
+    globals: options.globals ?? ({} as TGlobals),
   }) as Promise<ValidationResult<SchemaValues<T>>>;
 }
 

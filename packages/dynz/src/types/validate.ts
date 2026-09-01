@@ -131,8 +131,25 @@ export type CustomRuleFunction<
 
 export type CustomRuleMap = Record<string, CustomRuleFunction>;
 
-export type ValidateOptions<TCustomRuleMap extends CustomRuleMap = CustomRuleMap> = {
+/**
+ * A map of externally supplied values referenceable from anywhere in a schema via
+ * `global(key)` — for data that lives outside the schema's own value tree (e.g. the
+ * current date, the current user's id, a feature flag). See `validate()`'s `globals`
+ * option.
+ */
+export type GlobalsMap = Record<string, unknown>;
+
+export type ValidateOptions<
+  TCustomRuleMap extends CustomRuleMap = CustomRuleMap,
+  TGlobals extends GlobalsMap = GlobalsMap,
+> = {
   customRules?: TCustomRuleMap | undefined;
+
+  /**
+   * Externally supplied values, referenceable from anywhere in the schema via
+   * `global(key)`.
+   */
+  globals?: TGlobals | undefined;
 
   /**
    * Whether or not to strip not included fields.
@@ -144,7 +161,7 @@ export type ValidateOptions<TCustomRuleMap extends CustomRuleMap = CustomRuleMap
   stripNotIncludedValues?: boolean;
 };
 
-export type Context<T extends Schema = Schema> = {
+export type Context<T extends Schema = Schema, TGlobals extends GlobalsMap = GlobalsMap> = {
   type: "validate";
   schema: T;
 
@@ -152,18 +169,22 @@ export type Context<T extends Schema = Schema> = {
    * Will be set to true if current values is not undefined; if
    * current values is undefined, it will be set to false.
    */
-  validateOptions: ValidateOptions;
+  validateOptions: ValidateOptions<CustomRuleMap, TGlobals>;
   validateMutable: boolean;
 
   // current values
   currentValues: unknown;
   // new values
   values: unknown;
+
+  // externally supplied values, always materialized (defaults to {})
+  globals: TGlobals;
 };
 
-export type ResolveContext<T extends Schema = Schema, A = unknown> = {
+export type ResolveContext<T extends Schema = Schema, A = unknown, TGlobals extends GlobalsMap = GlobalsMap> = {
   schema: T;
   values: A;
+  globals?: TGlobals;
 };
 
 export type ErrorMessageForRule<T extends BaseRule> = Omit<T, "type"> & BaseErrorMessage<T["type"]>;
