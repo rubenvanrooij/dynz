@@ -1,16 +1,9 @@
 "use client";
 
-import { IsIncluded, useDynzFormContext, useIsMutable, useIsRequired } from "@dynz/react-hook-form";
-import {
-  type ObjectSchema,
-  type OptionsSchema,
-  type Schema,
-  SchemaType,
-  findSchemaByPath,
-  resolvePredicate,
-} from "dynz";
+import { IsIncluded, useDynzFormContext, useIsMutable, useIsRequired, useOptions } from "@dynz/react-hook-form";
+import { type ObjectSchema, type Schema, SchemaType } from "dynz";
 import type { ReactNode } from "react";
-import { Controller, useWatch } from "react-hook-form";
+import { Controller } from "react-hook-form";
 
 type FieldProps = {
   name: string;
@@ -72,33 +65,11 @@ function TextField({ name, label, type }: FieldProps & { type: "text" | "number"
   );
 }
 
-/**
- * Options can carry their own `enabled` predicate, so the list of choices is itself
- * conditional. Resolving it needs the live values, hence the `useWatch`.
- *
- * NOTE: read straight from the schema rather than through `useOptions`, which currently
- * builds a malformed path in @dynz/react-hook-form.
- */
+/** Options can carry their own `enabled` predicate, so the list of choices is itself conditional. */
 function SelectField({ name, label }: FieldProps) {
-  const { control, schema } = useDynzFormContext();
+  const { control } = useDynzFormContext();
   const isMutable = useIsMutable(name);
-  const values = useWatch({ control });
-
-  const optionsSchema = findSchemaByPath<OptionsSchema>(`$.${name}`, schema, SchemaType.OPTIONS);
-
-  const choices = optionsSchema.options.map((option) => {
-    if (typeof option !== "object") {
-      return { value: option, enabled: true };
-    }
-
-    return {
-      value: option.value,
-      enabled:
-        typeof option.enabled === "boolean"
-          ? option.enabled
-          : (resolvePredicate(option.enabled, "$", { schema, values }) ?? false),
-    };
-  });
+  const choices = useOptions(name);
 
   return (
     <IsIncluded name={name}>

@@ -126,7 +126,7 @@ export type IsOptionalField<T extends Schema> = IsMandatory<T> extends false ? t
 // === Value Transformers ===
 export type MakeOptional<T extends Schema, V> = IsOptionalField<T> extends true ? V | undefined : V;
 
-type UnwrapOptionValue<T> = T extends DynamicOptionValue ? T["value"] : T;
+export type UnwrapOptionValue<T> = T extends DynamicOptionValue ? T["value"] : T;
 
 export type ApplyPrivacyMask<T extends Schema, V> = IsPrivate<T> extends true ? PrivateValue<V> : V;
 
