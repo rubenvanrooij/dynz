@@ -62,6 +62,53 @@ function isSchema(value: Schema | string | number | boolean): value is Schema {
   return typeof value === "object" && value !== null && "type" in value;
 }
 
+/**
+ * Wraps a property's schema so it also accepts `null` — strict mode's only
+ * way to express "may be absent", since every property must be listed in
+ * `required`.
+ */
+function withNullable(jsonSchema: JsonSchema): JsonSchema {
+  return { anyOf: [jsonSchema, { type: "null" }] };
+}
+
+/**
+ * A `const` node, paired with its inferred `type` under `strict` (strict
+ * mode requires `type` everywhere; a bare `const` has none otherwise).
+ */
+function constNode(value: string | number | boolean | null, strict: boolean): JsonSchema {
+  return strict ? { const: value, type: value === null ? "null" : typeof value } : { const: value };
+}
+
+/**
+ * Converts a set of object fields into `properties`/`required`, shared by
+ * the OBJECT case and each `discriminatedUnion()` member. Under `strict`,
+ * every non-omitted field is listed in `required` — one that isn't
+ * otherwise mandatory has its schema widened to also accept `null`.
+ */
+function convertObjectFields(
+  fields: Record<string, Schema>,
+  context: ConversionContext
+): { properties: Record<string, JsonSchema>; required: string[] } {
+  const properties: Record<string, JsonSchema> = {};
+  const required: string[] = [];
+
+  for (const [key, fieldSchema] of Object.entries(fields)) {
+    if (shouldOmitField(fieldSchema, context)) {
+      continue;
+    }
+
+    const propertySchema = convertSchema(fieldSchema, context);
+    const mandatory = isMandatory(fieldSchema);
+
+    properties[key] = context.strict && !mandatory ? withNullable(propertySchema) : propertySchema;
+    if (mandatory || context.strict) {
+      required.push(key);
+    }
+  }
+
+  return { properties, required };
+}
+
 function shouldOmitField(schema: Schema, context: ConversionContext): boolean {
   // A statically excluded field is not part of the document in either direction: dynz
   // errors on any value present for it, or strips it under `stripNotIncludedValues`.
@@ -73,25 +120,32 @@ function shouldOmitField(schema: Schema, context: ConversionContext): boolean {
   return context.mode === "input" && schema.type === SchemaType.EXPRESSION;
 }
 
-function applyPrivacyWrapper(schema: Schema, innerSchema: JsonSchema): JsonSchema {
+function applyPrivacyWrapper(schema: Schema, innerSchema: JsonSchema, context: ConversionContext): JsonSchema {
   if (schema.private !== true) {
     return innerSchema;
   }
 
-  return {
-    oneOf: [
-      {
-        type: "object",
-        properties: { state: { const: "plain" }, value: innerSchema },
-        required: ["state"],
-      },
-      {
-        type: "object",
-        properties: { state: { const: "masked" }, value: { type: "string" } },
-        required: ["state", "value"],
-      },
-    ],
+  // The field being entirely absent is already handled a level up — by whichever
+  // convertObjectFields() call wraps this whole node in withNullable() when the
+  // field itself isn't mandatory — so both branches here can simply require
+  // both keys under `strict`: when `state` is "plain", `value` is always present.
+  const plain: JsonSchema = {
+    type: "object",
+    properties: { state: constNode("plain", context.strict), value: innerSchema },
+    required: context.strict ? ["state", "value"] : ["state"],
   };
+  const masked: JsonSchema = {
+    type: "object",
+    properties: { state: constNode("masked", context.strict), value: { type: "string" } },
+    required: ["state", "value"],
+  };
+
+  if (context.strict) {
+    plain.additionalProperties = false;
+    masked.additionalProperties = false;
+  }
+
+  return { [context.unionKeyword]: [plain, masked] };
 }
 
 function applyDefault(schema: Schema, jsonSchema: JsonSchema): void {
@@ -133,7 +187,7 @@ export function convertSchema(schema: Schema, context: ConversionContext): JsonS
   const jsonSchema = convertSchemaKind(schema, context);
   applyDefault(schema, jsonSchema);
   applyMeta(schema, jsonSchema);
-  return applyPrivacyWrapper(schema, jsonSchema);
+  return applyPrivacyWrapper(schema, jsonSchema, context);
 }
 
 function convertSchemaKind(schema: Schema, context: ConversionContext): JsonSchema {
@@ -164,7 +218,7 @@ function convertSchemaKind(schema: Schema, context: ConversionContext): JsonSche
     }
 
     case SchemaType.LITERAL: {
-      return { const: schema.value };
+      return constNode(schema.value, context.strict);
     }
 
     case SchemaType.ENUM: {
@@ -205,23 +259,14 @@ function convertSchemaKind(schema: Schema, context: ConversionContext): JsonSche
     }
 
     case SchemaType.OBJECT: {
-      const properties: Record<string, JsonSchema> = {};
-      const required: string[] = [];
-
-      for (const [key, fieldSchema] of Object.entries(schema.fields)) {
-        if (shouldOmitField(fieldSchema, context)) {
-          continue;
-        }
-
-        properties[key] = convertSchema(fieldSchema, context);
-        if (isMandatory(fieldSchema)) {
-          required.push(key);
-        }
-      }
+      const { properties, required } = convertObjectFields(schema.fields, context);
 
       const jsonSchema: JsonSchema = { type: "object", properties };
       if (required.length > 0) {
         jsonSchema.required = required;
+      }
+      if (context.strict) {
+        jsonSchema.additionalProperties = false;
       }
       applyRules(jsonSchema, schema.rules, schema.type, context);
       return jsonSchema;
@@ -229,26 +274,25 @@ function convertSchemaKind(schema: Schema, context: ConversionContext): JsonSche
 
     case SchemaType.DISCRIMINATED_UNION: {
       const members = schema.schemas.map((member) => {
-        const properties: Record<string, JsonSchema> = {
-          [schema.key]: { const: member[schema.key] },
-        };
-        const required: string[] = [schema.key];
-
+        const memberFields: Record<string, Schema> = {};
         for (const [key, value] of Object.entries(member)) {
-          if (key === schema.key || !isSchema(value) || shouldOmitField(value, context)) {
-            continue;
-          }
-
-          properties[key] = convertSchema(value, context);
-          if (isMandatory(value)) {
-            required.push(key);
+          if (key !== schema.key && isSchema(value)) {
+            memberFields[key] = value;
           }
         }
 
-        return { type: "object", properties, required } satisfies JsonSchema;
+        const { properties, required } = convertObjectFields(memberFields, context);
+        properties[schema.key] = constNode(member[schema.key] as string | number | boolean, context.strict);
+        required.unshift(schema.key);
+
+        const jsonSchema: JsonSchema = { type: "object", properties, required };
+        if (context.strict) {
+          jsonSchema.additionalProperties = false;
+        }
+        return jsonSchema;
       });
 
-      return { oneOf: members };
+      return { [context.unionKeyword]: members };
     }
 
     default: {
