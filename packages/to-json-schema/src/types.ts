@@ -49,6 +49,12 @@ export type ErrorMode = "throw" | "warn" | "ignore";
  */
 export type ConversionMode = "input" | "output";
 
+/**
+ * The keyword used for a schema-selection union — `discriminatedUnion()`
+ * members, and the plain/masked wrapper for `.setPrivate(true)` fields.
+ */
+export type UnionKeyword = "oneOf" | "anyOf";
+
 export interface ConversionConfig {
   /**
    * Policy for handling unsupported/unresolvable rule values and schema
@@ -59,9 +65,31 @@ export interface ConversionConfig {
    * Whether to convert for input or output data. Defaults to `"input"`.
    */
   mode?: ConversionMode;
+  /**
+   * Produces strict-mode-compatible output for LLM structured outputs
+   * (OpenAI `strict: true`, Anthropic's native structured output): every
+   * object node gets `additionalProperties: false` and a complete
+   * `required` list — a property that isn't otherwise mandatory has its
+   * schema widened to also accept `null` (via `anyOf`), since strict mode
+   * has no other way to express "may be absent". `literal()` fields (and
+   * the discriminator key of a `discriminatedUnion()`) also get an
+   * inferred `type`, which strict mode requires everywhere. Defaults to
+   * `true`.
+   */
+  strict?: boolean;
+  /**
+   * The keyword used for every schema-selection union this package emits
+   * — `discriminatedUnion()` members, and the plain/masked wrapper for
+   * `.setPrivate(true)` fields. Some strict-mode consumers (e.g.
+   * Anthropic's structured output) reject `oneOf` outright and require
+   * `anyOf`. Defaults to `"oneOf"`.
+   */
+  unionKeyword?: UnionKeyword;
 }
 
 export interface ConversionContext {
   readonly errorMode: ErrorMode;
   readonly mode: ConversionMode;
+  readonly strict: boolean;
+  readonly unionKeyword: UnionKeyword;
 }

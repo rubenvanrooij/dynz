@@ -1,54 +1,53 @@
 import { ref, v } from "dynz";
 import { describe, expect, it, vi } from "vitest";
 import { applyRule } from "./convert-rules";
-import type { JsonSchema } from "./types";
+import type { ConversionContext, JsonSchema } from "./types";
+
+const ctx: ConversionContext = { errorMode: "ignore", mode: "input", strict: false, unionKeyword: "oneOf" };
 
 describe("applyRule", () => {
   it("maps min/max to minimum/maximum", () => {
     const jsonSchema: JsonSchema = {};
-    applyRule(jsonSchema, { type: "min", min: v(5) }, "number", { errorMode: "ignore", mode: "input" });
-    applyRule(jsonSchema, { type: "max", max: v(10) }, "number", { errorMode: "ignore", mode: "input" });
+    applyRule(jsonSchema, { type: "min", min: v(5) }, "number", ctx);
+    applyRule(jsonSchema, { type: "max", max: v(10) }, "number", ctx);
 
     expect(jsonSchema).toEqual({ minimum: 5, maximum: 10 });
   });
 
   it("maps min_length/max_length to minLength/maxLength", () => {
     const jsonSchema: JsonSchema = {};
-    applyRule(jsonSchema, { type: "min_length", min: v(1) }, "string", { errorMode: "ignore", mode: "input" });
-    applyRule(jsonSchema, { type: "max_length", max: v(50) }, "string", { errorMode: "ignore", mode: "input" });
+    applyRule(jsonSchema, { type: "min_length", min: v(1) }, "string", ctx);
+    applyRule(jsonSchema, { type: "max_length", max: v(50) }, "string", ctx);
 
     expect(jsonSchema).toEqual({ minLength: 1, maxLength: 50 });
   });
 
   it("maps min_length/max_length on an array schema to minItems/maxItems", () => {
     const jsonSchema: JsonSchema = {};
-    applyRule(jsonSchema, { type: "min_length", min: v(1) }, "array", { errorMode: "ignore", mode: "input" });
-    applyRule(jsonSchema, { type: "max_length", max: v(3) }, "array", { errorMode: "ignore", mode: "input" });
+    applyRule(jsonSchema, { type: "min_length", min: v(1) }, "array", ctx);
+    applyRule(jsonSchema, { type: "max_length", max: v(3) }, "array", ctx);
 
     expect(jsonSchema).toEqual({ minItems: 1, maxItems: 3 });
   });
 
   it("maps min_entries/max_entries (object key count) to minProperties/maxProperties", () => {
     const jsonSchema: JsonSchema = {};
-    applyRule(jsonSchema, { type: "min_entries", min: v(1) }, "object", { errorMode: "ignore", mode: "input" });
-    applyRule(jsonSchema, { type: "max_entries", max: v(3) }, "object", { errorMode: "ignore", mode: "input" });
+    applyRule(jsonSchema, { type: "min_entries", min: v(1) }, "object", ctx);
+    applyRule(jsonSchema, { type: "max_entries", max: v(3) }, "object", ctx);
 
     expect(jsonSchema).toEqual({ minProperties: 1, maxProperties: 3 });
   });
 
   it("maps max_precision to multipleOf", () => {
     const jsonSchema: JsonSchema = {};
-    applyRule(jsonSchema, { type: "max_precision", maxPrecision: v(2) }, "number", {
-      errorMode: "ignore",
-      mode: "input",
-    });
+    applyRule(jsonSchema, { type: "max_precision", maxPrecision: v(2) }, "number", ctx);
 
     expect(jsonSchema.multipleOf).toBeCloseTo(0.01);
   });
 
   it("maps regex to pattern", () => {
     const jsonSchema: JsonSchema = {};
-    applyRule(jsonSchema, { type: "regex", regex: "^[a-z]+$" }, "string", { errorMode: "ignore", mode: "input" });
+    applyRule(jsonSchema, { type: "regex", regex: "^[a-z]+$" }, "string", ctx);
 
     expect(jsonSchema).toEqual({ pattern: "^[a-z]+$" });
   });
@@ -56,10 +55,7 @@ describe("applyRule", () => {
   it("warns when regex flags are set but still emits the pattern", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
     const jsonSchema: JsonSchema = {};
-    applyRule(jsonSchema, { type: "regex", regex: "^[a-z]+$", flags: "i" }, "string", {
-      errorMode: "warn",
-      mode: "input",
-    });
+    applyRule(jsonSchema, { type: "regex", regex: "^[a-z]+$", flags: "i" }, "string", { ...ctx, errorMode: "warn" });
 
     expect(jsonSchema.pattern).toBe("^[a-z]+$");
     expect(warn).toHaveBeenCalled();
@@ -68,101 +64,80 @@ describe("applyRule", () => {
 
   it("maps email to format", () => {
     const jsonSchema: JsonSchema = {};
-    applyRule(jsonSchema, { type: "email" }, "string", { errorMode: "ignore", mode: "input" });
+    applyRule(jsonSchema, { type: "email" }, "string", ctx);
 
     expect(jsonSchema).toEqual({ format: "email" });
   });
 
   it("maps is_numeric to a numeric pattern", () => {
     const jsonSchema: JsonSchema = {};
-    applyRule(jsonSchema, { type: "is_numeric" }, "string", { errorMode: "ignore", mode: "input" });
+    applyRule(jsonSchema, { type: "is_numeric" }, "string", ctx);
 
     expect(jsonSchema.pattern).toBe("^[+-]?\\d+(\\.\\d+)?$");
   });
 
   it("maps equals to const", () => {
     const jsonSchema: JsonSchema = {};
-    applyRule(jsonSchema, { type: "equals", equals: v("admin") }, "string", { errorMode: "ignore", mode: "input" });
+    applyRule(jsonSchema, { type: "equals", equals: v("admin") }, "string", ctx);
 
     expect(jsonSchema).toEqual({ const: "admin" });
   });
 
   it("maps includes on a string schema to pattern", () => {
     const jsonSchema: JsonSchema = {};
-    applyRule(jsonSchema, { type: "includes", includes: v("foo") }, "string", { errorMode: "ignore", mode: "input" });
+    applyRule(jsonSchema, { type: "includes", includes: v("foo") }, "string", ctx);
 
     expect(jsonSchema).toEqual({ pattern: "foo" });
   });
 
   it("maps includes on an array schema to contains", () => {
     const jsonSchema: JsonSchema = {};
-    applyRule(jsonSchema, { type: "includes", includes: v("admin") }, "array", { errorMode: "ignore", mode: "input" });
+    applyRule(jsonSchema, { type: "includes", includes: v("admin") }, "array", ctx);
 
     expect(jsonSchema).toEqual({ contains: { const: "admin" } });
   });
 
   it("maps not_includes to a negated pattern/contains", () => {
     const stringSchema: JsonSchema = {};
-    applyRule(stringSchema, { type: "not_includes", notIncludes: v("foo") }, "string", {
-      errorMode: "ignore",
-      mode: "input",
-    });
+    applyRule(stringSchema, { type: "not_includes", notIncludes: v("foo") }, "string", ctx);
     expect(stringSchema).toEqual({ not: { pattern: "foo" } });
 
     const arraySchema: JsonSchema = {};
-    applyRule(arraySchema, { type: "not_includes", notIncludes: v("admin") }, "array", {
-      errorMode: "ignore",
-      mode: "input",
-    });
+    applyRule(arraySchema, { type: "not_includes", notIncludes: v("admin") }, "array", ctx);
     expect(arraySchema).toEqual({ not: { contains: { const: "admin" } } });
   });
 
   it("maps one_of to enum when every value is static", () => {
     const jsonSchema: JsonSchema = {};
-    applyRule(jsonSchema, { type: "one_of", values: [v("a"), v("b")] }, "string", {
-      errorMode: "ignore",
-      mode: "input",
-    });
+    applyRule(jsonSchema, { type: "one_of", values: [v("a"), v("b")] }, "string", ctx);
 
     expect(jsonSchema).toEqual({ enum: ["a", "b"] });
   });
 
   it("skips one_of entirely when any value is not static", () => {
     const jsonSchema: JsonSchema = {};
-    applyRule(jsonSchema, { type: "one_of", values: [v("a"), ref("other")] }, "string", {
-      errorMode: "ignore",
-      mode: "input",
-    });
+    applyRule(jsonSchema, { type: "one_of", values: [v("a"), ref("other")] }, "string", ctx);
 
     expect(jsonSchema).toEqual({});
   });
 
   it("maps not_one_of to not/enum", () => {
     const jsonSchema: JsonSchema = {};
-    applyRule(jsonSchema, { type: "not_one_of", values: [v(1), v(2)] }, "number", {
-      errorMode: "ignore",
-      mode: "input",
-    });
+    applyRule(jsonSchema, { type: "not_one_of", values: [v(1), v(2)] }, "number", ctx);
 
     expect(jsonSchema).toEqual({ not: { enum: [1, 2] } });
   });
 
   it("maps a single static mime_type to contentMediaType", () => {
     const jsonSchema: JsonSchema = {};
-    applyRule(jsonSchema, { type: "mime_type", mimeType: v("image/png") }, "file", {
-      errorMode: "ignore",
-      mode: "input",
-    });
+    applyRule(jsonSchema, { type: "mime_type", mimeType: v("image/png") }, "file", ctx);
 
     expect(jsonSchema).toEqual({ contentMediaType: "image/png" });
   });
 
   it("skips mime_type with multiple values", () => {
     const jsonSchema: JsonSchema = {};
-    applyRule(jsonSchema, { type: "mime_type", mimeType: v(["image/png", "image/jpeg"]) }, "file", {
-      errorMode: "ignore",
-      mode: "input",
-    });
+    applyRule(jsonSchema, { type: "mime_type", mimeType: v(["image/png", "image/jpeg"]) }, "file", ctx);
 
     expect(jsonSchema).toEqual({});
   });
@@ -179,15 +154,15 @@ describe("applyRule", () => {
       { type: "conditional" as const, cases: [] },
     ]) {
       const jsonSchema: JsonSchema = {};
-      applyRule(jsonSchema, rule, "string", { errorMode: "ignore", mode: "input" });
+      applyRule(jsonSchema, rule, "string", ctx);
       expect(jsonSchema).toEqual({});
     }
   });
 
   it("keeps both constraints when two rules want the same keyword", () => {
     const jsonSchema: JsonSchema = {};
-    applyRule(jsonSchema, { type: "regex", regex: "^[A-Z]" }, "string", { errorMode: "ignore", mode: "input" });
-    applyRule(jsonSchema, { type: "regex", regex: "\\d$" }, "string", { errorMode: "ignore", mode: "input" });
+    applyRule(jsonSchema, { type: "regex", regex: "^[A-Z]" }, "string", ctx);
+    applyRule(jsonSchema, { type: "regex", regex: "\\d$" }, "string", ctx);
 
     // The second pattern would otherwise have silently overwritten the first.
     expect(jsonSchema).toEqual({ pattern: "^[A-Z]", allOf: [{ pattern: "\\d$" }] });
@@ -195,9 +170,9 @@ describe("applyRule", () => {
 
   it("moves a third writer of the same keyword into allOf as well", () => {
     const jsonSchema: JsonSchema = {};
-    applyRule(jsonSchema, { type: "is_numeric" }, "string", { errorMode: "ignore", mode: "input" });
-    applyRule(jsonSchema, { type: "regex", regex: "^1" }, "string", { errorMode: "ignore", mode: "input" });
-    applyRule(jsonSchema, { type: "includes", includes: v("2") }, "string", { errorMode: "ignore", mode: "input" });
+    applyRule(jsonSchema, { type: "is_numeric" }, "string", ctx);
+    applyRule(jsonSchema, { type: "regex", regex: "^1" }, "string", ctx);
+    applyRule(jsonSchema, { type: "includes", includes: v("2") }, "string", ctx);
 
     expect(jsonSchema).toEqual({
       pattern: "^[+-]?\\d+(\\.\\d+)?$",
@@ -207,14 +182,8 @@ describe("applyRule", () => {
 
   it("keeps both negations when not_includes and not_one_of are combined", () => {
     const jsonSchema: JsonSchema = {};
-    applyRule(jsonSchema, { type: "not_includes", notIncludes: v("bad") }, "string", {
-      errorMode: "ignore",
-      mode: "input",
-    });
-    applyRule(jsonSchema, { type: "not_one_of", values: [v("nope")] }, "string", {
-      errorMode: "ignore",
-      mode: "input",
-    });
+    applyRule(jsonSchema, { type: "not_includes", notIncludes: v("bad") }, "string", ctx);
+    applyRule(jsonSchema, { type: "not_one_of", values: [v("nope")] }, "string", ctx);
 
     expect(jsonSchema).toEqual({
       not: { pattern: "bad" },
@@ -225,10 +194,7 @@ describe("applyRule", () => {
   it("intersects a one_of rule with an enum that is already present", () => {
     // An options schema has already written its own `enum` before the rules are applied.
     const jsonSchema: JsonSchema = { enum: ["a", "b", "c"], type: "string" };
-    applyRule(jsonSchema, { type: "one_of", values: [v("a"), v("b")] }, "options", {
-      errorMode: "ignore",
-      mode: "input",
-    });
+    applyRule(jsonSchema, { type: "one_of", values: [v("a"), v("b")] }, "options", ctx);
 
     expect(jsonSchema).toEqual({
       enum: ["a", "b", "c"],
@@ -238,16 +204,12 @@ describe("applyRule", () => {
   });
 
   it("throws when errorMode is 'throw' and a rule value is not static", () => {
-    expect(() =>
-      applyRule({}, { type: "min", min: ref("other") }, "number", { errorMode: "throw", mode: "input" })
-    ).toThrow();
+    expect(() => applyRule({}, { type: "min", min: ref("other") }, "number", { ...ctx, errorMode: "throw" })).toThrow();
   });
 
   it("does not throw or warn when errorMode is 'ignore'", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
-    expect(() =>
-      applyRule({}, { type: "min", min: ref("other") }, "number", { errorMode: "ignore", mode: "input" })
-    ).not.toThrow();
+    expect(() => applyRule({}, { type: "min", min: ref("other") }, "number", ctx)).not.toThrow();
     expect(warn).not.toHaveBeenCalled();
     warn.mockRestore();
   });

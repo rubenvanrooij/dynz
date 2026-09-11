@@ -6,7 +6,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "dev": "nodemon --watch src/**/*.ts --exec ts-node src/index.ts",
+    "dev": "nodemon --watch src/**/*.ts --exec ts-node --transpile-only src/index.ts",
     "check-types": "tsc --noEmit",
     "lint": "eslint . --max-warnings 0"
   },
