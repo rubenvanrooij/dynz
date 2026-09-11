@@ -1,5 +1,5 @@
-import { type OptionsSchema, SchemaType, findSchemaByPath, resolvePredicate } from "dynz";
-import { type ComputedRef, type MaybeRefOrGetter, computed, toValue } from "vue";
+import { findSchemaByPath, getOptionsForSchema, type OptionsSchema, SchemaType } from "dynz";
+import { type ComputedRef, computed, type MaybeRefOrGetter, toValue } from "vue";
 import { useDynzFormContext } from "../context";
 import { toAbsolutePath } from "../utils";
 
@@ -22,26 +22,10 @@ export type DynzOption = {
 export function useOptions(name: MaybeRefOrGetter<string>): ComputedRef<DynzOption[]> {
   const context = useDynzFormContext();
 
-  const optionsSchema = computed(() =>
-    findSchemaByPath<OptionsSchema>(toAbsolutePath(toValue(name)), context.schema, SchemaType.OPTIONS)
-  );
-
   return computed(() => {
-    const values = context.getValues();
+    const fieldPath = toAbsolutePath(toValue(name));
+    const optionsSchema = findSchemaByPath<OptionsSchema>(fieldPath, context.schema, SchemaType.OPTIONS);
 
-    return optionsSchema.value.options.map((option): DynzOption => {
-      if (typeof option !== "object") {
-        return { value: option, enabled: true };
-      }
-
-      if (typeof option.enabled === "boolean") {
-        return { value: option.value as DynzOption["value"], enabled: option.enabled };
-      }
-
-      return {
-        value: option.value as DynzOption["value"],
-        enabled: resolvePredicate(option.enabled, "$", { schema: context.schema, values }) ?? false,
-      };
-    });
+    return getOptionsForSchema(optionsSchema, fieldPath, context.schema, context.getValues());
   });
 }

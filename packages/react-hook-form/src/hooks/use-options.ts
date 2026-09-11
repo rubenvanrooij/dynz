@@ -1,11 +1,4 @@
-import {
-  findSchemaByPath,
-  getConditionDependencies,
-  type OptionsSchema,
-  type OptionValue,
-  resolvePredicate,
-  SchemaType,
-} from "dynz";
+import { findSchemaByPath, getConditionDependencies, getOptionsForSchema, type OptionsSchema, SchemaType } from "dynz";
 import { useWatch } from "react-hook-form";
 import { useDynzFormContext } from "./use-dynz-form-context";
 
@@ -17,12 +10,15 @@ import { useDynzFormContext } from "./use-dynz-form-context";
  * dependency-tracking and predicate-resolution logic without re-deriving the
  * schema from a field name.
  *
- * `fieldPath` must be the schema-relative path of the options field itself
+ * `fieldPath` must be the schema-*absolute* path of the options field itself
  * (default `"$"` for a root options field) — it's used both to compute which
  * fields a dynamic option's `enabled` predicate depends on, and to resolve
  * that predicate against the current form values.
  */
-export function useOptionsSchema(schema: OptionsSchema, fieldPath: string = "$") {
+export function useOptionsSchema(
+  schema: OptionsSchema,
+  fieldPath: string = "$"
+): Array<{ enabled: boolean; value: string | number | boolean }> {
   // Opt out of React Compiler memoization: this hook reads live form values via
   // getValues() and relies on useWatch below to trigger rerenders, not on
   // props/state identity, so compiler-inferred memoization would be unsafe here.
@@ -44,43 +40,14 @@ export function useOptionsSchema(schema: OptionsSchema, fieldPath: string = "$")
     control,
   });
 
-  const values = getValues();
-
-  return schema.options.map((option) => {
-    // Plain (non-object) options are always enabled.
-    if (typeof option !== "object") {
-      return {
-        enabled: true,
-        value: option,
-      };
-    }
-
-    // Statically enabled/disabled options don't need predicate resolution.
-    if (typeof option.enabled === "boolean") {
-      return {
-        enabled: option.enabled,
-        value: option.value,
-      };
-    }
-
-    // Dynamic option: resolve its predicate against the current form values,
-    // relative to the options field's own path (not the form root).
-    return {
-      enabled:
-        resolvePredicate(option.enabled, fieldPath, {
-          schema: rootSchema,
-          values,
-        }) || false,
-      value: option.value,
-    };
-  });
+  return getOptionsForSchema(schema, fieldPath, rootSchema, getValues());
 }
 
 /**
  * Looks up the `OptionsSchema` for `name` (a form path relative to the schema
  * root, e.g. "someField") and resolves its enabled/value pairs.
  */
-export function useOptions(name: string): Array<{ enabled: boolean; value: OptionValue }> {
+export function useOptions(name: string): Array<{ enabled: boolean; value: string | number | boolean }> {
   "use no memo";
   const { schema } = useDynzFormContext();
   const fieldPath = `$.${name}`;

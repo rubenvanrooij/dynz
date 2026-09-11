@@ -3,7 +3,7 @@ import type { Rule } from "../../rules";
 import type { Unpacked } from "./../../types";
 import type { BaseSchema, SchemaType } from "../../types";
 
-export type DynamicOptionValue = { enabled: Predicate | boolean; value: OptionValue };
+export type DynamicOptionValue = { enabled: Predicate | boolean; value: string | number | boolean };
 export type OptionValue = string | number | boolean | DynamicOptionValue;
 export type OptionsValue = OptionValue[];
 

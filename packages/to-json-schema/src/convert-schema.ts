@@ -1,4 +1,4 @@
-import { type OptionsValue, type OptionValue, type Schema, type SchemaMeta, SchemaType } from "dynz";
+import { type OptionsValue, type Schema, type SchemaMeta, SchemaType } from "dynz";
 import { applyRules } from "./convert-rules";
 import { reportIssue } from "./report-issue";
 import type { ConversionContext, JsonSchema } from "./types";
@@ -31,14 +31,14 @@ function applyEnumValues(jsonSchema: JsonSchema, values: unknown[]): void {
 function collectOptionValues(options: OptionsValue, context: ConversionContext): unknown[] {
   const values: unknown[] = [];
 
-  const visit = (option: OptionValue): void => {
+  for (const option of options) {
     if (typeof option !== "object") {
       values.push(option);
-      return;
+      continue;
     }
 
     if (option.enabled === false) {
-      return;
+      continue;
     }
 
     if (typeof option.enabled === "object") {
@@ -48,11 +48,7 @@ function collectOptionValues(options: OptionsValue, context: ConversionContext):
       );
     }
 
-    visit(option.value);
-  };
-
-  for (const option of options) {
-    visit(option);
+    values.push(option.value);
   }
 
   return values;
