@@ -31,10 +31,6 @@ export function toFieldName(path: string): string {
   return name.replaceAll(".[", "[");
 }
 
-function isIndex(segment: string): boolean {
-  return /^\d+$/.test(segment);
-}
-
 /** Reads `items[0].name` off a (possibly reactive) values object. */
 export function getByPath<T = unknown>(values: unknown, name: string): T | undefined {
   let current: unknown = values;
@@ -48,53 +44,4 @@ export function getByPath<T = unknown>(values: unknown, name: string): T | undef
   }
 
   return current as T | undefined;
-}
-
-/**
- * Writes `items[0].name` on a values object, creating missing intermediate
- * containers. A numeric next segment creates an array, anything else an object.
- */
-export function setByPath(values: Record<string, unknown>, name: string, value: unknown): void {
-  const segments = toPathSegments(name);
-
-  if (segments.length === 0) {
-    return;
-  }
-
-  let current: Record<string, unknown> = values;
-
-  for (let i = 0; i < segments.length - 1; i++) {
-    const segment = segments[i];
-    const next = current[segment];
-
-    if (next === null || typeof next !== "object") {
-      const child = isIndex(segments[i + 1]) ? [] : {};
-      current[segment] = child;
-      current = child as unknown as Record<string, unknown>;
-    } else {
-      current = next as Record<string, unknown>;
-    }
-  }
-
-  current[segments[segments.length - 1]] = value;
-}
-
-/**
- * Whether `path` points at `name` or at something nested inside it. Used to scope
- * error updates to a single field and its children (`items` also owns `items[0].name`).
- */
-export function isPathWithin(path: string, name: string): boolean {
-  if (name === "") {
-    return true;
-  }
-
-  return path === name || path.startsWith(`${name}.`) || path.startsWith(`${name}[`);
-}
-
-/**
- * The dependency map represents array members as `items[]`. Normalize those to the
- * array itself so they can be matched against concrete paths such as `items[0].name`.
- */
-export function normalizeDependencyName(name: string): string {
-  return name.endsWith("[]") ? name.slice(0, -2) : name;
 }

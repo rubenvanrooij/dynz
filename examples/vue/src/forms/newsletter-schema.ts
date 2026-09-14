@@ -20,6 +20,10 @@ export const newsletterSchema = object({
     "html"
   ),
 
+  nestedObject: object({
+    foo: string(),
+  }).setDefault({}),
+
   role: options(["developer", "designer", "product manager", "other"]),
   roleDetails: string()
     .min(2)

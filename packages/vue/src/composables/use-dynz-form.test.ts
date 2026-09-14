@@ -1,6 +1,7 @@
 import { array, eq, number, object, options, ref, string } from "dynz";
 import { describe, expect, it, vi } from "vitest";
-import { useDynzForm } from "./use-dynz-form";
+import { mountDynzForm } from "../testing/mount-form";
+import { useDynzField } from "./use-dynz-field";
 
 const schema = object({
   plan: options(["free", "enterprise"] as const),
@@ -27,66 +28,50 @@ function validValues() {
 describe("useDynzForm", () => {
   it("starts out with a deep copy of the initial values", () => {
     const initialValues = { address: { street: "Main st", zip: "1234" } };
-    const form = useDynzForm({ schema, initialValues, provideContext: false });
+    const { form } = mountDynzForm({ schema, initialValues });
 
-    form.values.address.street = "Side st";
+    form.setFieldValue("address.street", "Side st");
 
     expect(initialValues.address.street).toBe("Main st");
     expect(form.values.address.street).toBe("Side st");
   });
 
   it("falls back to currentValues when no initial values are given", () => {
-    const form = useDynzForm({ schema, currentValues: validValues(), provideContext: false });
+    const { form } = mountDynzForm({ schema, currentValues: validValues() });
 
     expect(form.values.slug).toBe("acme");
   });
 
   it("reports no errors for valid values", async () => {
-    const form = useDynzForm({
+    const { form } = mountDynzForm({
       schema,
       initialValues: { plan: "free", slug: "acme", address: { street: "Main st", zip: "1234" }, tags: ["vue"] },
-      provideContext: false,
     });
 
     const result = await form.validate();
 
-    expect(result.success).toBe(true);
+    expect(result.valid).toBe(true);
     expect(form.errors.value).toEqual({});
-    expect(form.isValid.value).toBe(true);
+    expect(form.meta.value.valid).toBe(true);
   });
 
   it("keys errors by field name, without the $. prefix", async () => {
-    const form = useDynzForm({
+    const { form } = mountDynzForm({
       schema,
       initialValues: { plan: "free", slug: "acme", address: { street: "Main st", zip: "1" }, tags: ["a"] },
-      provideContext: false,
     });
 
     await form.validate();
 
     expect(Object.keys(form.errors.value).sort()).toEqual(["address.zip", "tags[0]"]);
-    expect(form.isValid.value).toBe(false);
-  });
-
-  it("exposes the raw dynz errors alongside the mapped ones", async () => {
-    const form = useDynzForm({
-      schema,
-      initialValues: { plan: "free", slug: "acme", address: { street: "Main st", zip: "1" }, tags: [] },
-      provideContext: false,
-    });
-
-    await form.validate();
-
-    expect(form.rawErrors.value).toHaveLength(1);
-    expect(form.rawErrors.value[0]?.path).toBe("$.address.zip");
+    expect(form.meta.value.valid).toBe(false);
   });
 
   it("runs error messages through the message transformer", async () => {
-    const form = useDynzForm({
+    const { form } = mountDynzForm({
       schema,
       initialValues: { plan: "free", slug: "acme", address: { street: "Main st", zip: "1" }, tags: [] },
       messageTransformer: (error) => `translated:${error.code}`,
-      provideContext: false,
     });
 
     await form.validate();
@@ -95,16 +80,15 @@ describe("useDynzForm", () => {
   });
 
   it("enforces mutability only when currentValues are passed", async () => {
-    const withCurrent = useDynzForm({ schema, currentValues: validValues(), provideContext: false });
-    withCurrent.values.slug = "changed";
+    const { form: withCurrent } = mountDynzForm({ schema, currentValues: validValues() });
+    withCurrent.setFieldValue("slug", "changed");
     await withCurrent.validate();
 
     expect(withCurrent.errors.value.slug).toBeDefined();
 
-    const withoutCurrent = useDynzForm({
+    const { form: withoutCurrent } = mountDynzForm({
       schema,
       initialValues: { ...validValues(), slug: "changed" },
-      provideContext: false,
     });
     await withoutCurrent.validate();
 
@@ -112,7 +96,7 @@ describe("useDynzForm", () => {
   });
 
   it("reports a value that is present on an excluded field", async () => {
-    const form = useDynzForm({
+    const { form } = mountDynzForm({
       schema,
       initialValues: {
         plan: "free",
@@ -121,7 +105,6 @@ describe("useDynzForm", () => {
         address: { street: "Main st", zip: "1234" },
         tags: [],
       },
-      provideContext: false,
     });
 
     await form.validate();
@@ -137,16 +120,26 @@ describe("useDynzForm — validateField", () => {
     unrelated: string().min(5),
   });
 
-  function invalidForm() {
-    return useDynzForm({
-      schema: crossFieldSchema,
-      initialValues: { password: "sh", confirmPassword: "nope", unrelated: "no" },
-      provideContext: false,
-    });
+  /**
+   * `validateField` only skips fields the user has not touched when those fields
+   * have their own registered vee-validate field state — which in a real app is
+   * exactly what `DynzField`/`useDynzField` provide for every rendered field. A form
+   * with no fields mounted has nothing to scope against, so every field is mounted
+   * here to exercise the real behavior.
+   */
+  function mountInvalidForm() {
+    return mountDynzForm(
+      { schema: crossFieldSchema, initialValues: { password: "sh", confirmPassword: "nope", unrelated: "no" } },
+      () => ({
+        password: useDynzField<string>("password"),
+        confirmPassword: useDynzField<string>("confirmPassword"),
+        unrelated: useDynzField<string>("unrelated"),
+      })
+    );
   }
 
   it("does not surface errors for fields the user has not touched", async () => {
-    const form = invalidForm();
+    const { form } = mountInvalidForm();
 
     await form.validateField("password");
 
@@ -154,25 +147,25 @@ describe("useDynzForm — validateField", () => {
   });
 
   it("clears an error once it is resolved", async () => {
-    const form = invalidForm();
+    const { form, result: fields } = mountInvalidForm();
 
     await form.validateField("password");
     expect(form.errors.value.password).toBeDefined();
 
-    form.values.password = "longenough";
+    fields.password.setValue("longenough");
     await form.validateField("password");
 
     expect(form.errors.value.password).toBeUndefined();
   });
 
   it("heals a cross-field error on another field once it becomes valid", async () => {
-    const form = invalidForm();
+    const { form, result: fields } = mountInvalidForm();
 
     await form.validate();
     expect(Object.keys(form.errors.value)).toHaveLength(3);
 
-    form.values.password = "longenough";
-    form.values.confirmPassword = "longenough";
+    fields.password.setValue("longenough");
+    fields.confirmPassword.setValue("longenough");
     await form.validateField("password");
 
     expect(form.errors.value.password).toBeUndefined();
@@ -180,26 +173,17 @@ describe("useDynzForm — validateField", () => {
     expect(form.errors.value.unrelated).toBeDefined();
   });
 
-  it("keeps the raw errors in sync with the mapped ones", async () => {
-    const form = invalidForm();
-
-    await form.validateField("password");
-
-    expect(form.rawErrors.value.map((error) => error.path)).toEqual(["$.password"]);
-  });
-
-  it("also clears nested errors below the field", async () => {
-    const form = useDynzForm({
-      schema,
-      initialValues: { plan: "free", slug: "acme", address: { street: "Main st", zip: "1" }, tags: [] },
-      provideContext: false,
-    });
+  it("also clears a nested field's own error once it is resolved", async () => {
+    const { form, result: fields } = mountDynzForm(
+      { schema, initialValues: { plan: "free", slug: "acme", address: { street: "Main st", zip: "1" }, tags: [] } },
+      () => ({ zip: useDynzField<string>("address.zip") })
+    );
 
     await form.validate();
     expect(form.errors.value["address.zip"]).toBeDefined();
 
-    form.values.address.zip = "1234";
-    await form.validateField("address");
+    fields.zip.setValue("1234");
+    await form.validateField("address.zip");
 
     expect(form.errors.value["address.zip"]).toBeUndefined();
   });
@@ -209,40 +193,35 @@ describe("useDynzForm — submitting", () => {
   const submitSchema = object({ email: string().min(3), age: number() });
 
   it("calls onValid with the validated values", async () => {
-    const form = useDynzForm({
-      schema: submitSchema,
-      initialValues: { email: "a@b.c", age: 30 },
-      provideContext: false,
-    });
+    const { form } = mountDynzForm({ schema: submitSchema, initialValues: { email: "a@b.c", age: 30 } });
     const onValid = vi.fn();
 
     await form.handleSubmit(onValid)();
 
-    expect(onValid).toHaveBeenCalledWith({ email: "a@b.c", age: 30 });
-    expect(form.isSubmitted.value).toBe(true);
+    expect(onValid).toHaveBeenCalledWith({ email: "a@b.c", age: 30 }, expect.anything());
+    expect(form.context.isSubmitted?.()).toBe(true);
     expect(form.submitCount.value).toBe(1);
     expect(form.isSubmitting.value).toBe(false);
   });
 
   it("calls onInvalid with the dynz errors and prevents the default event", async () => {
-    const form = useDynzForm({ schema: submitSchema, initialValues: { email: "a", age: 30 }, provideContext: false });
+    const { form } = mountDynzForm({ schema: submitSchema, initialValues: { email: "a", age: 30 } });
     const onValid = vi.fn();
     const onInvalid = vi.fn();
-    const preventDefault = vi.fn();
+    const event = new Event("submit");
+    const preventDefaultSpy = vi.spyOn(event, "preventDefault");
 
-    await form.handleSubmit(onValid, onInvalid)({ preventDefault } as unknown as Event);
+    await form.handleSubmit(onValid, onInvalid)(event);
 
-    expect(preventDefault).toHaveBeenCalled();
+    expect(preventDefaultSpy).toHaveBeenCalled();
     expect(onValid).not.toHaveBeenCalled();
-    expect(onInvalid).toHaveBeenCalledWith([expect.objectContaining({ path: "$.email" })]);
+    expect(onInvalid).toHaveBeenCalledWith(
+      expect.objectContaining({ errors: expect.objectContaining({ email: expect.any(String) }) })
+    );
   });
 
   it("clears isSubmitting even when the handler throws", async () => {
-    const form = useDynzForm({
-      schema: submitSchema,
-      initialValues: { email: "a@b.c", age: 30 },
-      provideContext: false,
-    });
+    const { form } = mountDynzForm({ schema: submitSchema, initialValues: { email: "a@b.c", age: 30 } });
 
     await expect(
       form.handleSubmit(() => {
@@ -258,55 +237,55 @@ describe("useDynzForm — state helpers", () => {
   const stateSchema = object({ a: string(), b: string() });
 
   it("sets and clears errors manually", () => {
-    const form = useDynzForm({ schema: stateSchema, provideContext: false });
+    const { form } = mountDynzForm({ schema: stateSchema });
 
-    form.setError("a", "nope");
-    expect(form.errors.value).toEqual({ a: "nope" });
+    form.setFieldError("a", "nope");
+    expect(form.errors.value.a).toBe("nope");
 
-    form.setError("a", undefined);
-    expect(form.errors.value).toEqual({});
+    form.setFieldError("a", undefined);
+    expect(form.errors.value.a).toBeUndefined();
 
-    form.setError("b", "nope");
-    form.clearErrors();
+    // `setErrors` only sets the keys it is given — clearing a field means passing
+    // `undefined` for it explicitly, there is no "wipe everything" shorthand.
+    form.setErrors({ a: "nope", b: "also nope" });
+    expect(form.errors.value).toEqual({ a: "nope", b: "also nope" });
+
+    form.setErrors({ a: undefined, b: undefined });
     expect(form.errors.value).toEqual({});
   });
 
   it("reads and writes values by path", () => {
-    const form = useDynzForm({ schema, provideContext: false });
+    const { form } = mountDynzForm({ schema });
 
-    form.setValue("address.zip", "1234");
-    form.setValue("tags[0]", "vue");
+    form.setFieldValue("address.zip", "1234");
+    form.setFieldValue("tags[0]" as never, "vue" as never);
 
     expect(form.getValue("address.zip")).toBe("1234");
     expect(form.values.tags).toEqual(["vue"]);
   });
 
   it("resets back to the initial values", async () => {
-    const form = useDynzForm({
-      schema: stateSchema,
-      initialValues: { a: "one" },
-      provideContext: false,
-    });
+    const { form } = mountDynzForm({ schema: stateSchema, initialValues: { a: "one" } });
 
-    form.values.a = "changed";
-    form.values.b = "added";
-    form.setError("a", "nope");
-    form.setTouched("a");
+    form.setFieldValue("a", "changed");
+    form.setFieldValue("b", "added");
+    form.setFieldError("a", "nope");
+    form.setFieldTouched("a", true);
     await form.handleSubmit(() => undefined)();
 
-    form.reset();
+    form.resetForm();
 
     expect(form.values).toEqual({ a: "one" });
     expect(form.errors.value).toEqual({});
-    expect(form.touched.value).toEqual({});
-    expect(form.isSubmitted.value).toBe(false);
+    expect(form.isFieldTouched("a")).toBe(false);
+    expect(form.context.isSubmitted?.()).toBe(false);
     expect(form.submitCount.value).toBe(0);
   });
 
   it("resets to explicit values", () => {
-    const form = useDynzForm({ schema: stateSchema, initialValues: { a: "one" }, provideContext: false });
+    const { form } = mountDynzForm({ schema: stateSchema, initialValues: { a: "one" } });
 
-    form.reset({ a: "two", b: "three" });
+    form.resetForm({ values: { a: "two", b: "three" } });
 
     expect(form.values).toEqual({ a: "two", b: "three" });
   });
@@ -316,7 +295,7 @@ describe("useDynzForm — state helpers", () => {
       password: string(),
       confirmPassword: string().equals(ref("password")),
     });
-    const form = useDynzForm({ schema: depSchema, provideContext: false });
+    const { form } = mountDynzForm({ schema: depSchema });
 
     // NOTE: dynz' getRulesDependenciesMap currently returns an empty map for object
     // schemas (it collects rules off the root schema instead of the nested one), so
