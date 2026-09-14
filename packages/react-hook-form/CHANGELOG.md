@@ -1,5 +1,53 @@
 # @dynz/react-hook-form-resolver
 
+## 1.2.0
+
+### Minor Changes
+
+- 09fcfa9: Added `useDynzField(name)` and `<DynzField name render>` — the per-field wiring every consumer was otherwise hand-writing themselves (both of this repo's own example apps included): `useController` bound to the form's `control`, plus the schema's `included`/`required`/`mutable` state, the field's own schema, and automatic cross-field revalidation (`rules.deps`) for any field whose rules reference another.
+
+  ```tsx
+  <DynzField
+    name="companyName"
+    render={({ field, fieldState, required, readOnly }) => (
+      <>
+        <input {...field} aria-required={required} readOnly={readOnly} />
+        {fieldState.error && <span>{fieldState.error.message}</span>}
+      </>
+    )}
+  />
+  ```
+
+  `useDynzField` is the hook underneath, for consumers who want to build their own wrapper instead: `const { field, fieldState, formState, included, required, readOnly, schema } = useDynzField("companyName")`.
+
+  Also: `react` moves from a `devDependency` to a `peerDependency` — `DynzField` is the first component this package ships that returns JSX at runtime.
+
+### Patch Changes
+
+- 94ea9ba: Fixed: `useOptions` built a malformed schema path (a stray trailing `}`, e.g. `` `$.someField}` ``), which broke resolving the underlying `OptionsSchema`. It also resolved each dynamic option's `enabled` predicate (and its dependencies) against the form root (`"$"`) instead of the options field's own path, so predicates referencing sibling fields relative to the options field could resolve incorrectly.
+- 84a8799: Added `getOptions(name, schema, values)` and `getOptionsForSchema(schema, path, rootSchema, values)` to `dynz` — the framework-agnostic core of what each integration's `useOptions` hook/composable does: resolving an `options()` field's entries into `{ value, enabled }` pairs, where a dynamic entry's `enabled` predicate is resolved against `values`.
+
+  ```ts
+  getOptions("plan", schema, { hasSubscription: false });
+  // [
+  //   { value: "free", enabled: true },
+  //   { value: "pro", enabled: false },
+  // ]
+  ```
+
+  `@dynz/vue`'s `useOptions` now delegates to `getOptionsForSchema`, fixing a bug where a dynamic option's `enabled` predicate always resolved relative refs (`ref(...)`) against the schema root instead of the options field's own position — wrong for any options field nested inside an `object({...})`/`array(...)`, since a relative ref inside that predicate is meant to resolve against its siblings.
+
+  `@dynz/react-hook-form`'s `useOptions`/`useOptionsSchema` (already correct) now delegate to the same shared helper instead of duplicating the resolution logic — no behavior change.
+
+- Updated dependencies [f493c66]
+- Updated dependencies [f493c66]
+- Updated dependencies [f493c66]
+- Updated dependencies [cb1ab83]
+- Updated dependencies [84a8799]
+- Updated dependencies [f493c66]
+- Updated dependencies [d2e3e68]
+  - dynz@1.2.0
+
 ## 1.1.0
 
 ### Minor Changes
