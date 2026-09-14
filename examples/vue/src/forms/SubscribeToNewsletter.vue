@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { When, useDynzForm } from "@dynz/vue";
-import { eq, ref as dynzRef } from "dynz";
+import { eq, ref as dynzRef, getDefaultValues } from "dynz";
 import { ref } from "vue";
 import CheckboxField from "../components/CheckboxField.vue";
 import SelectField from "../components/SelectField.vue";
@@ -9,13 +9,9 @@ import { newsletterSchema } from "./newsletter-schema";
 
 const submitted = ref<unknown>(undefined);
 
-const { values, errors, isSubmitting, handleSubmit, reset } = useDynzForm({
+const { values, errors, isSubmitting, handleSubmit, resetForm } = useDynzForm({
   schema: newsletterSchema,
-  initialValues: {
-    frequency: "weekly",
-    format: "html",
-    wantsProductNews: false,
-  },
+  initialValues: getDefaultValues(newsletterSchema),
   // Don't nag while someone is still filling the form in; once they have submitted
   // once, correct them as they type.
   mode: "onBlur",
@@ -29,7 +25,7 @@ const onSubmit = handleSubmit((valid) => {
 
 function onReset() {
   submitted.value = undefined;
-  reset();
+  resetForm();
 }
 </script>
 
@@ -66,6 +62,8 @@ function onReset() {
           label="Also send me product news"
           hint="Turning this on makes 'Company' required and reveals the company size."
         />
+
+        <TextField name="nestedObject.foo" label="Damn" />
 
         <TextField name="company" label="Company" placeholder="Acme Inc." />
         <SelectField name="companySize" label="Company size" />

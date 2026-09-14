@@ -50,6 +50,7 @@
   },
   "peerDependencies": {
     "dynz": "^1.1.0",
+    "vee-validate": "^4.0.0",
     "vue": "^3.3.0"
   },
   "devDependencies": {

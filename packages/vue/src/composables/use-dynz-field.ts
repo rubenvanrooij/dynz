@@ -1,5 +1,6 @@
 import { type ComputedRef, type MaybeRefOrGetter, type WritableComputedRef, computed, toValue } from "vue";
-import { useDynzFieldAdapter } from "../context";
+import { useField } from "vee-validate";
+import { useDynzFormContext } from "../context";
 import { useIsIncluded } from "./use-is-included";
 import { useIsMutable } from "./use-is-mutable";
 import { useIsRequired } from "./use-is-required";
@@ -36,14 +37,15 @@ export type UseDynzFieldReturn<TValue = unknown> = {
 };
 
 /**
- * Binds a single field to the form created by `useDynzForm`.
+ * Binds a single field to the vee-validate form created by `useDynzForm` (or wired up
+ * manually with `provideDynzContext` alongside vee-validate's own `useForm`).
  *
  * ```ts
  * const { value, error, required, readOnly, onInput, onBlur } = useDynzField("companyName");
  * ```
  */
 export function useDynzField<TValue = unknown>(name: MaybeRefOrGetter<string>): UseDynzFieldReturn<TValue> {
-  const context = useDynzFieldAdapter();
+  const context = useDynzFormContext();
   const fieldName = computed(() => toValue(name));
 
   const required = useIsRequired(fieldName);
@@ -51,26 +53,43 @@ export function useDynzField<TValue = unknown>(name: MaybeRefOrGetter<string>): 
   const mutable = useIsMutable(fieldName);
   const readOnly = computed(() => mutable.value === false);
 
+  const field = useField<TValue>(fieldName);
+
+  /**
+   * `mode`/`revalidateMode` are only set by `useDynzForm`; a bare `provideDynzContext`
+   * (vee-validate `useForm` wired up by hand) falls back to the same defaults
+   * `useDynzForm` itself uses, so `useDynzField` behaves consistently either way.
+   */
+  function shouldValidateOn(event: "onInput" | "onBlur"): boolean {
+    const isSubmitted = context.isSubmitted?.() ?? false;
+    const mode = (isSubmitted ? context.revalidateMode : context.mode) ?? (isSubmitted ? "onInput" : "onSubmit");
+
+    return mode === event;
+  }
+
   function setValue(value: TValue): void {
-    context.field.setValue(fieldName.value, value);
-    context.field.handleInput(fieldName.value);
+    field.setValue(value, shouldValidateOn("onInput"));
   }
 
   return {
     name: fieldName,
     value: computed({
-      get: () => context.field.getValue(fieldName.value) as TValue | undefined,
+      get: () => field.value.value,
       set: (value) => setValue(value as TValue),
     }),
-    error: computed(() => context.field.getError(fieldName.value)),
-    isTouched: computed(() => context.field.isTouched(fieldName.value)),
+    error: computed(() => field.errorMessage.value),
+    isTouched: computed(() => field.meta.touched),
     required,
     included,
     mutable,
     readOnly,
     setValue,
     onInput: (eventOrValue) => setValue(extractValue(eventOrValue) as TValue),
-    onBlur: () => context.field.handleBlur(fieldName.value),
+    // Deliberately not `field.handleChange`/`field.handleBlur(e, ...)` fed the raw event:
+    // vee-validate's own DOM normalization diverges from `extractValue` below (e.g. an
+    // unbound checkbox's value reads as the string "on", not `.checked`). `extractValue`
+    // normalizes the event ourselves; `field.setValue`/`handleBlur` never re-normalize.
+    onBlur: () => field.handleBlur(undefined, shouldValidateOn("onBlur")),
   };
 }
 

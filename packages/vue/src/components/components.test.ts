@@ -3,6 +3,7 @@ import { eq, object, options, ref, string } from "dynz";
 import { describe, expect, it } from "vitest";
 import { type VNode, defineComponent, h } from "vue";
 import { useDynzForm } from "../composables";
+import { waitForValidation } from "../testing/mount-form";
 import type { DynzFieldSlotProps } from "./dynz-field";
 import { DynzField } from "./dynz-field";
 import { IsIncluded } from "./is-included";
@@ -55,7 +56,7 @@ describe("DynzField", () => {
 
     expect(wrapper.find("input").exists()).toBe(false);
 
-    form.values.plan = "enterprise";
+    form.setFieldValue("plan", "enterprise");
     await flushPromises();
 
     expect(wrapper.find("input").exists()).toBe(true);
@@ -106,13 +107,13 @@ describe("DynzField", () => {
     ]);
 
     await wrapper.find("input").setValue("no");
-    await flushPromises();
+    await waitForValidation();
 
     expect(form.values.companyName).toBe("no");
     expect(wrapper.find(".error").exists()).toBe(true);
 
     await wrapper.find("input").setValue("Acme");
-    await flushPromises();
+    await waitForValidation();
 
     expect(wrapper.find(".error").exists()).toBe(false);
   });
@@ -127,7 +128,7 @@ describe("IsIncluded", () => {
 
     expect(wrapper.text()).toBe("");
 
-    form.values.plan = "enterprise";
+    form.setFieldValue("plan", "enterprise");
     await flushPromises();
 
     expect(wrapper.text()).toBe("included");
@@ -143,7 +144,7 @@ describe("When", () => {
 
     expect(wrapper.text()).toBe("");
 
-    form.values.plan = "enterprise";
+    form.setFieldValue("plan", "enterprise");
     await flushPromises();
 
     expect(wrapper.text()).toBe("enterprise");

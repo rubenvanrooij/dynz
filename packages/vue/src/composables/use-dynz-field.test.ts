@@ -1,10 +1,8 @@
 import { boolean, eq, number, object, options, ref, string } from "dynz";
-import { flushPromises } from "@vue/test-utils";
 import { describe, expect, it } from "vitest";
-import { createDynzContext } from "../context";
-import { mountComposable } from "../testing/mount-composable";
+import { mountDynzForm, waitForValidation } from "../testing/mount-form";
 import { useDynzField } from "./use-dynz-field";
-import { type DynzFormMode, useDynzForm } from "./use-dynz-form";
+import type { DynzFormMode } from "./use-dynz-form";
 
 const schema = object({
   plan: options(["free", "enterprise"] as const),
@@ -15,16 +13,13 @@ const schema = object({
   address: object({ zip: string().min(4) }),
 });
 
-function setup(mode: DynzFormMode = "onSubmit", initialValues: Record<string, unknown> = { plan: "enterprise" }) {
-  const form = useDynzForm({ schema, initialValues, mode, provideContext: false });
-  const { result } = mountComposable(() => useDynzField<string>("companyName"), form.context);
-
-  return { form, field: result };
+function mountField(mode: DynzFormMode = "onSubmit", initialValues: Record<string, unknown> = { plan: "enterprise" }) {
+  return mountDynzForm({ schema, initialValues, mode }, () => useDynzField<string>("companyName"));
 }
 
 describe("useDynzField", () => {
   it("reads and writes the form value", () => {
-    const { form, field } = setup();
+    const { form, result: field } = mountField();
 
     expect(field.value.value).toBeUndefined();
 
@@ -35,35 +30,39 @@ describe("useDynzField", () => {
   });
 
   it("writes nested paths", () => {
-    const form = useDynzForm({ schema, provideContext: false });
-    const { result } = mountComposable(() => useDynzField<string>("address.zip"), form.context);
+    const { form, result: field } = mountDynzForm({ schema }, () => useDynzField<string>("address.zip"));
 
-    result.setValue("1234");
+    field.setValue("1234");
 
     expect(form.values.address.zip).toBe("1234");
   });
 
-  it("exposes the schema conditions, and keeps them reactive", () => {
-    const { form, field } = setup();
+  it("exposes the schema conditions, and keeps them reactive", async () => {
+    const { form, result: field } = mountField();
 
     expect(field.included.value).toBe(true);
 
-    form.values.plan = "free";
+    form.setFieldValue("plan", "free");
+    await waitForValidation();
 
     expect(field.included.value).toBe(false);
   });
 
   it("marks a field read only only when mutable resolves to exactly false", () => {
-    const form = useDynzForm({ schema, currentValues: { plan: "free", slug: "a", address: { zip: "1234" } } });
-    const { result: immutable } = mountComposable(() => useDynzField("slug"), form.context);
-    const { result: mutable } = mountComposable(() => useDynzField("address.zip"), form.context);
+    const { result } = mountDynzForm(
+      { schema, currentValues: { plan: "free", slug: "a", address: { zip: "1234" } } },
+      () => ({
+        immutable: useDynzField("slug"),
+        mutable: useDynzField("address.zip"),
+      })
+    );
 
-    expect(immutable.readOnly.value).toBe(true);
-    expect(mutable.readOnly.value).toBe(false);
+    expect(result.immutable.readOnly.value).toBe(true);
+    expect(result.mutable.readOnly.value).toBe(false);
   });
 
   it("surfaces the error of its own field", async () => {
-    const { form, field } = setup();
+    const { form, result: field } = mountField();
 
     field.setValue("no");
     await form.validate();
@@ -73,20 +72,20 @@ describe("useDynzField", () => {
   });
 
   it("tracks touched state on blur", () => {
-    const { form, field } = setup();
+    const { form, result: field } = mountField();
 
     expect(field.isTouched.value).toBe(false);
 
     field.onBlur();
 
     expect(field.isTouched.value).toBe(true);
-    expect(form.touched.value.companyName).toBe(true);
+    expect(form.isFieldTouched("companyName")).toBe(true);
   });
 });
 
 describe("useDynzField — input handling", () => {
   it("reads the value off a DOM input event", () => {
-    const { form, field } = setup();
+    const { form, result: field } = mountField();
     const input = document.createElement("input");
     input.value = "Acme";
     input.addEventListener("input", field.onInput);
@@ -97,7 +96,7 @@ describe("useDynzField — input handling", () => {
   });
 
   it("accepts a raw value, as emitted by component inputs", () => {
-    const { form, field } = setup();
+    const { form, result: field } = mountField();
 
     field.onInput("Acme");
 
@@ -106,13 +105,12 @@ describe("useDynzField — input handling", () => {
 
   it("reads checked instead of value for checkboxes", () => {
     const boolSchema = object({ accepted: boolean() });
-    const form = useDynzForm({ schema: boolSchema, provideContext: false });
-    const { result } = mountComposable(() => useDynzField("accepted"), form.context);
+    const { form, result: field } = mountDynzForm({ schema: boolSchema }, () => useDynzField("accepted"));
 
     const input = document.createElement("input");
     input.type = "checkbox";
     input.checked = true;
-    input.addEventListener("input", result.onInput);
+    input.addEventListener("input", field.onInput);
 
     input.dispatchEvent(new Event("input"));
 
@@ -121,12 +119,11 @@ describe("useDynzField — input handling", () => {
 
   it("reads numeric inputs as numbers, and empty ones as undefined", () => {
     const numberSchema = object({ age: number() });
-    const form = useDynzForm({ schema: numberSchema, provideContext: false });
-    const { result } = mountComposable(() => useDynzField("age"), form.context);
+    const { form, result: field } = mountDynzForm({ schema: numberSchema }, () => useDynzField("age"));
 
     const input = document.createElement("input");
     input.type = "number";
-    input.addEventListener("input", result.onInput);
+    input.addEventListener("input", field.onInput);
 
     input.value = "42";
     input.dispatchEvent(new Event("input"));
@@ -140,64 +137,52 @@ describe("useDynzField — input handling", () => {
 
 describe("useDynzField — validation modes", () => {
   it("does not validate on input in onSubmit mode", async () => {
-    const { form, field } = setup("onSubmit");
+    const { form, result: field } = mountField("onSubmit");
 
     field.setValue("no");
-    await flushPromises();
+    await waitForValidation();
 
     expect(form.errors.value.companyName).toBeUndefined();
   });
 
   it("validates on input in onInput mode", async () => {
-    const { form, field } = setup("onInput");
+    const { form, result: field } = mountField("onInput");
 
     field.setValue("no");
-    await flushPromises();
+    await waitForValidation();
 
     expect(form.errors.value.companyName).toBeDefined();
   });
 
   it("validates on blur in onBlur mode", async () => {
-    const { form, field } = setup("onBlur");
+    const { form, result: field } = mountField("onBlur");
 
     field.setValue("no");
-    await flushPromises();
+    await waitForValidation();
     expect(form.errors.value.companyName).toBeUndefined();
 
     field.onBlur();
-    await flushPromises();
+    await waitForValidation();
 
     expect(form.errors.value.companyName).toBeDefined();
   });
 
   it("switches to the revalidate mode after the first submit", async () => {
-    const form = useDynzForm({
-      schema,
-      initialValues: { plan: "enterprise" },
-      mode: "onSubmit",
-      revalidateMode: "onInput",
-      provideContext: false,
-    });
-    const { result: field } = mountComposable(() => useDynzField<string>("companyName"), form.context);
+    const { form, result: field } = mountDynzForm(
+      { schema, initialValues: { plan: "enterprise" }, mode: "onSubmit", revalidateMode: "onInput" },
+      () => useDynzField<string>("companyName")
+    );
 
     field.setValue("no");
-    await flushPromises();
+    await waitForValidation();
     expect(form.errors.value.companyName).toBeUndefined();
 
     await form.handleSubmit(() => undefined)();
     expect(form.errors.value.companyName).toBeDefined();
 
     field.setValue("Acme");
-    await flushPromises();
+    await waitForValidation();
 
     expect(form.errors.value.companyName).toBeUndefined();
-  });
-});
-
-describe("useDynzField — guards", () => {
-  it("throws when the context does not manage field state", () => {
-    const context = createDynzContext({ schema, getValues: () => ({}) });
-
-    expect(() => mountComposable(() => useDynzField("companyName"), context)).toThrow(/does not manage field state/);
   });
 });

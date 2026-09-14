@@ -2,10 +2,15 @@ import { getRulesDependenciesMap, type ObjectSchema, type RulesDependencyMap } f
 import { type InjectionKey, inject, provide } from "vue";
 import { toFieldName } from "../utils";
 
+/** When a field triggers validation. Mirrors React Hook Form's modes. */
+export type DynzFormMode = "onInput" | "onBlur" | "onSubmit";
+
 /**
  * Everything the condition composables (`useIsRequired`, `useIsIncluded`,
  * `useIsMutable`, `usePredicate`, `useOptions`) need in order to resolve a schema
- * against the live form values.
+ * against the live form values. `useDynzField` additionally relies on `mode` /
+ * `revalidateMode` / `isSubmitted` to decide when to trigger vee-validate's own
+ * field validation.
  */
 export type DynzContext<TSchema extends ObjectSchema<never> = ObjectSchema<never>> = {
   /** The schema the form was built from. */
@@ -20,8 +25,7 @@ export type DynzContext<TSchema extends ObjectSchema<never> = ObjectSchema<never
    * condition composables in sync without any manual dependency wiring.
    *
    * Typed as `unknown` on purpose: dynz resolves against `unknown` values too, and the
-   * exact shape differs per host (a `reactive()` object here, VeeValidate's partial
-   * `values` there).
+   * exact shape differs per host (VeeValidate's `values` here, a plain object there).
    */
   getValues: () => unknown;
 
@@ -29,24 +33,19 @@ export type DynzContext<TSchema extends ObjectSchema<never> = ObjectSchema<never
   getDependencies: (name: string) => string[] | undefined;
 
   /**
-   * Per-field state. Supplied by `useDynzForm`; absent when only a bare context is
-   * provided (for instance when VeeValidate owns the form state). `useDynzField` and
-   * `DynzField` require it, the condition composables do not.
+   * When a field triggers vee-validate validation before the form's first submit.
+   * Only set by `useDynzForm`; `useDynzField` falls back to `"onSubmit"` when absent.
    */
-  field?: DynzFieldAdapter | undefined;
-};
+  mode?: DynzFormMode | undefined;
 
-/** The form-state seam `useDynzField` binds to. */
-export type DynzFieldAdapter = {
-  getValue: (name: string) => unknown;
-  setValue: (name: string, value: unknown) => void;
-  getError: (name: string) => string | undefined;
-  isTouched: (name: string) => boolean;
-  setTouched: (name: string, touched: boolean) => void;
-  /** Called after a value change; decides for itself whether to validate. */
-  handleInput: (name: string) => void;
-  /** Called on blur; marks the field touched and decides whether to validate. */
-  handleBlur: (name: string) => void;
+  /**
+   * When a field triggers vee-validate validation after the form's first submit.
+   * Only set by `useDynzForm`; `useDynzField` falls back to `"onInput"` when absent.
+   */
+  revalidateMode?: DynzFormMode | undefined;
+
+  /** Whether the form has been submitted at least once. Only set by `useDynzForm`. */
+  isSubmitted?: (() => boolean) | undefined;
 };
 
 export const DYNZ_INJECTION_KEY: InjectionKey<DynzContext> = Symbol("dynz");
@@ -57,7 +56,9 @@ export type CreateDynzContextOptions<TSchema extends ObjectSchema<never>> = {
   name?: string | undefined;
   /** Pre-computed dependency map; computed lazily from the schema when omitted. */
   dependencies?: RulesDependencyMap | undefined;
-  field?: DynzFieldAdapter | undefined;
+  mode?: DynzFormMode | undefined;
+  revalidateMode?: DynzFormMode | undefined;
+  isSubmitted?: (() => boolean) | undefined;
 };
 
 /**
@@ -89,21 +90,25 @@ export function createDynzContext<TSchema extends ObjectSchema<never>>({
   getValues,
   name,
   dependencies,
-  field,
+  mode,
+  revalidateMode,
+  isSubmitted,
 }: CreateDynzContextOptions<TSchema>): DynzContext<TSchema> {
   return {
     schema,
     name,
     getValues,
     getDependencies: createDependencyResolver(schema, dependencies),
-    field,
+    mode,
+    revalidateMode,
+    isSubmitted,
   };
 }
 
 /**
  * Creates a {@link DynzContext} and makes it available to every descendant
- * component. Use this when another library (e.g. VeeValidate) owns the form state
- * but you still want the dynz condition composables:
+ * component. Use this when vee-validate owns the form state but you still want the
+ * dynz condition composables:
  *
  * ```ts
  * const { values } = useForm({ validationSchema: dynzTypedSchema(schema) });
@@ -133,30 +138,4 @@ export function useDynzFormContext<TSchema extends ObjectSchema<never> = ObjectS
   }
 
   return context as unknown as DynzContext<TSchema>;
-}
-
-/** A {@link DynzContext} that is known to manage per-field state. */
-export type DynzFieldContext<TSchema extends ObjectSchema<never> = ObjectSchema<never>> = Omit<
-  DynzContext<TSchema>,
-  "field"
-> & {
-  field: DynzFieldAdapter;
-};
-
-/**
- * Same as {@link useDynzFormContext} but additionally asserts that per-field state
- * is available.
- */
-export function useDynzFieldAdapter<
-  TSchema extends ObjectSchema<never> = ObjectSchema<never>,
->(): DynzFieldContext<TSchema> {
-  const context = useDynzFormContext<TSchema>();
-
-  if (context.field === undefined) {
-    throw new Error(
-      "The dynz context does not manage field state. Use useDynzForm, or pass a field adapter to provideDynzContext."
-    );
-  }
-
-  return context as DynzFieldContext<TSchema>;
 }
