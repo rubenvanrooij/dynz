@@ -1,16 +1,7 @@
 "use client";
 
-import {
-  DynzField,
-  type DynzFieldProps,
-  IsIncluded,
-  useOptions,
-} from "@dynz/react-hook-form";
-import {
-  type ObjectSchema,
-  type Schema,
-  SchemaType,
-} from "dynz";
+import { DynzField, type DynzFieldProps, IsIncluded, useOptions } from "@dynz/react-hook-form";
+import { type ObjectSchema, type Schema, SchemaType } from "dynz";
 
 type FieldProps = {
   name: string;
@@ -22,8 +13,7 @@ function FieldShell({ name, label, render }: DynzFieldProps & { label: string })
     <DynzField
       name={name}
       render={(props) => {
-
-        const errorMessage = props.fieldState.error?.message
+        const errorMessage = props.fieldState.error?.message;
 
         return (
           <div className={`field ${errorMessage ? " field--invalid" : ""}`}>
@@ -58,7 +48,13 @@ function NumberField({ name, label }: FieldProps) {
       label={label}
       name={name}
       render={({ field, required, readOnly }) => (
-        <input {...field} onChange={(e) => field.onChange(Number(e.currentTarget.value))} type="number" aria-required={required} readOnly={readOnly} />
+        <input
+          {...field}
+          onChange={(e) => field.onChange(Number(e.currentTarget.value))}
+          type="number"
+          aria-required={required}
+          readOnly={readOnly}
+        />
       )}
     />
   );
@@ -71,8 +67,8 @@ function NumberField({ name, label }: FieldProps) {
  * NOTE: read straight from the schema rather than through `useOptions`, which currently
  * builds a malformed path in @dynz/react-hook-form.
  */
-function SelectField({ name, label }: FieldProps) {  
-  const options = useOptions(name)
+function SelectField({ name, label }: FieldProps) {
+  const options = useOptions(name);
 
   return (
     <FieldShell
@@ -158,7 +154,7 @@ export function SchemaField({ name, fieldSchema }: { name: string; fieldSchema: 
     case SchemaType.BOOLEAN:
       return <CheckboxField name={name} label={label} />;
     case SchemaType.NUMBER:
-      return <NumberField name={name} label={label}  />;
+      return <NumberField name={name} label={label} />;
     case SchemaType.STRING:
       return <TextField name={name} label={label} />;
     default:
