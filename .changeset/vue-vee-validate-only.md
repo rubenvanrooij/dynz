@@ -1,5 +1,5 @@
 ---
-"@dynz/vue": major
+"@dynz/vue": minor
 ---
 
 `@dynz/vue` no longer ships its own form-state engine — `useDynzForm`/`useDynzField` are now thin wrappers around vee-validate's real `useForm`/`useField`, mirroring how `@dynz/react-hook-form` wraps react-hook-form. `vee-validate` moves from an optional `devDependency` (used only by the standalone `dynzTypedSchema` adapter) to a required `peerDependency`.
