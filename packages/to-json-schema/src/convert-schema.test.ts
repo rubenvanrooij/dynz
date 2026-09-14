@@ -18,7 +18,7 @@ import { describe, expect, it, vi } from "vitest";
 import { convertSchema } from "./convert-schema";
 import type { ConversionContext } from "./types";
 
-const ctx: ConversionContext = { errorMode: "ignore", mode: "input" };
+const ctx: ConversionContext = { errorMode: "ignore", mode: "input", strict: false, unionKeyword: "oneOf" };
 
 describe("convertSchema", () => {
   it("converts primitive schemas", () => {
@@ -55,7 +55,7 @@ describe("convertSchema", () => {
       options: [{ enabled: eq(ref("type"), v("x")), value: "d" }],
     };
 
-    expect(convertSchema(schema, { errorMode: "warn", mode: "input" })).toEqual({ type: "string", enum: ["d"] });
+    expect(convertSchema(schema, { ...ctx, errorMode: "warn" })).toEqual({ type: "string", enum: ["d"] });
     expect(warn).toHaveBeenCalled();
     warn.mockRestore();
   });
@@ -121,7 +121,7 @@ describe("convertSchema", () => {
   it("omits statically excluded fields in 'output' mode too", () => {
     const schema = object({ name: string(), hidden: string().setIncluded(false) });
 
-    expect(convertSchema(schema, { errorMode: "ignore", mode: "output" })).toEqual({
+    expect(convertSchema(schema, { ...ctx, mode: "output" })).toEqual({
       type: "object",
       properties: { name: { type: "string" } },
       required: ["name"],
@@ -152,13 +152,13 @@ describe("convertSchema", () => {
       computed: { type: "expression", value: v(1) },
     });
 
-    expect(convertSchema(schema, { errorMode: "ignore", mode: "input" })).toEqual({
+    expect(convertSchema(schema, ctx)).toEqual({
       type: "object",
       properties: { name: { type: "string" } },
       required: ["name"],
     });
 
-    expect(convertSchema(schema, { errorMode: "ignore", mode: "output" })).toEqual({
+    expect(convertSchema(schema, { ...ctx, mode: "output" })).toEqual({
       type: "object",
       properties: { name: { type: "string" }, computed: {} },
       required: ["name", "computed"],
@@ -172,7 +172,7 @@ describe("convertSchema", () => {
       schemas: [{ kind: "a", value: string(), computed: { type: "expression", value: v(1) } }],
     };
 
-    expect(convertSchema(schema, { errorMode: "ignore", mode: "input" })).toEqual({
+    expect(convertSchema(schema, ctx)).toEqual({
       oneOf: [
         {
           type: "object",
@@ -182,7 +182,7 @@ describe("convertSchema", () => {
       ],
     });
 
-    expect(convertSchema(schema, { errorMode: "ignore", mode: "output" })).toEqual({
+    expect(convertSchema(schema, { ...ctx, mode: "output" })).toEqual({
       oneOf: [
         {
           type: "object",
@@ -343,6 +343,124 @@ describe("convertSchema", () => {
           default: { kind: "email", value: "a@b.com" },
         },
       },
+    });
+  });
+
+  describe("strict mode", () => {
+    const strictCtx: ConversionContext = { ...ctx, strict: true };
+
+    it("converts a literal, inferring type from its value (including null)", () => {
+      expect(convertSchema(literal("admin"), strictCtx)).toEqual({ const: "admin", type: "string" });
+      expect(convertSchema(literal(null), strictCtx)).toEqual({ const: null, type: "null" });
+    });
+
+    it("lists every object field as required, widening non-mandatory ones to also accept null", () => {
+      const schema = object({
+        name: string(),
+        nickname: string().optional(),
+        role: string().setRequired(eq(ref("type"), v("admin"))),
+        conditional: string().setIncluded(eq(ref("type"), v("admin"))),
+      });
+
+      expect(convertSchema(schema, strictCtx)).toEqual({
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          name: { type: "string" },
+          nickname: { anyOf: [{ type: "string" }, { type: "null" }] },
+          role: { anyOf: [{ type: "string" }, { type: "null" }] },
+          conditional: { anyOf: [{ type: "string" }, { type: "null" }] },
+        },
+        required: ["name", "nickname", "role", "conditional"],
+      });
+    });
+
+    it("marks every discriminated union member additionalProperties:false with a fully-required, typed discriminator", () => {
+      const schema: Schema = {
+        type: "discriminated_union",
+        key: "kind",
+        schemas: [
+          { kind: "a", value: string() },
+          { kind: "b", value: number(), meta: "ignored" },
+        ],
+      };
+
+      expect(convertSchema(schema, strictCtx)).toEqual({
+        oneOf: [
+          {
+            type: "object",
+            additionalProperties: false,
+            properties: { kind: { const: "a", type: "string" }, value: { type: "string" } },
+            required: ["kind", "value"],
+          },
+          {
+            type: "object",
+            additionalProperties: false,
+            properties: { kind: { const: "b", type: "string" }, value: { type: "number" } },
+            required: ["kind", "value"],
+          },
+        ],
+      });
+    });
+
+    it("wraps private fields in a fully-required, additionalProperties:false plain/masked shape", () => {
+      const schema = string().setPrivate(true);
+
+      expect(convertSchema(schema, strictCtx)).toEqual({
+        oneOf: [
+          {
+            type: "object",
+            additionalProperties: false,
+            properties: { state: { const: "plain", type: "string" }, value: { type: "string" } },
+            required: ["state", "value"],
+          },
+          {
+            type: "object",
+            additionalProperties: false,
+            properties: { state: { const: "masked", type: "string" }, value: { type: "string" } },
+            required: ["state", "value"],
+          },
+        ],
+      });
+    });
+  });
+
+  describe("unionKeyword", () => {
+    it("switches a discriminated union's keyword to anyOf, independently of strict", () => {
+      const schema: Schema = {
+        type: "discriminated_union",
+        key: "kind",
+        schemas: [{ kind: "a", value: string() }],
+      };
+
+      expect(convertSchema(schema, { ...ctx, unionKeyword: "anyOf" })).toEqual({
+        anyOf: [
+          {
+            type: "object",
+            properties: { kind: { const: "a" }, value: { type: "string" } },
+            required: ["kind", "value"],
+          },
+        ],
+      });
+    });
+
+    it("switches the private-field wrapper's keyword to anyOf, independently of strict", () => {
+      const schema = string().setPrivate(true);
+
+      expect(convertSchema(schema, { ...ctx, unionKeyword: "anyOf" })).toEqual({
+        anyOf: [
+          {
+            type: "object",
+            properties: { state: { const: "plain" }, value: { type: "string" } },
+            required: ["state"],
+          },
+          {
+            type: "object",
+            properties: { state: { const: "masked" }, value: { type: "string" } },
+            required: ["state", "value"],
+          },
+        ],
+      });
     });
   });
 });
