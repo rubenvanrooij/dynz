@@ -1,4 +1,4 @@
-import { type ParamaterValue, resolveExpected, type Transformer } from "../../functions";
+import { type ParamaterValue, resolveExpected } from "../../functions";
 import {
   type ErrorMessageFromRule,
   type ExtractResolvedRules,
@@ -8,10 +8,9 @@ import {
 } from "../../types";
 import { isNumber } from "../../validate/validate-type";
 
-export type MinRule<T extends ParamaterValue<number> = ParamaterValue<number>, A extends Transformer = Transformer> = {
+export type MinRule<T extends ParamaterValue<number> = ParamaterValue<number>> = {
   type: "min";
   min: T;
-  tranform?: A | undefined;
   code?: string | undefined;
 };
 
@@ -29,7 +28,6 @@ export type MinRuleErrorMessage = ErrorMessageFromRule<MinRule, number, "min">;
  * @category Rule
  * @param min - The minimum allowed value (static value, reference, or transformer)
  * @param code - Optional custom error code for this validation
- * @param transformer - Optional transformer to apply before validation
  * @returns A MinRule that validates value >= min
  *
  * @example
@@ -50,12 +48,8 @@ export type MinRuleErrorMessage = ErrorMessageFromRule<MinRule, number, "min">;
  * @see {@link gt} - Greater than predicate (for conditional logic)
  * @see {@link gte} - Greater than or equal predicate (for conditional logic)
  */
-export function buildMinRule<T extends ParamaterValue<number>, A extends Transformer = Transformer>(
-  min: T,
-  code?: string,
-  transformer?: A
-): MinRule<T, A> {
-  return { min, type: "min", code, tranform: transformer };
+export function buildMinRule<T extends ParamaterValue<number>>(min: T, code?: string): MinRule<T> {
+  return { min, type: "min", code };
 }
 
 export const minRule: RuleFn<Schema, Extract<ExtractResolvedRules<Schema>, MinRule>, MinRuleErrorMessage> = ({

@@ -1,6 +1,6 @@
 "use client";
 
-import { discriminatedUnion, literal, object, ref, string } from "dynz";
+import { discriminatedUnion, object, string } from "dynz";
 import { DynzForm } from "@/components/dynz/form";
 import { DynzInput } from "@/components/dynz/input";
 import { DynzUnionKey } from "@/components/dynz/union-key";
@@ -12,7 +12,7 @@ const schema = object({
   contactDetails: discriminatedUnion("type", [
     {
       type: "email",
-      email: string(),
+      email: string().email(),
     },
     {
       type: "phone",

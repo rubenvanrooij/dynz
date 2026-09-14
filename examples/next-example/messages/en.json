@@ -162,7 +162,8 @@
     "required": "This field is required",
     "email": "E-mail address invalid",
     "equals": "Not the same",
-    "min": "This field must at least have {min} characters"
+    "min": "This field must at least have {min} characters",
+    "type": "Invalid value, expected {expectedType}"
   },
   "form": {
     "errorMessages": {

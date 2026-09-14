@@ -1,21 +1,21 @@
-import { FormControl, FormDescription, FormItem, FormLabel, FormMessage } from "../ui/form";
+import { FormControl } from "../ui/form";
 import { Input } from "../ui/input";
 import { DynzFormField } from "./dynz-form-field";
+import { DynzFieldShell } from "./field-shell";
+import { useFieldTranslations } from "./hooks/use-field-translations";
 
 export type DynzInputProps = {
   name: string;
 } & Pick<React.ComponentProps<"input">, "type">;
 
 export function DynzInput({ name, ...props }: DynzInputProps) {
+  const translations = useFieldTranslations(name);
+
   return (
     <DynzFormField
       name={name}
-      render={({ field, translations, required, readOnly }) => (
-        <FormItem>
-          <FormLabel>
-            {translations.label}
-            {required && " *"}
-          </FormLabel>
+      render={({ field, required, readOnly }) => (
+        <DynzFieldShell label={translations.label} required={required} description={translations.description}>
           <FormControl>
             <Input
               placeholder={translations.placeholder}
@@ -26,9 +26,7 @@ export function DynzInput({ name, ...props }: DynzInputProps) {
               readOnly={readOnly}
             />
           </FormControl>
-          {translations.description && <FormDescription>{translations.description}</FormDescription>}
-          <FormMessage />
-        </FormItem>
+        </DynzFieldShell>
       )}
     />
   );

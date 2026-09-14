@@ -98,6 +98,57 @@ type ResolverOptions = {
 - **`mode`**: Validation mode (defaults to 'async')
 - **`raw`**: Return raw form values instead of processed schema values
 
+## Field Wiring: `useDynzForm`, `useDynzField`, `DynzField`
+
+Beyond the resolver, this package ships the per-field wiring every consumer otherwise hand-writes: reading the schema's `included`/`required`/`mutable` state for a field and binding it to react-hook-form's `Controller`/`useController`.
+
+```tsx
+import {
+  useDynzForm,
+  DynzFormProvider,
+  DynzField,
+} from "@dynz/react-hook-form";
+import { object, string, number } from "dynz";
+
+const schema = object({
+  email: string().email(),
+  age: number().min(18).optional(),
+});
+
+function RegistrationForm() {
+  const form = useDynzForm({ schema });
+
+  return (
+    <DynzFormProvider {...form}>
+      <form onSubmit={form.handleSubmit(console.log)}>
+        <DynzField
+          name="email"
+          render={({ field, fieldState, required }) => (
+            <>
+              <input {...field} aria-required={required} />
+              {fieldState.error && <span>{fieldState.error.message}</span>}
+            </>
+          )}
+        />
+        <DynzField
+          name="age"
+          render={({ field, readOnly }) => (
+            <input {...field} type="number" readOnly={readOnly} />
+          )}
+        />
+        <button type="submit">Submit</button>
+      </form>
+    </DynzFormProvider>
+  );
+}
+```
+
+- **`useDynzForm({ schema, ... })`** — `useForm` plus the dynz resolver and the schema/dependency context `useDynzFormContext` reads back out. Everything `useForm` normally accepts (`defaultValues`, `mode`, ...) is accepted too.
+- **`<DynzFormProvider {...form}>`** — a thin wrapper around react-hook-form's own `FormProvider`.
+- **`useDynzField(name)`** — binds one field: `useController` bound to the form's `control`, plus `included`/`required`/`readOnly` resolved from the schema, the field's own schema (e.g. for `.setUi(...)`/`.setMeta(...)` rendering hints), and automatic cross-field revalidation for any field this one's rules reference. Returns `{ field, fieldState, formState, included, required, readOnly, schema }`.
+- **`<DynzField name render>`** — a render-prop wrapper around `useDynzField`: renders nothing when the field isn't currently included, and calls `render(...)` with the same shape otherwise.
+- **`<IsIncluded name>children</IsIncluded>`** and **`<When cond={predicate}>children</When>`** — lighter-weight components for conditionally rendering non-field content based on the schema.
+
 ## Advanced Examples
 
 ### Conditional Validation

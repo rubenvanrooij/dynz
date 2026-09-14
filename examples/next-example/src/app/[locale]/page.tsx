@@ -2,11 +2,13 @@
 
 import { IsIncluded } from "@dynz/react-hook-form";
 
-import { boolean, conditional, eq, matches, object, options, or, ref, type SchemaValues, string, v } from "dynz";
+import { boolean, eq, matches, object, options, or, ref, type SchemaValues, string, v } from "dynz";
 import { PopcornIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { DynzBoolean, DynzSelect, DynzTextInput } from "@/components/dynz/dynz-form";
+import { DynzCheckbox } from "@/components/dynz/checkbox";
 import { DynzForm } from "@/components/dynz/form";
+import { DynzInput } from "@/components/dynz/input";
+import { DynzSelect } from "@/components/dynz/select";
 import { Alert, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -67,22 +69,22 @@ export default function Home() {
       <CardContent className="gap-2">
         <DynzForm name="registrationForm" schema={schema} defaultValues={DEFAULT_VALUES} onSubmit={onSubmit}>
           <div className="flex flex-col gap-4">
-            <DynzTextInput i18nPath="registrationForm" name="name" />
-            <DynzTextInput i18nPath="registrationForm" name="company" />
-            <DynzTextInput i18nPath="registrationForm" name="email" />
-            <DynzSelect i18nPath="registrationForm" name="attendanceType" />
-            <DynzBoolean i18nPath="registrationForm" name="accomidationRequired" />
-            <DynzSelect i18nPath="registrationForm" name="workshopPreferences" />
-            <DynzBoolean i18nPath="registrationForm" name="dietry.restrictions" />
-            <DynzTextInput i18nPath="registrationForm" name="dietry.details" />
+            <DynzInput name="name" />
+            <DynzInput name="company" />
+            <DynzInput name="email" />
+            <DynzSelect name="attendanceType" />
+            <DynzCheckbox name="accomidationRequired" />
+            <DynzSelect name="workshopPreferences" />
+            <DynzCheckbox name="dietry.restrictions" />
+            <DynzInput name="dietry.details" />
             <IsIncluded name="dietry.details">
               <Alert>
                 <PopcornIcon />
                 <AlertTitle>We will do our best to provide food from which you won&apos;t die</AlertTitle>
               </Alert>
             </IsIncluded>
-            <DynzSelect i18nPath="registrationForm" name="professionalLevel" />
-            <DynzTextInput i18nPath="registrationForm" name="studentInstitution" />
+            <DynzSelect name="professionalLevel" />
+            <DynzInput name="studentInstitution" />
             <Button type="submit">Submit</Button>
           </div>
         </DynzForm>

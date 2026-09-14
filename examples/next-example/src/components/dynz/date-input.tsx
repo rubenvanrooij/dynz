@@ -1,21 +1,20 @@
-import { FormControl, FormDescription, FormItem, FormLabel, FormMessage } from "../ui/form";
+import { FormControl } from "../ui/form";
 import { Input } from "../ui/input";
 import { DynzFormField } from "./dynz-form-field";
-
+import { DynzFieldShell } from "./field-shell";
+import { useFieldTranslations } from "./hooks/use-field-translations";
 export type DynzDateInputProps = {
   name: string;
 };
 
 export function DynzDateInput({ name }: DynzDateInputProps) {
+  const translations = useFieldTranslations(name);
+
   return (
     <DynzFormField
       name={name}
-      render={({ field, translations, required, readOnly }) => (
-        <FormItem>
-          <FormLabel>
-            {translations.label}
-            {required && " *"}
-          </FormLabel>
+      render={({ field, required, readOnly }) => (
+        <DynzFieldShell label={translations.label} required={required} description={translations.description}>
           <FormControl>
             <Input
               type="date"
@@ -29,9 +28,7 @@ export function DynzDateInput({ name }: DynzDateInputProps) {
               readOnly={readOnly}
             />
           </FormControl>
-          {translations.description && <FormDescription>{translations.description}</FormDescription>}
-          <FormMessage />
-        </FormItem>
+        </DynzFieldShell>
       )}
     />
   );
