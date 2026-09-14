@@ -1,74 +1,66 @@
 "use client";
 
-import { IsIncluded, useDynzFormContext, useIsMutable, useIsRequired } from "@dynz/react-hook-form";
+import {
+  DynzField,
+  type DynzFieldProps,
+  IsIncluded,
+  useOptions,
+} from "@dynz/react-hook-form";
 import {
   type ObjectSchema,
-  type OptionsSchema,
   type Schema,
   SchemaType,
-  findSchemaByPath,
-  resolvePredicate,
 } from "dynz";
-import type { ReactNode } from "react";
-import { Controller, useWatch } from "react-hook-form";
 
 type FieldProps = {
   name: string;
   label: string;
 };
 
-function FieldShell({
-  name,
-  label,
-  error,
-  children,
-}: FieldProps & { error?: string | undefined; children: ReactNode }) {
-  const isRequired = useIsRequired(name);
-
+function FieldShell({ name, label, render }: DynzFieldProps & { label: string }) {
   return (
-    <div className={`field${error ? " field--invalid" : ""}`}>
-      <label htmlFor={name}>
-        {label}
-        {isRequired !== false && <span className="required"> *</span>}
-      </label>
-      {children}
-      {error && <p className="error">{error}</p>}
-    </div>
+    <DynzField
+      name={name}
+      render={(props) => {
+
+        const errorMessage = props.fieldState.error?.message
+
+        return (
+          <div className={`field ${errorMessage ? " field--invalid" : ""}`}>
+            <label htmlFor={name}>
+              {label}
+              {props.required && <span className="required"> *</span>}
+            </label>
+            {render(props)}
+            {errorMessage && <p className="error">{errorMessage}</p>}
+          </div>
+        );
+      }}
+    />
   );
 }
 
-function TextField({ name, label, type }: FieldProps & { type: "text" | "number" }) {
-  const { control } = useDynzFormContext();
-  const isMutable = useIsMutable(name);
-
+function TextField({ name, label }: FieldProps) {
   return (
-    <IsIncluded name={name}>
-      <Controller
-        control={control}
-        name={name}
-        render={({ field, fieldState }) => (
-          <FieldShell name={name} label={label} error={fieldState.error?.message}>
-            <input
-              {...field}
-              id={name}
-              type={type}
-              value={field.value ?? ""}
-              step={type === "number" ? "any" : undefined}
-              readOnly={isMutable === false}
-              onChange={(event) =>
-                field.onChange(
-                  type === "number"
-                    ? event.target.value === ""
-                      ? undefined
-                      : event.target.valueAsNumber
-                    : event.target.value
-                )
-              }
-            />
-          </FieldShell>
-        )}
-      />
-    </IsIncluded>
+    <FieldShell
+      label={label}
+      name={name}
+      render={({ field, required, readOnly }) => (
+        <input {...field} type="text" aria-required={required} readOnly={readOnly} />
+      )}
+    />
+  );
+}
+
+function NumberField({ name, label }: FieldProps) {
+  return (
+    <FieldShell
+      label={label}
+      name={name}
+      render={({ field, required, readOnly }) => (
+        <input {...field} onChange={(e) => field.onChange(Number(e.currentTarget.value))} type="number" aria-required={required} readOnly={readOnly} />
+      )}
+    />
   );
 }
 
@@ -79,79 +71,51 @@ function TextField({ name, label, type }: FieldProps & { type: "text" | "number"
  * NOTE: read straight from the schema rather than through `useOptions`, which currently
  * builds a malformed path in @dynz/react-hook-form.
  */
-function SelectField({ name, label }: FieldProps) {
-  const { control, schema } = useDynzFormContext();
-  const isMutable = useIsMutable(name);
-  const values = useWatch({ control });
-
-  const optionsSchema = findSchemaByPath<OptionsSchema>(`$.${name}`, schema, SchemaType.OPTIONS);
-
-  const choices = optionsSchema.options.map((option) => {
-    if (typeof option !== "object") {
-      return { value: option, enabled: true };
-    }
-
-    return {
-      value: option.value,
-      enabled:
-        typeof option.enabled === "boolean"
-          ? option.enabled
-          : (resolvePredicate(option.enabled, "$", { schema, values }) ?? false),
-    };
-  });
+function SelectField({ name, label }: FieldProps) {  
+  const options = useOptions(name)
 
   return (
-    <IsIncluded name={name}>
-      <Controller
-        control={control}
-        name={name}
-        render={({ field, fieldState }) => (
-          <FieldShell name={name} label={label} error={fieldState.error?.message}>
-            <select {...field} id={name} value={field.value ?? ""} disabled={isMutable === false}>
-              <option value="" disabled>
-                Choose…
-              </option>
-              {choices.map((choice) => (
-                <option key={String(choice.value)} value={String(choice.value)} disabled={!choice.enabled}>
-                  {String(choice.value)}
-                  {choice.enabled ? "" : " (unavailable)"}
-                </option>
-              ))}
-            </select>
-          </FieldShell>
-        )}
-      />
-    </IsIncluded>
+    <FieldShell
+      label={label}
+      name={name}
+      render={({ field, required, readOnly }) => (
+        <select {...field} id={name} value={field.value ?? ""} aria-required={required} disabled={readOnly}>
+          <option value="" disabled>
+            Choose…
+          </option>
+          {options.map((option) => (
+            <option key={String(option.value)} value={String(option.value)} disabled={!option.enabled}>
+              {String(option.value)}
+              {option.enabled ? "" : " (unavailable)"}
+            </option>
+          ))}
+        </select>
+      )}
+    />
   );
 }
 
 function CheckboxField({ name, label }: FieldProps) {
-  const { control } = useDynzFormContext();
-  const isMutable = useIsMutable(name);
-
   return (
-    <IsIncluded name={name}>
-      <Controller
-        control={control}
-        name={name}
-        render={({ field, fieldState }) => (
-          <div className="field">
-            <div className="checkbox">
-              <input
-                id={name}
-                type="checkbox"
-                checked={field.value === true}
-                disabled={isMutable === false}
-                onBlur={field.onBlur}
-                onChange={(event) => field.onChange(event.target.checked)}
-              />
-              <label htmlFor={name}>{label}</label>
-            </div>
-            {fieldState.error && <p className="error">{fieldState.error.message}</p>}
+    <FieldShell
+      label={label}
+      name={name}
+      render={({ field, required, readOnly }) => (
+        <div className="field">
+          <div className="checkbox">
+            <input
+              id={name}
+              type="checkbox"
+              checked={field.value === true}
+              disabled={readOnly}
+              required={required}
+              onBlur={field.onBlur}
+              onChange={(event) => field.onChange(event.target.checked)}
+            />
           </div>
-        )}
-      />
-    </IsIncluded>
+        </div>
+      )}
+    />
   );
 }
 
@@ -194,9 +158,9 @@ export function SchemaField({ name, fieldSchema }: { name: string; fieldSchema: 
     case SchemaType.BOOLEAN:
       return <CheckboxField name={name} label={label} />;
     case SchemaType.NUMBER:
-      return <TextField name={name} label={label} type="number" />;
+      return <NumberField name={name} label={label}  />;
     case SchemaType.STRING:
-      return <TextField name={name} label={label} type="text" />;
+      return <TextField name={name} label={label} />;
     default:
       return (
         <p className="note">

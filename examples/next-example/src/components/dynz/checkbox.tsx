@@ -1,16 +1,20 @@
+import { DynzField } from "@dynz/react-hook-form";
 import { FormControl, FormDescription, FormItem, FormLabel, FormMessage } from "../ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { DynzFormField } from "./dynz-form-field";
+import { useFieldTranslations } from "./hooks/use-field-translations";
 
 export type DynzCheckboxProps = {
   name: string;
 };
 
 export function DynzCheckbox({ name }: DynzCheckboxProps) {
+
+  const translations = useFieldTranslations(name);
+  
   return (
-    <DynzFormField
+    <DynzField
       name={name}
-      render={({ field, translations, required, readOnly }) => (
+      render={({ field, required, readOnly }) => (
         <FormItem>
           <FormLabel>
             {translations.label}

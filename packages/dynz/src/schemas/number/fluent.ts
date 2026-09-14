@@ -1,4 +1,4 @@
-import type { ParamaterValue, Predicate, Transformer } from "../../functions";
+import type { ParamaterValue, Predicate } from "../../functions";
 import {
   buildConditionalRule,
   buildEqualsRule,
@@ -39,11 +39,7 @@ export type NumRuleBuilder<TRules extends Rule[]> = {
   readonly type: typeof SchemaType.NUMBER;
   readonly rules: TRules;
 
-  min: <P extends ParamaterValue<number>, A extends Transformer = Transformer>(
-    value: P,
-    code?: string,
-    transformer?: A
-  ) => NumRuleBuilder<Push<TRules, MinRule<P, A>>>;
+  min: <P extends ParamaterValue<number>>(value: P, code?: string) => NumRuleBuilder<Push<TRules, MinRule<P>>>;
   max: <P extends ParamaterValue<number>>(value: P, code?: string) => NumRuleBuilder<Push<TRules, MaxRule<P>>>;
   maxPrecision: <P extends ParamaterValue<number>>(
     value: P,
@@ -67,12 +63,11 @@ export type NumFluent<TRules extends Rule[], TProps> = {
   readonly rules: TRules;
 } & TProps & {
     // — Rule methods —
-    /** Sets minimum value. @param value - Minimum allowed value. @param code - Optional error code. @param transformer - Optional value transformer */
-    min: <P extends ParamaterValue<number> | number, A extends Transformer = Transformer>(
+    /** Sets minimum value. @param value - Minimum allowed value. @param code - Optional error code */
+    min: <P extends ParamaterValue<number> | number>(
       value: P,
-      code?: string,
-      transformer?: A
-    ) => NumFluent<Push<TRules, MinRule<ToParam<P>, A>>, TProps>;
+      code?: string
+    ) => NumFluent<Push<TRules, MinRule<ToParam<P>>>, TProps>;
     /** Sets maximum value. @param value - Maximum allowed value. @param code - Optional error code */
     max: <P extends ParamaterValue<number> | number>(
       value: P,
@@ -141,11 +136,7 @@ function createRuleBuilder<TRules extends Rule[]>(rules: TRules): NumRuleBuilder
   return {
     type: SchemaType.NUMBER,
     rules,
-    min: <P extends ParamaterValue<number>, A extends Transformer = Transformer>(
-      value: P,
-      code?: string,
-      transformer?: A
-    ) => push(buildMinRule(value, code, transformer)),
+    min: <P extends ParamaterValue<number>>(value: P, code?: string) => push(buildMinRule(value, code)),
     max: <P extends ParamaterValue<number>>(value: P, code?: string) => push(buildMaxRule(value, code)),
     maxPrecision: <P extends ParamaterValue<number>>(value: P, code?: string) =>
       push(buildMaxPrecisionRule(value, code)),
@@ -168,11 +159,8 @@ function createFluent<TRules extends Rule[], TProps>(rules: TRules, props: TProp
     ...props,
 
     // — Rule methods —
-    min: <P extends ParamaterValue<number> | number, A extends Transformer = Transformer>(
-      value: P,
-      code?: string,
-      transformer?: A
-    ) => pushRule(buildMinRule(toParamaterValue(value), code, transformer)),
+    min: <P extends ParamaterValue<number> | number>(value: P, code?: string) =>
+      pushRule(buildMinRule(toParamaterValue(value), code)),
     max: <P extends ParamaterValue<number> | number>(value: P, code?: string) =>
       pushRule(buildMaxRule(toParamaterValue(value), code)),
     maxPrecision: <P extends ParamaterValue<number> | number>(value: P, code?: string) =>

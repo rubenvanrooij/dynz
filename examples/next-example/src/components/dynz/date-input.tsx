@@ -1,16 +1,19 @@
+import { DynzField } from "@dynz/react-hook-form";
 import { FormControl, FormDescription, FormItem, FormLabel, FormMessage } from "../ui/form";
 import { Input } from "../ui/input";
-import { DynzFormField } from "./dynz-form-field";
-
+import { useFieldTranslations } from "./hooks/use-field-translations";
 export type DynzDateInputProps = {
   name: string;
 };
 
 export function DynzDateInput({ name }: DynzDateInputProps) {
+
+  const translations = useFieldTranslations(name)
+
   return (
-    <DynzFormField
+    <DynzField
       name={name}
-      render={({ field, translations, required, readOnly }) => (
+      render={({ field, required, readOnly }) => (
         <FormItem>
           <FormLabel>
             {translations.label}

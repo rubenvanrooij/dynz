@@ -1,6 +1,7 @@
+import { DynzField } from "@dynz/react-hook-form";
 import { FormControl, FormDescription, FormItem, FormLabel, FormMessage } from "../ui/form";
 import { Input } from "../ui/input";
-import { DynzFormField } from "./dynz-form-field";
+import { useFieldTranslations } from "./hooks/use-field-translations";
 
 export type DynzNumberInputProps = {
   name: string;
@@ -8,10 +9,13 @@ export type DynzNumberInputProps = {
 };
 
 export function DynzNumberInput({ name, step }: DynzNumberInputProps) {
+
+  const translations = useFieldTranslations(name)
+
   return (
-    <DynzFormField
+    <DynzField
       name={name}
-      render={({ field, translations, required, readOnly }) => (
+      render={({ field, required, readOnly }) => (
         <FormItem>
           <FormLabel>
             {translations.label}

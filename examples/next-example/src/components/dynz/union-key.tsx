@@ -1,7 +1,7 @@
-import { useDiscriminatedUnionKeyValues } from "@dynz/react-hook-form";
+import { DynzField, useDiscriminatedUnionKeyValues } from "@dynz/react-hook-form";
 import { FormControl, FormDescription, FormItem, FormLabel, FormMessage } from "../ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { DynzFormField } from "./dynz-form-field";
+import { useFieldTranslations } from "./hooks/use-field-translations";
 
 export type DynzSelectProps = {
   name: string;
@@ -10,11 +10,12 @@ export type DynzSelectProps = {
 export function DynzUnionKey({ name }: DynzSelectProps) {
   // Get options from schema if not provided via props
   const options = useDiscriminatedUnionKeyValues(name);
+  const translations = useFieldTranslations(name)
 
   return (
-    <DynzFormField
+    <DynzField
       name={name}
-      render={({ field, translations, required, readOnly }) => (
+      render={({ field, required, readOnly }) => (
         <FormItem>
           <FormLabel>
             {translations.label}
