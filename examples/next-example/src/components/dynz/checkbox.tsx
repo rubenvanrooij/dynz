@@ -1,6 +1,7 @@
-import { DynzField } from "@dynz/react-hook-form";
-import { FormControl, FormDescription, FormItem, FormLabel, FormMessage } from "../ui/form";
+import { FormControl } from "../ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { DynzFormField } from "./dynz-form-field";
+import { DynzFieldShell } from "./field-shell";
 import { useFieldTranslations } from "./hooks/use-field-translations";
 
 export type DynzCheckboxProps = {
@@ -8,18 +9,13 @@ export type DynzCheckboxProps = {
 };
 
 export function DynzCheckbox({ name }: DynzCheckboxProps) {
-
   const translations = useFieldTranslations(name);
-  
+
   return (
-    <DynzField
+    <DynzFormField
       name={name}
       render={({ field, required, readOnly }) => (
-        <FormItem>
-          <FormLabel>
-            {translations.label}
-            {required && " *"}
-          </FormLabel>
+        <DynzFieldShell label={translations.label} required={required} description={translations.description}>
           <Select
             onValueChange={(value) => field.onChange(value === "true")}
             value={field.value === true ? "true" : field.value === false ? "false" : undefined}
@@ -31,13 +27,11 @@ export function DynzCheckbox({ name }: DynzCheckboxProps) {
               </SelectTrigger>
             </FormControl>
             <SelectContent>
-              <SelectItem value="true">Ja</SelectItem>
-              <SelectItem value="false">Nee</SelectItem>
+              <SelectItem value="true">{translations.options.yes}</SelectItem>
+              <SelectItem value="false">{translations.options.no}</SelectItem>
             </SelectContent>
           </Select>
-          {translations.description && <FormDescription>{translations.description}</FormDescription>}
-          <FormMessage />
-        </FormItem>
+        </DynzFieldShell>
       )}
     />
   );

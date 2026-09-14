@@ -6,13 +6,17 @@ type TranslationsObject = {
   label?: string | undefined;
   placeholder?: string | undefined;
   description?: string | undefined;
+  options: {
+    yes?: string | undefined;
+    no?: string | undefined;
+  };
 };
 
-export function useFieldTranslations(name: string): TranslationsObject { 
-    const { name: i18nPath } = useDynzFormContext();
-    const t = useTranslations();
+export function useFieldTranslations(name: string): TranslationsObject {
+  const { name: i18nPath } = useDynzFormContext();
+  const t = useTranslations();
 
-    return useMemo(() => {
+  return useMemo(() => {
     const getTranslation = (key: string) => {
       return t.has(key) ? t(key) : undefined;
     };
@@ -21,6 +25,10 @@ export function useFieldTranslations(name: string): TranslationsObject {
       label: getTranslation(`${i18nPath}.${name}.label`),
       placeholder: getTranslation(`${i18nPath}.${name}.placeholder`),
       description: getTranslation(`${i18nPath}.${name}.description`),
+      options: {
+        yes: getTranslation(`${i18nPath}.${name}.options.yes`),
+        no: getTranslation(`${i18nPath}.${name}.options.no`),
+      },
     };
   }, [t, i18nPath, name]);
 }
