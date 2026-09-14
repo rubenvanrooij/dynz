@@ -145,6 +145,13 @@ export function resolveFunction(
         resolve(input.right, path, context),
         input.flags
       );
+    case "replace":
+      return FUNCTIONS[input.type](
+        resolve(input.value, path, context),
+        resolve(input.pattern, path, context),
+        resolve(input.replacement, path, context),
+        input.flags
+      );
     // expects array of input values
     case "sum":
     case "sub":
