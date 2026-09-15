@@ -147,6 +147,9 @@ importers:
 
   examples/next-hono-example:
     dependencies:
+      '@dynz/funnel':
+        specifier: workspace:*
+        version: link:../../packages/funnel
       '@dynz/react-hook-form':
         specifier: workspace:*
         version: link:../../packages/react-hook-form
@@ -224,6 +227,16 @@ importers:
       date-fns:
         specifier: ^4.1.0
         version: 4.1.0
+    devDependencies:
+      tsdown:
+        specifier: ^0.16.5
+        version: 0.16.5(ms@2.1.3)(synckit@0.11.11)(typescript@5.9.3)
+
+  packages/funnel:
+    dependencies:
+      dynz:
+        specifier: workspace:*
+        version: link:../dynz
     devDependencies:
       tsdown:
         specifier: ^0.16.5

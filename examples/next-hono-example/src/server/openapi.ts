@@ -1,5 +1,7 @@
+import { getFunnelSchema } from "@dynz/funnel";
 import { toStandardJsonSchema } from "@dynz/to-json-schema";
-import { RECEIPT_REQUIRED_FROM, expenseClaimSchema } from "./expense-claim-schema";
+import { expenseClaimFunnel } from "./expense-claim-funnel";
+import { expenseClaimSchema, RECEIPT_REQUIRED_FROM } from "./expense-claim-schema";
 
 /**
  * The OpenAPI document is *generated from the dynz schema*, not maintained alongside
@@ -14,6 +16,9 @@ import { RECEIPT_REQUIRED_FROM, expenseClaimSchema } from "./expense-claim-schem
  */
 export function buildOpenApiDocument(): Record<string, unknown> {
   const claimSchema = toStandardJsonSchema(expenseClaimSchema, { errorMode: "ignore" });
+  // `getFunnelSchema` derives an ordinary dynz object schema (`{ [stepId]: step.schema }`)
+  // from the funnel, so it goes through the very same converter as the schema above.
+  const claimFunnelSchema = toStandardJsonSchema(getFunnelSchema(expenseClaimFunnel), { errorMode: "ignore" });
 
   return {
     openapi: "3.1.0",
@@ -48,6 +53,35 @@ export function buildOpenApiDocument(): Record<string, unknown> {
                       policy: {
                         type: "object",
                         properties: { receiptRequiredFrom: { type: "number" } },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      "/forms/expense-claim-funnel": {
+        get: {
+          operationId: "getExpenseClaimFunnel",
+          summary: "The dynz funnel for the multi-step expense-claim wizard",
+          description:
+            "Returns a @dynz/funnel definition: one dynz schema per step, plus the predicates " +
+            "that pick the next step. Clients walk the whole flow — including which steps get " +
+            "skipped — from this one response, no further round trip needed to navigate.",
+          responses: {
+            "200": {
+              description: "The funnel definition",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    required: ["funnel"],
+                    properties: {
+                      funnel: {
+                        type: "object",
+                        description: "A serialized @dynz/funnel FunnelDefinition (initial, steps[])",
                       },
                     },
                   },
@@ -99,10 +133,55 @@ export function buildOpenApiDocument(): Record<string, unknown> {
           },
         },
       },
+      "/claims/funnel": {
+        post: {
+          operationId: "createClaimFromFunnel",
+          summary: "Submit an expense claim collected through the funnel",
+          description:
+            "Every step already validated itself against its own schema in the browser; this " +
+            "re-validates all of them at once, against the funnel's merged schema.",
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                // Generated from getFunnelSchema(expenseClaimFunnel) — one property per step id.
+                schema: { $ref: "#/components/schemas/ExpenseClaimFunnel" },
+              },
+            },
+          },
+          responses: {
+            "201": {
+              description: "The claim was accepted",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    required: ["ok", "id", "values"],
+                    properties: {
+                      ok: { const: true },
+                      id: { type: "string" },
+                      values: { $ref: "#/components/schemas/ExpenseClaimFunnel" },
+                    },
+                  },
+                },
+              },
+            },
+            "422": {
+              description: "The claim failed server-side validation",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ValidationFailure" },
+                },
+              },
+            },
+          },
+        },
+      },
     },
     components: {
       schemas: {
         ExpenseClaim: claimSchema,
+        ExpenseClaimFunnel: claimFunnelSchema,
         ValidationFailure: {
           type: "object",
           required: ["ok", "errors"],

@@ -26,6 +26,7 @@ export default async function Home() {
       </p>
 
       <nav className="links">
+        <a href="/funnel">multi-step funnel version</a>
         <a href="/api/docs">Swagger UI</a>
         <a href="/api/openapi.json">openapi.json</a>
         <a href="/api/forms/expense-claim">the schema</a>

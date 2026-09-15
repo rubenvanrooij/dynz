@@ -9,6 +9,7 @@
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
+    "@dynz/funnel": "workspace:*",
     "@dynz/react-hook-form": "workspace:*",
     "@dynz/to-json-schema": "workspace:*",
     "@hono/swagger-ui": "^0.6.1",

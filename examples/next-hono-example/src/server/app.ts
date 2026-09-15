@@ -1,6 +1,8 @@
+import { getFunnelPath, getFunnelSchema } from "@dynz/funnel";
 import { swaggerUI } from "@hono/swagger-ui";
 import { type SchemaValues, validate } from "dynz";
 import { Hono } from "hono";
+import { DEMO_EMPLOYEE_ID, expenseClaimFunnel } from "./expense-claim-funnel";
 import {
   APPROVAL_REQUIRED_FROM,
   CLIENT_REFERENCE_REQUIRED_FROM,
@@ -30,6 +32,13 @@ const routes = app
     })
   )
 
+  /**
+   * The funnel: the same claim, reshaped into steps. It is plain JSON just like the
+   * schema above — including every step's own schema and its branching `next` — so the
+   * browser can walk it (`resolveNextStep`, `getFunnelPath`) without another round trip.
+   */
+  .get("/forms/expense-claim-funnel", (c) => c.json({ funnel: expenseClaimFunnel }))
+
   /** OpenAPI 3.1, with the request body generated from the dynz schema. */
   .get("/openapi.json", (c) => c.json(buildOpenApiDocument()))
 
@@ -50,7 +59,53 @@ const routes = app
       expenseClaimSchema,
       // Only the fields the server owns; every other field has no "current" value, so
       // dynz leaves them mutable.
-      { employeeId: session.employeeId } as SchemaValues<typeof expenseClaimSchema>,
+      { employeeId: DEMO_EMPLOYEE_ID } as SchemaValues<typeof expenseClaimSchema>,
+      body,
+      { stripNotIncludedValues: true }
+    );
+
+    if (result.success === false) {
+      return c.json(
+        {
+          ok: false as const,
+          errors: result.errors.map((error) => ({
+            path: error.path,
+            code: error.code,
+            message: error.message,
+          })),
+        },
+        422
+      );
+    }
+
+    return c.json(
+      {
+        ok: true as const,
+        id: `CLM-${Math.random().toString(36).slice(2, 8).toUpperCase()}`,
+        values: result.values,
+      },
+      201
+    );
+  })
+
+  /**
+   * Each step already validated itself in the browser, against its own schema — this
+   * is the single revalidation pass that counts, against every step's values at once.
+   * `getFunnelSchema` derives an ordinary dynz object schema (`{ [stepId]: step.schema
+   * }`) from the funnel, so from here on it is exactly the same `validate()` call as
+   * `POST /claims` above.
+   */
+  .post("/claims/funnel", async (c) => {
+    const body = await c.req.json();
+
+    // A skipped branch (no travel details, no approval needed, ...) must not be
+    // required just because it's a step in the funnel — only the steps this
+    // particular submission actually passed through are.
+    const reachedSteps = getFunnelPath(expenseClaimFunnel, body);
+
+    const result = await validate(
+      getFunnelSchema(expenseClaimFunnel, reachedSteps),
+      { claimBasics: { employeeId: DEMO_EMPLOYEE_ID } } as SchemaValues<ReturnType<typeof getFunnelSchema>>,
       body,
       { stripNotIncludedValues: true }
     );
