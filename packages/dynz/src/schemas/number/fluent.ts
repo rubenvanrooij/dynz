@@ -7,6 +7,7 @@ import {
   buildMaxRule,
   buildMinRule,
   buildNotEqualsRule,
+  buildNotOneOfRule,
   buildOneOfRule,
   type ConditionalRule,
   type EqualsRule,
@@ -15,6 +16,7 @@ import {
   type MaxRule,
   type MinRule,
   type NotEqualsRule,
+  type NotOneOfRule,
   type OneOfRule,
   type Rule,
 } from "../../rules";
@@ -54,6 +56,7 @@ export type NumRuleBuilder<TRules extends Rule[]> = {
   ) => NumRuleBuilder<Push<TRules, NotEqualsRule<P>>>;
   isNumeric: (code?: string) => NumRuleBuilder<Push<TRules, IsNumericRule>>;
   oneOf: <P extends ParamaterValue[]>(values: P, code?: string) => NumRuleBuilder<Push<TRules, OneOfRule<P>>>;
+  notOneOf: <P extends ParamaterValue[]>(values: P, code?: string) => NumRuleBuilder<Push<TRules, NotOneOfRule<P>>>;
 };
 
 // ---------------------------------------------------------------------------
@@ -98,6 +101,11 @@ export type NumFluent<TRules extends Rule[], TProps> = {
     isNumeric: (code?: string) => NumFluent<Push<TRules, IsNumericRule>, TProps>;
     /** Validates number is one of allowed values. @param values - Array of allowed values. @param code - Optional error code */
     oneOf: <P extends ParamaterValue[]>(values: P, code?: string) => NumFluent<Push<TRules, OneOfRule<P>>, TProps>;
+    /** Validates number is not one of forbidden values. @param values - Array of forbidden values. @param code - Optional error code */
+    notOneOf: <P extends ParamaterValue[]>(
+      values: P,
+      code?: string
+    ) => NumFluent<Push<TRules, NotOneOfRule<P>>, TProps>;
 
     // — Conditional rules —
     /** Applies rules conditionally based on a predicate. @param pred - Condition to evaluate. @param cb - Builder callback for conditional rules */
@@ -155,6 +163,7 @@ function createRuleBuilder<TRules extends Rule[]>(rules: TRules): NumRuleBuilder
     notEquals: <P extends ParamaterValue<number>>(value: P, code?: string) => push(buildNotEqualsRule(value, code)),
     isNumeric: (code?: string) => push(buildIsNumericRule(code)),
     oneOf: <P extends ParamaterValue[]>(values: P, code?: string) => push(buildOneOfRule(values, code)),
+    notOneOf: <P extends ParamaterValue[]>(values: P, code?: string) => push(buildNotOneOfRule(values, code)),
   };
 }
 
@@ -183,6 +192,7 @@ function createFluent<TRules extends Rule[], TProps>(rules: TRules, props: TProp
       pushRule(buildNotEqualsRule(toParamaterValue(value), code)),
     isNumeric: (code?: string) => pushRule(buildIsNumericRule(code)),
     oneOf: <P extends ParamaterValue[]>(values: P, code?: string) => pushRule(buildOneOfRule(values, code)),
+    notOneOf: <P extends ParamaterValue[]>(values: P, code?: string) => pushRule(buildNotOneOfRule(values, code)),
 
     // — Conditional rules —
     when: <WRules extends Rule[]>(pred: Predicate, cb: (b: NumRuleBuilder<[]>) => NumRuleBuilder<WRules>) => {

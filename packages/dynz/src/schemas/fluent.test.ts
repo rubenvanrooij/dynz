@@ -133,6 +133,20 @@ describe("Fluent API", () => {
       });
     });
 
+    it("adds notOneOf rule", () => {
+      const schema = string().notOneOf([v("a"), v("b"), v("c")]);
+
+      expect(schema.rules[0]).toEqual({
+        type: "not_one_of",
+        values: [
+          { type: "st", value: "a" },
+          { type: "st", value: "b" },
+          { type: "st", value: "c" },
+        ],
+        code: undefined,
+      });
+    });
+
     it("adds custom rule", () => {
       const schema = string().custom("myValidator", { threshold: v(10) });
 
