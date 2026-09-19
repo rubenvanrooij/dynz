@@ -1,19 +1,24 @@
 import type { AgeFunction } from "./age-function";
 import type { AtanFunction } from "./atan-function";
+import type { CapitalizeFunction } from "./capitalize-function";
 import type { CeilFunction } from "./ceil-function";
 import type { CosFunction } from "./cos-function";
 import type { DivideFunction } from "./divide-function";
 import type { FloorFunction } from "./floor-function";
 import type { LookupFunction } from "./lookup-function";
+import type { LowercaseFunction } from "./lowercase-function";
 import type { MaxFunction } from "./max-function";
 import type { MinFunction } from "./min-function";
 import type { MultiplyFunction } from "./multiply-function";
+import type { PluckFunction } from "./pluck-function";
+import type { ReplaceFunction } from "./replace-function";
 import type { SinFunction } from "./sin-function";
 import type { SizeFunction } from "./size-function";
 import type { SubFunction } from "./sub-function";
-import type { PluckFunction } from "./pluck-function";
 import type { SumFunction } from "./sum-function";
 import type { TanFunction } from "./tan-function";
+import type { TrimFunction } from "./trim-function";
+import type { UppercaseFunction } from "./uppercase-function";
 
 /**
  * A transformer computes/transforms values for use in rules or predicates.
@@ -64,4 +69,9 @@ export type Transformer =
   | SubFunction
   | MultiplyFunction
   | DivideFunction
-  | LookupFunction;
+  | LookupFunction
+  | TrimFunction
+  | UppercaseFunction
+  | LowercaseFunction
+  | CapitalizeFunction
+  | ReplaceFunction;

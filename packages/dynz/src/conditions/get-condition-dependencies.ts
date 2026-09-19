@@ -42,9 +42,19 @@ export function getConditionDependencies(input: Predicate | Transformer, path: s
     case "size":
     case "age":
     case "lookup":
+    case "trim":
+    case "uppercase":
+    case "lowercase":
+    case "capitalize":
       return getParamaterDependencies(input.value, path, schema);
     case "pluck":
       return getParamaterDependencies(input.array, path, schema);
+    case "replace":
+      return [
+        ...getParamaterDependencies(input.value, path, schema),
+        ...getParamaterDependencies(input.pattern, path, schema),
+        ...getParamaterDependencies(input.replacement, path, schema),
+      ];
     case "sum":
     case "sub":
     case "multiply":

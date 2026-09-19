@@ -576,6 +576,14 @@ Utility:
 - `size(value)` - Length of a string or array, size in bytes of a file
 - `lookup(value, table)` - Map a value through a lookup table
 
+String:
+
+- `trim(value)` - Remove leading/trailing whitespace
+- `uppercase(value)` - Convert to upper case
+- `lowercase(value)` - Convert to lower case
+- `capitalize(value)` - Upper-case the first letter, lower-case the rest
+- `replace(value, pattern, replacement, flags?)` - Replace regex matches (pattern is a string, e.g. `\s+`, not a `RegExp`, so it stays JSON-serializable)
+
 ### Helpers
 
 - `ref(path)` - Reference another field's value
