@@ -151,6 +151,16 @@ export function applyRule(
       break;
     }
 
+    case "not_equals": {
+      const notEquals = resolveStatic(rule.notEquals);
+      if (notEquals.ok) {
+        setKeyword(jsonSchema, "not", { const: notEquals.value });
+      } else {
+        reportIssue(context, `"not_equals" rule with a non-static value cannot be converted to JSON Schema.`);
+      }
+      break;
+    }
+
     case "includes": {
       const includes = resolveStatic(rule.includes);
       if (!includes.ok) {

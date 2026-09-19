@@ -8,7 +8,9 @@ import {
   buildIsNumericRule,
   buildMaxLengthRule,
   buildMinLengthRule,
+  buildNotEqualsRule,
   buildNotIncludesRule,
+  buildNotOneOfRule,
   buildOneOfRule,
   buildRegexRule,
   type ConditionalRule,
@@ -19,7 +21,9 @@ import {
   type IsNumericRule,
   type MaxLengthRule,
   type MinLengthRule,
+  type NotEqualsRule,
   type NotIncludesRule,
+  type NotOneOfRule,
   type OneOfRule,
   type RegexRule,
   type Rule,
@@ -61,8 +65,13 @@ export type StrRuleBuilder<TRules extends Rule[]> = {
     value: P,
     code?: string
   ) => StrRuleBuilder<Push<TRules, EqualsRule<ToParam<P>>>>;
+  notEquals: <P extends ParamaterValue<string> | string>(
+    value: P,
+    code?: string
+  ) => StrRuleBuilder<Push<TRules, NotEqualsRule<ToParam<P>>>>;
   isNumeric: (code?: string) => StrRuleBuilder<Push<TRules, IsNumericRule>>;
   oneOf: <P extends ParamaterValue[]>(values: P, code?: string) => StrRuleBuilder<Push<TRules, OneOfRule<P>>>;
+  notOneOf: <P extends ParamaterValue[]>(values: P, code?: string) => StrRuleBuilder<Push<TRules, NotOneOfRule<P>>>;
   includes: <P extends ParamaterValue | string>(
     value: P,
     code?: string
@@ -117,10 +126,20 @@ export type StrFluent<TRules extends Rule[], TProps> = {
       value: P,
       code?: string
     ) => StrFluent<Push<TRules, EqualsRule<ToParam<P>>>, TProps>;
+    /** Validates string does not equal an exact value. @param value - Forbidden value. @param code - Optional error code */
+    notEquals: <P extends ParamaterValue<string> | string>(
+      value: P,
+      code?: string
+    ) => StrFluent<Push<TRules, NotEqualsRule<ToParam<P>>>, TProps>;
     /** Validates string contains only numeric characters. @param code - Optional error code */
     isNumeric: (code?: string) => StrFluent<Push<TRules, IsNumericRule>, TProps>;
     /** Validates string is one of allowed values. @param values - Array of allowed values. @param code - Optional error code */
     oneOf: <P extends ParamaterValue[]>(values: P, code?: string) => StrFluent<Push<TRules, OneOfRule<P>>, TProps>;
+    /** Validates string is not one of forbidden values. @param values - Array of forbidden values. @param code - Optional error code */
+    notOneOf: <P extends ParamaterValue[]>(
+      values: P,
+      code?: string
+    ) => StrFluent<Push<TRules, NotOneOfRule<P>>, TProps>;
     /** Validates string contains a given substring. @param value - Substring to find. @param code - Optional error code */
     includes: <P extends ParamaterValue | string>(
       value: P,
@@ -196,8 +215,11 @@ function createRuleBuilder<TRules extends Rule[]>(rules: TRules): StrRuleBuilder
     email: (code?: string) => push(buildEmailRule(code)),
     equals: <P extends ParamaterValue<string> | string>(value: P, code?: string) =>
       push(buildEqualsRule(toParamaterValue(value), code)),
+    notEquals: <P extends ParamaterValue<string> | string>(value: P, code?: string) =>
+      push(buildNotEqualsRule(toParamaterValue(value), code)),
     isNumeric: (code?: string) => push(buildIsNumericRule(code)),
     oneOf: <P extends ParamaterValue[]>(values: P, code?: string) => push(buildOneOfRule(values, code)),
+    notOneOf: <P extends ParamaterValue[]>(values: P, code?: string) => push(buildNotOneOfRule(values, code)),
     includes: <P extends ParamaterValue | string>(value: P, code?: string) =>
       push(buildIncludesRule(toParamaterValue(value), code)),
     notIncludes: <P extends ParamaterValue | string>(value: P, code?: string) =>
@@ -230,8 +252,11 @@ function createFluent<TRules extends Rule[], TProps>(rules: TRules, props: TProp
     email: (code?: string) => pushRule(buildEmailRule(code)),
     equals: <P extends ParamaterValue<string> | string>(value: P, code?: string) =>
       pushRule(buildEqualsRule(toParamaterValue(value), code)),
+    notEquals: <P extends ParamaterValue<string> | string>(value: P, code?: string) =>
+      pushRule(buildNotEqualsRule(toParamaterValue(value), code)),
     isNumeric: (code?: string) => pushRule(buildIsNumericRule(code)),
     oneOf: <P extends ParamaterValue[]>(values: P, code?: string) => pushRule(buildOneOfRule(values, code)),
+    notOneOf: <P extends ParamaterValue[]>(values: P, code?: string) => pushRule(buildNotOneOfRule(values, code)),
     includes: <P extends ParamaterValue | string>(value: P, code?: string) =>
       pushRule(buildIncludesRule(toParamaterValue(value), code)),
     notIncludes: <P extends ParamaterValue | string>(value: P, code?: string) =>

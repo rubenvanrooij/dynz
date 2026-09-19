@@ -18,6 +18,7 @@ import type { MinEntriesRule } from "./min-entries-rule";
 import type { MinLengthRule } from "./min-length-rule";
 import type { MinRule } from "./min-rule";
 import type { MinSizeRule } from "./min-size-rule";
+import type { NotEqualsRule } from "./not-equals-rule";
 import type { NotIncludesRule } from "./not-includes-rule";
 import type { NotOneOfRule } from "./not-one-off-rule";
 import type { OneOfRule } from "./one-off-rule";
@@ -44,6 +45,7 @@ export type Rule =
   | MinLengthRule
   | MinRule
   | MinSizeRule
+  | NotEqualsRule
   | NotIncludesRule
   | OneOfRule
   | NotOneOfRule

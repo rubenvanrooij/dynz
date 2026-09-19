@@ -2,9 +2,13 @@ import type { ParamaterValue, Predicate } from "../../functions";
 import {
   buildConditionalRule,
   buildEqualsRule,
+  buildNotEqualsRule,
+  buildNotOneOfRule,
   buildOneOfRule,
   type ConditionalRule,
   type EqualsRule,
+  type NotEqualsRule,
+  type NotOneOfRule,
   type OneOfRule,
   type Rule,
 } from "../../rules";
@@ -37,10 +41,18 @@ export type OptionsRuleBuilder<TOptions extends OptionsValue, TRules extends Rul
     value: P,
     code?: string
   ) => OptionsRuleBuilder<TOptions, Push<TRules, EqualsRule<P>>>;
+  notEquals: <P extends ParamaterValue>(
+    value: P,
+    code?: string
+  ) => OptionsRuleBuilder<TOptions, Push<TRules, NotEqualsRule<P>>>;
   oneOf: <P extends ParamaterValue[]>(
     values: P,
     code?: string
   ) => OptionsRuleBuilder<TOptions, Push<TRules, OneOfRule<P>>>;
+  notOneOf: <P extends ParamaterValue[]>(
+    values: P,
+    code?: string
+  ) => OptionsRuleBuilder<TOptions, Push<TRules, NotOneOfRule<P>>>;
 };
 
 // ---------------------------------------------------------------------------
@@ -64,11 +76,21 @@ export type OptionsFluent<TOptions extends OptionsValue, TRules extends Rule[], 
       value: P,
       code?: string
     ) => OptionsFluent<TOptions, Push<TRules, EqualsRule<ToParam<P>>>, TProps>;
+    /** Validates selected option does not equal a specific value. @param value - Forbidden value. @param code - Optional error code */
+    notEquals: <P extends ParamaterValue | string | number | boolean>(
+      value: P,
+      code?: string
+    ) => OptionsFluent<TOptions, Push<TRules, NotEqualsRule<ToParam<P>>>, TProps>;
     /** Validates selected option is one of allowed values. @param values - Array of allowed values. @param code - Optional error code */
     oneOf: <P extends ParamaterValue[]>(
       values: P,
       code?: string
     ) => OptionsFluent<TOptions, Push<TRules, OneOfRule<P>>, TProps>;
+    /** Validates selected option is not one of forbidden values. @param values - Array of forbidden values. @param code - Optional error code */
+    notOneOf: <P extends ParamaterValue[]>(
+      values: P,
+      code?: string
+    ) => OptionsFluent<TOptions, Push<TRules, NotOneOfRule<P>>, TProps>;
 
     // — Conditional rules —
     /** Applies rules conditionally based on a predicate. @param pred - Condition to evaluate. @param cb - Builder callback for conditional rules */
@@ -123,7 +145,9 @@ function createRuleBuilder<TOptions extends OptionsValue, TRules extends Rule[]>
     options: opts,
     rules,
     equals: <P extends ParamaterValue>(value: P, code?: string) => push(buildEqualsRule(value, code)),
+    notEquals: <P extends ParamaterValue>(value: P, code?: string) => push(buildNotEqualsRule(value, code)),
     oneOf: <P extends ParamaterValue[]>(values: P, code?: string) => push(buildOneOfRule(values, code)),
+    notOneOf: <P extends ParamaterValue[]>(values: P, code?: string) => push(buildNotOneOfRule(values, code)),
   };
 }
 
@@ -147,7 +171,10 @@ function createFluent<TOptions extends OptionsValue, TRules extends Rule[], TPro
     // — Rule methods —
     equals: <P extends ParamaterValue | string | number | boolean>(value: P, code?: string) =>
       pushRule(buildEqualsRule(toParamaterValue(value), code)),
+    notEquals: <P extends ParamaterValue | string | number | boolean>(value: P, code?: string) =>
+      pushRule(buildNotEqualsRule(toParamaterValue(value), code)),
     oneOf: <P extends ParamaterValue[]>(values: P, code?: string) => pushRule(buildOneOfRule(values, code)),
+    notOneOf: <P extends ParamaterValue[]>(values: P, code?: string) => pushRule(buildNotOneOfRule(values, code)),
 
     // — Conditional rules —
     when: <WRules extends Rule[]>(

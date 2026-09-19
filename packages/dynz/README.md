@@ -488,7 +488,9 @@ String schemas:
 - `.email(code?)` - Email format validation
 - `.regex(pattern, flags?, code?)` - Regular expression validation
 - `.equals(value, code?)` - Exact value matching
+- `.notEquals(value, code?)` - Exact value exclusion
 - `.oneOf(values, code?)` - Must be one of specified values
+- `.notOneOf(values, code?)` - Must not be one of specified values
 - `.isNumeric(code?)` - Numeric string validation
 
 Number schemas:

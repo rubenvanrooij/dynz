@@ -2,9 +2,13 @@ import type { ParamaterValue, Predicate } from "../../functions";
 import {
   buildConditionalRule,
   buildEqualsRule,
+  buildNotEqualsRule,
+  buildNotOneOfRule,
   buildOneOfRule,
   type ConditionalRule,
   type EqualsRule,
+  type NotEqualsRule,
+  type NotOneOfRule,
   type OneOfRule,
   type Rule,
 } from "../../rules";
@@ -37,7 +41,15 @@ export type EnumRuleBuilder<TEnum extends Enum, TRules extends Rule[]> = {
     value: P,
     code?: string
   ) => EnumRuleBuilder<TEnum, Push<TRules, EqualsRule<P>>>;
+  notEquals: <P extends ParamaterValue<EnumValues<TEnum>>>(
+    value: P,
+    code?: string
+  ) => EnumRuleBuilder<TEnum, Push<TRules, NotEqualsRule<P>>>;
   oneOf: <P extends ParamaterValue[]>(values: P, code?: string) => EnumRuleBuilder<TEnum, Push<TRules, OneOfRule<P>>>;
+  notOneOf: <P extends ParamaterValue[]>(
+    values: P,
+    code?: string
+  ) => EnumRuleBuilder<TEnum, Push<TRules, NotOneOfRule<P>>>;
 };
 
 // ---------------------------------------------------------------------------
@@ -61,11 +73,21 @@ export type EnumFluent<TEnum extends Enum, TRules extends Rule[], TProps> = {
       value: P,
       code?: string
     ) => EnumFluent<TEnum, Push<TRules, EqualsRule<ToParam<P>>>, TProps>;
+    /** Validates value does not equal a specific enum member. @param value - Forbidden enum value. @param code - Optional error code */
+    notEquals: <P extends ParamaterValue<EnumValues<TEnum>> | EnumValues<TEnum>>(
+      value: P,
+      code?: string
+    ) => EnumFluent<TEnum, Push<TRules, NotEqualsRule<ToParam<P>>>, TProps>;
     /** Validates value is one of allowed enum members. @param values - Array of allowed values. @param code - Optional error code */
     oneOf: <P extends ParamaterValue[]>(
       values: P,
       code?: string
     ) => EnumFluent<TEnum, Push<TRules, OneOfRule<P>>, TProps>;
+    /** Validates value is not one of forbidden enum members. @param values - Array of forbidden values. @param code - Optional error code */
+    notOneOf: <P extends ParamaterValue[]>(
+      values: P,
+      code?: string
+    ) => EnumFluent<TEnum, Push<TRules, NotOneOfRule<P>>, TProps>;
 
     // — Conditional rules —
     /** Applies rules conditionally based on a predicate. @param pred - Condition to evaluate. @param cb - Builder callback for conditional rules */
@@ -119,7 +141,10 @@ function createRuleBuilder<TEnum extends Enum, TRules extends Rule[]>(
     rules,
     equals: <P extends ParamaterValue<EnumValues<TEnum>>>(value: P, code?: string) =>
       push(buildEqualsRule(value, code)),
+    notEquals: <P extends ParamaterValue<EnumValues<TEnum>>>(value: P, code?: string) =>
+      push(buildNotEqualsRule(value, code)),
     oneOf: <P extends ParamaterValue[]>(values: P, code?: string) => push(buildOneOfRule(values, code)),
+    notOneOf: <P extends ParamaterValue[]>(values: P, code?: string) => push(buildNotOneOfRule(values, code)),
   };
 }
 
@@ -143,7 +168,10 @@ function createFluent<TEnum extends Enum, TRules extends Rule[], TProps>(
     // — Rule methods —
     equals: <P extends ParamaterValue<EnumValues<TEnum>> | EnumValues<TEnum>>(value: P, code?: string) =>
       pushRule(buildEqualsRule(toParamaterValue(value), code)),
+    notEquals: <P extends ParamaterValue<EnumValues<TEnum>> | EnumValues<TEnum>>(value: P, code?: string) =>
+      pushRule(buildNotEqualsRule(toParamaterValue(value), code)),
     oneOf: <P extends ParamaterValue[]>(values: P, code?: string) => pushRule(buildOneOfRule(values, code)),
+    notOneOf: <P extends ParamaterValue[]>(values: P, code?: string) => pushRule(buildNotOneOfRule(values, code)),
 
     // — Conditional rules —
     when: <WRules extends Rule[]>(

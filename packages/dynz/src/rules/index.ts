@@ -18,6 +18,7 @@ export * from "./min-entries-rule";
 export * from "./min-length-rule";
 export * from "./min-rule";
 export * from "./min-size-rule";
+export * from "./not-equals-rule";
 export * from "./not-includes-rule";
 export * from "./not-one-off-rule";
 export * from "./one-off-rule";
