@@ -2,9 +2,11 @@ import type { ParamaterValue, Predicate } from "../../functions";
 import {
   buildConditionalRule,
   buildEqualsRule,
+  buildNotEqualsRule,
   buildOneOfRule,
   type ConditionalRule,
   type EqualsRule,
+  type NotEqualsRule,
   type OneOfRule,
   type Rule,
 } from "../../rules";
@@ -37,6 +39,10 @@ export type OptionsRuleBuilder<TOptions extends OptionsValue, TRules extends Rul
     value: P,
     code?: string
   ) => OptionsRuleBuilder<TOptions, Push<TRules, EqualsRule<P>>>;
+  notEquals: <P extends ParamaterValue>(
+    value: P,
+    code?: string
+  ) => OptionsRuleBuilder<TOptions, Push<TRules, NotEqualsRule<P>>>;
   oneOf: <P extends ParamaterValue[]>(
     values: P,
     code?: string
@@ -64,6 +70,11 @@ export type OptionsFluent<TOptions extends OptionsValue, TRules extends Rule[], 
       value: P,
       code?: string
     ) => OptionsFluent<TOptions, Push<TRules, EqualsRule<ToParam<P>>>, TProps>;
+    /** Validates selected option does not equal a specific value. @param value - Forbidden value. @param code - Optional error code */
+    notEquals: <P extends ParamaterValue | string | number | boolean>(
+      value: P,
+      code?: string
+    ) => OptionsFluent<TOptions, Push<TRules, NotEqualsRule<ToParam<P>>>, TProps>;
     /** Validates selected option is one of allowed values. @param values - Array of allowed values. @param code - Optional error code */
     oneOf: <P extends ParamaterValue[]>(
       values: P,
@@ -123,6 +134,7 @@ function createRuleBuilder<TOptions extends OptionsValue, TRules extends Rule[]>
     options: opts,
     rules,
     equals: <P extends ParamaterValue>(value: P, code?: string) => push(buildEqualsRule(value, code)),
+    notEquals: <P extends ParamaterValue>(value: P, code?: string) => push(buildNotEqualsRule(value, code)),
     oneOf: <P extends ParamaterValue[]>(values: P, code?: string) => push(buildOneOfRule(values, code)),
   };
 }
@@ -147,6 +159,8 @@ function createFluent<TOptions extends OptionsValue, TRules extends Rule[], TPro
     // — Rule methods —
     equals: <P extends ParamaterValue | string | number | boolean>(value: P, code?: string) =>
       pushRule(buildEqualsRule(toParamaterValue(value), code)),
+    notEquals: <P extends ParamaterValue | string | number | boolean>(value: P, code?: string) =>
+      pushRule(buildNotEqualsRule(toParamaterValue(value), code)),
     oneOf: <P extends ParamaterValue[]>(values: P, code?: string) => pushRule(buildOneOfRule(values, code)),
 
     // — Conditional rules —

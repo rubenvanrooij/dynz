@@ -6,6 +6,7 @@ import {
   buildMaxPrecisionRule,
   buildMaxRule,
   buildMinRule,
+  buildNotEqualsRule,
   buildOneOfRule,
   type ConditionalRule,
   type EqualsRule,
@@ -13,6 +14,7 @@ import {
   type MaxPrecisionRule,
   type MaxRule,
   type MinRule,
+  type NotEqualsRule,
   type OneOfRule,
   type Rule,
 } from "../../rules";
@@ -46,6 +48,10 @@ export type NumRuleBuilder<TRules extends Rule[]> = {
     code?: string
   ) => NumRuleBuilder<Push<TRules, MaxPrecisionRule<P>>>;
   equals: <P extends ParamaterValue<number>>(value: P, code?: string) => NumRuleBuilder<Push<TRules, EqualsRule<P>>>;
+  notEquals: <P extends ParamaterValue<number>>(
+    value: P,
+    code?: string
+  ) => NumRuleBuilder<Push<TRules, NotEqualsRule<P>>>;
   isNumeric: (code?: string) => NumRuleBuilder<Push<TRules, IsNumericRule>>;
   oneOf: <P extends ParamaterValue[]>(values: P, code?: string) => NumRuleBuilder<Push<TRules, OneOfRule<P>>>;
 };
@@ -83,6 +89,11 @@ export type NumFluent<TRules extends Rule[], TProps> = {
       value: P,
       code?: string
     ) => NumFluent<Push<TRules, EqualsRule<ToParam<P>>>, TProps>;
+    /** Validates number does not equal an exact value. @param value - Forbidden value. @param code - Optional error code */
+    notEquals: <P extends ParamaterValue<number> | number>(
+      value: P,
+      code?: string
+    ) => NumFluent<Push<TRules, NotEqualsRule<ToParam<P>>>, TProps>;
     /** Validates input is a valid number (useful for coerced strings). @param code - Optional error code */
     isNumeric: (code?: string) => NumFluent<Push<TRules, IsNumericRule>, TProps>;
     /** Validates number is one of allowed values. @param values - Array of allowed values. @param code - Optional error code */
@@ -141,6 +152,7 @@ function createRuleBuilder<TRules extends Rule[]>(rules: TRules): NumRuleBuilder
     maxPrecision: <P extends ParamaterValue<number>>(value: P, code?: string) =>
       push(buildMaxPrecisionRule(value, code)),
     equals: <P extends ParamaterValue<number>>(value: P, code?: string) => push(buildEqualsRule(value, code)),
+    notEquals: <P extends ParamaterValue<number>>(value: P, code?: string) => push(buildNotEqualsRule(value, code)),
     isNumeric: (code?: string) => push(buildIsNumericRule(code)),
     oneOf: <P extends ParamaterValue[]>(values: P, code?: string) => push(buildOneOfRule(values, code)),
   };
@@ -167,6 +179,8 @@ function createFluent<TRules extends Rule[], TProps>(rules: TRules, props: TProp
       pushRule(buildMaxPrecisionRule(toParamaterValue(value), code)),
     equals: <P extends ParamaterValue<number> | number>(value: P, code?: string) =>
       pushRule(buildEqualsRule(toParamaterValue(value), code)),
+    notEquals: <P extends ParamaterValue<number> | number>(value: P, code?: string) =>
+      pushRule(buildNotEqualsRule(toParamaterValue(value), code)),
     isNumeric: (code?: string) => pushRule(buildIsNumericRule(code)),
     oneOf: <P extends ParamaterValue[]>(values: P, code?: string) => pushRule(buildOneOfRule(values, code)),
 

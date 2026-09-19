@@ -83,6 +83,13 @@ describe("applyRule", () => {
     expect(jsonSchema).toEqual({ const: "admin" });
   });
 
+  it("maps not_equals to not/const", () => {
+    const jsonSchema: JsonSchema = {};
+    applyRule(jsonSchema, { type: "not_equals", notEquals: v("admin") }, "string", ctx);
+
+    expect(jsonSchema).toEqual({ not: { const: "admin" } });
+  });
+
   it("maps includes on a string schema to pattern", () => {
     const jsonSchema: JsonSchema = {};
     applyRule(jsonSchema, { type: "includes", includes: v("foo") }, "string", ctx);

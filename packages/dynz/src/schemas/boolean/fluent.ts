@@ -1,5 +1,13 @@
 import type { ParamaterValue, Predicate } from "../../functions";
-import { buildConditionalRule, buildEqualsRule, type ConditionalRule, type EqualsRule, type Rule } from "../../rules";
+import {
+  buildConditionalRule,
+  buildEqualsRule,
+  buildNotEqualsRule,
+  type ConditionalRule,
+  type EqualsRule,
+  type NotEqualsRule,
+  type Rule,
+} from "../../rules";
 import type { JsonRecord, SchemaMeta } from "../../types";
 import { SchemaType } from "../../types";
 import { type ToParam, toParamaterValue } from "../shared";
@@ -24,6 +32,10 @@ export type BoolRuleBuilder<TRules extends Rule[]> = {
   readonly rules: TRules;
 
   equals: <P extends ParamaterValue<boolean>>(value: P, code?: string) => BoolRuleBuilder<Push<TRules, EqualsRule<P>>>;
+  notEquals: <P extends ParamaterValue<boolean>>(
+    value: P,
+    code?: string
+  ) => BoolRuleBuilder<Push<TRules, NotEqualsRule<P>>>;
 };
 
 // ---------------------------------------------------------------------------
@@ -44,6 +56,11 @@ export type BoolFluent<TRules extends Rule[], TProps> = {
       value: P,
       code?: string
     ) => BoolFluent<Push<TRules, EqualsRule<ToParam<P>>>, TProps>;
+    /** Validates boolean does not equal a specific value. @param value - Forbidden value (true/false). @param code - Optional error code */
+    notEquals: <P extends ParamaterValue<boolean> | boolean>(
+      value: P,
+      code?: string
+    ) => BoolFluent<Push<TRules, NotEqualsRule<ToParam<P>>>, TProps>;
 
     // — Conditional rules —
     /** Applies rules conditionally based on a predicate. @param pred - Condition to evaluate. @param cb - Builder callback for conditional rules */
@@ -94,6 +111,7 @@ function createRuleBuilder<TRules extends Rule[]>(rules: TRules): BoolRuleBuilde
     type: SchemaType.BOOLEAN,
     rules,
     equals: <P extends ParamaterValue<boolean>>(value: P, code?: string) => push(buildEqualsRule(value, code)),
+    notEquals: <P extends ParamaterValue<boolean>>(value: P, code?: string) => push(buildNotEqualsRule(value, code)),
   };
 }
 
@@ -112,6 +130,8 @@ function createFluent<TRules extends Rule[], TProps>(rules: TRules, props: TProp
     // — Rule methods —
     equals: <P extends ParamaterValue<boolean> | boolean>(value: P, code?: string) =>
       pushRule(buildEqualsRule(toParamaterValue(value), code)),
+    notEquals: <P extends ParamaterValue<boolean> | boolean>(value: P, code?: string) =>
+      pushRule(buildNotEqualsRule(toParamaterValue(value), code)),
 
     // — Conditional rules —
     when: <WRules extends Rule[]>(pred: Predicate, cb: (b: BoolRuleBuilder<[]>) => BoolRuleBuilder<WRules>) => {

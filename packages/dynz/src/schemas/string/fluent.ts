@@ -8,6 +8,7 @@ import {
   buildIsNumericRule,
   buildMaxLengthRule,
   buildMinLengthRule,
+  buildNotEqualsRule,
   buildNotIncludesRule,
   buildOneOfRule,
   buildRegexRule,
@@ -19,6 +20,7 @@ import {
   type IsNumericRule,
   type MaxLengthRule,
   type MinLengthRule,
+  type NotEqualsRule,
   type NotIncludesRule,
   type OneOfRule,
   type RegexRule,
@@ -61,6 +63,10 @@ export type StrRuleBuilder<TRules extends Rule[]> = {
     value: P,
     code?: string
   ) => StrRuleBuilder<Push<TRules, EqualsRule<ToParam<P>>>>;
+  notEquals: <P extends ParamaterValue<string> | string>(
+    value: P,
+    code?: string
+  ) => StrRuleBuilder<Push<TRules, NotEqualsRule<ToParam<P>>>>;
   isNumeric: (code?: string) => StrRuleBuilder<Push<TRules, IsNumericRule>>;
   oneOf: <P extends ParamaterValue[]>(values: P, code?: string) => StrRuleBuilder<Push<TRules, OneOfRule<P>>>;
   includes: <P extends ParamaterValue | string>(
@@ -117,6 +123,11 @@ export type StrFluent<TRules extends Rule[], TProps> = {
       value: P,
       code?: string
     ) => StrFluent<Push<TRules, EqualsRule<ToParam<P>>>, TProps>;
+    /** Validates string does not equal an exact value. @param value - Forbidden value. @param code - Optional error code */
+    notEquals: <P extends ParamaterValue<string> | string>(
+      value: P,
+      code?: string
+    ) => StrFluent<Push<TRules, NotEqualsRule<ToParam<P>>>, TProps>;
     /** Validates string contains only numeric characters. @param code - Optional error code */
     isNumeric: (code?: string) => StrFluent<Push<TRules, IsNumericRule>, TProps>;
     /** Validates string is one of allowed values. @param values - Array of allowed values. @param code - Optional error code */
@@ -196,6 +207,8 @@ function createRuleBuilder<TRules extends Rule[]>(rules: TRules): StrRuleBuilder
     email: (code?: string) => push(buildEmailRule(code)),
     equals: <P extends ParamaterValue<string> | string>(value: P, code?: string) =>
       push(buildEqualsRule(toParamaterValue(value), code)),
+    notEquals: <P extends ParamaterValue<string> | string>(value: P, code?: string) =>
+      push(buildNotEqualsRule(toParamaterValue(value), code)),
     isNumeric: (code?: string) => push(buildIsNumericRule(code)),
     oneOf: <P extends ParamaterValue[]>(values: P, code?: string) => push(buildOneOfRule(values, code)),
     includes: <P extends ParamaterValue | string>(value: P, code?: string) =>
@@ -230,6 +243,8 @@ function createFluent<TRules extends Rule[], TProps>(rules: TRules, props: TProp
     email: (code?: string) => pushRule(buildEmailRule(code)),
     equals: <P extends ParamaterValue<string> | string>(value: P, code?: string) =>
       pushRule(buildEqualsRule(toParamaterValue(value), code)),
+    notEquals: <P extends ParamaterValue<string> | string>(value: P, code?: string) =>
+      pushRule(buildNotEqualsRule(toParamaterValue(value), code)),
     isNumeric: (code?: string) => pushRule(buildIsNumericRule(code)),
     oneOf: <P extends ParamaterValue[]>(values: P, code?: string) => pushRule(buildOneOfRule(values, code)),
     includes: <P extends ParamaterValue | string>(value: P, code?: string) =>

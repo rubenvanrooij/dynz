@@ -18,6 +18,7 @@ import type {
   MinLengthRuleErrorMessage,
   MinRuleErrorMessage,
   MinSizeRuleErrorMessage,
+  NotEqualsRuleErrorMessage,
   NotIncludesRuleErrorMessage,
   OneOfRuleErrorMessage,
   RegexRuleErrorMessage,
@@ -85,6 +86,7 @@ export type ErrorMessage =
   | CustomRuleErrorMessage
   | EmailRuleErrorMessage
   | EqualsRuleErrorMessage
+  | NotEqualsRuleErrorMessage
   | IncludesRuleErrorMessage
   | NotIncludesRuleErrorMessage
   | IsNumericRuleErrorMessage
