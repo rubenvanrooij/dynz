@@ -245,6 +245,11 @@ function convertSchemaKind(schema: Schema, context: ConversionContext): JsonSche
       return {};
     }
 
+    case SchemaType.SCHEMA_REF: {
+      // JSON Schema already has native $ref semantics — no fetch/resolve needed here.
+      return { $ref: schema.uri };
+    }
+
     case SchemaType.ARRAY: {
       const jsonSchema: JsonSchema = {
         type: "array",

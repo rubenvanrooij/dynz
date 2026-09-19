@@ -379,6 +379,54 @@ describe("getNested", () => {
     });
   });
 
+  describe("schema_ref traversal", () => {
+    it("throws a clear error when descending into an unresolved schema_ref", () => {
+      const schema = {
+        type: SchemaType.OBJECT,
+        fields: {
+          participant: { type: SchemaType.SCHEMA_REF, uri: "participant://p" },
+        },
+      };
+      const value = { participant: { name: "Ada" } };
+
+      expect(() => getNested("$.participant.name", schema, value)).toThrow(
+        'the schema_ref "participant://p" at "$.participant" has not been resolved'
+      );
+    });
+
+    it("returns the ref node itself, unresolved, when the path terminates exactly at it", () => {
+      const refSchema = { type: SchemaType.SCHEMA_REF, uri: "participant://p" };
+      const schema = {
+        type: SchemaType.OBJECT,
+        fields: { participant: refSchema },
+      };
+      const value = { participant: { name: "Ada" } };
+
+      const result = getNested("$.participant", schema, value);
+
+      expect(result).toEqual({ schema: refSchema, value: { name: "Ada" } });
+    });
+
+    it("substitutes the resolved schema when resolvedRefs has an entry for that path", () => {
+      const schema = {
+        type: SchemaType.OBJECT,
+        fields: {
+          participant: { type: SchemaType.SCHEMA_REF, uri: "participant://p" },
+        },
+      };
+      const value = { participant: { name: "Ada" } };
+      const resolvedSchema = {
+        type: SchemaType.OBJECT,
+        fields: { name: { type: SchemaType.STRING } },
+      };
+      const resolvedRefs = new Map([["$.participant", resolvedSchema]]);
+
+      const result = getNested("$.participant.name", schema, value, resolvedRefs);
+
+      expect(result).toEqual({ schema: { type: SchemaType.STRING }, value: "Ada" });
+    });
+  });
+
   describe("root access", () => {
     it("should return root value and schema when path is just root", () => {
       const schema = {

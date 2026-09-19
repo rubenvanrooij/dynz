@@ -1,6 +1,6 @@
 import { getFunnelSchema } from "@dynz/funnel";
 import { toStandardJsonSchema } from "@dynz/to-json-schema";
-import { expenseClaimFunnel } from "./expense-claim-funnel";
+import { expenseClaimFunnel, expenseClaimSchemasByStepId } from "./expense-claim-funnel";
 import { expenseClaimSchema, RECEIPT_REQUIRED_FROM } from "./expense-claim-schema";
 
 /**
@@ -18,7 +18,15 @@ export function buildOpenApiDocument(): Record<string, unknown> {
   const claimSchema = toStandardJsonSchema(expenseClaimSchema, { errorMode: "ignore" });
   // `getFunnelSchema` derives an ordinary dynz object schema (`{ [stepId]: step.schema }`)
   // from the funnel, so it goes through the very same converter as the schema above.
-  const claimFunnelSchema = toStandardJsonSchema(getFunnelSchema(expenseClaimFunnel), { errorMode: "ignore" });
+  // Every step there is a `schemaRef` stub, though — left as-is, `@dynz/to-json-schema`
+  // converts one straight to an unresolvable `{ "$ref": "schema://..." }`, so
+  // `resolvedSchemas` substitutes each step's real schema first (the server has them
+  // all in-process); the *served* funnel (`GET /forms/expense-claim-funnel`) still
+  // ships the unresolved stubs — this substitution is only for these docs.
+  const claimFunnelSchema = toStandardJsonSchema(
+    getFunnelSchema(expenseClaimFunnel, { resolvedSchemas: expenseClaimSchemasByStepId }),
+    { errorMode: "ignore" }
+  );
 
   return {
     openapi: "3.1.0",
@@ -65,14 +73,15 @@ export function buildOpenApiDocument(): Record<string, unknown> {
       "/forms/expense-claim-funnel": {
         get: {
           operationId: "getExpenseClaimFunnel",
-          summary: "The dynz funnel for the multi-step expense-claim wizard",
+          summary: "The dynz funnel shell for the multi-step expense-claim wizard",
           description:
-            "Returns a @dynz/funnel definition: one dynz schema per step, plus the predicates " +
-            "that pick the next step. Clients walk the whole flow — including which steps get " +
-            "skipped — from this one response, no further round trip needed to navigate.",
+            "Returns a @dynz/funnel definition: steps, ids, and the predicates that pick the " +
+            "next one. Every step's `schema` here is a `schemaRef` stub, not the real schema — " +
+            "fetch that from GET /forms/expense-claim-funnel/steps/{stepId} once the wizard " +
+            "actually reaches it.",
           responses: {
             "200": {
-              description: "The funnel definition",
+              description: "The funnel shell",
               content: {
                 "application/json": {
                   schema: {
@@ -81,9 +90,45 @@ export function buildOpenApiDocument(): Record<string, unknown> {
                     properties: {
                       funnel: {
                         type: "object",
-                        description: "A serialized @dynz/funnel FunnelDefinition (initial, steps[])",
+                        description:
+                          "A serialized @dynz/funnel FunnelDefinition (initial, steps[]); each step's " +
+                          '`schema` is `{ "type": "schema_ref", "uri": "schema://expense-claim/<stepId>" }`.',
                       },
                     },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      "/forms/expense-claim-funnel/steps/{stepId}": {
+        get: {
+          operationId: "getExpenseClaimFunnelStepSchema",
+          summary: "One step's real schema, resolved by id",
+          description: "What GET /forms/expense-claim-funnel's schemaRef stubs point to, resolved on demand.",
+          parameters: [{ name: "stepId", in: "path", required: true, schema: { type: "string" } }],
+          responses: {
+            "200": {
+              description: "The step's schema",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    required: ["schema"],
+                    properties: { schema: { type: "object", description: "A serialized dynz schema" } },
+                  },
+                },
+              },
+            },
+            "404": {
+              description: "No step with that id",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    required: ["message"],
+                    properties: { message: { type: "string" } },
                   },
                 },
               },

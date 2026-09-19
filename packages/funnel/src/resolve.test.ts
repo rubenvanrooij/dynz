@@ -1,4 +1,4 @@
-import { boolean, eq, number, object, ref, string, v } from "dynz";
+import { boolean, eq, number, object, ref, schemaRef, string, v } from "dynz";
 import { describe, expect, it } from "vitest";
 import { defineFunnel, step, transition } from "./define";
 import { getFunnelPath, isStepIncluded, resolveNextStep } from "./resolve";
@@ -57,6 +57,29 @@ describe("isStepIncluded", () => {
   it("resolves a predicate `included` against another step's values", () => {
     expect(isStepIncluded(funnel, "preferences", { personalInfo: { hasJob: true } })).toBe(true);
     expect(isStepIncluded(funnel, "preferences", { personalInfo: { hasJob: false } })).toBe(false);
+  });
+});
+
+describe("resolveNextStep with a schemaRef step", () => {
+  const refFunnel = defineFunnel({
+    initial: "a",
+    steps: [
+      step("a", schemaRef("mem://a"), {
+        next: [transition("b", eq(ref("$.a.flag"), v(true))), transition("c")],
+      }),
+      step("b", boolean(), { next: [transition(null)] }),
+      step("c", boolean(), { next: [transition(null)] }),
+    ],
+  });
+
+  it("throws when a transition's predicate needs a step's schema that hasn't been resolved", () => {
+    expect(() => resolveNextStep(refFunnel, "a", { a: { flag: true } })).toThrow(/has not been resolved/);
+  });
+
+  it("resolves correctly once the referenced step's schema is provided via `resolvedSchemas`", () => {
+    const resolvedSchemas = { a: object({ flag: boolean() }) };
+    expect(resolveNextStep(refFunnel, "a", { a: { flag: true } }, resolvedSchemas)).toBe("b");
+    expect(resolveNextStep(refFunnel, "a", { a: { flag: false } }, resolvedSchemas)).toBe("c");
   });
 });
 

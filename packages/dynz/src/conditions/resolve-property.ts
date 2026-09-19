@@ -17,7 +17,7 @@ export function resolveProperty<T extends Schema>(
   // Check each ancestor path prefix (starting from first real field, skipping root "$")
   for (let i = 1; i <= segments.length; i++) {
     const currentPath = segments.slice(0, i).join(".");
-    const nested = getNested(currentPath, context.schema, context.values);
+    const nested = getNested(currentPath, context.schema, context.values, context.resolvedRefs);
 
     // getNested returns null when the path cannot be resolved — this happens when
     // navigating through a discriminated union whose discriminator value does not

@@ -1,4 +1,4 @@
-import { boolean, eq, ref, string, v, validate } from "dynz";
+import { boolean, eq, ref, schemaRef, string, v, validate } from "dynz";
 import { describe, expect, it } from "vitest";
 import { defineFunnel, step, transition } from "./define";
 import { getFunnelPath } from "./resolve";
@@ -25,7 +25,9 @@ describe("getFunnelSchema", () => {
       steps: [step("a", boolean(), { next: [transition("b")] }), step("b", string(), { next: [transition(null)] })],
     });
 
-    const schema = getFunnelSchema(funnel, ["a"]) as { fields: Record<string, { included?: boolean }> };
+    const schema = getFunnelSchema(funnel, { includedStepIds: ["a"] }) as {
+      fields: Record<string, { included?: boolean }>;
+    };
 
     expect(schema.fields.a?.included).toBeUndefined();
     expect(schema.fields.b?.included).toBe(false);
@@ -49,7 +51,39 @@ describe("getFunnelSchema", () => {
     const naive = await validate(getFunnelSchema(funnel), undefined, values);
     expect(naive.success).toBe(false);
 
-    const fixed = await validate(getFunnelSchema(funnel, getFunnelPath(funnel, values)), undefined, values);
+    const fixed = await validate(
+      getFunnelSchema(funnel, { includedStepIds: getFunnelPath(funnel, values) }),
+      undefined,
+      values
+    );
     expect(fixed).toEqual({ success: true, values });
+  });
+
+  it("substitutes `resolvedSchemas` in place of a step's schemaRef", () => {
+    const realSchema = boolean();
+    const funnel = defineFunnel({
+      initial: "a",
+      steps: [step("a", schemaRef("mem://a"), { next: [transition(null)] })],
+    });
+
+    const untouched = getFunnelSchema(funnel) as { fields: Record<string, { type: string }> };
+    expect(untouched.fields.a?.type).toBe("schema_ref");
+
+    const substituted = getFunnelSchema(funnel, { resolvedSchemas: { a: realSchema } }) as {
+      fields: Record<string, { type: string }>;
+    };
+    expect(substituted.fields.a?.type).toBe("boolean");
+  });
+
+  it("ignores a `resolvedSchemas` entry for a step that isn't a schemaRef", () => {
+    const funnel = defineFunnel({
+      initial: "a",
+      steps: [step("a", boolean(), { next: [transition(null)] })],
+    });
+
+    const schema = getFunnelSchema(funnel, { resolvedSchemas: { a: string() } }) as {
+      fields: Record<string, { type: string }>;
+    };
+    expect(schema.fields.a?.type).toBe("boolean");
   });
 });

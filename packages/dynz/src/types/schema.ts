@@ -18,6 +18,7 @@ import type {
 import type { EnumSchema } from "../schemas/enum";
 import type { ExpressionSchema } from "../schemas/expression";
 import type { LiteralSchema } from "../schemas/literal";
+import type { SchemaRef } from "../schemas/schema-ref";
 import type { BaseRule } from "./rules";
 import type { Prettify, Unpacked } from "./utils";
 
@@ -34,6 +35,7 @@ export const SchemaType = {
   EXPRESSION: "expression",
   LITERAL: "literal",
   DISCRIMINATED_UNION: "discriminated_union",
+  SCHEMA_REF: "schema_ref",
 } as const;
 
 export type SchemaType = EnumValues<typeof SchemaType>;
@@ -73,7 +75,8 @@ export type Schema =
   | EnumSchema
   | ExpressionSchema
   | LiteralSchema
-  | DiscriminatedUnionSchema<string, never>;
+  | DiscriminatedUnionSchema<string, never>
+  | SchemaRef;
 
 export type IsIncluded<T extends Schema> = T extends { included: true }
   ? true
@@ -154,7 +157,9 @@ export type ValueType<T extends SchemaType = SchemaType> = T extends typeof Sche
                       ? string | number | boolean | null
                       : T extends typeof SchemaType.DISCRIMINATED_UNION
                         ? Record<string, unknown>
-                        : never;
+                        : T extends typeof SchemaType.SCHEMA_REF
+                          ? unknown
+                          : never;
 
 export type ValueTypeOrUndefined = ValueType | undefined | Array<ValueType | undefined>;
 
@@ -197,6 +202,13 @@ export type SchemaValuesInternal<T extends Schema> = T extends ObjectSchema<neve
           ? MakeOptional<T, DiscriminatedMemberValue<TKey, TSchemas[number]>>
           : T extends LiteralSchema
             ? MakeOptional<T, T["value"]>
-            : MakeOptional<T, ValueType<T["type"]>>;
+            : // `SchemaRef`'s value type lives only in the *optional* `default` field, which
+              // TS can't reliably `infer` through when absent (unlike e.g. `LiteralSchema`'s
+              // always-present `value: T`) — so infer it from `schemaRef<T>()`'s always-present
+              // `setDefault` method instead. Falls through to `unknown` for a bare/non-fluent
+              // `SchemaRef` object literal with no such method, which is the right default.
+              T extends { type: typeof SchemaType.SCHEMA_REF; setDefault: (value: infer TValue) => unknown }
+              ? MakeOptional<T, TValue>
+              : MakeOptional<T, ValueType<T["type"]>>;
 
 export type SchemaValues<T extends Schema> = Prettify<ApplyPrivacyMask<T, SchemaValuesInternal<T>>>;

@@ -2,7 +2,12 @@ import { getFunnelPath, getFunnelSchema } from "@dynz/funnel";
 import { swaggerUI } from "@hono/swagger-ui";
 import { type SchemaValues, validate } from "dynz";
 import { Hono } from "hono";
-import { DEMO_EMPLOYEE_ID, expenseClaimFunnel } from "./expense-claim-funnel";
+import {
+  DEMO_EMPLOYEE_ID,
+  expenseClaimFunnel,
+  expenseClaimSchemasByStepId,
+  resolveExpenseClaimSchemaRef,
+} from "./expense-claim-funnel";
 import {
   APPROVAL_REQUIRED_FROM,
   CLIENT_REFERENCE_REQUIRED_FROM,
@@ -33,11 +38,30 @@ const routes = app
   )
 
   /**
-   * The funnel: the same claim, reshaped into steps. It is plain JSON just like the
-   * schema above — including every step's own schema and its branching `next` — so the
-   * browser can walk it (`resolveNextStep`, `getFunnelPath`) without another round trip.
+   * The funnel shell: steps, ids, and the predicates between them. Every step's
+   * `schema` here is a `schemaRef` stub (`{ type: "schema_ref", uri }`), not the real
+   * schema — so this stays a few hundred bytes no matter how large any one step's form
+   * is, and the browser can still walk the branching (`resolveNextStep`, `getFunnelPath`)
+   * from it alone, since those only need a step's *own* schema once resolved, not every
+   * step's up front.
    */
   .get("/forms/expense-claim-funnel", (c) => c.json({ funnel: expenseClaimFunnel }))
+
+  /**
+   * A single step's real schema, fetched only once the wizard actually reaches that
+   * step. `expenseClaimSchemasByStepId` is the same lookup `resolveExpenseClaimSchemaRef`
+   * uses below for `validate()` — here it's just read directly, synchronously.
+   */
+  .get("/forms/expense-claim-funnel/steps/:stepId", (c) => {
+    const stepId = c.req.param("stepId");
+    const schema = expenseClaimSchemasByStepId[stepId];
+
+    if (schema === undefined) {
+      return c.json({ message: `No such step "${stepId}"` } as const, 404);
+    }
+
+    return c.json({ schema });
+  })
 
   /** OpenAPI 3.1, with the request body generated from the dynz schema. */
   .get("/openapi.json", (c) => c.json(buildOpenApiDocument()))
@@ -93,21 +117,28 @@ const routes = app
    * is the single revalidation pass that counts, against every step's values at once.
    * `getFunnelSchema` derives an ordinary dynz object schema (`{ [stepId]: step.schema
    * }`) from the funnel, so from here on it is exactly the same `validate()` call as
-   * `POST /claims` above.
+   * `POST /claims` above — except every field here is still a `schemaRef` stub, so
+   * `resolveSchemaRef` is what actually lets `validate()` see into each step.
    */
   .post("/claims/funnel", async (c) => {
     const body = await c.req.json();
 
+    // `getFunnelPath` resolves each step's `next` predicate, which needs that step's
+    // real schema — `resolveSchemaRef` is async (dynz's `validate()` awaits it), but
+    // predicate resolution here is synchronous, so it gets the registry directly. The
+    // server has every step in-process anyway; a real remote registry would still need
+    // to be pre-fetched before this call, same as the browser pre-fetches each step it
+    // visits.
+    const reachedSteps = getFunnelPath(expenseClaimFunnel, body, expenseClaimSchemasByStepId);
+
     // A skipped branch (no travel details, no approval needed, ...) must not be
     // required just because it's a step in the funnel — only the steps this
     // particular submission actually passed through are.
-    const reachedSteps = getFunnelPath(expenseClaimFunnel, body);
-
     const result = await validate(
-      getFunnelSchema(expenseClaimFunnel, reachedSteps),
+      getFunnelSchema(expenseClaimFunnel, { includedStepIds: reachedSteps }),
       { claimBasics: { employeeId: DEMO_EMPLOYEE_ID } } as SchemaValues<ReturnType<typeof getFunnelSchema>>,
       body,
-      { stripNotIncludedValues: true }
+      { stripNotIncludedValues: true, resolveSchemaRef: resolveExpenseClaimSchemaRef }
     );
 
     if (result.success === false) {

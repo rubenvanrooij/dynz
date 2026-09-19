@@ -40,6 +40,10 @@ export function validateType<T extends Schema>(
       return value === schema.value;
     case SchemaType.DISCRIMINATED_UNION:
       return isObject(value);
+    case SchemaType.SCHEMA_REF:
+      // Never actually reached — `_validate` resolves and re-dispatches a schema_ref
+      // before the type check runs. Present only for switch exhaustiveness.
+      return true;
   }
 }
 
@@ -77,6 +81,8 @@ export function validateShallowType<T extends SchemaType>(type: T, value: unknow
     case SchemaType.LITERAL:
       return isString(value) || isNumber(value) || isBoolean(value) || value === null;
     case SchemaType.DISCRIMINATED_UNION:
+      return true;
+    case SchemaType.SCHEMA_REF:
       return true;
   }
 }

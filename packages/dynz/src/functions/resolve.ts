@@ -21,7 +21,7 @@ export function unpackRef<T extends SchemaType = SchemaType>(
   // navigating through a discriminated union whose discriminator value does not
   // match any member (e.g. the field is empty or the current value is an excluded
   // member). Treat this as "not accessible" → behave as if not included.
-  const ret = getNested(absolutePath, context.schema, context.values);
+  const ret = getNested(absolutePath, context.schema, context.values, context.resolvedRefs);
 
   if (ret === null) {
     return undefined;
@@ -30,7 +30,7 @@ export function unpackRef<T extends SchemaType = SchemaType>(
   const { schema, value } = ret;
 
   // only return when the schema is actually included
-  if (!isIncluded(context.schema, absolutePath, context.values)) {
+  if (!isIncluded(context.schema, absolutePath, context.values, context.resolvedRefs)) {
     return undefined;
   }
 

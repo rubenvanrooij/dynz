@@ -8,6 +8,7 @@ export * from "./literal";
 export * from "./number";
 export * from "./object";
 export * from "./options";
+export * from "./schema-ref";
 export * from "./shared";
 export * from "./discriminated-union";
 export * from "./string";

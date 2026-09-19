@@ -1,4 +1,4 @@
-import { validate, type Schema, type SchemaValues, type ValidateOptions, type ValidationResult } from "dynz";
+import { type Schema, type SchemaValues, type ValidateOptions, type ValidationResult, validate } from "dynz";
 import type { FunnelStep } from "./types";
 
 /** Validates a single step's raw input against its own schema, via dynz's `validate()`. */

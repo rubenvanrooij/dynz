@@ -1,5 +1,5 @@
 import { describe, expectTypeOf, it } from "vitest";
-import { array, number, object, string } from "../schemas";
+import { array, number, object, schemaRef, string } from "../schemas";
 import type { SchemaValues } from "./schema";
 
 /**
@@ -70,5 +70,20 @@ describe("SchemaValues<T> and defaults", () => {
     const schema = object({ tags: array(string()) });
 
     expectTypeOf<SchemaValues<typeof schema>>().toEqualTypeOf<{ readonly tags: string[] }>();
+  });
+});
+
+describe("SchemaValues<T> for schemaRef", () => {
+  it("infers unknown when no explicit generic is given", () => {
+    const schema = object({ participant: schemaRef("participant://example.com/p") });
+
+    expectTypeOf<SchemaValues<typeof schema>>().toEqualTypeOf<{ readonly participant: unknown }>();
+  });
+
+  it("trusts an explicit generic as an assertion, not a derivation", () => {
+    type Participant = { id: string; name: string };
+    const schema = object({ participant: schemaRef<Participant>("participant://example.com/p") });
+
+    expectTypeOf<SchemaValues<typeof schema>>().toEqualTypeOf<{ readonly participant: Participant }>();
   });
 });

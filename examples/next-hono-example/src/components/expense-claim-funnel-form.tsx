@@ -1,15 +1,9 @@
 "use client";
 
-import {
-  type FunnelDefinition,
-  type FunnelStep,
-  type FunnelValues,
-  getFunnelProgress,
-  resolveNextStep,
-} from "@dynz/funnel";
+import { type FunnelDefinition, type FunnelValues, resolveNextStep } from "@dynz/funnel";
 import { DynzFormProvider, useDynzForm } from "@dynz/react-hook-form";
-import { getDefaultValues, type ObjectSchema, type SchemaValues } from "dynz";
-import { useState } from "react";
+import { getDefaultValues, type ObjectSchema, type Schema, type SchemaValues } from "dynz";
+import { useEffect, useState } from "react";
 import { client } from "@/lib/client";
 import { SchemaField } from "./fields";
 
@@ -18,7 +12,8 @@ type ServerError = { path: string; code: string; message: string };
 type Props = {
   /** Arrived over the wire a moment ago — same story as `ExpenseClaimForm`'s `schema`
    * prop, just one level up: this component knows nothing about the flow beyond "it is
-   * a dynz funnel". */
+   * a dynz funnel". Every step's own `schema` here is still a `schemaRef` stub — this
+   * component fetches the real one, per step, only once it gets there. */
   funnel: FunnelDefinition;
 };
 
@@ -26,12 +21,45 @@ export function ExpenseClaimFunnelForm({ funnel }: Props) {
   const [currentStepId, setCurrentStepId] = useState(funnel.initial);
   const [history, setHistory] = useState<string[]>([]);
   const [values, setValues] = useState<FunnelValues>({});
+  // Grows one entry at a time as the wizard advances — also what `resolveNextStep`
+  // needs to see into a step whose `next` predicate references its own just-submitted
+  // fields, since that resolution can't go through dynz's async `resolveSchemaRef`.
+  const [resolvedSchemas, setResolvedSchemas] = useState<Record<string, Schema>>({});
+  const [stepError, setStepError] = useState<string | undefined>(undefined);
   const [submitting, setSubmitting] = useState(false);
   const [accepted, setAccepted] = useState<{ id: string; values: unknown } | undefined>(undefined);
   const [serverErrors, setServerErrors] = useState<ServerError[]>([]);
 
   const step = funnel.steps.find((s) => s.id === currentStepId);
-  const progress = getFunnelProgress(funnel, currentStepId, values);
+  const currentSchema = resolvedSchemas[currentStepId];
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: fetch keyed on currentStepId alone — refetching for changes to `accepted`/`resolvedSchemas` itself would loop.
+  useEffect(() => {
+    if (accepted || currentSchema !== undefined) {
+      return;
+    }
+
+    let cancelled = false;
+    setStepError(undefined);
+
+    client.api.forms["expense-claim-funnel"].steps[":stepId"]
+      .$get({ param: { stepId: currentStepId } })
+      .then(async (response) => {
+        if (response.status !== 200) {
+          if (!cancelled) setStepError(`Could not load step "${currentStepId}"`);
+          return;
+        }
+        const body = await response.json();
+        if (!cancelled) setResolvedSchemas((prev) => ({ ...prev, [currentStepId]: body.schema as Schema }));
+      })
+      .catch(() => {
+        if (!cancelled) setStepError(`Could not load step "${currentStepId}"`);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentStepId, accepted]);
 
   async function submitFunnel(allValues: FunnelValues) {
     setSubmitting(true);
@@ -57,7 +85,7 @@ export function ExpenseClaimFunnelForm({ funnel }: Props) {
     const next = { ...values, [stepId]: data };
     setValues(next);
 
-    const nextStepId = resolveNextStep(funnel, stepId, next);
+    const nextStepId = resolveNextStep(funnel, stepId, next, resolvedSchemas);
 
     if (nextStepId === null) {
       void submitFunnel(next);
@@ -103,18 +131,27 @@ export function ExpenseClaimFunnelForm({ funnel }: Props) {
     return null;
   }
 
+  if (stepError !== undefined) {
+    return <p className="note">{stepError}</p>;
+  }
+
+  if (currentSchema === undefined) {
+    return <p className="note">Loading step…</p>;
+  }
+
   return (
     <>
       <p className="note">
-        Step <strong>{progress.index + 1}</strong> of <strong>{progress.total}</strong> — each step is its own dynz
-        schema, validated on its own; which step comes next (and whether <strong>travel details</strong> or{" "}
-        <strong>approval</strong> show up at all) is decided by <code>resolveNextStep</code>, from predicates in the
-        funnel itself.
+        Step <strong>{history.length + 1}</strong> — no "of N" here: each step's schema, and whether{" "}
+        <strong>travel details</strong> or <strong>approval</strong> show up at all, is only fetched and decided (via{" "}
+        <code>resolveNextStep</code>) once you reach it, from a <code>schemaRef</code> the funnel shell only points at.{" "}
+        <code>GET /forms/expense-claim-funnel</code> stayed tiny regardless of how many steps this claim has.
       </p>
 
       <FunnelStepForm
         key={step.id}
-        step={step}
+        stepId={step.id}
+        schema={currentSchema as ObjectSchema<never>}
         initialValues={values[step.id]}
         canGoBack={history.length > 0}
         submitting={submitting}
@@ -134,29 +171,29 @@ export function ExpenseClaimFunnelForm({ funnel }: Props) {
 }
 
 function FunnelStepForm({
-  step,
+  stepId,
+  schema,
   initialValues,
   canGoBack,
   submitting,
   onBack,
   onSubmitStep,
 }: {
-  step: FunnelStep;
+  stepId: string;
+  schema: ObjectSchema<never>;
   initialValues: unknown;
   canGoBack: boolean;
   submitting: boolean;
   onBack: () => void;
   onSubmitStep: (data: unknown) => void;
 }) {
-  const schema = step.schema as ObjectSchema<never>;
-
   const methods = useDynzForm({
     schema,
     defaultValues:
       (initialValues as SchemaValues<typeof schema> | undefined) ??
       // The server owns `employeeId`; prefilling it here is only a convenience — try
       // changing it anyway, `POST /claims/funnel` freezes it regardless.
-      (step.id === "claimBasics" ? { ...getDefaultValues(schema), employeeId: "EMP-042" } : getDefaultValues(schema)),
+      (stepId === "claimBasics" ? { ...getDefaultValues(schema), employeeId: "EMP-042" } : getDefaultValues(schema)),
     mode: "onBlur",
     reValidateMode: "onChange",
     schemaOptions: { stripNotIncludedValues: true },

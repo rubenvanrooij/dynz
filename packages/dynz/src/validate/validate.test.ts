@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { eq, size } from "../functions";
 import { isValueMasked, mask, plain } from "../private";
 import { ref } from "../reference";
-import { array, date, discriminatedUnion, expr, number, object, options, string } from "../schemas";
+import { array, date, discriminatedUnion, expr, number, object, options, schemaRef, string } from "../schemas";
 import { serialize } from "../serialize";
 import { ErrorCode, SchemaType } from "../types";
 import { validate } from "./validate";
@@ -1102,6 +1102,162 @@ describe("validate", () => {
           });
         }
       });
+    });
+  });
+
+  describe("schema_ref validation", () => {
+    it("resolves a schema_ref to the schema returned by resolveSchemaRef", async () => {
+      const participantSchema = object({ name: string().setRequired(true) });
+      const schema = object({ participant: schemaRef("participant://p") });
+
+      const resolveSchemaRef = vi.fn().mockResolvedValue(participantSchema);
+      const result = await validate(schema, undefined, { participant: { name: "Ada" } }, { resolveSchemaRef });
+
+      expect(result).toEqual({ success: true, values: { participant: { name: "Ada" } } });
+      expect(resolveSchemaRef).toHaveBeenCalledWith("participant://p", { path: "$.participant", stack: [] });
+    });
+
+    it("resolves a schema_ref to a primitive schema", async () => {
+      const schema = schemaRef("string://x");
+      const result = await validate(schema, undefined, "hello", {
+        resolveSchemaRef: async () => string(),
+      });
+
+      expect(result).toEqual({ success: true, values: "hello" });
+    });
+
+    it("enforces required fields nested inside a resolved schema_ref", async () => {
+      const participantSchema = object({ name: string().setRequired(true) });
+      const schema = object({ participant: schemaRef("participant://p") });
+
+      const result = await validate(
+        schema,
+        undefined,
+        { participant: {} },
+        { resolveSchemaRef: async () => participantSchema }
+      );
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.errors[0]?.path).toBe("$.participant.name");
+        expect(result.errors[0]?.code).toBe(ErrorCode.REQRUIED);
+      }
+    });
+
+    it("fails type validation for a value that does not match the resolved schema", async () => {
+      const schema = schemaRef("number://x");
+      const result = await validate(schema, undefined, "not-a-number", {
+        resolveSchemaRef: async () => number(),
+      });
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.errors[0]?.code).toBe(ErrorCode.TYPE);
+      }
+    });
+
+    it("throws when no resolveSchemaRef option is provided", async () => {
+      const schema = schemaRef("participant://p");
+
+      await expect(validate(schema, undefined, {})).rejects.toThrow(/resolveSchemaRef/);
+    });
+
+    it("never resolves an excluded schema_ref", async () => {
+      const resolveSchemaRef = vi.fn();
+      const schema = object({ secret: schemaRef("secret://x").setIncluded(false) });
+
+      const result = await validate(schema, undefined, {}, { resolveSchemaRef });
+
+      expect(result).toEqual({ success: true, values: { secret: undefined } });
+      expect(resolveSchemaRef).not.toHaveBeenCalled();
+    });
+
+    it("detects a direct circular schema reference", async () => {
+      const schema = schemaRef("uri:a");
+
+      const result = await validate(
+        schema,
+        undefined,
+        {},
+        {
+          resolveSchemaRef: async (uri) => schemaRef(uri),
+        }
+      );
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.errors[0]?.code).toBe(ErrorCode.CIRCULAR_REF);
+        expect(result.errors[0]?.message).toContain("uri:a -> uri:a");
+      }
+    });
+
+    it("detects a circular schema reference across two hops", async () => {
+      const schema = schemaRef("uri:a");
+
+      const result = await validate(
+        schema,
+        undefined,
+        {},
+        {
+          resolveSchemaRef: async (uri) => (uri === "uri:a" ? schemaRef("uri:b") : schemaRef("uri:a")),
+        }
+      );
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.errors[0]?.code).toBe(ErrorCode.CIRCULAR_REF);
+        expect(result.errors[0]?.message).toContain("uri:a -> uri:b -> uri:a");
+      }
+    });
+
+    it("does not flag diamond-shaped reuse of the same uri across sibling branches as circular", async () => {
+      const shared = object({ x: number() });
+      const schema = object({
+        a: schemaRef("shared://x"),
+        b: schemaRef("shared://x"),
+      });
+
+      const result = await validate(
+        schema,
+        undefined,
+        { a: { x: 1 }, b: { x: 2 } },
+        { resolveSchemaRef: async () => shared }
+      );
+
+      expect(result).toEqual({ success: true, values: { a: { x: 1 }, b: { x: 2 } } });
+    });
+
+    it("invokes the resolver exactly once per uri, even under concurrent array fan-out", async () => {
+      const shared = object({ x: number() });
+      const resolveSchemaRef = vi
+        .fn()
+        .mockImplementation(() => new Promise((resolve) => setTimeout(() => resolve(shared), 5)));
+      const schema = array(schemaRef("shared://x"));
+
+      const result = await validate(schema, undefined, [{ x: 1 }, { x: 2 }, { x: 3 }], { resolveSchemaRef });
+
+      expect(result).toEqual({ success: true, values: [{ x: 1 }, { x: 2 }, { x: 3 }] });
+      expect(resolveSchemaRef).toHaveBeenCalledTimes(1);
+    });
+
+    it("honors the ref node's own .setPrivate() over the resolved schema's", async () => {
+      const schema = schemaRef("secret://x").setPrivate(true);
+
+      const result = await validate(schema, undefined, plain("secret"), {
+        resolveSchemaRef: async () => string(),
+      });
+
+      expect(result).toEqual({ success: true, values: "secret" });
+    });
+
+    it("honors the ref node's own .setDefault() over the resolved schema's own default", async () => {
+      const schema = schemaRef<{ name: string }>("d://x").setDefault({ name: "ref-default" });
+
+      const result = await validate(schema, undefined, undefined, {
+        resolveSchemaRef: async () => object({ name: string() }).setDefault({ name: "resolved-default" }),
+      });
+
+      expect(result).toEqual({ success: true, values: { name: "ref-default" } });
     });
   });
 

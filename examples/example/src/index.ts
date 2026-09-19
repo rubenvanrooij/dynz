@@ -7,13 +7,10 @@ async function example() {
     .object({
       name: d.object({
         first: d.string().setDefault("jan"),
-        last: d.string().setRequired(false).setDefault("naam"),
+        last: d.string().setIncluded(d.eq(d.ref('first'), 'jan')).setRequired(false).setDefault("naam"),
       }),
       nameSize: d.expr(d.sum(d.size(d.ref("name.first")), d.size(d.ref("name.last")))),
     })
-    .setDefault({
-      name: { first: "kees" },
-    });
   const result = await d.validate(schema, undefined, undefined);
 
   console.log(result);

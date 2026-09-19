@@ -22,9 +22,15 @@ import { resolveProperty } from "./resolve-property";
  * @param values
  * @returns boolean value whether the path is included
  */
-export function isIncluded<T extends Schema>(rootSchema: T, path: string, values: unknown): boolean {
+export function isIncluded<T extends Schema>(
+  rootSchema: T,
+  path: string,
+  values: unknown,
+  resolvedRefs?: Map<string, Schema>
+): boolean {
   return resolveProperty("included", path, true, {
     schema: rootSchema,
     values,
+    ...(resolvedRefs !== undefined ? { resolvedRefs } : {}),
   });
 }

@@ -13,7 +13,7 @@ import {
   type ValidationResult,
   type ValidationSuccesResult,
 } from "../types";
-import { coerceSchema, withDefault } from "../utils";
+import { coerceSchema, normalizePath, withDefault } from "../utils";
 import { isArray, isObject, validateType } from "./validate-type";
 
 export function validate<T extends Schema>(
@@ -29,6 +29,9 @@ export function validate<T extends Schema>(
     validateMutable: currentValues !== undefined,
     currentValues: currentValues,
     values: newValues,
+    refStack: [],
+    refCache: new Map(),
+    resolvedRefs: new Map(),
   }) as Promise<ValidationResult<SchemaValues<T>>>;
 }
 
@@ -70,6 +73,63 @@ export async function _validate<T extends Schema>(
       success: true,
       values: undefined,
     };
+  }
+
+  // A schema_ref is transparent: resolve it, then re-validate at the same path/values
+  // against whatever schema it points to. Must run before the mutable/required/type/rule
+  // checks below, since those apply to the *resolved* schema, not the ref node itself.
+  if (schema.type === SchemaType.SCHEMA_REF) {
+    const resolver = context.validateOptions.resolveSchemaRef;
+
+    if (resolver === undefined) {
+      throw new Error(
+        `Cannot validate schema at "${path}": it is a schema_ref ("${schema.uri}") but no "resolveSchemaRef" option was provided to validate().`
+      );
+    }
+
+    if (context.refStack.includes(schema.uri)) {
+      return {
+        success: false,
+        errors: [
+          {
+            path,
+            schema,
+            value: values.new,
+            current: values.current,
+            customCode: ErrorCode.CIRCULAR_REF,
+            code: ErrorCode.CIRCULAR_REF,
+            uri: schema.uri,
+            message: `Circular schema reference detected while resolving "${schema.uri}" at ${path}: ${[...context.refStack, schema.uri].join(" -> ")}`,
+          },
+        ],
+      };
+    }
+
+    let pending = context.refCache.get(schema.uri);
+
+    if (pending === undefined) {
+      pending = Promise.resolve(resolver(schema.uri, { path, stack: context.refStack }));
+      context.refCache.set(schema.uri, pending);
+    }
+
+    const resolved = await pending;
+
+    // The ref node's own `private`/`default` win over the resolved schema's root-level
+    // ones (if it declared them); `required`/`mutable`/`included` already resolved
+    // correctly above/below via resolveProperty's path-based ancestor walk, which reads
+    // the ref node itself at this exact path — no merging needed for those.
+    const effectiveSchema = {
+      ...resolved,
+      ...(schema.private !== undefined ? { private: schema.private } : {}),
+      ...(Object.hasOwn(schema, "default") ? { default: schema.default } : {}),
+    } as Schema;
+
+    context.resolvedRefs.set(normalizePath(path), effectiveSchema);
+
+    return _validate(effectiveSchema, values, path, {
+      ...context,
+      refStack: [...context.refStack, schema.uri],
+    });
   }
 
   // static schema types must be in front of validation

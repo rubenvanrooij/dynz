@@ -166,6 +166,36 @@ const signupSchema = d.object({
 });
 ```
 
+### External Schema References
+
+`schemaRef(uri)` declares a schema resolved from an external URI at validate-time — like a JSON Schema `$ref`, but resolved by a function you supply rather than dynz fetching anything itself. It's for composing schemas that live elsewhere entirely (another service, a schema registry), not for local recursive/self-referencing schemas.
+
+> **Not the same as `ref()`** — `ref()` points to a _value_ in a sibling field of the same schema (used inside rules/conditions). `schemaRef()` points to an entirely different _schema_, resolved from elsewhere.
+
+```typescript
+import * as d from "dynz";
+
+const schema = d.object({
+  participants: d.array(
+    d.schemaRef<Participant>("participant://example.com:8042/over/there"),
+  ),
+});
+
+await d.validate(schema, undefined, values, {
+  // dynz never fetches a URI itself — no assumed transport, no built-in SSRF
+  // surface. You own the lookup (HTTP, a registry client, a cache, ...).
+  resolveSchemaRef: async (uri) => fetchSchemaFor(uri),
+});
+```
+
+Notes:
+
+- The `Participant` generic is an **assertion, not a derivation** — dynz can't know the resolved schema's real shape at compile time, so `SchemaValues<T>` trusts whatever you declare. Omit it and the field infers as `unknown`.
+- `resolveSchemaRef` is called at most once per distinct URI per `validate()` call, however many places reference it — dedup is automatic.
+- A cycle across resolved schemas (A refs B, B refs A) is detected and reported as a `circular_ref` validation error rather than hanging or overflowing the stack.
+- `schemaRef(...).setPrivate(...)` / `.setDefault(...)` on the ref node itself take precedence over the resolved schema's own root-level `private`/`default`.
+- Converting to JSON Schema (via `@dynz/to-json-schema`) emits a native `{ "$ref": uri }` — no resolution needed for that.
+
 ### Mutability Controls
 
 Control when fields can be modified based on conditions:
@@ -478,6 +508,7 @@ const orderSchema = d.object({
 - `date()` - Date validation schema with fluent methods
 - `options(values)` - Enum-like validation for predefined values
 - `file()` - File validation schema with fluent methods
+- `schemaRef(uri)` - Schema resolved from an external URI at validate-time (see [External Schema References](#external-schema-references))
 
 ### Fluent Rule Methods
 

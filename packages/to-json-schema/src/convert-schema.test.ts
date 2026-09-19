@@ -11,6 +11,7 @@ import {
   object,
   options,
   ref,
+  schemaRef,
   string,
   v,
 } from "dynz";
@@ -70,6 +71,12 @@ describe("convertSchema", () => {
     const schema: Schema = { type: "expression", value: v(1) };
 
     expect(convertSchema(schema, ctx)).toEqual({});
+  });
+
+  it("converts a schema_ref to a JSON Schema $ref, without resolving it", () => {
+    const schema = schemaRef("participant://example.com:8042/over/there");
+
+    expect(convertSchema(schema, ctx)).toEqual({ $ref: "participant://example.com:8042/over/there" });
   });
 
   it("converts an array schema, applying items and entry-count rules", () => {

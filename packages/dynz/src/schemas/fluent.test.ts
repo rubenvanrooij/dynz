@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { eq, sum, v } from "../functions";
 import { ref } from "../reference";
-import { array, discriminatedUnion, object, string } from "../schemas";
+import { array, discriminatedUnion, object, schemaRef, string } from "../schemas";
 
 describe("Fluent API", () => {
   describe("StringSchemaFluent", () => {
@@ -253,6 +253,30 @@ describe("Fluent API", () => {
     });
   });
 
+  describe("SchemaRefFluent", () => {
+    it("creates a schema_ref schema with the given uri", () => {
+      const schema = schemaRef("participant://example.com:8042/over/there");
+
+      expect(schema.type).toBe("schema_ref");
+      expect(schema.uri).toBe("participant://example.com:8042/over/there");
+    });
+
+    it("supports the shared property setters", () => {
+      const schema = schemaRef("participant://example.com/p")
+        .setRequired(false)
+        .setMutable(false)
+        .setPrivate(true)
+        .setDefault({ id: "anon" })
+        .describe("A participant, resolved elsewhere");
+
+      expect(schema.required).toBe(false);
+      expect(schema.mutable).toBe(false);
+      expect(schema.private).toBe(true);
+      expect(schema.default).toEqual({ id: "anon" });
+      expect(schema.meta?.description).toBe("A participant, resolved elsewhere");
+    });
+  });
+
   describe("DiscriminatedUnionSchemaFluent", () => {
     it("creates a discriminated union schema with members", () => {
       const schema = discriminatedUnion("type", [
@@ -315,6 +339,19 @@ describe("Fluent API", () => {
       expect(parsed.type).toBe(original.type);
       expect(parsed.required).toEqual(original.required);
       expect(parsed.rules).toEqual(original.rules);
+    });
+
+    it("schema_ref survives a JSON round-trip as plain data (no function/thunk anywhere)", () => {
+      const original = schemaRef("participant://example.com:8042/over/there").setRequired(true);
+
+      const json = JSON.stringify(original);
+      const parsed = JSON.parse(json);
+
+      expect(parsed).toEqual({
+        type: "schema_ref",
+        uri: "participant://example.com:8042/over/there",
+        required: true,
+      });
     });
   });
 

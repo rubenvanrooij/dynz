@@ -5,6 +5,7 @@
 export interface JsonSchema {
   $schema?: string;
   $id?: string;
+  $ref?: string;
   title?: string;
   description?: string;
   deprecated?: boolean;
