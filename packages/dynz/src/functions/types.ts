@@ -1,38 +1,11 @@
+import type { GlobalReference, GlobalType } from "../global";
 // import type { Reference } from "../reference";
 import type { Reference } from "../reference";
 import type { ValueType } from "../types";
 import type { Predicate } from "./predicate-types";
 import type { Transformer } from "./transformer-types";
 
-// ============================================================================
-// DYNZ FUNCTIONS OVERVIEW
-// ============================================================================
-//
-// Dynz has three main concepts for building dynamic validation logic:
-//
-// RULES - Validation constraints attached to schema fields
-//    - Define what values are valid for a field
-//    - Produce validation errors when violated
-//    - Examples: min(), max(), equals(), email(), minLength()
-//    - Usage: schema({ rules: [min(v(5)), email()] })
-//
-// PREDICATES - Boolean expressions (true/false) for conditional logic
-//    - Used in `when` clauses of conditional rules
-//    - Can be combined with and(), or()
-//    - Examples: eq(), gt(), lt(), gte(), lte(), neq()
-//    - Usage: conditional({ when: gt(ref('age'), v(18)), then: ... })
-//
-// TRANSFORMERS - Value calculations/transformations
-//    - Compute values for use in rules or predicates
-//    - Don't validate themselves - they provide computed values
-//    - Examples: sum(), sub(), multiply(), divide(), age(), size()
-//    - Usage: min(sum(ref('a'), ref('b')))
-//
-// HELPERS - Value wrappers
-//    - v(value) - Wrap a static/constant value
-//    - ref(path) - Reference another field's value
-//
-// ============================================================================
+export const STATIC_TYPE = "_dstatic" as const;
 
 /**
  * A static (constant) value wrapper.
@@ -42,9 +15,22 @@ import type { Transformer } from "./transformer-types";
  * @category Helper
  */
 export type Static<T extends ValueType = ValueType> = {
-  type: "st";
+  type: typeof STATIC_TYPE;
   value: T;
 };
+
+/**
+ * Which {@link GlobalReference}s are assignable where `ParamaterValue<V>` is expected: a
+ * global's `globalType` (a {@link GlobalType}) only qualifies when its value is
+ * assignable to `V` — e.g. a `date`-typed global is excluded from `ParamaterValue<number>`.
+ *
+ * When `V` is left at its default (the full `ValueType` union), every branch matches and
+ * this resolves back to an unconstrained `GlobalReference` — the same permissiveness
+ * generic predicate/transformer signatures already had.
+ */
+type GlobalReferenceFor<V extends ValueType> = {
+  [K in GlobalType]: ValueType<K> extends V ? GlobalReference<string, K> : never;
+}[GlobalType];
 
 /**
  * A parameter value that can be used in rules, predicates, and transformers.
@@ -52,6 +38,8 @@ export type Static<T extends ValueType = ValueType> = {
  * This union type represents all possible value types:
  * - {@link Static} - A constant value wrapped with `v()`
  * - {@link Reference} - A reference to another field with `ref()`
+ * - {@link GlobalReference} - A reference to an externally supplied global with `global()`
+ *   or `createGlobals()`
  * - {@link Predicate} - A boolean expression
  * - {@link Transformer} - A computed/transformed value
  * - `undefined` - No value
@@ -62,6 +50,7 @@ export type ParamaterValue<T extends ValueType = ValueType> =
   | Static<T>
   | undefined
   | Reference
+  | GlobalReferenceFor<T>
   | Predicate
   | Transformer;
 

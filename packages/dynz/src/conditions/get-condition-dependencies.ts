@@ -1,4 +1,5 @@
-import type { ParamaterValue, Predicate, Transformer } from "../functions";
+import { type ParamaterValue, type Predicate, STATIC_TYPE, type Transformer } from "../functions";
+import { isGlobalReference } from "../global";
 import { isReference } from "../reference";
 import type { Rule } from "../rules";
 import { type Schema, SchemaType } from "../types";
@@ -59,6 +60,10 @@ export function getConditionDependencies(input: Predicate | Transformer, path: s
 }
 
 export function getParamaterDependencies(param: ParamaterValue, path: string, schema: Schema): string[] {
+  if (isGlobalReference(param)) {
+    return [];
+  }
+
   if (isReference(param)) {
     const referencePath = ensureAbsolutePath(param.path, path);
 
@@ -71,7 +76,7 @@ export function getParamaterDependencies(param: ParamaterValue, path: string, sc
     return [referencePath];
   }
 
-  if (param === undefined || param.type === "st") {
+  if (param === undefined || param.type === STATIC_TYPE) {
     return [];
   }
 
