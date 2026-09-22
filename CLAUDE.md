@@ -2,6 +2,11 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Code Conventions
+
+See [AGENTS.md](./AGENTS.md) for code style, including the preferred functional
+paradigms for schema/path traversal.
+
 ## Development Commands
 
 This is a pnpm monorepo with multiple packages. Always use pnpm commands:

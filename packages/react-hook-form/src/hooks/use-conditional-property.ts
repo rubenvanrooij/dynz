@@ -1,36 +1,29 @@
-import { findSchemaByPath, getConditionDependencies, resolveProperty, SchemaType } from "dynz";
+import { findPossibleSchemasByPath, getConditionDependencies, resolveProperty, type Schema } from "dynz";
 import { useMemo } from "react";
 import { useWatch } from "react-hook-form";
+import { getUnionKeyDependencies } from "./get-union-key-dependencies";
 import { useDynzFormContext } from "./use-dynz-form-context";
 
 type ConditionalProperty = "mutable" | "required" | "included";
 
-function getPropertyDependencies(
-  path: string,
-  property: ConditionalProperty,
-  schema: Parameters<typeof findSchemaByPath>[1]
-): string[] {
+function getPropertyDependencies(path: string, property: ConditionalProperty, schema: Schema): string[] {
   const segments = path.split(/[.[\]]/).filter(Boolean);
-  return segments.flatMap((_, i) => {
+  const propertyDependencies = segments.flatMap((_, i) => {
     const ancestorPath = segments.slice(0, i + 1).join(".");
-    const ancestor = findSchemaByPath(ancestorPath, schema);
+    return findPossibleSchemasByPath(ancestorPath, schema).flatMap((ancestor) => {
+      const ancestorPropertyValue = ancestor[property];
 
-    // When ancestor is a discriminuted union the 'key' of the union
-    // must always be added as an implicit dependency
-    const dependencies =
-      ancestor.type === SchemaType.DISCRIMINATED_UNION ? [`${ancestorPath}.${ancestor.key}`.slice(2)] : [];
+      if (ancestorPropertyValue === undefined || typeof ancestorPropertyValue === "boolean") {
+        return [];
+      }
 
-    const ancestorPropertyValue = ancestor[property];
-
-    if (ancestorPropertyValue === undefined || typeof ancestorPropertyValue === "boolean") {
-      return dependencies;
-    }
-
-    return [
-      ...dependencies,
-      ...getConditionDependencies(ancestorPropertyValue, ancestorPath, schema).map((f) => f.slice(2)),
-    ];
+      return getConditionDependencies(ancestorPropertyValue, ancestorPath, schema).map((f) => f.slice(2));
+    });
   });
+
+  // A discriminated union's key is always an implicit dependency — it decides which
+  // member's conditions apply in the first place.
+  return [...getUnionKeyDependencies(path, schema), ...propertyDependencies];
 }
 
 export function useConditionalProperty(name: string, property: ConditionalProperty): boolean | undefined;

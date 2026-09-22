@@ -15,7 +15,8 @@ export function useDiscriminatedUnionKeyValues(name: MaybeRefOrGetter<string>): 
     const unionSchema = findSchemaByPath<DiscriminatedUnionSchema>(
       toAbsolutePath(toValue(name)),
       context.schema,
-      SchemaType.DISCRIMINATED_UNION
+      SchemaType.DISCRIMINATED_UNION,
+      context.getValues()
     );
 
     return unionSchema.schemas.map((member) => ({

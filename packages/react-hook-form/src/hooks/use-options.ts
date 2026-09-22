@@ -1,5 +1,6 @@
 import { findSchemaByPath, getConditionDependencies, getOptionsForSchema, type OptionsSchema, SchemaType } from "dynz";
 import { useWatch } from "react-hook-form";
+import { getUnionKeyDependencies } from "./get-union-key-dependencies";
 import { useDynzFormContext } from "./use-dynz-form-context";
 
 /**
@@ -19,20 +20,19 @@ export function useOptionsSchema(
   schema: OptionsSchema,
   fieldPath: string = "$"
 ): Array<{ enabled: boolean; value: string | number | boolean }> {
-  // Opt out of React Compiler memoization: this hook reads live form values via
-  // getValues() and relies on useWatch below to trigger rerenders, not on
-  // props/state identity, so compiler-inferred memoization would be unsafe here.
   "use no memo";
   const { control, getValues, schema: rootSchema } = useDynzFormContext();
 
-  // TODO: memoize
-  const dependencies = schema.options.reduce<string[]>((acc, option) => {
-    if (typeof option === "object" && typeof option.enabled !== "boolean") {
-      acc.push(...getConditionDependencies(option.enabled, fieldPath, rootSchema));
-    }
+  const dependencies = schema.options.reduce<string[]>(
+    (acc, option) => {
+      if (typeof option === "object" && typeof option.enabled !== "boolean") {
+        acc.push(...getConditionDependencies(option.enabled, fieldPath, rootSchema));
+      }
 
-    return acc;
-  }, []);
+      return acc;
+    },
+    getUnionKeyDependencies(fieldPath, rootSchema).map((dep) => `$.${dep}`)
+  );
 
   // Watch is just here to trigger a rerender when a value gets updated
   useWatch({
@@ -49,9 +49,9 @@ export function useOptionsSchema(
  */
 export function useOptions(name: string): Array<{ enabled: boolean; value: string | number | boolean }> {
   "use no memo";
-  const { schema } = useDynzFormContext();
+  const { schema, getValues } = useDynzFormContext();
   const fieldPath = `$.${name}`;
-  const inner = findSchemaByPath<OptionsSchema>(fieldPath, schema, SchemaType.OPTIONS);
+  const inner = findSchemaByPath<OptionsSchema>(fieldPath, schema, SchemaType.OPTIONS, getValues());
 
   return useOptionsSchema(inner, fieldPath);
 }
