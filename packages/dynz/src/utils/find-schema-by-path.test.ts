@@ -286,8 +286,15 @@ describe("findSchemaByPath", () => {
     };
 
     describe("without values", () => {
-      it("should return the union schema for the discriminator key", () => {
-        expect(findSchemaByPath("$.expense.kind", root)).toBe(expense);
+      it("should return an options schema of every member's value for the discriminator key", () => {
+        expect(findSchemaByPath("$.expense.kind", root, SchemaType.OPTIONS)).toEqual({
+          type: SchemaType.OPTIONS,
+          options: ["hours", "money"],
+        });
+      });
+
+      it("should return the same discriminator schema object on every lookup", () => {
+        expect(findSchemaByPath("$.expense.kind", root)).toBe(findSchemaByPath("$.items[0].kind", root));
       });
 
       it("should resolve a field only one member declares", () => {
@@ -317,8 +324,11 @@ describe("findSchemaByPath", () => {
         });
       });
 
-      it("should still return the union schema for the discriminator key", () => {
-        expect(findSchemaByPath("$.expense.kind", root, { values: { expense: { kind: "money" } } })).toBe(expense);
+      it("should still list every member's value for the discriminator key", () => {
+        expect(findSchemaByPath("$.expense.kind", root, { values: { expense: { kind: "money" } } })).toEqual({
+          type: SchemaType.OPTIONS,
+          options: ["hours", "money"],
+        });
       });
 
       it("should resolve a field the selected member does not declare", () => {
@@ -542,7 +552,7 @@ describe("findSchemaByPath", () => {
       expect(findPossibleSchemasByPath("$.version", union)).toEqual([union]);
     });
 
-    it("should return the union schema for the discriminator key", () => {
+    it("should return a single options schema for the discriminator key", () => {
       const union = {
         type: SchemaType.DISCRIMINATED_UNION,
         key: "kind",
@@ -552,7 +562,9 @@ describe("findSchemaByPath", () => {
         ],
       };
 
-      expect(findPossibleSchemasByPath("$.kind", union)).toEqual([union]);
+      expect(findPossibleSchemasByPath("$.kind", union)).toEqual([
+        { type: SchemaType.OPTIONS, options: ["hours", "money"] },
+      ]);
     });
 
     it("should collapse variants that share the same schema object", () => {

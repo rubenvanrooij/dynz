@@ -1,5 +1,6 @@
 import { type Schema, SchemaType } from "../types";
 import { isArray, isNumber, isObject } from "../validate/validate-type";
+import { discriminantSchema } from "./discriminant-schema";
 import { withDefault } from "./with-default";
 
 export type FindSchemaByPathOptions<T extends Schema = Schema> = {
@@ -104,9 +105,9 @@ export function findSchemaByPath<T extends Schema = Schema>(
 
             if (childSchema !== undefined) {
               /**
-               * When the childSchema is a primitive type then we need
-               * to return the union schema since the union type doesnt
-               * have an actual schema attached to it.
+               * A primitive childSchema is a literal with no schema of its own.
+               * For the discriminator, synthesise an options schema of every
+               * member's value; any other literal resolves to the union itself.
                */
               if (
                 typeof childSchema === "boolean" ||
@@ -114,7 +115,7 @@ export function findSchemaByPath<T extends Schema = Schema>(
                 typeof childSchema === "string"
               ) {
                 return {
-                  schema: prev.schema,
+                  schema: cur === union.key ? discriminantSchema(union) : union,
                   values: isObject(values) ? values[cur] : undefined,
                 };
               }
@@ -202,13 +203,15 @@ function resolveChildSchemas(schema: Schema, segment: string, path: string): Sch
       }
 
       /**
-       * When the childSchema is a primitive type then we need
-       * to return the union schema since the union type doesnt
-       * have an actual schema attached to it.
+       * A primitive childSchema is a literal with no schema of its own.
+       * For the discriminator, synthesise an options schema of every
+       * member's value; any other literal resolves to the union itself.
        */
       return [
         typeof childSchema === "boolean" || typeof childSchema === "number" || typeof childSchema === "string"
-          ? schema
+          ? segment === schema.key
+            ? discriminantSchema(schema)
+            : schema
           : childSchema,
       ];
     });

@@ -119,16 +119,15 @@ dynz always validates the document as a whole, so `validateField` scopes the _re
 
 ### Composables
 
-| Composable                             | Returns                                                 |
-| -------------------------------------- | ------------------------------------------------------- |
-| `useDynzField(name)`                   | Value, error, touched state and the field's conditions. |
-| `useIsRequired(name)`                  | `ComputedRef<boolean \| undefined>`                     |
-| `useIsIncluded(name)`                  | `ComputedRef<boolean \| undefined>`                     |
-| `useIsMutable(name)`                   | `ComputedRef<boolean \| undefined>`                     |
-| `useOptions(name)`                     | `{ value, enabled }[]` for an options schema.           |
-| `useDiscriminatedUnionKeyValues(name)` | `{ value, enabled }[]` for a discriminated union's key. |
-| `usePredicate(predicate)`              | `ComputedRef<boolean \| undefined>`                     |
-| `useDynzFormContext()`                 | The provided context.                                   |
+| Composable                | Returns                                                                       |
+| ------------------------- | ----------------------------------------------------------------------------- |
+| `useDynzField(name)`      | Value, error, touched state and the field's conditions.                       |
+| `useIsRequired(name)`     | `ComputedRef<boolean \| undefined>`                                           |
+| `useIsIncluded(name)`     | `ComputedRef<boolean \| undefined>`                                           |
+| `useIsMutable(name)`      | `ComputedRef<boolean \| undefined>`                                           |
+| `useOptions(name)`        | `{ value, enabled }[]` for an options schema, or a discriminated union's key. |
+| `usePredicate(predicate)` | `ComputedRef<boolean \| undefined>`                                           |
+| `useDynzFormContext()`    | The provided context.                                                         |
 
 All of these accept a plain string, a `ref`, or a getter, so the field name itself may be reactive. `useIsRequired`, `useIsIncluded` and `useIsMutable` also accept an array of names and then return an array of results.
 

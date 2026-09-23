@@ -34,12 +34,10 @@ since noticing that flip is what the watch is for. `getConditionDependencies` an
 `useConditionalProperty` now use it, fixing watches that previously missed a condition
 declared solely on a non-first variant.
 
-`useDynzField`, `useOptions`, `useDiscriminatedUnionKeyValues` and `getOptions` now
-resolve against live values, so a field inside a union sees its own variant's schema.
+`useDynzField`, `useOptions` and `getOptions` now resolve against live values, so a field inside a union sees its own variant's schema.
 
 Resolving against values also means the resolved schema is a function of the union's
-discriminator, so the react-hook-form hooks now watch it. `useOptions` and
-`useDiscriminatedUnionKeyValues` previously had no such watch and would render the
-outgoing variant's options after a variant switch; `useDynzField` was already covered by
+discriminator, so the react-hook-form hooks now watch it. `useOptions` previously had no
+such watch and would render the outgoing variant's options after a variant switch; `useDynzField` was already covered by
 the `included`/`required`/`mutable` watches. The Vue composables track it automatically
 through `computed`.
