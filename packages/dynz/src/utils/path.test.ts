@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ensureAbsolutePath } from "./path";
+import { ensureAbsolutePath, toPathSegments } from "./path";
 
 describe("ensureAbsolutePath", () => {
   describe("absolute path handling", () => {
@@ -172,5 +172,23 @@ describe("ensureAbsolutePath", () => {
 
       expect(result).toBe("$.user.first-name");
     });
+  });
+});
+
+describe("toPathSegments", () => {
+  it("returns an empty list for the root", () => {
+    expect(toPathSegments("$")).toEqual([]);
+  });
+
+  it("splits object keys", () => {
+    expect(toPathSegments("$.address.zip")).toEqual(["address", "zip"]);
+  });
+
+  it("turns bracketed array indices into numbers", () => {
+    expect(toPathSegments("$.tags.[1].name")).toEqual(["tags", 1, "name"]);
+  });
+
+  it("keeps numeric object keys as strings", () => {
+    expect(toPathSegments("$.byId.42")).toEqual(["byId", "42"]);
   });
 });

@@ -8,6 +8,8 @@ import {
   type MinEntriesRule,
   type Rule,
 } from "../../rules";
+import { withStandard } from "../../standard/standard";
+import type { StandardProps } from "../../standard/types";
 import type { JsonRecord, SchemaMeta, SchemaValuesInternal } from "../../types";
 import { type Schema, SchemaType } from "../../types";
 import { type ToParam, toParamaterValue } from "../shared";
@@ -69,6 +71,8 @@ export type ObjectFluent<TFields extends Record<string, Schema>, TRules extends 
   /** Accumulated validation rules for this object */
   readonly rules: TRules;
 } & TProps & {
+    /** Standard Schema interface (https://standardschema.dev) */
+    readonly "~standard": StandardProps<ObjectFluent<TFields, TRules, TProps>>;
     // — Rule methods —
     /** Sets minimum number of entries (for dynamic objects). @param min - Minimum entry count. @param code - Optional error code */
     minEntries: <P extends ParamaterValue<number> | number>(
@@ -149,7 +153,7 @@ function createFluent<TFields extends Record<string, Schema>, TRules extends Rul
   const setProp = <K extends string, V>(key: K, value: V): ObjectFluent<TFields, TRules, TProps & Record<K, V>> =>
     createFluent(fields, rules, { ...props, [key]: value } as TProps & Record<K, V>);
 
-  return {
+  return withStandard({
     type: SchemaType.OBJECT,
     fields,
     rules,
@@ -186,7 +190,7 @@ function createFluent<TFields extends Record<string, Schema>, TRules extends Rul
     setUi: <TUI extends JsonRecord>(config: TUI) => setProp("ui", config),
     setMeta: <M extends SchemaMeta>(meta: M) => setProp("meta", { ...(props as { meta?: SchemaMeta }).meta, ...meta }),
     describe: (description: string) => setProp("meta", { ...(props as { meta?: SchemaMeta }).meta, description }),
-  } as ObjectFluent<TFields, TRules, TProps>;
+  } as ObjectFluent<TFields, TRules, TProps>);
 }
 
 // ---------------------------------------------------------------------------

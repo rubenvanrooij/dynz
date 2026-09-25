@@ -12,6 +12,8 @@ import {
   type OneOfRule,
   type Rule,
 } from "../../rules";
+import { withStandard } from "../../standard/standard";
+import type { StandardProps } from "../../standard/types";
 import type { JsonRecord, SchemaMeta } from "../../types";
 import { SchemaType } from "../../types";
 import { type ToParam, toParamaterValue } from "../shared";
@@ -70,6 +72,8 @@ export type OptionsFluent<TOptions extends OptionsValue, TRules extends Rule[], 
   /** Accumulated validation rules for this options field */
   readonly rules: TRules;
 } & TProps & {
+    /** Standard Schema interface (https://standardschema.dev) */
+    readonly "~standard": StandardProps<OptionsFluent<TOptions, TRules, TProps>>;
     // — Rule methods —
     /** Validates selected option equals a specific value. @param value - Expected value. @param code - Optional error code */
     equals: <P extends ParamaterValue | string | number | boolean>(
@@ -162,7 +166,7 @@ function createFluent<TOptions extends OptionsValue, TRules extends Rule[], TPro
   const setProp = <K extends string, V>(key: K, value: V): OptionsFluent<TOptions, TRules, TProps & Record<K, V>> =>
     createFluent(opts, rules, { ...props, [key]: value } as TProps & Record<K, V>);
 
-  return {
+  return withStandard({
     type: SchemaType.OPTIONS,
     options: opts,
     rules,
@@ -202,7 +206,7 @@ function createFluent<TOptions extends OptionsValue, TRules extends Rule[], TPro
     setUi: <TUI extends JsonRecord>(config: TUI) => setProp("ui", config),
     setMeta: <M extends SchemaMeta>(meta: M) => setProp("meta", { ...(props as { meta?: SchemaMeta }).meta, ...meta }),
     describe: (description: string) => setProp("meta", { ...(props as { meta?: SchemaMeta }).meta, description }),
-  } as OptionsFluent<TOptions, TRules, TProps>;
+  } as OptionsFluent<TOptions, TRules, TProps>);
 }
 
 // ---------------------------------------------------------------------------

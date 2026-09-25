@@ -8,6 +8,8 @@ import {
   type NotEqualsRule,
   type Rule,
 } from "../../rules";
+import { withStandard } from "../../standard/standard";
+import type { StandardProps } from "../../standard/types";
 import type { JsonRecord, SchemaMeta } from "../../types";
 import { SchemaType } from "../../types";
 import { type ToParam, toParamaterValue } from "../shared";
@@ -50,6 +52,8 @@ export type BoolFluent<TRules extends Rule[], TProps> = {
   /** Accumulated validation rules for this boolean */
   readonly rules: TRules;
 } & TProps & {
+    /** Standard Schema interface (https://standardschema.dev) */
+    readonly "~standard": StandardProps<BoolFluent<TRules, TProps>>;
     // — Rule methods —
     /** Validates boolean equals a specific value. @param value - Expected value (true/false). @param code - Optional error code */
     equals: <P extends ParamaterValue<boolean> | boolean>(
@@ -122,7 +126,7 @@ function createFluent<TRules extends Rule[], TProps>(rules: TRules, props: TProp
   const setProp = <K extends string, V>(key: K, value: V): BoolFluent<TRules, TProps & Record<K, V>> =>
     createFluent(rules, { ...props, [key]: value } as TProps & Record<K, V>);
 
-  return {
+  return withStandard({
     type: SchemaType.BOOLEAN,
     rules,
     ...props,
@@ -156,7 +160,7 @@ function createFluent<TRules extends Rule[], TProps>(rules: TRules, props: TProp
     setUi: <TUI extends JsonRecord>(config: TUI) => setProp("ui", config),
     setMeta: <M extends SchemaMeta>(meta: M) => setProp("meta", { ...(props as { meta?: SchemaMeta }).meta, ...meta }),
     describe: (description: string) => setProp("meta", { ...(props as { meta?: SchemaMeta }).meta, description }),
-  } as BoolFluent<TRules, TProps>;
+  } as BoolFluent<TRules, TProps>);
 }
 
 // ---------------------------------------------------------------------------
