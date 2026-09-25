@@ -12,6 +12,8 @@ import {
   type NotIncludesRule,
   type Rule,
 } from "../../rules";
+import { withStandard } from "../../standard/standard";
+import type { StandardProps } from "../../standard/types";
 import type { JsonRecord, SchemaMeta, SchemaValuesInternal } from "../../types";
 import { type Schema, SchemaType } from "../../types";
 import { type ToParam, toParamaterValue } from "../shared";
@@ -69,6 +71,8 @@ export type ArrayFluent<TSchema extends Schema, TRules extends Rule[], TProps> =
   /** Accumulated validation rules for this array */
   readonly rules: TRules;
 } & TProps & {
+    /** Standard Schema interface (https://standardschema.dev) */
+    readonly "~standard": StandardProps<ArrayFluent<TSchema, TRules, TProps>>;
     // — Rule methods —
     /** Sets minimum array length. @param min - Minimum number of items. @param code - Optional error code */
     min: <P extends ParamaterValue<number> | number>(
@@ -163,7 +167,7 @@ function createFluent<TSchema extends Schema, TRules extends Rule[], TProps>(
   const setProp = <K extends string, V>(key: K, value: V): ArrayFluent<TSchema, TRules, TProps & Record<K, V>> =>
     createFluent(schema, rules, { ...props, [key]: value } as TProps & Record<K, V>);
 
-  return {
+  return withStandard({
     type: SchemaType.ARRAY,
     schema,
     rules,
@@ -205,7 +209,7 @@ function createFluent<TSchema extends Schema, TRules extends Rule[], TProps>(
     setUi: <TUI extends JsonRecord>(config: TUI) => setProp("ui", config),
     setMeta: <M extends SchemaMeta>(meta: M) => setProp("meta", { ...(props as { meta?: SchemaMeta }).meta, ...meta }),
     describe: (description: string) => setProp("meta", { ...(props as { meta?: SchemaMeta }).meta, description }),
-  } as ArrayFluent<TSchema, TRules, TProps>;
+  } as ArrayFluent<TSchema, TRules, TProps>);
 }
 
 // ---------------------------------------------------------------------------
