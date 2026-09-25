@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { and, eq, gt, gte, isIn, isNotIn, lt, lte, matches, neq, or, v } from "../functions";
 import { ref } from "../reference";
-import { object, string } from "../schemas";
+import { discriminatedUnion, object, string } from "../schemas";
 import { getConditionDependencies, getRulesDependenciesMap } from "./get-condition-dependencies";
 
 // Root schema containing all fields referenced in getConditionDependencies tests
@@ -257,5 +257,41 @@ describe("getRulesDependenciesMap", () => {
         },
       });
     });
+  });
+});
+
+describe("getConditionDependencies with discriminated unions", () => {
+  // Both members declare `amount`, each gated by a different field. A ref() into it has
+  // nothing to narrow with, so the dependency set has to cover both branches — the watch
+  // must fire on the very flip that changes which branch applies.
+  const schema = object({
+    hasProject: string(),
+    hasReceipt: string(),
+    threshold: string(),
+    expense: discriminatedUnion("kind", [
+      { kind: "hours", amount: string().setIncluded(eq(ref("$.hasProject"), "yes")) },
+      { kind: "money", amount: string().setIncluded(eq(ref("$.hasReceipt"), "yes")) },
+    ]),
+  });
+
+  it("should collect the dependencies of every member, not just the first", () => {
+    const dependencies = getConditionDependencies(eq(ref("$.expense.amount"), "10"), "$.threshold", schema);
+
+    expect(dependencies).toContain("$.expense.amount");
+    expect(dependencies).toContain("$.hasProject");
+    expect(dependencies).toContain("$.hasReceipt");
+  });
+
+  it("should list the referenced path itself first", () => {
+    // toContain alone would still pass if the ref's own path were dropped, so pin the position.
+    const dependencies = getConditionDependencies(eq(ref("$.expense.amount"), "10"), "$.threshold", schema);
+
+    expect(dependencies[0]).toBe("$.expense.amount");
+  });
+
+  it("should not report a dependency twice", () => {
+    const dependencies = getConditionDependencies(eq(ref("$.expense.amount"), "10"), "$.threshold", schema);
+
+    expect(dependencies).toEqual([...new Set(dependencies)]);
   });
 });

@@ -38,12 +38,13 @@ export type UseDynzFieldReturn = {
  * ```
  */
 export function useDynzField(name: string): UseDynzFieldReturn {
-  const { control, schema: rootSchema, getDependencies } = useDynzFormContext();
+  "use no memo";
+  const { control, schema: rootSchema, getDependencies, getValues } = useDynzFormContext();
 
   const included = useIsIncluded(name);
   const required = useIsRequired(name);
   const mutable = useIsMutable(name);
-  const schema = findSchemaByPath(ensureAbsolutePath(name, "$"), rootSchema);
+  const schema = findSchemaByPath(ensureAbsolutePath(name, "$"), rootSchema, { values: getValues() });
 
   const dependencies = getDependencies(name);
   const { field, fieldState, formState } = useController({

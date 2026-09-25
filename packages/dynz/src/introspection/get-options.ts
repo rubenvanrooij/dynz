@@ -37,7 +37,7 @@ export function getOptions<T extends Schema>(
   values: unknown
 ): Array<{ enabled: boolean; value: string | number | boolean }> {
   const path = ensureAbsolutePath(name, "$");
-  const optionsSchema = findSchemaByPath<OptionsSchema>(path, schema, SchemaType.OPTIONS);
+  const optionsSchema = findSchemaByPath<OptionsSchema>(path, schema, SchemaType.OPTIONS, values);
   return getOptionsForSchema(optionsSchema, path, schema, values);
 }
 

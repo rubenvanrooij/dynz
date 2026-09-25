@@ -2,7 +2,7 @@ import type { ParamaterValue, Predicate, Transformer } from "../functions";
 import { isReference } from "../reference";
 import type { Rule } from "../rules";
 import { type Schema, SchemaType } from "../types";
-import { ensureAbsolutePath, findSchemaByPath } from "../utils";
+import { ensureAbsolutePath, findPossibleSchemasByPath } from "../utils";
 import type { RulesDependencyMap } from "./types";
 
 /**
@@ -62,13 +62,15 @@ export function getParamaterDependencies(param: ParamaterValue, path: string, sc
   if (isReference(param)) {
     const referencePath = ensureAbsolutePath(param.path, path);
 
-    const inner = findSchemaByPath(referencePath, schema);
+    const dependencies = findPossibleSchemasByPath(referencePath, schema).reduce<string[]>((acc, inner) => {
+      if (inner.included !== undefined && typeof inner.included !== "boolean") {
+        acc.push(...getConditionDependencies(inner.included, referencePath, schema));
+      }
 
-    if (inner.included !== undefined && typeof inner.included !== "boolean") {
-      return [referencePath, ...getConditionDependencies(inner.included, referencePath, schema)];
-    }
+      return acc;
+    }, []);
 
-    return [referencePath];
+    return [...new Set([referencePath, ...dependencies])];
   }
 
   if (param === undefined || param.type === "st") {

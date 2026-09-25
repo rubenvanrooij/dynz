@@ -1,4 +1,4 @@
-import { useDiscriminatedUnionKeyValues } from "@dynz/react-hook-form";
+import { useOptions } from "@dynz/react-hook-form";
 import { FormControl } from "../ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { DynzFormField } from "./dynz-form-field";
@@ -10,8 +10,8 @@ export type DynzSelectProps = {
 };
 
 export function DynzUnionKey({ name }: DynzSelectProps) {
-  // Get options from schema if not provided via props
-  const options = useDiscriminatedUnionKeyValues(name);
+  // A discriminator resolves to an options schema of every member's value
+  const options = useOptions(name);
   const translations = useFieldTranslations(name);
 
   return (

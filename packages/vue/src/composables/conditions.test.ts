@@ -2,7 +2,6 @@ import { discriminatedUnion, eq, neq, object, options, ref, string } from "dynz"
 import { describe, expect, it } from "vitest";
 import { mountComposable } from "../testing/mount-composable";
 import { mountDynzForm } from "../testing/mount-form";
-import { useDiscriminatedUnionKeyValues } from "./use-discriminated-union-key-values";
 import { useIsIncluded } from "./use-is-included";
 import { useIsMutable } from "./use-is-mutable";
 import { useIsRequired } from "./use-is-required";
@@ -172,7 +171,7 @@ describe("discriminated unions", () => {
   });
 
   it("lists the discriminator values", () => {
-    const { result } = mountDynzForm({ schema: unionSchema }, () => useDiscriminatedUnionKeyValues("contactDetails"));
+    const { result } = mountDynzForm({ schema: unionSchema }, () => useOptions("contactDetails.type"));
 
     expect(result.value).toEqual([
       { value: "email", enabled: true },

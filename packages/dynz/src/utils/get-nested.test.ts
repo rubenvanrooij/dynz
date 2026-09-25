@@ -277,7 +277,7 @@ describe("getNested", () => {
 
       const result = getNested("$.contact.type", schema, value);
 
-      expect(result).toEqual({ schema: contactSchema, value: "email" });
+      expect(result).toEqual({ schema: { type: SchemaType.OPTIONS, options: ["email", "phone"] }, value: "email" });
     });
 
     it("resolves a real member field's own value, not the whole union object", () => {
@@ -306,7 +306,7 @@ describe("getNested", () => {
 
       const result = getNested("$.contact.type", schema, {});
 
-      expect(result).toEqual({ schema: defaultedContact, value: "email" });
+      expect(result).toEqual({ schema: { type: SchemaType.OPTIONS, options: ["email", "phone"] }, value: "email" });
     });
 
     it("falls back to a member field's own default when the union is present but that field is absent", () => {

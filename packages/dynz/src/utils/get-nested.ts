@@ -1,6 +1,7 @@
 import { type Schema, SchemaType } from "../types";
 import { isObject } from "../validate/validate-type";
 import { coerceSchema } from "./coerce";
+import { discriminantSchema } from "./discriminant-schema";
 import { withDefault } from "./with-default";
 
 export function getNested<T extends Schema>(
@@ -59,11 +60,12 @@ export function getNested<T extends Schema>(
           // member would never resolve.
           const resolvedValue = withDefault(acc.schema, acc.value);
 
-          // if the key is referenced return the schema of the union type
+          // the discriminator has no schema of its own, so synthesise one listing every
+          // member's discriminator value
           if (cur === acc.schema.key) {
             return {
               value: isObject(resolvedValue) ? resolvedValue[acc.schema.key] : undefined,
-              schema: acc.schema,
+              schema: discriminantSchema(acc.schema),
             };
           }
 

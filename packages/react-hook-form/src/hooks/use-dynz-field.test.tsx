@@ -1,5 +1,5 @@
 import { act, cleanup, renderHook } from "@testing-library/react";
-import { boolean, eq, object, options, ref, string } from "dynz";
+import { array, boolean, discriminatedUnion, eq, number, object, options, ref, string } from "dynz";
 import type { ReactNode } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import { afterEach, describe, expect, it } from "vitest";
@@ -82,5 +82,59 @@ describe("useDynzField", () => {
     }
 
     expect(() => renderHook(() => useDynzField("companyName"), { wrapper: Wrapper })).toThrow(/dynz/i);
+  });
+});
+
+describe("useDynzField with an array of discriminated unions", () => {
+  // Both variants declare `amount` with different schemas — the shape that resolved to
+  // whichever variant happened to be declared first.
+  const expenseSchema = object({
+    items: array(
+      discriminatedUnion("kind", [
+        { kind: "hours", amount: number() },
+        { kind: "money", amount: string() },
+      ])
+    ),
+  });
+
+  const values = {
+    items: [
+      { kind: "money" as const, amount: "10" },
+      { kind: "hours" as const, amount: 2 },
+    ],
+  };
+
+  it("resolves each element against its own variant", () => {
+    const { result: first } = renderDynzHook(expenseSchema, values, () => useDynzField("items.0.amount"));
+    const { result: second } = renderDynzHook(expenseSchema, values, () => useDynzField("items.1.amount"));
+
+    expect(first.current.schema.type).toBe("string");
+    expect(second.current.schema.type).toBe("number");
+  });
+
+  it("resolves via the schema's own default when the document omits the discriminator", () => {
+    // useDynzForm does not seed react-hook-form's defaultValues from schema defaults, so
+    // getValues() genuinely has no discriminator here — the withDefault threading inside
+    // findSchemaByPath is the only thing that resolves this.
+    const defaulted = object({
+      expense: discriminatedUnion("kind", [
+        { kind: "hours", amount: number() },
+        { kind: "money", amount: string() },
+      ]).setDefault({ kind: "money" }),
+    });
+
+    const { result } = renderDynzHook(defaulted, {}, () => useDynzField("expense.amount"));
+
+    expect(result.current.schema.type).toBe("string");
+  });
+
+  it("follows the discriminator when it changes", () => {
+    const { result, form } = renderDynzHook(expenseSchema, values, () => useDynzField("items.0.amount"));
+
+    expect(result.current.schema.type).toBe("string");
+
+    act(() => form.setValue("items.0.kind", "hours"));
+
+    expect(result.current.schema.type).toBe("number");
   });
 });
