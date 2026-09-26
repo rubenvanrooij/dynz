@@ -43,7 +43,7 @@ const schema = object({
   studentInstitution: string()
     .min(1, "required")
     .setIncluded(eq(ref("professionalLevel"), v("Student"))),
-}).setPrivate(false);
+});
 
 console.log(JSON.stringify(schema));
 

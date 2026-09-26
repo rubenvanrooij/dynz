@@ -1,4 +1,4 @@
-import { array, boolean, eq, number, object, ref, string } from "dynz";
+import { array, boolean, eq, maskPrivateValues, number, object, ref, string, toFormValues } from "dynz";
 import type { TypedSchema } from "vee-validate";
 import { describe, expect, expectTypeOf, it } from "vitest";
 import { dynzTypedSchema } from "./dynz-typed-schema";
@@ -121,5 +121,24 @@ describe("dynzTypedSchema — describe", () => {
 
   it("reports unknown paths as non-existent instead of throwing", () => {
     expect(dynzTypedSchema(schema).describe("nope")).toEqual({ required: false, exists: false });
+  });
+});
+
+describe("dynzTypedSchema — private fields", () => {
+  const schema = object({ name: string(), pin: number().setPrivate(true).min(1000) });
+  const payload = maskPrivateValues(schema, { name: "Ada", pin: 1234 });
+  const form = toFormValues(schema, payload) as { name: string; pin: unknown };
+
+  it("submits an untouched private field as its mask marker without validating it", async () => {
+    const result = await dynzTypedSchema(schema, payload).parse(form as never);
+
+    expect(result.errors).toEqual([]);
+    expect(result.value).toEqual({ name: "Ada", pin: { state: "masked", value: "***" } });
+  });
+
+  it("validates an edited private field", async () => {
+    const result = await dynzTypedSchema(schema, payload).parse({ ...form, pin: 12 } as never);
+
+    expect(result.errors).toEqual([{ path: "pin", errors: [expect.any(String)] }]);
   });
 });

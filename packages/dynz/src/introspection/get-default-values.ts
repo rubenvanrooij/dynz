@@ -27,8 +27,6 @@ import type { DeepPartial } from "./types";
  * - A partial object/union default is used as-is, not merged with deeper
  *   per-field defaults — same one-shot `withDefault` resolution as
  *   `validate()`, without its recursive repair for a single position.
- * - A private field's default comes back unwrapped (plain value, not
- *   `{ state, value }`) — wrap it yourself if feeding it back into `validate()`.
  */
 export function getDefaultValues<T extends Schema>(schema: T): DeepPartial<SchemaValues<T>> {
   return resolveDefaultShape(schema) as DeepPartial<SchemaValues<T>>;

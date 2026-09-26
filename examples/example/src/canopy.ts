@@ -83,8 +83,8 @@ export const canopySchema = object({
     sideScreenStyle: options(["fixed", "retractable", "louvred"])
       .setDefault("fixed")
       .setIncluded(and(gte(ref("$.height"), v(2.5)), eq(ref("$.addons.sideScreens"), v(true)))),
-  }).setPrivate(false),
-}).setPrivate(false);
+  }),
+});
 
 export function runCanopyDemo() {
   // Example: a wide canopy with most addons unlocked.

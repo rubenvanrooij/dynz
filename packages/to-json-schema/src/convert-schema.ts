@@ -1,4 +1,4 @@
-import { type OptionsValue, type Schema, type SchemaMeta, SchemaType } from "dynz";
+import { isPrivateSchema, type OptionsValue, type Schema, type SchemaMeta, SchemaType } from "dynz";
 import { applyRules } from "./convert-rules";
 import { reportIssue } from "./report-issue";
 import type { ConversionContext, JsonSchema } from "./types";
@@ -117,7 +117,8 @@ function shouldOmitField(schema: Schema, context: ConversionContext): boolean {
 }
 
 function applyPrivacyWrapper(schema: Schema, innerSchema: JsonSchema, context: ConversionContext): JsonSchema {
-  if (schema.private !== true) {
+  // Validated output is always plain; only input may arrive wrapped or masked.
+  if (!isPrivateSchema(schema) || context.mode !== "input") {
     return innerSchema;
   }
 
@@ -141,7 +142,8 @@ function applyPrivacyWrapper(schema: Schema, innerSchema: JsonSchema, context: C
     masked.additionalProperties = false;
   }
 
-  return { [context.unionKeyword]: [plain, masked] };
+  // A raw value is accepted too, and treated as plain.
+  return { [context.unionKeyword]: [innerSchema, plain, masked] };
 }
 
 function applyDefault(schema: Schema, jsonSchema: JsonSchema): void {

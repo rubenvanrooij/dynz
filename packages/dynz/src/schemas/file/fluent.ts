@@ -10,7 +10,7 @@ import {
   type MinSizeRule,
   type Rule,
 } from "../../rules";
-import type { JsonRecord, SchemaMeta } from "../../types";
+import type { JsonRecord, PrivateConfig, SchemaMeta } from "../../types";
 import { SchemaType } from "../../types";
 import { type ToParam, toParamaterValue } from "../shared";
 
@@ -86,8 +86,8 @@ export type FileFluent<TRules extends Rule[], TProps> = {
     setMutable: <P extends boolean | Predicate>(value: P) => FileFluent<TRules, TProps & { mutable: P }>;
     /** Controls if field is included in output. @param value - Boolean or predicate */
     setIncluded: <P extends boolean | Predicate>(value: P) => FileFluent<TRules, TProps & { included: P }>;
-    /** Marks field as private (masked in output). @param value - Boolean flag */
-    setPrivate: <P extends boolean>(value: P) => FileFluent<TRules, TProps & { private: P }>;
+    /** Marks field as private: masked when sent to a client (see `maskPrivateValues`). @param value - `true` for the default mask, or `{ mask: name }` for a named masker */
+    setPrivate: <const P extends PrivateConfig>(value: P) => FileFluent<TRules, TProps & { private: P }>;
     /** Attaches UI metadata for form rendering. @param config - UI configuration object */
     setUi: <TUI extends JsonRecord>(config: TUI) => FileFluent<TRules, TProps & { ui: TUI }>;
     setMeta: <M extends SchemaMeta>(meta: M) => FileFluent<TRules, TProps & { meta: M }>;
@@ -149,7 +149,7 @@ function createFluent<TRules extends Rule[], TProps>(rules: TRules, props: TProp
     optional: () => setProp("required", false as false),
     setMutable: <P extends boolean | Predicate>(value: P) => setProp("mutable", value),
     setIncluded: <P extends boolean | Predicate>(value: P) => setProp("included", value),
-    setPrivate: <P extends boolean>(value: P) => setProp("private", value),
+    setPrivate: <const P extends PrivateConfig>(value: P) => setProp("private", value),
     setUi: <TUI extends JsonRecord>(config: TUI) => setProp("ui", config),
     setMeta: <M extends SchemaMeta>(meta: M) => setProp("meta", { ...(props as { meta?: SchemaMeta }).meta, ...meta }),
     describe: (description: string) => setProp("meta", { ...(props as { meta?: SchemaMeta }).meta, description }),

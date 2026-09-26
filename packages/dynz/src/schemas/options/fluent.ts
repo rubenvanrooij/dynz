@@ -12,7 +12,7 @@ import {
   type OneOfRule,
   type Rule,
 } from "../../rules";
-import type { JsonRecord, SchemaMeta } from "../../types";
+import type { JsonRecord, PrivateConfig, SchemaMeta } from "../../types";
 import { SchemaType } from "../../types";
 import { type ToParam, toParamaterValue } from "../shared";
 import type { OptionsValue } from "./types";
@@ -108,8 +108,8 @@ export type OptionsFluent<TOptions extends OptionsValue, TRules extends Rule[], 
     setMutable: <P extends boolean | Predicate>(value: P) => OptionsFluent<TOptions, TRules, TProps & { mutable: P }>;
     /** Controls if field is included in output. @param value - Boolean or predicate */
     setIncluded: <P extends boolean | Predicate>(value: P) => OptionsFluent<TOptions, TRules, TProps & { included: P }>;
-    /** Marks field as private (masked in output). @param value - Boolean flag */
-    setPrivate: <P extends boolean>(value: P) => OptionsFluent<TOptions, TRules, TProps & { private: P }>;
+    /** Marks field as private: masked when sent to a client (see `maskPrivateValues`). @param value - `true` for the default mask, or `{ mask: name }` for a named masker */
+    setPrivate: <const P extends PrivateConfig>(value: P) => OptionsFluent<TOptions, TRules, TProps & { private: P }>;
     /** Enables automatic type coercion. @param value - Boolean flag */
     setCoerce: <P extends boolean>(value: P) => OptionsFluent<TOptions, TRules, TProps & { coerce: P }>;
     /**
@@ -196,7 +196,7 @@ function createFluent<TOptions extends OptionsValue, TRules extends Rule[], TPro
     optional: () => setProp("required", false as false),
     setMutable: <P extends boolean | Predicate>(value: P) => setProp("mutable", value),
     setIncluded: <P extends boolean | Predicate>(value: P) => setProp("included", value),
-    setPrivate: <P extends boolean>(value: P) => setProp("private", value),
+    setPrivate: <const P extends PrivateConfig>(value: P) => setProp("private", value),
     setCoerce: <P extends boolean>(value: P) => setProp("coerce", value),
     setDefault: <V extends TOptions[number]>(value: V) => setProp("default", value),
     setUi: <TUI extends JsonRecord>(config: TUI) => setProp("ui", config),

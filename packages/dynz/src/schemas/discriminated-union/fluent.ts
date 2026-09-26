@@ -37,7 +37,6 @@ export type DiscriminatedUnionFluent<
     setIncluded: <P extends boolean | Predicate>(
       value: P
     ) => DiscriminatedUnionFluent<TKey, TSchemas, TProps & { included: P }>;
-    setPrivate: <P extends boolean>(value: P) => DiscriminatedUnionFluent<TKey, TSchemas, TProps & { private: P }>;
     /**
      * Sets a default value used whenever the union itself is left empty. The
      * discriminator must be set — it's what picks which member applies — but every
@@ -71,7 +70,6 @@ function createFluent<TKey extends string, TMembers extends SchemaMember[], TPro
     optional: () => setProp("required", false as false),
     setMutable: <P extends boolean | Predicate>(v: P) => setProp("mutable", v),
     setIncluded: <P extends boolean | Predicate>(v: P) => setProp("included", v),
-    setPrivate: <P extends boolean>(v: P) => setProp("private", v),
     setDefault: <V extends DiscriminatedUnionDefaultValue<TKey, TMembers[number]>>(v: V) => setProp("default", v),
     setUi: <TUI extends JsonRecord>(config: TUI) => setProp("ui", config),
     setMeta: <M extends SchemaMeta>(meta: M) => setProp("meta", { ...(props as { meta?: SchemaMeta }).meta, ...meta }),

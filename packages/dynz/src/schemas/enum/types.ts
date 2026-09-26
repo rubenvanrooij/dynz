@@ -1,5 +1,5 @@
 import type { Rule } from "../../rules";
-import type { BaseSchema, SchemaType } from "../../types";
+import type { BaseSchema, PrivateSchema, SchemaType } from "../../types";
 
 /**
  * Enum interface.
@@ -37,6 +37,7 @@ export type EnumValues<TEnum extends Enum = Enum> = {
 /**
  * Enum schema interface
  */
-export type EnumSchema<T extends Enum = Enum> = BaseSchema<EnumValues<T>, typeof SchemaType.ENUM, Rule[]> & {
-  enum: T;
-};
+export type EnumSchema<T extends Enum = Enum> = BaseSchema<EnumValues<T>, typeof SchemaType.ENUM, Rule[]> &
+  PrivateSchema & {
+    enum: T;
+  };

@@ -1,7 +1,7 @@
 import type { Predicate } from "../../functions";
 import type { Rule } from "../../rules";
 import type { Unpacked } from "./../../types";
-import type { BaseSchema, SchemaType } from "../../types";
+import type { BaseSchema, PrivateSchema, SchemaType } from "../../types";
 
 export type DynamicOptionValue = { enabled: Predicate | boolean; value: string | number | boolean };
 export type OptionValue = string | number | boolean | DynamicOptionValue;
@@ -14,6 +14,7 @@ export type OptionsSchema<TOptions extends OptionsValue = OptionsValue> = BaseSc
   Unpacked<TOptions>,
   typeof SchemaType.OPTIONS,
   Rule[]
-> & {
-  options: TOptions;
-};
+> &
+  PrivateSchema & {
+    options: TOptions;
+  };

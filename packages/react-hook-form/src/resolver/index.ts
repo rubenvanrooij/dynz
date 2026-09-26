@@ -1,5 +1,13 @@
 import { toNestErrors, validateFieldsNatively } from "@hookform/resolvers";
-import { type ErrorMessage, type ObjectSchema, type SchemaValues, type ValidateOptions, validate } from "dynz";
+import {
+  type ErrorMessage,
+  type ObjectSchema,
+  type SchemaInput,
+  type SchemaValues,
+  toSubmitValues,
+  type ValidateOptions,
+  validate,
+} from "dynz";
 import { appendErrors, type FieldError, type FieldValues, type Resolver } from "react-hook-form";
 
 export type MessageTransformerFunc = (errorMessage: ErrorMessage) => string;
@@ -40,9 +48,14 @@ function parseDynzErrors(
   return errors;
 }
 
+/**
+ * @param currentValues the values the form was loaded with. On the client this is the
+ * masked payload from `maskPrivateValues`: untouched private fields are submitted as
+ * their mask marker and skipped, edited ones are validated and submitted as plain.
+ */
 export function dynzResolver<T extends ObjectSchema<never>, O extends SchemaValues<T>, I extends FieldValues, C>(
   schema: T,
-  currentValues?: O,
+  currentValues?: SchemaInput<T>,
   schemaOptions?: ValidateOptions,
   resolverOptions: {
     messageTransformer?: MessageTransformerFunc;
@@ -51,8 +64,9 @@ export function dynzResolver<T extends ObjectSchema<never>, O extends SchemaValu
   } = {}
 ): Resolver<I, C, O> {
   return async (values, _, options) => {
-    // @ts-expect-error -- cast to unknown
-    const result = await validate(schema, currentValues as unknown, values, schemaOptions);
+    // Form state holds raw values; wrap private fields for submission.
+    const submitted = toSubmitValues(schema, values, currentValues);
+    const result = await validate(schema, currentValues as SchemaValues<T> | undefined, submitted, schemaOptions);
 
     options.shouldUseNativeValidation && validateFieldsNatively({}, options);
 

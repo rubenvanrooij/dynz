@@ -121,6 +121,29 @@ curl -s -X POST localhost:3000/api/claims -H 'content-type: application/json' \
 # → 422  { "ok": false, "errors": [ { "path": "$.employeeId", "code": "immutable", … } ] }
 ```
 
+## Private fields: `/payout`
+
+A second page shows private fields end to end:
+
+```
+GET  /api/payout-details   the schema + the stored record, private fields masked
+PUT  /api/payout-details   validated against the stored record, then persisted
+```
+
+`src/server/payout-schema.ts` marks the IBAN `setPrivate({ mask: "last4" })` and the BSN `setPrivate(true).setMutable(false)`. The masker functions stay on the server (`payoutMaskers`); the schema only names them, so it still crosses the wire as data.
+
+1. **GET**: `maskPrivateValues` masks the stored record, so the browser receives `{ state: "masked", value: "•••• 4300" }` and never the IBAN.
+2. **Form**: `useDynzForm({ schema, currentValues: payload })` puts the mask text in the input. Leave it alone and the resolver sends the mask marker back without validating it. Type a new IBAN and it is validated in the browser and sent as a plain value.
+3. **PUT**: `validate(payoutSchema, stored, body)` swaps the stored value back in for every mask marker, so `result.values` is the plain document to persist. Changing the frozen BSN is rejected, even though the browser never saw it. Errors never echo a private value back.
+
+```bash
+# untouched private fields: nothing changes
+curl -s -X PUT localhost:3000/api/payout-details -H 'content-type: application/json' \
+  -d '{"accountHolder":"Ada Lovelace","email":"ada@new.com",
+       "iban":{"state":"masked","value":"•••• 4300"},"bsn":{"state":"masked","value":"***"}}'
+# → { "ok": true, "changedPrivateFields": [], … }
+```
+
 ## Pinned versions
 
 `react`, `react-dom` and `react-hook-form` are pinned to exact versions here. `@dynz/react-hook-form` resolves its own `react-hook-form` peer in this workspace, and pnpm keys peer-resolved copies by React version — if the app and the integration end up on different copies there are two React contexts at runtime, and `useFormContext()` returns `null`.

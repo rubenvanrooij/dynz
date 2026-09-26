@@ -209,6 +209,43 @@ d.validate(schema, ["foo"], []); // Validates successfully, because an entry is 
 d.validate(schema, ["foo"], ["bar"]); // Returns an error since 'foo' is mutated into 'bar'
 ```
 
+### Private Fields
+
+Mark a sensitive leaf field (a password, IBAN or citizen number) as private and it never has to leave the server in plain text. The server sends a masked stand-in; the client sends the stand-in back if the user leaves the field alone, and dynz swaps the stored value back in during validation.
+
+```typescript
+import * as d from "dynz";
+
+const schema = d.object({
+  accountHolder: d.string(),
+  iban: d.string().setPrivate({ mask: "last4" }), // named masker
+  bsn: d.string().setPrivate(true).setMutable(false), // default mask "***"
+});
+
+// Server → client: mask the stored document
+const payload = d.maskPrivateValues(schema, stored, {
+  maskers: { last4: (value) => `•••• ${String(value).slice(-4)}` },
+});
+// { accountHolder: "Ada", iban: { state: "masked", value: "•••• 4300" }, bsn: { state: "masked", value: "***" } }
+
+// Client → server: validate against the stored document
+const result = await d.validate(schema, stored, submitted);
+// result.values is plain, with untouched fields resolved to their stored values: ready to persist
+```
+
+What can be submitted for a private field:
+
+| Submitted                   | Server (`currentValues` given)                                    | Client (no `currentValues`)    |
+| --------------------------- | ----------------------------------------------------------------- | ------------------------------ |
+| raw value or `plain(value)` | validated, returned unwrapped                                     | validated, returned unwrapped  |
+| `mask()` marker             | replaced by the stored value; `masked` error if nothing is stored | skipped, marker passed through |
+
+- `ref()`s and conditions see the plain value, including the stored value behind a mask.
+- Errors never contain a private field's submitted or stored value: `value`/`current` are cleared and the value is scrubbed from the message.
+- `SchemaValues<T>` is the plain output type; `SchemaInput<T>` is the submission type, where private fields may also be wrapped or masked.
+- `private` is only supported on leaf schemas, not on objects, arrays, discriminated unions or expressions.
+- For forms, `toFormValues(schema, payload)` turns masks into input text and `toSubmitValues(schema, formValues, payload)` turns it back. `@dynz/react-hook-form` and `@dynz/vue` do this for you.
+
 ### Field Inclusion
 
 Dynamically include or exclude fields:
@@ -517,7 +554,7 @@ Array schemas:
 - `.optional()` - Shorthand for `.setRequired(false)`
 - `.setMutable(value)` - Control field mutability (boolean or predicate)
 - `.setIncluded(value)` - Control field inclusion (boolean or predicate)
-- `.setPrivate(value)` - Mark as private/masked
+- `.setPrivate(true | { mask })` - Mark a leaf field as private (see [Private Fields](#private-fields))
 - `.setCoerce(value)` - Enable automatic type coercion
 - `.setDefault(value)` - Set default value
 

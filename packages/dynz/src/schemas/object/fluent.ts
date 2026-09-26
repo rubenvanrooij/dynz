@@ -97,8 +97,6 @@ export type ObjectFluent<TFields extends Record<string, Schema>, TRules extends 
     setMutable: <P extends boolean | Predicate>(value: P) => ObjectFluent<TFields, TRules, TProps & { mutable: P }>;
     /** Controls if field is included in output. @param value - Boolean or predicate */
     setIncluded: <P extends boolean | Predicate>(value: P) => ObjectFluent<TFields, TRules, TProps & { included: P }>;
-    /** Marks field as private (masked in output). @param value - Boolean flag */
-    setPrivate: <P extends boolean>(value: P) => ObjectFluent<TFields, TRules, TProps & { private: P }>;
     /**
      * Sets a default value used whenever the object is left empty. Continues through
      * completely normal validation afterward — every field's own default (if it has
@@ -181,7 +179,6 @@ function createFluent<TFields extends Record<string, Schema>, TRules extends Rul
     optional: () => setProp("required", false as false),
     setMutable: <P extends boolean | Predicate>(value: P) => setProp("mutable", value),
     setIncluded: <P extends boolean | Predicate>(value: P) => setProp("included", value),
-    setPrivate: <P extends boolean>(value: P) => setProp("private", value),
     setDefault: <V extends ObjectDefaultValue<TFields>>(value: V) => setProp("default", value),
     setUi: <TUI extends JsonRecord>(config: TUI) => setProp("ui", config),
     setMeta: <M extends SchemaMeta>(meta: M) => setProp("meta", { ...(props as { meta?: SchemaMeta }).meta, ...meta }),

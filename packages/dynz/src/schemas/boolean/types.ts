@@ -1,9 +1,10 @@
 import type { Rule } from "../../rules";
-import type { BaseSchema, SchemaType } from "../../types";
+import type { BaseSchema, PrivateSchema, SchemaType } from "../../types";
 
 /**
  * BOOLEAN SCHEMA
  */
-export type BooleanSchema = BaseSchema<boolean, typeof SchemaType.BOOLEAN, Rule[]> & {
-  coerce?: boolean;
-};
+export type BooleanSchema = BaseSchema<boolean, typeof SchemaType.BOOLEAN, Rule[]> &
+  PrivateSchema & {
+    coerce?: boolean;
+  };

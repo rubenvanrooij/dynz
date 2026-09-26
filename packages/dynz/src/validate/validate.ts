@@ -1,10 +1,11 @@
 import { resolveProperty, resolveRules } from "../conditions";
 import { resolve } from "../functions";
-import { isPivateValue, isValueMasked, type PrivateValue } from "../private";
+import { isPrivateSchema, resolvePrivateValues } from "../private";
 import { validateRule } from "../rules";
 import {
   type Context,
   ErrorCode,
+  type ErrorMessage,
   type Schema,
   SchemaType,
   type SchemaValues,
@@ -16,20 +17,51 @@ import {
 import { coerceSchema, withDefault } from "../utils";
 import { isArray, isObject, validateType } from "./validate-type";
 
-export function validate<T extends Schema>(
+export async function validate<T extends Schema>(
   schema: T,
   currentValues: SchemaValues<T> | undefined,
   newValues: unknown,
   options: ValidateOptions = {}
 ): Promise<ValidationResult<SchemaValues<T>>> {
-  return _validate(schema, { current: currentValues, new: newValues }, "$", {
+  // Private fields are unwrapped once, up front, so every reader below — rules, refs,
+  // conditions, mutability — works on plain values.
+  const resolved = resolvePrivateValues(schema, currentValues, newValues, currentValues !== undefined);
+
+  const result = await _validate(schema, { current: resolved.current, new: resolved.next }, "$", {
     type: "validate",
     schema,
     validateOptions: options,
     validateMutable: currentValues !== undefined,
-    currentValues: currentValues,
-    values: newValues,
-  }) as Promise<ValidationResult<SchemaValues<T>>>;
+    currentValues: resolved.current,
+    values: resolved.next,
+    privateMarks: Object.fromEntries(resolved.marks.map((mark) => [mark.path, mark])),
+  });
+
+  if (result.success) {
+    return result as ValidationResult<SchemaValues<T>>;
+  }
+
+  return {
+    success: false,
+    errors: result.errors.map((error) => (isPrivateSchema(error.schema) ? redactPrivateError(error) : error)),
+  };
+}
+
+/**
+ * Never echo a private field's submitted or stored value back in an error: not in
+ * `value`/`current`, and not inside a rule's message (e.g. "The value … does not match").
+ */
+function redactPrivateError(error: ErrorMessage): ErrorMessage {
+  const secrets = [error.value, error.current]
+    .filter((value) => value !== undefined && value !== null && String(value) !== "")
+    .map(String);
+
+  return {
+    ...error,
+    value: undefined,
+    current: undefined,
+    message: secrets.reduce((message, secret) => message.split(secret).join("***"), error.message),
+  };
 }
 
 export async function _validate<T extends Schema>(
@@ -80,11 +112,32 @@ export async function _validate<T extends Schema>(
     };
   }
 
-  // If the new value is masked; skip all validation and return the value immediately
-  if (isValueMasked(schema, values.new)) {
+  // A private field `resolvePrivateValues` could not turn into a plain value: either an
+  // untouched masked field with nothing to substitute (pass the marker on unvalidated),
+  // or a masked value submitted where nothing is stored.
+  const privateMark = context.privateMarks?.[path];
+
+  if (privateMark?.kind === "masked") {
     return {
       success: true,
-      values: values.new,
+      values: privateMark.marker,
+    };
+  }
+
+  if (privateMark?.kind === "missing") {
+    return {
+      success: false,
+      errors: [
+        {
+          path,
+          schema,
+          value: undefined,
+          current: undefined,
+          customCode: ErrorCode.MASKED,
+          code: ErrorCode.MASKED,
+          message: `A masked value was submitted for ${path}, but no stored value exists`,
+        },
+      ],
     };
   }
 
@@ -92,14 +145,14 @@ export async function _validate<T extends Schema>(
   // `required`, type checks, rules, and output — not just other fields' references
   // (see `withDefault`). Mutability check below still uses raw `values.current`/`new`
   // to distinguish "resubmitted same value" from "value was masked".
-  const newValue = coerceSchema(schema, withDefault(schema, getValue(schema, path, values.new)));
-  const currentValue = withDefault(schema, getValue(schema, path, values.current));
+  const newValue = coerceSchema(schema, withDefault(schema, values.new));
+  const currentValue = withDefault(schema, values.current);
 
   /**
    * if the schema is marked as not mutable; the value shuld still be the same
    */
   if (context.validateMutable && resolveProperty("mutable", path, true, context) === false) {
-    if (valueChanged(schema, path, values.current, values.new)) {
+    if (valueChanged(values.current, values.new)) {
       return {
         success: false,
         errors: [
@@ -423,49 +476,11 @@ export async function _validate<T extends Schema>(
 // }
 
 /**
- * Determines based on the schema and the current and new value whether the value has changed
- * @param schema
- * @param path
- * @param currentValue
- * @param newValue
- * @returns
+ * Whether a value has changed between the current and new document. Private values are
+ * already resolved to plain values by the time this runs.
  */
-function valueChanged<T>(
-  schema: Schema,
-  path: string,
-  currentValue: T | PrivateValue<T>,
-  newValue: T | PrivateValue<T>
-): boolean {
-  if (schema.private) {
-    if (!isPivateValue(currentValue) || !isPivateValue(newValue)) {
-      throw new Error(
-        `Expected private values for schema ${path}, but got: currentValue=${currentValue}, newValue=${newValue}`
-      );
-    }
-
-    return (
-      currentValue.state === "plain" &&
-      newValue.state === "plain" &&
-      JSON.stringify(currentValue.value) !== JSON.stringify(newValue.value)
-    );
-  }
-
+function valueChanged(currentValue: unknown, newValue: unknown): boolean {
   return JSON.stringify(currentValue) !== JSON.stringify(newValue);
-}
-
-function getValue(schema: Schema, path: string, value: unknown): unknown {
-  if (schema.private) {
-    if (!isDefined(value)) {
-      return undefined;
-    }
-
-    if (!isPivateValue(value)) {
-      throw new Error(`Expected a private value for schema ${path}, but got: ${value}`);
-    }
-    return value.value;
-  }
-
-  return value;
 }
 
 function isDefined<T>(value: T | undefined | null): value is T {

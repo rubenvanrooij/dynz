@@ -1,4 +1,12 @@
-import { type ObjectSchema, type SchemaValues, type ValidateOptions, resolveProperty, validate } from "dynz";
+import {
+  type ObjectSchema,
+  resolveProperty,
+  type SchemaInput,
+  type SchemaValues,
+  toSubmitValues,
+  type ValidateOptions,
+  validate,
+} from "dynz";
 import { type MessageTransformerFunc, toFieldErrorList } from "../errors";
 import { toAbsolutePath } from "../utils";
 
@@ -49,12 +57,14 @@ export type DynzTypedSchemaOptions<TSchema extends ObjectSchema<never>> = {
  * ```
  *
  * @param schema the dynz schema to validate against
- * @param currentValues the persisted values; passing them enables mutability enforcement
+ * @param currentValues the values the form was loaded with (typically the server's
+ * `maskPrivateValues` payload); enables mutability enforcement, and lets untouched
+ * private fields be submitted as their mask marker
  * @param schemaOptions forwarded to dynz' `validate`
  */
 export function dynzTypedSchema<TSchema extends ObjectSchema<never>>(
   schema: TSchema,
-  currentValues?: SchemaValues<TSchema>,
+  currentValues?: SchemaInput<TSchema>,
   schemaOptions?: ValidateOptions,
   options: DynzTypedSchemaOptions<TSchema> = {}
 ): VeeValidateTypedSchema<SchemaValues<TSchema>> {
@@ -62,7 +72,14 @@ export function dynzTypedSchema<TSchema extends ObjectSchema<never>>(
     __type: "VVTypedSchema",
 
     async parse(values) {
-      const result = await validate(schema, currentValues, values, schemaOptions);
+      // Form state holds raw values; wrap private fields for submission.
+      const submitted = toSubmitValues(schema, values, currentValues);
+      const result = await validate(
+        schema,
+        currentValues as SchemaValues<TSchema> | undefined,
+        submitted,
+        schemaOptions
+      );
 
       if (result.success) {
         return { value: result.values, errors: [] };

@@ -45,12 +45,20 @@ export type BaseSchema<TValue, TType extends SchemaType, TRule extends BaseRule[
   required?: boolean | Predicate | undefined;
   mutable?: boolean | Predicate | undefined;
   included?: boolean | Predicate | undefined;
-  private?: boolean | undefined;
 };
 
-// TODO: Remove this?
+/**
+ * `true` masks with the default masker (`"***"`); `{ mask: name }` picks a named masker
+ * supplied to `maskPrivateValues`. Kept as data so the schema stays serializable.
+ */
+export type PrivateConfig = boolean | { mask?: string | undefined };
+
+/**
+ * Mixed into leaf schemas only: containers (object, array, discriminated union) and
+ * expressions cannot be private. Mark each sensitive leaf instead.
+ */
 export type PrivateSchema = {
-  private?: boolean | undefined;
+  private?: PrivateConfig | undefined;
 };
 
 export type SchemaMeta = {
@@ -93,7 +101,7 @@ export type IsRequired<T extends Schema> = T extends { required: true }
       ? false
       : true; // default required
 
-export type IsPrivate<T extends Schema> = T extends { private: true } ? true : false;
+export type IsPrivate<T extends Schema> = T extends { private: true | { mask?: string | undefined } } ? true : false;
 
 /**
  * True if `T`'s type proves `.setDefault(...)` was called — i.e. `default` is a
@@ -128,7 +136,15 @@ export type MakeOptional<T extends Schema, V> = IsOptionalField<T> extends true 
 
 export type UnwrapOptionValue<T> = T extends DynamicOptionValue ? T["value"] : T;
 
-export type ApplyPrivacyMask<T extends Schema, V> = IsPrivate<T> extends true ? PrivateValue<V> : V;
+/**
+ * `"output"` is the validated, plain document. `"input"` is what may be submitted: a
+ * private leaf may additionally arrive wrapped (`plain(v)`) or masked (`mask()`).
+ */
+export type ValueMode = "input" | "output";
+
+export type ApplyPrivacyMask<T extends Schema, V> = IsPrivate<T> extends true
+  ? V | PrivateValue<Exclude<V, undefined>>
+  : V;
 
 export type ValueType<T extends SchemaType = SchemaType> = T extends typeof SchemaType.STRING
   ? string
@@ -158,45 +174,60 @@ export type ValueType<T extends SchemaType = SchemaType> = T extends typeof Sche
 
 export type ValueTypeOrUndefined = ValueType | undefined | Array<ValueType | undefined>;
 
-type OptionalFields<T extends ObjectSchema<never>> = {
+type OptionalFields<T extends ObjectSchema<never>, TMode extends ValueMode> = {
   [K in keyof T["fields"] as IsOptionalField<T["fields"][K]> extends true ? K : never]?: SchemaValuesInternal<
-    T["fields"][K]
+    T["fields"][K],
+    TMode
   >;
 };
 
-type RequiredFields<T extends ObjectSchema<never>> = {
+type RequiredFields<T extends ObjectSchema<never>, TMode extends ValueMode> = {
   [K in keyof T["fields"] as IsOptionalField<T["fields"][K]> extends false ? K : never]-?: SchemaValuesInternal<
-    T["fields"][K]
+    T["fields"][K],
+    TMode
   >;
 };
 
-export type ObjectValue<T extends ObjectSchema<never>> = OptionalFields<T> & RequiredFields<T>;
+export type ObjectValue<T extends ObjectSchema<never>, TMode extends ValueMode = "output"> = OptionalFields<T, TMode> &
+  RequiredFields<T, TMode>;
 
 export type DiscriminatedMemberValue<
   TKey extends string,
   TMember extends Record<string, Schema | string | number | boolean>,
+  TMode extends ValueMode = "output",
 > = TMember extends Record<string, Schema | string | number | boolean>
   ? {
       [K in keyof TMember as K extends TKey ? K : TMember[K] extends Schema ? K : never]: K extends TKey
         ? TMember[K]
         : TMember[K] extends Schema
-          ? SchemaValuesInternal<TMember[K]>
+          ? SchemaValuesInternal<TMember[K], TMode>
           : never;
     }
   : never;
 
-export type SchemaValuesInternal<T extends Schema> = T extends ObjectSchema<never>
-  ? Prettify<ObjectValue<T>>
+export type SchemaValuesInternal<T extends Schema, TMode extends ValueMode = "output"> = T extends ObjectSchema<never>
+  ? Prettify<ObjectValue<T, TMode>>
   : T extends ArraySchema<never>
-    ? MakeOptional<T, Array<SchemaValuesInternal<T["schema"]>>>
-    : T extends EnumSchema
-      ? MakeOptional<T, EnumValues<T["enum"]>>
-      : T extends OptionsSchema
-        ? MakeOptional<T, UnwrapOptionValue<Unpacked<T["options"]>>>
-        : T extends DiscriminatedUnionSchema<infer TKey, infer TSchemas>
-          ? MakeOptional<T, DiscriminatedMemberValue<TKey, TSchemas[number]>>
-          : T extends LiteralSchema
-            ? MakeOptional<T, T["value"]>
-            : MakeOptional<T, ValueType<T["type"]>>;
+    ? MakeOptional<T, Array<SchemaValuesInternal<T["schema"], TMode>>>
+    : T extends DiscriminatedUnionSchema<infer TKey, infer TSchemas>
+      ? MakeOptional<T, DiscriminatedMemberValue<TKey, TSchemas[number], TMode>>
+      : TMode extends "input"
+        ? ApplyPrivacyMask<T, LeafValue<T>>
+        : LeafValue<T>;
 
-export type SchemaValues<T extends Schema> = Prettify<ApplyPrivacyMask<T, SchemaValuesInternal<T>>>;
+type LeafValue<T extends Schema> = T extends EnumSchema
+  ? MakeOptional<T, EnumValues<T["enum"]>>
+  : T extends OptionsSchema
+    ? MakeOptional<T, UnwrapOptionValue<Unpacked<T["options"]>>>
+    : T extends LiteralSchema
+      ? MakeOptional<T, T["value"]>
+      : MakeOptional<T, ValueType<T["type"]>>;
+
+/** The validated output of a schema: a plain document, private fields unwrapped. */
+export type SchemaValues<T extends Schema> = Prettify<SchemaValuesInternal<T>>;
+
+/**
+ * What may be submitted for a schema. Identical to {@link SchemaValues} except that a
+ * private leaf may also be wrapped as `plain(v)` or sent as a `mask()` marker.
+ */
+export type SchemaInput<T extends Schema> = Prettify<SchemaValuesInternal<T, "input">>;

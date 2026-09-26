@@ -107,8 +107,6 @@ export type ArrayFluent<TSchema extends Schema, TRules extends Rule[], TProps> =
     setMutable: <P extends boolean | Predicate>(value: P) => ArrayFluent<TSchema, TRules, TProps & { mutable: P }>;
     /** Controls if field is included in output. @param value - Boolean or predicate */
     setIncluded: <P extends boolean | Predicate>(value: P) => ArrayFluent<TSchema, TRules, TProps & { included: P }>;
-    /** Marks field as private (masked in output). @param value - Boolean flag */
-    setPrivate: <P extends boolean>(value: P) => ArrayFluent<TSchema, TRules, TProps & { private: P }>;
     /** Enables automatic type coercion. @param value - Boolean flag */
     setCoerce: <P extends boolean>(value: P) => ArrayFluent<TSchema, TRules, TProps & { coerce: P }>;
     /**
@@ -199,7 +197,6 @@ function createFluent<TSchema extends Schema, TRules extends Rule[], TProps>(
     optional: () => setProp("required", false as false),
     setMutable: <P extends boolean | Predicate>(value: P) => setProp("mutable", value),
     setIncluded: <P extends boolean | Predicate>(value: P) => setProp("included", value),
-    setPrivate: <P extends boolean>(value: P) => setProp("private", value),
     setCoerce: <P extends boolean>(value: P) => setProp("coerce", value),
     setDefault: (value: SchemaValuesInternal<TSchema>[]) => setProp("default", value),
     setUi: <TUI extends JsonRecord>(config: TUI) => setProp("ui", config),

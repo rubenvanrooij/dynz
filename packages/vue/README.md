@@ -164,6 +164,14 @@ dynzTypedSchema(schema, currentValues, schemaOptions, {
 });
 ```
 
+## Private fields
+
+Pass the server's masked payload (from `maskPrivateValues`) as `currentValues`. `useDynzForm` seeds the form with the mask text, and `dynzTypedSchema` wraps values on submit: an untouched private field goes back as its mask marker, and an edited one is validated and sent as a plain value. See the dynz README's _Private Fields_ section for the server side.
+
+```ts
+const { handleSubmit } = useDynzForm({ schema, currentValues: payload });
+```
+
 ## SSR / Nuxt
 
 `provide`/`inject` and the async `validate` are SSR safe. Call `useDynzForm` inside `setup` so the reactive state is created per request — never at module scope.

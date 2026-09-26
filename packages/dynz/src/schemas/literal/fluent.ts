@@ -1,5 +1,5 @@
 import type { Predicate } from "../../functions";
-import type { JsonRecord, SchemaMeta } from "../../types";
+import type { JsonRecord, PrivateConfig, SchemaMeta } from "../../types";
 import { SchemaType } from "../../types";
 import type { LiteralValue } from "./types";
 
@@ -15,7 +15,7 @@ export type LiteralFluent<TValue extends LiteralValue, TProps> = {
     optional: () => LiteralFluent<TValue, TProps & { required: false }>;
     setMutable: <P extends boolean | Predicate>(value: P) => LiteralFluent<TValue, TProps & { mutable: P }>;
     setIncluded: <P extends boolean | Predicate>(value: P) => LiteralFluent<TValue, TProps & { included: P }>;
-    setPrivate: <P extends boolean>(value: P) => LiteralFluent<TValue, TProps & { private: P }>;
+    setPrivate: <const P extends PrivateConfig>(value: P) => LiteralFluent<TValue, TProps & { private: P }>;
     setDefault: (value: TValue) => LiteralFluent<TValue, TProps & { default: TValue }>;
     setUi: <TUI extends JsonRecord>(config: TUI) => LiteralFluent<TValue, TProps & { ui: TUI }>;
     setMeta: <M extends SchemaMeta>(meta: M) => LiteralFluent<TValue, TProps & { meta: M }>;
@@ -42,7 +42,7 @@ function createFluent<TValue extends LiteralValue, TProps>(
     optional: () => setProp("required", false as false),
     setMutable: <P extends boolean | Predicate>(v: P) => setProp("mutable", v),
     setIncluded: <P extends boolean | Predicate>(v: P) => setProp("included", v),
-    setPrivate: <P extends boolean>(v: P) => setProp("private", v),
+    setPrivate: <const P extends PrivateConfig>(v: P) => setProp("private", v),
     setDefault: (v: TValue) => setProp("default", v),
     setUi: <TUI extends JsonRecord>(config: TUI) => setProp("ui", config),
     setMeta: <M extends SchemaMeta>(meta: M) => setProp("meta", { ...(props as { meta?: SchemaMeta }).meta, ...meta }),

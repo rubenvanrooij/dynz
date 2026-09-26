@@ -1,3 +1,4 @@
+import type { PrivateMark } from "../private";
 import type {
   AfterRuleErrorMessage,
   BeforeRuleErrorMessage,
@@ -39,6 +40,7 @@ export const ErrorCode = {
   INCLUDED: "included",
   REQRUIED: "required",
   TYPE: "type",
+  MASKED: "masked",
 } as const;
 
 export type ErrorCode = EnumValues<typeof ErrorCode>;
@@ -69,6 +71,11 @@ export type RequiredErrorMessage = BaseErrorMessage & {
   code: typeof ErrorCode.REQRUIED;
 };
 
+/** A masked private value was submitted, but no stored value exists for it to stand in for. */
+export type MaskedErrorMessage = BaseErrorMessage & {
+  code: typeof ErrorCode.MASKED;
+};
+
 export type TypeErrorMessage = BaseErrorMessage & {
   code: typeof ErrorCode.TYPE;
   expectedType: SchemaType;
@@ -80,6 +87,7 @@ export type ErrorMessage =
   | ImmutableErrorMessage
   | IncludedErrorMessage
   | RequiredErrorMessage
+  | MaskedErrorMessage
   | TypeErrorMessage
   | AfterRuleErrorMessage
   | BeforeRuleErrorMessage
@@ -161,6 +169,12 @@ export type Context<T extends Schema = Schema> = {
   currentValues: unknown;
   // new values
   values: unknown;
+
+  /**
+   * Private fields that could not be resolved to a plain value, keyed by path; see
+   * `resolvePrivateValues`.
+   */
+  privateMarks?: Record<string, PrivateMark> | undefined;
 };
 
 export type ResolveContext<T extends Schema = Schema, A = unknown> = {

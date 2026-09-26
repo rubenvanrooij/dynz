@@ -591,7 +591,7 @@ describe("validate", () => {
 
     it("should validate mutability of private fields", async () => {
       const schema = string().setPrivate(true).setMutable(false);
-      const result = await validate(schema, plain("original"), plain("changed"));
+      const result = await validate(schema, "original", plain("changed"));
 
       expect(result).toEqual({
         success: false,
