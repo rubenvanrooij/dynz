@@ -1,6 +1,6 @@
-# @dynz/react-hook-form-resolver
+# @dynz/vue
 
-## 1.2.0
+## 1.0.0
 
 ### Minor Changes
 
@@ -17,24 +17,6 @@
   following ancestor unions as they switch. `useDiscriminatedUnionKeyValues` is removed from
   `@dynz/react-hook-form` and `@dynz/vue`: call `useOptions("<union>.<key>")` instead.
 
-- 09fcfa9: Added `useDynzField(name)` and `<DynzField name render>` — the per-field wiring every consumer was otherwise hand-writing themselves (both of this repo's own example apps included): `useController` bound to the form's `control`, plus the schema's `included`/`required`/`mutable` state, the field's own schema, and automatic cross-field revalidation (`rules.deps`) for any field whose rules reference another.
-
-  ```tsx
-  <DynzField
-    name="companyName"
-    render={({ field, fieldState, required, readOnly }) => (
-      <>
-        <input {...field} aria-required={required} readOnly={readOnly} />
-        {fieldState.error && <span>{fieldState.error.message}</span>}
-      </>
-    )}
-  />
-  ```
-
-  `useDynzField` is the hook underneath, for consumers who want to build their own wrapper instead: `const { field, fieldState, formState, included, required, readOnly, schema } = useDynzField("companyName")`.
-
-  Also: `react` moves from a `devDependency` to a `peerDependency` — `DynzField` is the first component this package ships that returns JSX at runtime.
-
 - b33b5d0: Private fields now work end to end: the server masks them, the form shows the mask, untouched fields go back as their mask marker, and `validate` swaps the stored value back in.
   - New `maskPrivateValues(schema, values, { maskers })` for the server → client payload. `setPrivate({ mask: "last4" })` names a masker (the schema stays serializable); `setPrivate(true)` uses `"***"`.
   - `validate(schema, currentValues, input)` resolves each masked value to the stored value, so `result.values` is a plain document ready to persist. A masked value with nothing stored fails with the new `masked` error code. Without `currentValues` (client side), masked values are skipped and passed through.
@@ -50,6 +32,23 @@
   - `SchemaValues<T>` is now plain (no `PrivateValue` wrapper). Use the new `SchemaInput<T>` for submissions.
   - `currentValues` are plain stored values. Wrapped `plain(x)` values are still accepted at runtime.
   - `setPrivate` is only available on leaf schemas. Objects, arrays, discriminated unions and expressions can no longer be private.
+
+- 27fb29b: Add `@dynz/vue`, the Vue 3 integration for dynz.
+
+  Standalone first: `useDynzForm` gives you reactive values, validation and per-field state with no form-library dependency. Because Vue tracks reads automatically, the condition composables (`useIsRequired`, `useIsIncluded`, `useIsMutable`, `useOptions`, `usePredicate`) are plain `computed`s over dynz' resolvers — no dependency collection needed, and excluded ancestors are handled for free.
+
+  Also ships `useDynzField` plus the renderless `DynzField`, `IsIncluded` and `When` components, and `dynzTypedSchema` for teams already using VeeValidate.
+
+- ba6cc88: `@dynz/vue` no longer ships its own form-state engine — `useDynzForm`/`useDynzField` are now thin wrappers around vee-validate's real `useForm`/`useField`, mirroring how `@dynz/react-hook-form` wraps react-hook-form. `vee-validate` moves from an optional `devDependency` (used only by the standalone `dynzTypedSchema` adapter) to a required `peerDependency`.
+
+  Breaking changes:
+  - **`form.values` is read-only.** Mutate it through `form.setFieldValue(name, value)` (or the other vee-validate `FormActions`, all still spread onto `useDynzForm`'s return) — direct assignment (`form.values.foo = "bar"`) silently no-ops, which is vee-validate's own contract, not something this package can relax.
+  - **Renamed to match vee-validate**: `reset` → `resetForm`, `setValue`/`setTouched`/`setError` → `setFieldValue`/`setFieldTouched`/`setFieldError`, `clearErrors` → `setErrors({...})` (there is no "wipe everything" shorthand — pass `undefined` for each field you want cleared).
+  - **Removed, no replacement**: `rawErrors` and the top-level `touched` record. Per-field touched state comes from `useDynzField(name).isTouched` (or vee-validate's own `form.isFieldTouched(name)`), same as `@dynz/react-hook-form`.
+  - **`validateField`'s cross-field error healing is now vee-validate's own `'validated-only'` behavior**, not custom scoping logic — it only holds for fields with a mounted `DynzField`/`useDynzField` (or any `useField`); a field validated purely at the form level with nothing rendering it always gets its error written immediately, regardless of "touched" state.
+  - **`DynzFieldAdapter`, `useDynzFieldAdapter`, `setByPath`, `isPathWithin`, `normalizeDependencyName`, `cloneValues`** are gone — they backed the deleted custom engine.
+
+  Not changed: `DynzField`, `When`, `IsIncluded`, and every condition composable (`useIsRequired`, `useIsIncluded`, `useIsMutable`, `useOptions`, `usePredicate`) keep their exact public shape — they only ever read `context.getValues()`/`context.schema`, so they work unchanged against vee-validate's reactive `values`.
 
 ### Patch Changes
 
@@ -91,7 +90,6 @@
   the `included`/`required`/`mutable` watches. The Vue composables track it automatically
   through `computed`.
 
-- 94ea9ba: Fixed: `useOptions` built a malformed schema path (a stray trailing `}`, e.g. `` `$.someField}` ``), which broke resolving the underlying `OptionsSchema`. It also resolved each dynamic option's `enabled` predicate (and its dependencies) against the form root (`"$"`) instead of the options field's own path, so predicates referencing sibling fields relative to the options field could resolve incorrectly.
 - 84a8799: Added `getOptions(name, schema, values)` and `getOptionsForSchema(schema, path, rootSchema, values)` to `dynz` — the framework-agnostic core of what each integration's `useOptions` hook/composable does: resolving an `options()` field's entries into `{ value, enabled }` pairs, where a dynamic entry's `enabled` predicate is resolved against `values`.
 
   ```ts
@@ -119,179 +117,3 @@
 - Updated dependencies [b33b5d0]
 - Updated dependencies [d2e3e68]
   - dynz@1.2.0
-
-## 1.1.0
-
-### Minor Changes
-
-- c8effd5: added support for discriminated union schema
-
-### Patch Changes
-
-- Updated dependencies [c8effd5]
-  - dynz@1.1.0
-
-## 1.0.0
-
-### Patch Changes
-
-- Updated dependencies [11ba2bb]
-- Updated dependencies [fa23320]
-  - dynz@1.0.0
-
-## 0.0.22
-
-### Patch Changes
-
-- Updated dependencies [5ab0409]
-- Updated dependencies [5ab0409]
-  - dynz@0.0.19
-
-## 0.0.21
-
-### Patch Changes
-
-- e2b2fd0: renamed rules builder names to remove ambuigity between rules/functions
-- bba62cd: Conditional property hooks (useIsIncluded, useConditionalProperty, useIsMutable and useIsRequired) now also traverse ancestor paths to build dependency list and take an optional array of names
-- Updated dependencies [c704855]
-- Updated dependencies [e2b2fd0]
-- Updated dependencies [5e37967]
-- Updated dependencies [b1bc4bf]
-- Updated dependencies [594b3c9]
-  - dynz@0.0.18
-
-## 0.0.20
-
-### Patch Changes
-
-- Updated dependencies [345cf20]
-  - dynz@0.0.17
-
-## 0.0.19
-
-### Patch Changes
-
-- 873ed04: removed the object API and replaced it with the new fluent api
-- Updated dependencies [873ed04]
-  - dynz@0.0.16
-
-## 0.0.18
-
-### Patch Changes
-
-- dc4eb75: added function support to dynz
-- Updated dependencies [dc4eb75]
-  - dynz@0.0.15
-
-## 0.0.17
-
-### Patch Changes
-
-- Updated dependencies [8cbba32]
-  - dynz@0.0.14
-
-## 0.0.16
-
-### Patch Changes
-
-- Updated dependencies [6bdc69e]
-  - dynz@0.0.13
-
-## 0.0.15
-
-### Patch Changes
-
-- Updated dependencies [03a0ce1]
-  - dynz@0.0.12
-
-## 0.0.14
-
-### Patch Changes
-
-- cfb915a: fixed build issues
-- Updated dependencies [cfb915a]
-  - dynz@0.0.11
-
-## 0.0.13
-
-### Patch Changes
-
-- Updated dependencies [93e08c7]
-  - dynz@0.0.10
-
-## 0.0.12
-
-### Patch Changes
-
-- 0552506: improved performance upgrades related to react form hooks
-
-## 0.0.11
-
-### Patch Changes
-
-- 1852e28: fixed formatting issue
-- 54d0ceb: fixed transpiling issue
-
-## 0.0.10
-
-### Patch Changes
-
-- 494ea14: added extra react helpers for managing dependencies + utility components/hooks for easier integration
-- Updated dependencies [494ea14]
-  - dynz@0.0.9
-
-## 0.0.9
-
-### Patch Changes
-
-- Updated dependencies [6b5db9c]
-  - dynz@0.0.8
-
-## 0.0.8
-
-### Patch Changes
-
-- Updated dependencies [6332c4c]
-  - dynz@0.0.7
-
-## 0.0.7
-
-### Patch Changes
-
-- Updated dependencies [74fce85]
-  - dynz@0.0.6
-
-## 0.0.6
-
-### Patch Changes
-
-- Updated dependencies [d8b5c94]
-- Updated dependencies [955bef4]
-- Updated dependencies [17c9e07]
-- Updated dependencies [982b034]
-- Updated dependencies [d863166]
-  - dynz@0.0.5
-
-## 0.0.5
-
-### Patch Changes
-
-- Updated dependencies [0dec073]
-- Updated dependencies [5aff140]
-- Updated dependencies [fd7197c]
-  - dynz@0.0.4
-
-## 0.0.4
-
-### Patch Changes
-
-- Updated dependencies [7fbff7a]
-  - dynz@0.0.3
-
-## 0.0.3
-
-### Patch Changes
-
-- new version
-- Updated dependencies
-  - dynz@0.0.2
