@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { isPivateValue } from "./is-private";
+import { isPrivateValue } from "./is-private";
 
-describe("isPivateValue", () => {
+describe("isPrivateValue", () => {
   it("should return false for non private values", () => {
     const tests = [
       null,
@@ -17,7 +17,7 @@ describe("isPivateValue", () => {
     ];
 
     tests.forEach((test) => {
-      expect(isPivateValue(test)).toBe(false);
+      expect(isPrivateValue(test)).toBe(false);
     });
   });
 
@@ -34,7 +34,7 @@ describe("isPivateValue", () => {
     ];
 
     tests.forEach((test) => {
-      expect(isPivateValue(test)).toBe(true);
+      expect(isPrivateValue(test)).toBe(true);
     });
   });
 });
