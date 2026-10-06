@@ -1,6 +1,6 @@
 import { resolveProperty, resolveRules } from "../conditions";
 import { resolve } from "../functions";
-import { isPivateValue, isValueMasked, type PrivateValue } from "../private";
+import { isPrivateValue, isValueMasked, type PrivateValue } from "../private";
 import { validateRule } from "../rules";
 import {
   type Context,
@@ -437,7 +437,7 @@ function valueChanged<T>(
   newValue: T | PrivateValue<T>
 ): boolean {
   if (schema.private) {
-    if (!isPivateValue(currentValue) || !isPivateValue(newValue)) {
+    if (!isPrivateValue(currentValue) || !isPrivateValue(newValue)) {
       throw new Error(
         `Expected private values for schema ${path}, but got: currentValue=${currentValue}, newValue=${newValue}`
       );
@@ -459,7 +459,7 @@ function getValue(schema: Schema, path: string, value: unknown): unknown {
       return undefined;
     }
 
-    if (!isPivateValue(value)) {
+    if (!isPrivateValue(value)) {
       throw new Error(`Expected a private value for schema ${path}, but got: ${value}`);
     }
     return value.value;
