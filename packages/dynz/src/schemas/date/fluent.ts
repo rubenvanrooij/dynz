@@ -1,19 +1,26 @@
-import type { ParamaterValue, Predicate } from "../../functions";
+import type { BoundaryUnit, ParamaterValue, Predicate } from "../../functions";
 import {
   type AfterRule,
   type BeforeRule,
+  type BoundaryDayRule,
   buildAfterRule,
   buildBeforeRule,
+  buildBoundaryDayRule,
   buildConditionalRule,
   buildMaxDateRule,
   buildMinDateRule,
+  buildSameCalendarRule,
+  buildSatisfiesRule,
   type ConditionalRule,
   type MaxDateRule,
   type MinDateRule,
   type Rule,
+  type SameCalendarRule,
+  type SatisfiesRule,
 } from "../../rules";
 import type { JsonRecord, SchemaMeta } from "../../types";
 import { SchemaType } from "../../types";
+import type { DateUnit } from "../../utils/date-utils";
 import { type ToParam, toParamaterValue } from "../shared";
 
 // ---------------------------------------------------------------------------
@@ -39,6 +46,20 @@ export type DateRuleBuilder<TRules extends Rule[]> = {
   before: <P extends ParamaterValue<Date>>(date: P, code?: string) => DateRuleBuilder<Push<TRules, BeforeRule<P>>>;
   min: <P extends ParamaterValue<Date>>(date: P, code?: string) => DateRuleBuilder<Push<TRules, MinDateRule<P>>>;
   max: <P extends ParamaterValue<Date>>(date: P, code?: string) => DateRuleBuilder<Push<TRules, MaxDateRule<P>>>;
+  sameCalendar: <P extends ParamaterValue<Date>, U extends DateUnit>(
+    date: P,
+    unit: U,
+    code?: string
+  ) => DateRuleBuilder<Push<TRules, SameCalendarRule<P, U>>>;
+  firstDayOf: <U extends BoundaryUnit>(
+    unit: U,
+    code?: string
+  ) => DateRuleBuilder<Push<TRules, BoundaryDayRule<"first", U>>>;
+  lastDayOf: <U extends BoundaryUnit>(
+    unit: U,
+    code?: string
+  ) => DateRuleBuilder<Push<TRules, BoundaryDayRule<"last", U>>>;
+  satisfies: <P extends Predicate>(predicate: P, code?: string) => DateRuleBuilder<Push<TRules, SatisfiesRule<P>>>;
 };
 
 // ---------------------------------------------------------------------------
@@ -74,6 +95,25 @@ export type DateFluent<TRules extends Rule[], TProps> = {
       date: P,
       code?: string
     ) => DateFluent<Push<TRules, MaxDateRule<ToParam<P>>>, TProps>;
+    /** Validates date is in the same calendar day, month or year (UTC) as another date. @param date - Date to compare with. @param unit - Calendar unit. @param code - Optional error code */
+    sameCalendar: <P extends ParamaterValue<Date> | Date, U extends DateUnit>(
+      date: P,
+      unit: U,
+      code?: string
+    ) => DateFluent<Push<TRules, SameCalendarRule<ToParam<P>, U>>, TProps>;
+    /** Validates date is the first day of its month or year (UTC). @param unit - 'month' or 'year'. @param code - Optional error code */
+    firstDayOf: <U extends BoundaryUnit>(
+      unit: U,
+      code?: string
+    ) => DateFluent<Push<TRules, BoundaryDayRule<"first", U>>, TProps>;
+    /** Validates date is the last day of its month or year (UTC). @param unit - 'month' or 'year'. @param code - Optional error code */
+    lastDayOf: <U extends BoundaryUnit>(
+      unit: U,
+      code?: string
+    ) => DateFluent<Push<TRules, BoundaryDayRule<"last", U>>, TProps>;
+
+    /** Validates that a predicate holds (fails when it evaluates to false). @param predicate - Condition that must hold. @param code - Optional error code */
+    satisfies: <P extends Predicate>(predicate: P, code?: string) => DateFluent<Push<TRules, SatisfiesRule<P>>, TProps>;
 
     // — Conditional rules —
     /** Applies rules conditionally based on a predicate. @param pred - Condition to evaluate. @param cb - Builder callback for conditional rules */
@@ -129,6 +169,11 @@ function createRuleBuilder<TRules extends Rule[]>(rules: TRules): DateRuleBuilde
     before: <P extends ParamaterValue<Date>>(date: P, code?: string) => push(buildBeforeRule(date, code)),
     min: <P extends ParamaterValue<Date>>(date: P, code?: string) => push(buildMinDateRule(date, code)),
     max: <P extends ParamaterValue<Date>>(date: P, code?: string) => push(buildMaxDateRule(date, code)),
+    sameCalendar: <P extends ParamaterValue<Date>, U extends DateUnit>(date: P, unit: U, code?: string) =>
+      push(buildSameCalendarRule(date, unit, code)),
+    firstDayOf: <U extends BoundaryUnit>(unit: U, code?: string) => push(buildBoundaryDayRule("first", unit, code)),
+    lastDayOf: <U extends BoundaryUnit>(unit: U, code?: string) => push(buildBoundaryDayRule("last", unit, code)),
+    satisfies: <P extends Predicate>(predicate: P, code?: string) => push(buildSatisfiesRule(predicate, code)),
   };
 }
 
@@ -153,6 +198,12 @@ function createFluent<TRules extends Rule[], TProps>(rules: TRules, props: TProp
       pushRule(buildMinDateRule(toParamaterValue(date), code)),
     max: <P extends ParamaterValue<Date> | Date>(date: P, code?: string) =>
       pushRule(buildMaxDateRule(toParamaterValue(date), code)),
+    sameCalendar: <P extends ParamaterValue<Date> | Date, U extends DateUnit>(date: P, unit: U, code?: string) =>
+      pushRule(buildSameCalendarRule(toParamaterValue(date), unit, code)),
+    firstDayOf: <U extends BoundaryUnit>(unit: U, code?: string) => pushRule(buildBoundaryDayRule("first", unit, code)),
+    lastDayOf: <U extends BoundaryUnit>(unit: U, code?: string) => pushRule(buildBoundaryDayRule("last", unit, code)),
+
+    satisfies: <P extends Predicate>(predicate: P, code?: string) => pushRule(buildSatisfiesRule(predicate, code)),
 
     // — Conditional rules —
     when: <WRules extends Rule[]>(pred: Predicate, cb: (b: DateRuleBuilder<[]>) => DateRuleBuilder<WRules>) => {

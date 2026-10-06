@@ -241,7 +241,9 @@ export function applyRule(
     case "min_date":
     case "max_date":
     case "before":
-    case "after": {
+    case "after":
+    case "same_calendar":
+    case "boundary_day": {
       reportIssue(
         context,
         `"${rule.type}" rule has no JSON Schema equivalent (date comparisons aren't representable).`
@@ -265,6 +267,11 @@ export function applyRule(
 
     case "conditional": {
       reportIssue(context, `"conditional" rule has no JSON Schema equivalent.`);
+      break;
+    }
+
+    case "satisfies": {
+      reportIssue(context, `"satisfies" rule has no JSON Schema equivalent.`);
       break;
     }
 

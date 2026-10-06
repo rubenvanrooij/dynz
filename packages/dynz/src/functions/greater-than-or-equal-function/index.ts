@@ -36,8 +36,8 @@ export type GreaterThanOrEqualFunction<TLeft extends ParamaterValue = never, TRi
  * @see {@link min} - Rule for minimum value validation
  */
 export function gte<
-  const TLeft extends ParamaterValue<number> | number,
-  const TRight extends ParamaterValue<number> | number,
+  const TLeft extends ParamaterValue<number | Date> | number | Date,
+  const TRight extends ParamaterValue<number | Date> | number | Date,
 >(left: TLeft, right: TRight): GreaterThanOrEqualFunction<ToParam<TLeft>, ToParam<TRight>> {
   return {
     type: greaterThanOrEqualFunctionType,

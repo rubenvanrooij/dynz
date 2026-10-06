@@ -1,5 +1,6 @@
 import type { AfterRule } from "./after-rule";
 import type { BeforeRule } from "./before-rule";
+import type { BoundaryDayRule } from "./boundary-day-rule";
 import type { ConditionalRule } from "./conditional-rule";
 import type { CustomRule } from "./custom-rule";
 import type { EmailRule } from "./email-rule";
@@ -23,10 +24,13 @@ import type { NotIncludesRule } from "./not-includes-rule";
 import type { NotOneOfRule } from "./not-one-off-rule";
 import type { OneOfRule } from "./one-off-rule";
 import type { RegexRule } from "./regex-rule";
+import type { SameCalendarRule } from "./same-calendar-rule";
+import type { SatisfiesRule } from "./satisfies-rule";
 
 export type Rule =
   | AfterRule
   | BeforeRule
+  | BoundaryDayRule
   | ConditionalRule
   | CustomRule
   | EmailRule
@@ -49,4 +53,6 @@ export type Rule =
   | NotIncludesRule
   | OneOfRule
   | NotOneOfRule
-  | RegexRule;
+  | RegexRule
+  | SameCalendarRule
+  | SatisfiesRule;

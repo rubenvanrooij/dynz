@@ -29,6 +29,8 @@ export function getConditionDependencies(input: Predicate | Transformer, path: s
     case "lt":
     case "lte":
     case "matches":
+    case "same_calendar":
+    case "date_diff":
       return [
         ...getParamaterDependencies(input.left, path, schema),
         ...getParamaterDependencies(input.right, path, schema),
@@ -41,8 +43,20 @@ export function getConditionDependencies(input: Predicate | Transformer, path: s
     case "tan":
     case "size":
     case "age":
-    case "lookup":
+    case "start_of":
+    case "end_of":
+    case "is_boundary_day":
       return getParamaterDependencies(input.value, path, schema);
+    case "lookup":
+      return [
+        ...getParamaterDependencies(input.value, path, schema),
+        ...getParamaterDependencies(input.lookup, path, schema),
+      ];
+    case "date_add":
+      return [
+        ...getParamaterDependencies(input.value, path, schema),
+        ...getParamaterDependencies(input.amount, path, schema),
+      ];
     case "pluck":
       return getParamaterDependencies(input.array, path, schema);
     case "sum":
@@ -80,37 +94,67 @@ export function getParamaterDependencies(param: ParamaterValue, path: string, sc
   return getConditionDependencies(param, path, schema);
 }
 
-function getRuleDependencies(rule: Rule, path: string, schema: Schema): string[] {
-  if (rule.type === "conditional") {
-    return rule.cases.reduce<string[]>((acc, cur) => {
-      acc.push(...getConditionDependencies(cur.when, path, schema), ...getRuleDependencies(cur.then, path, schema));
-      return acc;
-    }, []);
-  }
-
-  if (rule.type === "custom") {
-    return Object.values(rule.params)
-      .filter((v) => isReference(v))
-      .map((v) => ensureAbsolutePath(v.path, path));
-  }
-
-  if (rule.type === "one_of") {
-    return rule.values.filter((v) => isReference(v)).map((v) => ensureAbsolutePath(v.path, path));
-  }
-
-  // Handle other rules with references in their properties
-  return Object.values(rule)
-    .filter((v) => isReference(v))
-    .map((v) => ensureAbsolutePath(v.path, path));
+// Structural check (no lookup in the function registries: importing those here creates an import cycle)
+function isFunction(value: unknown): value is Predicate | Transformer {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "type" in value &&
+    typeof value.type === "string" &&
+    value.type !== "st" &&
+    !isReference(value)
+  );
 }
 
+/**
+ * Dependencies of a single rule parameter: the referenced path itself, or every
+ * reference nested inside a predicate/transformer (e.g. `after(dateAdd(ref("start"), 3, "month"))`).
+ */
+function getRuleParamaterDependencies(param: unknown, path: string, schema: Schema): string[] {
+  if (isReference(param)) {
+    return [ensureAbsolutePath(param.path, path)];
+  }
+
+  return isFunction(param) ? (getConditionDependencies(param, path, schema) ?? []) : [];
+}
+
+function getRuleDependencies(rule: Rule, path: string, schema: Schema): string[] {
+  switch (rule.type) {
+    case "conditional":
+      return rule.cases.flatMap((cur) => [
+        ...getConditionDependencies(cur.when, path, schema),
+        ...getRuleDependencies(cur.then, path, schema),
+      ]);
+    case "satisfies":
+      return getConditionDependencies(rule.predicate, path, schema);
+    case "custom":
+      return Object.values(rule.params).flatMap((param) => getRuleParamaterDependencies(param, path, schema));
+    default:
+      // Any other rule: references/functions are direct properties, or array entries (one_of, not_one_of)
+      return Object.values(rule)
+        .flatMap((value) => (Array.isArray(value) ? value : [value]))
+        .flatMap((param) => getRuleParamaterDependencies(param, path, schema));
+  }
+}
+
+/**
+ * Returns the fields the rules of the schema at `path` depend on.
+ *
+ * @param schema - The root schema (references are resolved against it)
+ * @param path - Path of the field whose rules to inspect, e.g. `$.startDate` or `startDate`
+ */
 export function getRulesDependencies(schema: Schema, path: string): string[] {
-  return schema.rules
-    ? schema.rules.reduce<string[]>((acc, cur) => {
-        acc.push(...getRuleDependencies(cur, path, schema));
-        return acc;
-      }, [])
-    : [];
+  const absolutePath = ensureAbsolutePath(path, "$");
+  // `[]` denotes "any array item" (see getRulesDependenciesMap); look up the item schema via index 0
+  const fields = findPossibleSchemasByPath(absolutePath.replaceAll("[]", "0"), schema);
+
+  const dependencies = fields
+    .flatMap((field) => field.rules ?? [])
+    .flatMap((rule) => getRuleDependencies(rule, absolutePath, schema))
+    // a field referencing its own value (e.g. `satisfies(isFirstDayOf(ref("startDate"), "month"))`) is not a dependency
+    .filter((dep) => dep !== absolutePath);
+
+  return [...new Set(dependencies)];
 }
 
 function _getRulesDependenciesMap(schema: Schema, path: string, root: Schema): RulesDependencyMap {

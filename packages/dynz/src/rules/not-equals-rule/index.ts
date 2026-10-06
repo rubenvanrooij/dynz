@@ -1,5 +1,6 @@
 import { type ParamaterValue, resolveExpected } from "../../functions";
 import type { ErrorMessageFromRule, ExtractResolvedRules, RuleFn, Schema } from "../../types";
+import { isEqualValue } from "../../utils";
 
 export type NotEqualsRule<T extends ParamaterValue = ParamaterValue> = {
   type: "not_equals";
@@ -44,7 +45,7 @@ export const notEqualsRule: RuleFn<
   NotEqualsRuleErrorMessage
 > = ({ rule, value, path, context, schema }) => {
   const notEquals = resolveExpected(rule.notEquals, path, context, schema.type);
-  return notEquals !== value
+  return !isEqualValue(notEquals, value)
     ? undefined
     : {
         code: "not_equals",

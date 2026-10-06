@@ -13,6 +13,7 @@ import {
   buildNotOneOfRule,
   buildOneOfRule,
   buildRegexRule,
+  buildSatisfiesRule,
   type ConditionalRule,
   type CustomRule,
   type EmailRule,
@@ -27,6 +28,7 @@ import {
   type OneOfRule,
   type RegexRule,
   type Rule,
+  type SatisfiesRule,
 } from "../../rules";
 import type { JsonRecord, SchemaMeta } from "../../types";
 import { SchemaType } from "../../types";
@@ -85,6 +87,7 @@ export type StrRuleBuilder<TRules extends Rule[]> = {
     params?: T,
     code?: string
   ) => StrRuleBuilder<Push<TRules, CustomRule<T>>>;
+  satisfies: <P extends Predicate>(predicate: P, code?: string) => StrRuleBuilder<Push<TRules, SatisfiesRule<P>>>;
 };
 
 // ---------------------------------------------------------------------------
@@ -157,6 +160,9 @@ export type StrFluent<TRules extends Rule[], TProps> = {
       code?: string
     ) => StrFluent<Push<TRules, CustomRule<T>>, TProps>;
 
+    /** Validates that a predicate holds (fails when it evaluates to false). @param predicate - Condition that must hold. @param code - Optional error code */
+    satisfies: <P extends Predicate>(predicate: P, code?: string) => StrFluent<Push<TRules, SatisfiesRule<P>>, TProps>;
+
     // — Conditional rules —
     /** Applies rules conditionally based on a predicate. @param pred - Condition to evaluate. @param cb - Builder callback for conditional rules */
     when: <WRules extends Rule[]>(
@@ -227,6 +233,7 @@ function createRuleBuilder<TRules extends Rule[]>(rules: TRules): StrRuleBuilder
     custom: <T extends Record<string, ParamaterValue>>(name: string, params?: T, code?: string) =>
       // @ts-expect-error - code can be undefined which is handled by the custom() implementation
       push(buildCustomRule(name, params || ({} as T), code)),
+    satisfies: <P extends Predicate>(predicate: P, code?: string) => push(buildSatisfiesRule(predicate, code)),
   };
 }
 
@@ -264,6 +271,8 @@ function createFluent<TRules extends Rule[], TProps>(rules: TRules, props: TProp
     custom: <T extends Record<string, ParamaterValue>>(name: string, params?: T, code?: string) =>
       // @ts-expect-error - code can be undefined which is handled by the custom() implementation
       pushRule(buildCustomRule(name, params || ({} as T), code)),
+
+    satisfies: <P extends Predicate>(predicate: P, code?: string) => pushRule(buildSatisfiesRule(predicate, code)),
 
     // — Conditional rules —
     when: <WRules extends Rule[]>(pred: Predicate, cb: (b: StrRuleBuilder<[]>) => StrRuleBuilder<WRules>) => {

@@ -40,8 +40,8 @@ export type GreaterThanFunction<TLeft extends ParamaterValue = never, TRight ext
  * @see {@link min} - Rule for minimum value validation
  */
 export function gt<
-  const TLeft extends ParamaterValue<number> | number,
-  const TRight extends ParamaterValue<number> | number,
+  const TLeft extends ParamaterValue<number | Date> | number | Date,
+  const TRight extends ParamaterValue<number | Date> | number | Date,
 >(left: TLeft, right: TRight): GreaterThanFunction<ToParam<TLeft>, ToParam<TRight>> {
   return {
     type: greaterThanFunctionType,

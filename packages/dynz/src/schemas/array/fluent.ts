@@ -5,12 +5,14 @@ import {
   buildMaxLengthRule,
   buildMinLengthRule,
   buildNotIncludesRule,
+  buildSatisfiesRule,
   type ConditionalRule,
   type IncludesRule,
   type MaxLengthRule,
   type MinLengthRule,
   type NotIncludesRule,
   type Rule,
+  type SatisfiesRule,
 } from "../../rules";
 import type { JsonRecord, SchemaMeta, SchemaValuesInternal } from "../../types";
 import { type Schema, SchemaType } from "../../types";
@@ -52,6 +54,10 @@ export type ArrayRuleBuilder<TSchema extends Schema, TRules extends Rule[]> = {
     value: P,
     code?: string
   ) => ArrayRuleBuilder<TSchema, Push<TRules, NotIncludesRule<ToParam<P>>>>;
+  satisfies: <P extends Predicate>(
+    predicate: P,
+    code?: string
+  ) => ArrayRuleBuilder<TSchema, Push<TRules, SatisfiesRule<P>>>;
 };
 
 // ---------------------------------------------------------------------------
@@ -91,6 +97,11 @@ export type ArrayFluent<TSchema extends Schema, TRules extends Rule[], TProps> =
       code?: string
     ) => ArrayFluent<TSchema, Push<TRules, NotIncludesRule<ToParam<P>>>, TProps>;
 
+    /** Validates that a predicate holds (fails when it evaluates to false). @param predicate - Condition that must hold. @param code - Optional error code */
+    satisfies: <P extends Predicate>(
+      predicate: P,
+      code?: string
+    ) => ArrayFluent<TSchema, Push<TRules, SatisfiesRule<P>>, TProps>;
     // — Conditional rules —
     /** Applies rules conditionally based on a predicate. @param pred - Condition to evaluate. @param cb - Builder callback for conditional rules */
     when: <WRules extends Rule[]>(
@@ -149,6 +160,7 @@ function createRuleBuilder<TSchema extends Schema, TRules extends Rule[]>(
       push(buildIncludesRule(toParamaterValue(value), code)),
     notIncludes: <P extends ParamaterValue | string | number | boolean | Date>(value: P, code?: string) =>
       push(buildNotIncludesRule(toParamaterValue(value), code)),
+    satisfies: <P extends Predicate>(predicate: P, code?: string) => push(buildSatisfiesRule(predicate, code)),
   };
 }
 
@@ -178,6 +190,8 @@ function createFluent<TSchema extends Schema, TRules extends Rule[], TProps>(
       pushRule(buildIncludesRule(toParamaterValue(value), code)),
     notIncludes: <P extends ParamaterValue | string | number | boolean | Date>(value: P, code?: string) =>
       pushRule(buildNotIncludesRule(toParamaterValue(value), code)),
+
+    satisfies: <P extends Predicate>(predicate: P, code?: string) => pushRule(buildSatisfiesRule(predicate, code)),
 
     // — Conditional rules —
     when: <WRules extends Rule[]>(

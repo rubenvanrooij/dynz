@@ -1,5 +1,6 @@
 export * from "./after-rule";
 export * from "./before-rule";
+export * from "./boundary-day-rule";
 export * from "./conditional-rule";
 export * from "./custom-rule";
 export * from "./email-rule";
@@ -24,4 +25,6 @@ export * from "./not-one-off-rule";
 export * from "./one-off-rule";
 export * from "./regex-rule";
 export * from "./rule";
+export * from "./same-calendar-rule";
+export * from "./satisfies-rule";
 export * from "./validate";

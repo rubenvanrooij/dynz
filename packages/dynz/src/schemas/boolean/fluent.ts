@@ -3,10 +3,12 @@ import {
   buildConditionalRule,
   buildEqualsRule,
   buildNotEqualsRule,
+  buildSatisfiesRule,
   type ConditionalRule,
   type EqualsRule,
   type NotEqualsRule,
   type Rule,
+  type SatisfiesRule,
 } from "../../rules";
 import type { JsonRecord, SchemaMeta } from "../../types";
 import { SchemaType } from "../../types";
@@ -36,6 +38,7 @@ export type BoolRuleBuilder<TRules extends Rule[]> = {
     value: P,
     code?: string
   ) => BoolRuleBuilder<Push<TRules, NotEqualsRule<P>>>;
+  satisfies: <P extends Predicate>(predicate: P, code?: string) => BoolRuleBuilder<Push<TRules, SatisfiesRule<P>>>;
 };
 
 // ---------------------------------------------------------------------------
@@ -61,6 +64,9 @@ export type BoolFluent<TRules extends Rule[], TProps> = {
       value: P,
       code?: string
     ) => BoolFluent<Push<TRules, NotEqualsRule<ToParam<P>>>, TProps>;
+
+    /** Validates that a predicate holds (fails when it evaluates to false). @param predicate - Condition that must hold. @param code - Optional error code */
+    satisfies: <P extends Predicate>(predicate: P, code?: string) => BoolFluent<Push<TRules, SatisfiesRule<P>>, TProps>;
 
     // — Conditional rules —
     /** Applies rules conditionally based on a predicate. @param pred - Condition to evaluate. @param cb - Builder callback for conditional rules */
@@ -112,6 +118,7 @@ function createRuleBuilder<TRules extends Rule[]>(rules: TRules): BoolRuleBuilde
     rules,
     equals: <P extends ParamaterValue<boolean>>(value: P, code?: string) => push(buildEqualsRule(value, code)),
     notEquals: <P extends ParamaterValue<boolean>>(value: P, code?: string) => push(buildNotEqualsRule(value, code)),
+    satisfies: <P extends Predicate>(predicate: P, code?: string) => push(buildSatisfiesRule(predicate, code)),
   };
 }
 
@@ -132,6 +139,8 @@ function createFluent<TRules extends Rule[], TProps>(rules: TRules, props: TProp
       pushRule(buildEqualsRule(toParamaterValue(value), code)),
     notEquals: <P extends ParamaterValue<boolean> | boolean>(value: P, code?: string) =>
       pushRule(buildNotEqualsRule(toParamaterValue(value), code)),
+
+    satisfies: <P extends Predicate>(predicate: P, code?: string) => pushRule(buildSatisfiesRule(predicate, code)),
 
     // — Conditional rules —
     when: <WRules extends Rule[]>(pred: Predicate, cb: (b: BoolRuleBuilder<[]>) => BoolRuleBuilder<WRules>) => {

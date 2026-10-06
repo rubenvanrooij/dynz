@@ -297,10 +297,6 @@ describe("useDynzForm — state helpers", () => {
     });
     const { form } = mountDynzForm({ schema: depSchema });
 
-    // NOTE: dynz' getRulesDependenciesMap currently returns an empty map for object
-    // schemas (it collects rules off the root schema instead of the nested one), so
-    // there is nothing to report here yet. validateField does not rely on it — see the
-    // "heals a cross-field error" test above.
-    expect(form.getDependencies("password")).toBeUndefined();
+    expect(form.getDependencies("password")).toEqual(["confirmPassword"]);
   });
 });

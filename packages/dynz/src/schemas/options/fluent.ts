@@ -5,12 +5,14 @@ import {
   buildNotEqualsRule,
   buildNotOneOfRule,
   buildOneOfRule,
+  buildSatisfiesRule,
   type ConditionalRule,
   type EqualsRule,
   type NotEqualsRule,
   type NotOneOfRule,
   type OneOfRule,
   type Rule,
+  type SatisfiesRule,
 } from "../../rules";
 import type { JsonRecord, SchemaMeta } from "../../types";
 import { SchemaType } from "../../types";
@@ -53,6 +55,10 @@ export type OptionsRuleBuilder<TOptions extends OptionsValue, TRules extends Rul
     values: P,
     code?: string
   ) => OptionsRuleBuilder<TOptions, Push<TRules, NotOneOfRule<P>>>;
+  satisfies: <P extends Predicate>(
+    predicate: P,
+    code?: string
+  ) => OptionsRuleBuilder<TOptions, Push<TRules, SatisfiesRule<P>>>;
 };
 
 // ---------------------------------------------------------------------------
@@ -92,6 +98,11 @@ export type OptionsFluent<TOptions extends OptionsValue, TRules extends Rule[], 
       code?: string
     ) => OptionsFluent<TOptions, Push<TRules, NotOneOfRule<P>>, TProps>;
 
+    /** Validates that a predicate holds (fails when it evaluates to false). @param predicate - Condition that must hold. @param code - Optional error code */
+    satisfies: <P extends Predicate>(
+      predicate: P,
+      code?: string
+    ) => OptionsFluent<TOptions, Push<TRules, SatisfiesRule<P>>, TProps>;
     // — Conditional rules —
     /** Applies rules conditionally based on a predicate. @param pred - Condition to evaluate. @param cb - Builder callback for conditional rules */
     when: <WRules extends Rule[]>(
@@ -148,6 +159,7 @@ function createRuleBuilder<TOptions extends OptionsValue, TRules extends Rule[]>
     notEquals: <P extends ParamaterValue>(value: P, code?: string) => push(buildNotEqualsRule(value, code)),
     oneOf: <P extends ParamaterValue[]>(values: P, code?: string) => push(buildOneOfRule(values, code)),
     notOneOf: <P extends ParamaterValue[]>(values: P, code?: string) => push(buildNotOneOfRule(values, code)),
+    satisfies: <P extends Predicate>(predicate: P, code?: string) => push(buildSatisfiesRule(predicate, code)),
   };
 }
 
@@ -175,6 +187,8 @@ function createFluent<TOptions extends OptionsValue, TRules extends Rule[], TPro
       pushRule(buildNotEqualsRule(toParamaterValue(value), code)),
     oneOf: <P extends ParamaterValue[]>(values: P, code?: string) => pushRule(buildOneOfRule(values, code)),
     notOneOf: <P extends ParamaterValue[]>(values: P, code?: string) => pushRule(buildNotOneOfRule(values, code)),
+
+    satisfies: <P extends Predicate>(predicate: P, code?: string) => pushRule(buildSatisfiesRule(predicate, code)),
 
     // — Conditional rules —
     when: <WRules extends Rule[]>(

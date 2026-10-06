@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { and, eq, gt, gte, isIn, isNotIn, lt, lte, matches, neq, or, v } from "../functions";
+import { and, dateAdd, eq, gt, gte, isIn, isNotIn, lt, lte, matches, neq, or, sameCalendar, v } from "../functions";
 import { ref } from "../reference";
-import { discriminatedUnion, object, string } from "../schemas";
-import { getConditionDependencies, getRulesDependenciesMap } from "./get-condition-dependencies";
+import { date, discriminatedUnion, number, object, string } from "../schemas";
+import { getConditionDependencies, getRulesDependencies, getRulesDependenciesMap } from "./get-condition-dependencies";
 
 // Root schema containing all fields referenced in getConditionDependencies tests
 const rootSchema = object({
@@ -174,7 +174,7 @@ describe("getRulesDependenciesMap", () => {
         staticValue: v("test"),
       });
 
-      const result = getRulesDependenciesMap(schema, "$.field");
+      const result = getRulesDependenciesMap(object({ field: schema }));
 
       expect(result).toEqual({
         dependencies: {
@@ -197,7 +197,7 @@ describe("getRulesDependenciesMap", () => {
           pattern: ref("$.pattern.regex"),
         });
 
-      const result = getRulesDependenciesMap(schema, "$.input");
+      const result = getRulesDependenciesMap(object({ input: schema }));
 
       expect(result).toEqual({
         dependencies: {
@@ -217,7 +217,7 @@ describe("getRulesDependenciesMap", () => {
         numericParam: v(42),
       });
 
-      const result = getRulesDependenciesMap(schema, "$.field");
+      const result = getRulesDependenciesMap(object({ field: schema }));
 
       expect(result).toEqual({
         dependencies: {},
@@ -226,11 +226,63 @@ describe("getRulesDependenciesMap", () => {
     });
   });
 
+  describe("rules with nested functions", () => {
+    it("should extract references nested in a transformer rule parameter", () => {
+      const schema = object({
+        startDate: date(),
+        termInMonths: number(),
+        endDate: date().min(dateAdd(ref("startDate"), ref("termInMonths"), "month")),
+      });
+
+      const result = getRulesDependenciesMap(schema);
+
+      expect(result.dependencies).toEqual({ "$.endDate": new Set(["$.startDate", "$.termInMonths"]) });
+      expect(result.reverse).toEqual({
+        "$.startDate": new Set(["$.endDate"]),
+        "$.termInMonths": new Set(["$.endDate"]),
+      });
+    });
+
+    it("should extract references from a satisfies predicate on a field, excluding the field itself", () => {
+      const schema = object({
+        dateOne: date().satisfies(eq(ref("dateOne"), ref("dateTwo"))),
+        dateTwo: date().satisfies(sameCalendar(ref("dateTwo"), ref("dateOne"), "year")),
+      });
+
+      expect(getRulesDependencies(schema, "dateOne")).toEqual(["$.dateTwo"]);
+      expect(getRulesDependencies(schema, "$.dateTwo")).toEqual(["$.dateOne"]);
+      expect(getRulesDependenciesMap(schema)).toEqual({
+        dependencies: {
+          "$.dateOne": new Set(["$.dateTwo"]),
+          "$.dateTwo": new Set(["$.dateOne"]),
+        },
+        reverse: {
+          "$.dateOne": new Set(["$.dateTwo"]),
+          "$.dateTwo": new Set(["$.dateOne"]),
+        },
+      });
+    });
+  });
+
+  describe("rule placement", () => {
+    it("should only attribute rules to the field that declares them", () => {
+      const schema = object({
+        a: string(),
+        b: string().equals(ref("a")),
+      }).satisfies(eq(ref("a"), ref("b")));
+
+      expect(getRulesDependenciesMap(schema).dependencies).toEqual({
+        $: new Set(["$.a", "$.b"]),
+        "$.b": new Set(["$.a"]),
+      });
+    });
+  });
+
   describe("other rules with references", () => {
     it("should extract dependencies from equals rule with reference", () => {
       const schema = string().equals(ref("confirmPassword"));
 
-      const result = getRulesDependenciesMap(schema, "$.password");
+      const result = getRulesDependenciesMap(object({ password: schema }));
 
       expect(result).toEqual({
         dependencies: {
@@ -245,7 +297,7 @@ describe("getRulesDependenciesMap", () => {
     it("should extract dependencies from oneOf rule with references", () => {
       const schema = string().oneOf([v("static"), ref("allowedValue1"), ref("$.global.allowedValue2")]);
 
-      const result = getRulesDependenciesMap(schema, "$.choice");
+      const result = getRulesDependenciesMap(object({ choice: schema }));
 
       expect(result).toEqual({
         dependencies: {

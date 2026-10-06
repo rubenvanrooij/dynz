@@ -1,6 +1,7 @@
 import type {
   AfterRuleErrorMessage,
   BeforeRuleErrorMessage,
+  BoundaryDayRuleErrorMessage,
   CustomRuleErrorMessage,
   EmailRuleErrorMessage,
   EqualsRuleErrorMessage,
@@ -22,6 +23,8 @@ import type {
   NotIncludesRuleErrorMessage,
   OneOfRuleErrorMessage,
   RegexRuleErrorMessage,
+  SameCalendarRuleErrorMessage,
+  SatisfiesRuleErrorMessage,
 } from "../rules";
 import type { NotOneOfRuleErrorMessage } from "../rules/not-one-off-rule";
 import type { EnumValues } from "../schemas";
@@ -83,6 +86,7 @@ export type ErrorMessage =
   | TypeErrorMessage
   | AfterRuleErrorMessage
   | BeforeRuleErrorMessage
+  | BoundaryDayRuleErrorMessage
   | CustomRuleErrorMessage
   | EmailRuleErrorMessage
   | EqualsRuleErrorMessage
@@ -104,7 +108,9 @@ export type ErrorMessage =
   | MinSizeRuleErrorMessage
   | OneOfRuleErrorMessage
   | NotOneOfRuleErrorMessage
-  | RegexRuleErrorMessage;
+  | RegexRuleErrorMessage
+  | SameCalendarRuleErrorMessage
+  | SatisfiesRuleErrorMessage;
 
 export type ValidationErrorResult = {
   success: false;

@@ -1,5 +1,6 @@
 import { type ToParam, toParamaterValue } from "../../schemas";
 import type { ValueType } from "../../types";
+import { isEqualValue } from "../../utils";
 import type { ParamaterValue } from "../types";
 
 export const notEqualsFunctionType = "neq";
@@ -11,7 +12,7 @@ export type NotEqualsFunction<TLeft extends ParamaterValue = never, TRight exten
 };
 
 /**
- * Creates a "not equals" predicate (left !== right).
+ * Creates a "not equals" predicate (left !== right; dates are compared by their instant).
  *
  * Predicates are boolean expressions used in conditional logic. They evaluate
  * to true/false and are typically used with {@link conditional} rules or combined
@@ -44,5 +45,5 @@ export function neq<
 }
 
 export function notEqualsFunction(left: ValueType | undefined, right: ValueType | undefined): boolean {
-  return left !== right;
+  return !isEqualValue(left, right);
 }

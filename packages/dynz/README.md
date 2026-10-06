@@ -166,6 +166,43 @@ const signupSchema = d.object({
 });
 ```
 
+### Date & Calendar Validation
+
+Compare dates by calendar unit and compute dates relative to other fields. All calendar math is done in **UTC**, so validation gives the same result on the server and in the browser.
+
+```typescript
+import * as d from "dynz";
+
+const contractSchema = d.object({
+  // Must be the first day of a month
+  startDate: d.date().firstDayOf("month"),
+
+  // At least 3 months after the start date, and at most 12 calendar months later
+  endDate: d
+    .date()
+    .min(d.dateAdd(d.ref("startDate"), 3, "month"))
+    .satisfies(
+      d.lte(d.dateDiff(d.ref("endDate"), d.ref("startDate"), "month"), 12),
+      "MAX_12_MONTHS",
+    ),
+
+  // Must fall in the same calendar year as the start date
+  payDate: d.date().sameCalendar(d.ref("startDate"), "year", "SAME_YEAR"),
+
+  // Only required when the contract doesn't start on the 1st
+  proRataReason: d
+    .string()
+    .setRequired(d.eq(d.isFirstDayOf(d.ref("startDate"), "month"), false)),
+});
+```
+
+- **Transformers** (`dateAdd`, `dateDiff`, `startOf`, `endOf`) compute a value, so they can be used anywhere a value is accepted, e.g. `.min()`, `.after()` or a predicate.
+- **Predicates** (`sameCalendar`, `isFirstDayOf`, `isLastDayOf`) are for conditions (`.setRequired()`, `.when()`, ...).
+- **Rules** (`.sameCalendar()`, `.firstDayOf()`, `.lastDayOf()`) validate the date field itself and return a dedicated error code (`same_calendar`, `boundary_day`).
+- **`.satisfies(predicate, code?)`** turns any predicate into a validation rule, for checks without a dedicated rule. It fails only when the predicate evaluates to `false`. Inside the predicate, refer to the field itself by its own name.
+
+Units are `"day" | "month" | "year"` (the first/last-day checks take `"month" | "year"`). Adding months clamps to the end of shorter months (Jan 31st + 1 month = Feb 28th/29th).
+
 ### Mutability Controls
 
 Control when fields can be modified based on conditions:
@@ -503,13 +540,20 @@ Date schemas:
 
 - `.before(value, code?)` - Date must be before value
 - `.after(value, code?)` - Date must be after value
-- `.minDate(value, code?)` - Minimum date (inclusive)
-- `.maxDate(value, code?)` - Maximum date (inclusive)
+- `.min(value, code?)` - Minimum date (inclusive)
+- `.max(value, code?)` - Maximum date (inclusive)
+- `.sameCalendar(date, unit, code?)` - Date must be in the same calendar `"day" | "month" | "year"` (UTC) as `date`
+- `.firstDayOf(unit, code?)` - Date must be the first day of its `"month" | "year"` (UTC)
+- `.lastDayOf(unit, code?)` - Date must be the last day of its `"month" | "year"` (UTC)
 
 Array schemas:
 
 - `.min(value, code?)` - Minimum array length
 - `.max(value, code?)` - Maximum array length
+
+All schemas:
+
+- `.satisfies(predicate, code?)` - Fails when the predicate evaluates to `false`
 
 ### Property Setters (all schema types)
 
@@ -531,13 +575,19 @@ Predicates return a boolean and are used wherever a schema accepts a conditional
 
 Comparison:
 
-- `eq(left, right)` - Equals (`===`)
-- `neq(left, right)` - Not equals (`!==`)
+- `eq(left, right)` - Equals (`===`; dates are compared by instant)
+- `neq(left, right)` - Not equals (`!==`; dates are compared by instant)
 - `gt(left, right)` - Greater than (`>`)
 - `gte(left, right)` - Greater than or equal (`>=`)
 - `lt(left, right)` - Less than (`<`)
 - `lte(left, right)` - Less than or equal (`<=`)
 - `matches(value, pattern, flags?)` - Regex pattern matching
+
+Date (UTC):
+
+- `sameCalendar(left, right, unit)` - Both dates fall in the same `"day" | "month" | "year"`
+- `isFirstDayOf(date, unit)` - Date is the first day of its `"month" | "year"`
+- `isLastDayOf(date, unit)` - Date is the last day of its `"month" | "year"`
 
 Collection:
 
@@ -569,6 +619,13 @@ Math:
 - `sin(value)` - Sine
 - `cos(value)` - Cosine
 - `tan(value)` - Tangent
+
+Date (UTC, `unit` is `"day" | "month" | "year"`):
+
+- `dateAdd(date, amount, unit)` - Add (or with a negative amount, subtract) days, months or years
+- `dateDiff(left, right, unit)` - Number of calendar units between two dates (`left - right`)
+- `startOf(date, unit)` - First moment of the day, month or year
+- `endOf(date, unit)` - Last moment of the day, month or year
 
 Utility:
 
