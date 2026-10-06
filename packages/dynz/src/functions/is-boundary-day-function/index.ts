@@ -24,37 +24,69 @@ export type IsBoundaryDayFunction<
 };
 
 /**
- * Creates a predicate that is true when a date falls on the first or last day
- * of its month or year (UTC). The time of day is ignored.
+ * Creates a predicate that is true when a date falls on the first day of its
+ * month or year (UTC). The time of day is ignored.
  *
  * Evaluates to `undefined` when the date cannot be resolved.
  *
- * **Note:** To validate a date field itself, use the `boundaryDay` rule
- * (`date().boundaryDay('first', 'month')`); use this predicate in conditions
+ * **Note:** To validate a date field itself, use the `firstDayOf` rule
+ * (`date().firstDayOf('month')`); use this predicate in conditions
  * (`when`, `setRequired`, ...).
  *
  * @category Predicate
  * @param value - The date (static date, reference or transformer)
- * @param edge - `'first'` or `'last'` day of the period
  * @param unit - The calendar period: `'month'` or `'year'`
  * @returns A Predicate
  *
  * @example
  * // Only ask for a pro-rata reason when the contract doesn't start on the 1st
- * string().setRequired(eq(isBoundaryDay(ref('startDate'), 'first', 'month'), false))
+ * string().setRequired(eq(isFirstDayOf(ref('startDate'), 'month'), false))
  *
+ * @see {@link isLastDayOf} - Last day of a month or year
  * @see {@link startOf} - First moment of a calendar unit
- * @see {@link endOf} - Last moment of a calendar unit
  */
-export function isBoundaryDay<
-  const TValue extends ParamaterValue<Date> | Date,
-  const TEdge extends BoundaryEdge,
-  const TUnit extends BoundaryUnit,
->(value: TValue, edge: TEdge, unit: TUnit): IsBoundaryDayFunction<ToParam<TValue>, TEdge, TUnit> {
+export function isFirstDayOf<const TValue extends ParamaterValue<Date> | Date, const TUnit extends BoundaryUnit>(
+  value: TValue,
+  unit: TUnit
+): IsBoundaryDayFunction<ToParam<TValue>, "first", TUnit> {
   return {
     type: isBoundaryDayFunctionType,
     value: toParamaterValue(value),
-    edge,
+    edge: "first",
+    unit,
+  };
+}
+
+/**
+ * Creates a predicate that is true when a date falls on the last day of its
+ * month or year (UTC). The time of day is ignored.
+ *
+ * Evaluates to `undefined` when the date cannot be resolved.
+ *
+ * **Note:** To validate a date field itself, use the `lastDayOf` rule
+ * (`date().lastDayOf('year')`); use this predicate in conditions
+ * (`when`, `setRequired`, ...).
+ *
+ * @category Predicate
+ * @param value - The date (static date, reference or transformer)
+ * @param unit - The calendar period: `'month'` or `'year'`
+ * @returns A Predicate
+ *
+ * @example
+ * // Only require a closing note when the period ends on December 31st
+ * string().setRequired(isLastDayOf(ref('periodEnd'), 'year'))
+ *
+ * @see {@link isFirstDayOf} - First day of a month or year
+ * @see {@link endOf} - Last moment of a calendar unit
+ */
+export function isLastDayOf<const TValue extends ParamaterValue<Date> | Date, const TUnit extends BoundaryUnit>(
+  value: TValue,
+  unit: TUnit
+): IsBoundaryDayFunction<ToParam<TValue>, "last", TUnit> {
+  return {
+    type: isBoundaryDayFunctionType,
+    value: toParamaterValue(value),
+    edge: "last",
     unit,
   };
 }

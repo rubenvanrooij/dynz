@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { eq } from "../../functions";
+import { ref } from "../../reference";
 import { type DateSchema, date, object } from "../../schemas";
 import type { Context } from "../../types";
 import { validate } from "../../validate";
@@ -17,7 +19,16 @@ describe("boundary day rule", () => {
   });
 
   it("should be added by the fluent builder", () => {
-    expect(date().boundaryDay("last", "year").rules).toEqual([{ type: "boundary_day", edge: "last", unit: "year" }]);
+    expect(date().firstDayOf("month").rules).toEqual([{ type: "boundary_day", edge: "first", unit: "month" }]);
+    expect(date().lastDayOf("year", "FY_END").rules).toEqual([
+      { type: "boundary_day", edge: "last", unit: "year", code: "FY_END" },
+    ]);
+  });
+
+  it("should be available inside when()", () => {
+    const rules = date().when(eq(ref("type"), "monthly"), (b) => b.lastDayOf("month")).rules;
+
+    expect(rules[0]?.cases[0]?.then).toEqual({ type: "boundary_day", edge: "last", unit: "month" });
   });
 });
 
@@ -53,7 +64,7 @@ describe("boundaryDayRule validator", () => {
   });
 
   it("validates a field via the fluent builder", async () => {
-    const schema = object({ startDate: date().boundaryDay("first", "month", "FIRST_OF_MONTH") });
+    const schema = object({ startDate: date().firstDayOf("month", "FIRST_OF_MONTH") });
 
     expect((await validate(schema, undefined, { startDate: d("2026-03-01T00:00:00Z") })).success).toBe(true);
     expect(await validate(schema, undefined, { startDate: d("2026-03-02T00:00:00Z") })).toMatchObject({

@@ -6,18 +6,18 @@
 Added calendar date functions and rules. All calendar math is done in UTC, so results are the same on the server and in the browser.
 
 - Transformers: `dateAdd(date, amount, unit)`, `dateDiff(left, right, unit)`, `startOf(date, unit)`, `endOf(date, unit)`. `unit` is `"day" | "month" | "year"`.
-- Predicates (for conditions): `sameCalendar(left, right, unit)`, `isBoundaryDay(date, edge, unit)` (`edge` is `"first" | "last"`, `unit` is `"month" | "year"`).
-- Date rules: `date().sameCalendar(date, unit, code?)` and `date().boundaryDay(edge, unit, code?)`.
+- Predicates (for conditions): `sameCalendar(left, right, unit)`, `isFirstDayOf(date, unit)`, `isLastDayOf(date, unit)` (`unit` is `"month" | "year"`).
+- Date rules: `date().sameCalendar(date, unit, code?)` and `date().firstDayOf(unit, code?)`, `date().lastDayOf(unit, code?)`.
 - A generic `satisfies(predicate, code?)` rule on all schemas, which fails when the predicate evaluates to `false`.
 
 ```ts
 object({
-  startDate: date().boundaryDay("first", "month"),
+  startDate: date().firstDayOf("month"),
   endDate: date()
     .min(dateAdd(ref("startDate"), 3, "month"))
     .satisfies(lte(dateDiff(ref("endDate"), ref("startDate"), "month"), 12)),
   payDate: date().sameCalendar(ref("startDate"), "year", "SAME_YEAR"),
-  proRataReason: string().setRequired(eq(isBoundaryDay(ref("startDate"), "first", "month"), false)),
+  proRataReason: string().setRequired(eq(isFirstDayOf(ref("startDate"), "month"), false)),
 });
 ```
 

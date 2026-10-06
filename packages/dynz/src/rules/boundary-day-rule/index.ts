@@ -15,7 +15,9 @@ export type BoundaryDayRuleErrorMessage = ErrorMessageFromRule<BoundaryDayRule>;
  * Creates a validation rule that checks if a date falls on the first or last
  * day of its month or year (UTC). The time of day is ignored.
  *
- * **Note:** This is the rule counterpart of the {@link isBoundaryDay} predicate.
+ * Added through `date().firstDayOf(unit)` and `date().lastDayOf(unit)`.
+ *
+ * **Note:** This is the rule counterpart of the {@link isFirstDayOf} / {@link isLastDayOf} predicates.
  * Use the predicate in conditions (`when`, `setRequired`, ...), and this rule to
  * validate the field itself.
  *
@@ -27,11 +29,11 @@ export type BoundaryDayRuleErrorMessage = ErrorMessageFromRule<BoundaryDayRule>;
  *
  * @example
  * // Start date must be the first day of a month
- * date().boundaryDay('first', 'month')
+ * date().firstDayOf('month')
  *
  * @example
  * // Closing date must be December 31st
- * date().boundaryDay('last', 'year')
+ * date().lastDayOf('year')
  */
 export function buildBoundaryDayRule<E extends BoundaryEdge, U extends BoundaryUnit>(
   edge: E,

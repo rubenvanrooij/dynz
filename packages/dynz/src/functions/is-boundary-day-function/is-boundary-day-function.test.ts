@@ -1,24 +1,29 @@
 import { describe, expect, it } from "vitest";
-import { date, isBoundaryDay, object, ref, v, validate } from "../../index";
+import { date, isFirstDayOf, isLastDayOf, object, ref, v, validate } from "../../index";
 import type { ValueType } from "../../types";
 import { type BoundaryEdge, type BoundaryUnit, isBoundaryDayFunction } from "./index";
 
 const d = (iso: string) => new Date(iso);
 
-describe("isBoundaryDay function", () => {
+describe("isFirstDayOf / isLastDayOf functions", () => {
   it("builds a serializable node with a static edge and unit", () => {
-    expect(isBoundaryDay(ref("startDate"), "first", "month")).toEqual({
+    expect(isFirstDayOf(ref("startDate"), "month")).toEqual({
       type: "is_boundary_day",
       value: ref("startDate"),
       edge: "first",
       unit: "month",
     });
-    expect(isBoundaryDay(d("2026-01-01T00:00:00Z"), "last", "year").value).toEqual(v(d("2026-01-01T00:00:00Z")));
+    expect(isLastDayOf(d("2026-01-01T00:00:00Z"), "year")).toEqual({
+      type: "is_boundary_day",
+      value: v(d("2026-01-01T00:00:00Z")),
+      edge: "last",
+      unit: "year",
+    });
   });
 
   it("validates that a date is the first day of a month", async () => {
     const schema = object({
-      startDate: date().satisfies(isBoundaryDay(ref("startDate"), "first", "month")),
+      startDate: date().satisfies(isFirstDayOf(ref("startDate"), "month")),
     });
 
     expect((await validate(schema, undefined, { startDate: d("2026-03-01T00:00:00Z") })).success).toBe(true);

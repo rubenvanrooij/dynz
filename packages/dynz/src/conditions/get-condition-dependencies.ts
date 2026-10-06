@@ -151,7 +151,7 @@ export function getRulesDependencies(schema: Schema, path: string): string[] {
   const dependencies = fields
     .flatMap((field) => field.rules ?? [])
     .flatMap((rule) => getRuleDependencies(rule, absolutePath, schema))
-    // a field referencing its own value (e.g. `satisfies(isBoundaryDay(ref("startDate"), "first", "month"))`) is not a dependency
+    // a field referencing its own value (e.g. `satisfies(isFirstDayOf(ref("startDate"), "month"))`) is not a dependency
     .filter((dep) => dep !== absolutePath);
 
   return [...new Set(dependencies)];
