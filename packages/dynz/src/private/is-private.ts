@@ -4,3 +4,10 @@ import type { PrivateValue } from "./types";
 export function isPrivateValue<T>(value: unknown): value is PrivateValue<T> {
   return isObject(value) && (value.state === "masked" || value.state === "plain") && "value" in value;
 }
+
+/**
+ * @deprecated Use isPrivateValue
+ */
+export function isPivateValue<T>(value: unknown): value is PrivateValue<T> {
+  return isPrivateValue<T>(value);
+}
