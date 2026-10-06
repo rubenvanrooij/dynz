@@ -1,5 +1,6 @@
 import { type ParamaterValue, resolveExpected } from "../../functions";
 import type { ErrorMessageFromRule, ExtractResolvedRules, RuleFn, Schema } from "../../types";
+import { isEqualValue } from "../../utils";
 
 export type EqualsRule<T extends ParamaterValue = ParamaterValue> = {
   type: "equals";
@@ -49,7 +50,7 @@ export function buildEqualsRule<T extends ParamaterValue>(equals: T, code?: stri
   return { equals, type: "equals", code };
 }
 
-// TODO: verify if we need to support more complex equal checks; e.g. nested data structures or dates (maybe add it as an option??..)
+// TODO: verify if we need to support more complex equal checks; e.g. nested data structures (maybe add it as an option??..)
 export const equalsRule: RuleFn<Schema, Extract<ExtractResolvedRules<Schema>, EqualsRule>, EqualsRuleErrorMessage> = ({
   rule,
   value,
@@ -58,7 +59,7 @@ export const equalsRule: RuleFn<Schema, Extract<ExtractResolvedRules<Schema>, Eq
   schema,
 }) => {
   const equals = resolveExpected(rule.equals, path, context, schema.type);
-  return equals === value
+  return isEqualValue(equals, value)
     ? undefined
     : {
         code: "equals",

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { v } from "../../functions";
 import { REFERENCE_TYPE, ref } from "../../reference";
-import { type NumberSchema, number, type StringSchema, string } from "../../schemas";
+import { type DateSchema, date, type NumberSchema, number, type StringSchema, string } from "../../schemas";
 import type { Context } from "../../types";
 import { buildEqualsRule, equalsRule } from "./index";
 
@@ -128,5 +128,20 @@ describe("equalsRule validator", () => {
     expect(result?.message).toContain("$.role");
     expect(result?.message).toContain("does not equal admin");
     expect(result?.code).toBe("equals");
+  });
+});
+
+describe("equalsRule validator with dates", () => {
+  const context = {} as unknown as Context<DateSchema>;
+
+  it("compares dates by instant instead of identity", async () => {
+    const rule = buildEqualsRule(v(new Date("2026-03-01T00:00:00Z")));
+
+    expect(
+      await equalsRule({ rule, value: new Date("2026-03-01T00:00:00Z"), path: "$.d", schema: date(), context })
+    ).toBeUndefined();
+    expect(
+      (await equalsRule({ rule, value: new Date("2026-03-02T00:00:00Z"), path: "$.d", schema: date(), context }))?.code
+    ).toBe("equals");
   });
 });

@@ -31,7 +31,7 @@ export const beforeRule: RuleFn<Schema, Extract<ExtractResolvedRules<Schema>, Be
   context,
 }) => {
   if (!isDate(value)) {
-    throw new Error("afterRule expects a date value");
+    throw new Error("beforeRule expects a date value");
   }
 
   const before = resolveExpected(rule.before, path, context, SchemaType.DATE);

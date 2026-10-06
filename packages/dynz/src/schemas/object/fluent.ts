@@ -3,10 +3,12 @@ import {
   buildConditionalRule,
   buildMaxEntriesRule,
   buildMinEntriesRule,
+  buildSatisfiesRule,
   type ConditionalRule,
   type MaxEntriesRule,
   type MinEntriesRule,
   type Rule,
+  type SatisfiesRule,
 } from "../../rules";
 import type { JsonRecord, SchemaMeta, SchemaValuesInternal } from "../../types";
 import { type Schema, SchemaType } from "../../types";
@@ -52,6 +54,10 @@ export type ObjectRuleBuilder<TFields extends Record<string, Schema>, TRules ext
     max: P,
     code?: string
   ) => ObjectRuleBuilder<TFields, Push<TRules, MaxEntriesRule<P>>>;
+  satisfies: <P extends Predicate>(
+    predicate: P,
+    code?: string
+  ) => ObjectRuleBuilder<TFields, Push<TRules, SatisfiesRule<P>>>;
 };
 
 // ---------------------------------------------------------------------------
@@ -81,6 +87,11 @@ export type ObjectFluent<TFields extends Record<string, Schema>, TRules extends 
       code?: string
     ) => ObjectFluent<TFields, Push<TRules, MaxEntriesRule<ToParam<P>>>, TProps>;
 
+    /** Validates that a predicate holds (fails when it evaluates to false). @param predicate - Condition that must hold. @param code - Optional error code */
+    satisfies: <P extends Predicate>(
+      predicate: P,
+      code?: string
+    ) => ObjectFluent<TFields, Push<TRules, SatisfiesRule<P>>, TProps>;
     // — Conditional rules —
     /** Applies rules conditionally based on a predicate. @param pred - Condition to evaluate. @param cb - Builder callback for conditional rules */
     when: <WRules extends Rule[]>(
@@ -135,6 +146,7 @@ function createRuleBuilder<TFields extends Record<string, Schema>, TRules extend
     rules,
     minEntries: <P extends ParamaterValue<number>>(min: P, code?: string) => push(buildMinEntriesRule(min, code)),
     maxEntries: <P extends ParamaterValue<number>>(max: P, code?: string) => push(buildMaxEntriesRule(max, code)),
+    satisfies: <P extends Predicate>(predicate: P, code?: string) => push(buildSatisfiesRule(predicate, code)),
   };
 }
 
@@ -160,6 +172,8 @@ function createFluent<TFields extends Record<string, Schema>, TRules extends Rul
       pushRule(buildMinEntriesRule(toParamaterValue(min), code)),
     maxEntries: <P extends ParamaterValue<number> | number>(max: P, code?: string) =>
       pushRule(buildMaxEntriesRule(toParamaterValue(max), code)),
+
+    satisfies: <P extends Predicate>(predicate: P, code?: string) => pushRule(buildSatisfiesRule(predicate, code)),
 
     // — Conditional rules —
     when: <WRules extends Rule[]>(

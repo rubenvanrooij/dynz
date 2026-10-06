@@ -1,6 +1,7 @@
 import type { Schema, ValidateRuleContextUnion } from "../types";
 import { afterRule } from "./after-rule";
 import { beforeRule } from "./before-rule";
+import { boundaryDayRule } from "./boundary-day-rule";
 import { customRule } from "./custom-rule";
 import { emailRule } from "./email-rule";
 import { equalsRule } from "./equals-rule";
@@ -23,6 +24,8 @@ import { notIncludesRule } from "./not-includes-rule";
 import { notOneOfRule } from "./not-one-off-rule";
 import { oneOfRule } from "./one-off-rule";
 import { regexRule } from "./regex-rule";
+import { sameCalendarRule } from "./same-calendar-rule";
+import { satisfiesRule } from "./satisfies-rule";
 
 export function validateRule(context: ValidateRuleContextUnion<Schema>) {
   switch (context.ruleType) {
@@ -30,6 +33,8 @@ export function validateRule(context: ValidateRuleContextUnion<Schema>) {
       return afterRule(context);
     case "before":
       return beforeRule(context);
+    case "boundary_day":
+      return boundaryDayRule(context);
     case "custom":
       return customRule(context);
     case "email":
@@ -74,5 +79,9 @@ export function validateRule(context: ValidateRuleContextUnion<Schema>) {
       return regexRule(context);
     case "not_one_of":
       return notOneOfRule(context);
+    case "same_calendar":
+      return sameCalendarRule(context);
+    case "satisfies":
+      return satisfiesRule(context);
   }
 }

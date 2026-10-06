@@ -159,6 +159,21 @@ export function resolveFunction(
     }
     case "pluck":
       return FUNCTIONS[input.type](resolve(input.array, path, context), input.property);
+    // calendar functions with a static unit
+    case "same_calendar":
+    case "date_diff":
+      return FUNCTIONS[input.type](resolve(input.left, path, context), resolve(input.right, path, context), input.unit);
+    case "date_add":
+      return FUNCTIONS[input.type](
+        resolve(input.value, path, context),
+        resolve(input.amount, path, context),
+        input.unit
+      );
+    case "start_of":
+    case "end_of":
+      return FUNCTIONS[input.type](resolve(input.value, path, context), input.unit);
+    case "is_boundary_day":
+      return FUNCTIONS[input.type](resolve(input.value, path, context), input.edge, input.unit);
     // expects single input value
     case "lookup":
       return FUNCTIONS[input.type](resolve(input.value, path, context), resolve(input.lookup, path, context));

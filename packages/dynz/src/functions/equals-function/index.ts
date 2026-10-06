@@ -1,5 +1,6 @@
 import { type ToParam, toParamaterValue } from "../../schemas";
 import type { ValueType } from "../../types";
+import { isEqualValue } from "../../utils";
 import type { ParamaterValue } from "../types";
 
 export const equalsFunctionType = "eq";
@@ -11,7 +12,7 @@ export type EqualsFunction<TLeft extends ParamaterValue = never, TRight extends 
 };
 
 /**
- * Creates an "equals" predicate (left === right).
+ * Creates an "equals" predicate (left === right; dates are compared by their instant).
  *
  * Predicates are boolean expressions used in conditional logic. They evaluate
  * to true/false and are typically used with {@link conditional} rules or combined
@@ -55,5 +56,5 @@ export function eq<
 }
 
 export function equalsFunction(left: ValueType | undefined, right: ValueType | undefined): boolean {
-  return left === right;
+  return isEqualValue(left, right);
 }

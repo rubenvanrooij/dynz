@@ -2,16 +2,20 @@ import type { AgeFunction } from "./age-function";
 import type { AtanFunction } from "./atan-function";
 import type { CeilFunction } from "./ceil-function";
 import type { CosFunction } from "./cos-function";
+import type { DateAddFunction } from "./date-add-function";
+import type { DateDiffFunction } from "./date-diff-function";
 import type { DivideFunction } from "./divide-function";
+import type { EndOfFunction } from "./end-of-function";
 import type { FloorFunction } from "./floor-function";
 import type { LookupFunction } from "./lookup-function";
 import type { MaxFunction } from "./max-function";
 import type { MinFunction } from "./min-function";
 import type { MultiplyFunction } from "./multiply-function";
+import type { PluckFunction } from "./pluck-function";
 import type { SinFunction } from "./sin-function";
 import type { SizeFunction } from "./size-function";
+import type { StartOfFunction } from "./start-of-function";
 import type { SubFunction } from "./sub-function";
-import type { PluckFunction } from "./pluck-function";
 import type { SumFunction } from "./sum-function";
 import type { TanFunction } from "./tan-function";
 
@@ -64,4 +68,8 @@ export type Transformer =
   | SubFunction
   | MultiplyFunction
   | DivideFunction
-  | LookupFunction;
+  | LookupFunction
+  | DateAddFunction
+  | DateDiffFunction
+  | EndOfFunction
+  | StartOfFunction;

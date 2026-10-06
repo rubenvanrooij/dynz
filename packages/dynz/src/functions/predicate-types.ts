@@ -3,6 +3,7 @@ import type { AndFunction } from "./and-function";
 import type { EqualsFunction } from "./equals-function";
 import type { GreaterThanFunction } from "./greater-than-function";
 import type { GreaterThanOrEqualFunction } from "./greater-than-or-equal-function";
+import type { IsBoundaryDayFunction } from "./is-boundary-day-function";
 import type { IsInFunction } from "./is-in-function";
 import type { IsNotInFunction } from "./is-not-in-function";
 import type { LowerThanFunction } from "./lower-than-function";
@@ -10,6 +11,7 @@ import type { LowerThanOrEqualFunction } from "./lower-than-or-equal-function";
 import type { MatchesFunction } from "./matches-function";
 import type { NotEqualsFunction } from "./not-equals-function";
 import type { OrFunction } from "./or-function";
+import type { SameCalendarFunction } from "./same-calendar-function";
 
 /**
  * A predicate is a boolean expression used in conditional logic.
@@ -53,4 +55,6 @@ export type Predicate =
   | LowerThanOrEqualFunction
   | MatchesFunction
   | NotEqualsFunction
-  | OrFunction;
+  | OrFunction
+  | SameCalendarFunction
+  | IsBoundaryDayFunction;
