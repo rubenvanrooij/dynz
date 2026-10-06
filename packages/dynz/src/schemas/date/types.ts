@@ -1,7 +1,6 @@
 import type { Rule } from "../../rules";
-import type { BaseSchema, PrivateSchema, SchemaType } from "../../types";
+import type { BaseSchema, SchemaType } from "../../types";
 
-export type DateSchema = BaseSchema<Date, typeof SchemaType.DATE, Rule[]> &
-  PrivateSchema & {
-    coerce?: boolean;
-  };
+export type DateSchema = BaseSchema<Date, typeof SchemaType.DATE, Rule[]> & {
+  coerce?: boolean;
+};

@@ -1,10 +1,10 @@
-import { type ObjectSchema, type SchemaInput, type SchemaValues, toFormValues, type ValidateOptions } from "dynz";
-import { type FormContext, type TypedSchema, useForm } from "vee-validate";
+import type { ObjectSchema, SchemaValues, ValidateOptions } from "dynz";
 import { getCurrentInstance, provide } from "vue";
-import { createDependencyResolver, DYNZ_INJECTION_KEY, type DynzContext, type DynzFormMode } from "../context";
+import { type FormContext, type TypedSchema, useForm } from "vee-validate";
+import { DYNZ_INJECTION_KEY, type DynzContext, type DynzFormMode, createDependencyResolver } from "../context";
 import type { MessageTransformerFunc } from "../errors";
-import { dynzTypedSchema } from "../typed-schema";
 import type { DynzFormValues, DynzPartialFormValues } from "../types";
+import { dynzTypedSchema } from "../typed-schema";
 import { getByPath } from "../utils";
 
 export type { DynzFormMode } from "../context";
@@ -23,7 +23,7 @@ export type UseDynzFormOptions<TSchema extends ObjectSchema<never>> = {
    * The persisted values. Passing these turns on mutability enforcement: fields whose
    * `mutable` resolves to `false` may not deviate from the value stored here.
    */
-  currentValues?: SchemaInput<TSchema> | undefined;
+  currentValues?: SchemaValues<TSchema> | undefined;
 
   /** Forwarded to dynz' `validate` (custom rules, stripping excluded values, …). */
   schemaOptions?: ValidateOptions | undefined;
@@ -108,8 +108,7 @@ export function useDynzForm<TSchema extends ObjectSchema<never>>(
   // so the boundary is asserted here rather than fought with casts on every call site.
   form = useForm<DynzFormValues<TSchema>, SchemaValues<TSchema>>({
     ...(name !== undefined ? { name } : {}),
-    // Inputs bind to raw values: masked private fields show their mask string.
-    initialValues: toFormValues(schema, options.initialValues ?? currentValues) as never,
+    initialValues: (options.initialValues ?? currentValues) as never,
     validationSchema: dynzTypedSchema(schema, currentValues, schemaOptions, {
       messageTransformer,
       getValues: () => form.values as unknown as Partial<SchemaValues<TSchema>>,

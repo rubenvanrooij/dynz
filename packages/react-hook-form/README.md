@@ -268,21 +268,23 @@ function EditProfileForm({ initialData }) {
 
 ### Private Field Handling
 
-Pass the server's masked payload (from `maskPrivateValues`) as `currentValues`. The form state holds plain strings, so inputs show the mask text. On submit, an untouched private field goes back as its mask marker and isn't validated in the browser. An edited field is validated and sent as a plain value.
-
 ```tsx
-import { useDynzForm } from "@dynz/react-hook-form";
+import { object, string, plain, mask } from "dynz";
 
-// payload = maskPrivateValues(schema, stored, { maskers }) on the server
-const methods = useDynzForm({ schema, currentValues: payload });
-
-const onSubmit = methods.handleSubmit(async (values) => {
-  // values is a SchemaInput: POST it as-is; the server calls validate(schema, stored, values)
-  await fetch("/api/payout", { method: "PUT", body: JSON.stringify(values) });
+const schema = object({
+  fields: {
+    username: string(),
+    password: string({ private: true }),
+    ssn: string({
+      private: true,
+      default: mask(plain(), (value) => `***-**-${value?.slice(-4)}`),
+    }),
+  },
 });
-```
 
-With the bare resolver, seed the form yourself: `useForm({ defaultValues: toFormValues(schema, payload), resolver: dynzResolver(schema, payload) })`.
+// Private fields are automatically masked in the resolved values
+// but validation still works on the original input
+```
 
 ## Error Handling
 

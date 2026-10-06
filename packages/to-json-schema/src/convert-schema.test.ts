@@ -222,16 +222,11 @@ describe("convertSchema", () => {
     });
   });
 
-  it("emits a private field as its plain schema in output mode", () => {
-    expect(convertSchema(string().setPrivate(true), { ...ctx, mode: "output" })).toEqual({ type: "string" });
-  });
-
-  it("wraps private fields in the raw/plain/masked shape", () => {
+  it("wraps private fields in the plain/masked shape", () => {
     const schema = string().setPrivate(true);
 
     expect(convertSchema(schema, ctx)).toEqual({
       oneOf: [
-        { type: "string" },
         {
           type: "object",
           properties: { state: { const: "plain" }, value: { type: "string" } },
@@ -408,12 +403,11 @@ describe("convertSchema", () => {
       });
     });
 
-    it("wraps private fields in a fully-required, additionalProperties:false raw/plain/masked shape", () => {
+    it("wraps private fields in a fully-required, additionalProperties:false plain/masked shape", () => {
       const schema = string().setPrivate(true);
 
       expect(convertSchema(schema, strictCtx)).toEqual({
         oneOf: [
-          { type: "string" },
           {
             type: "object",
             additionalProperties: false,
@@ -455,7 +449,6 @@ describe("convertSchema", () => {
 
       expect(convertSchema(schema, { ...ctx, unionKeyword: "anyOf" })).toEqual({
         anyOf: [
-          { type: "string" },
           {
             type: "object",
             properties: { state: { const: "plain" }, value: { type: "string" } },

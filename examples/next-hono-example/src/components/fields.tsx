@@ -1,15 +1,14 @@
 "use client";
 
 import { DynzField, type DynzFieldProps, IsIncluded, useOptions } from "@dynz/react-hook-form";
-import { isPrivateSchema, type ObjectSchema, type Schema, SchemaType } from "dynz";
+import { type ObjectSchema, type Schema, SchemaType } from "dynz";
 
 type FieldProps = {
   name: string;
   label: string;
-  hint?: string | undefined;
 };
 
-function FieldShell({ name, label, hint, render }: DynzFieldProps & { label: string; hint?: string | undefined }) {
+function FieldShell({ name, label, render }: DynzFieldProps & { label: string }) {
   return (
     <DynzField
       name={name}
@@ -23,7 +22,6 @@ function FieldShell({ name, label, hint, render }: DynzFieldProps & { label: str
               {props.required && <span className="required"> *</span>}
             </label>
             {render(props)}
-            {hint && <p className="hint">{hint}</p>}
             {errorMessage && <p className="error">{errorMessage}</p>}
           </div>
         );
@@ -32,12 +30,11 @@ function FieldShell({ name, label, hint, render }: DynzFieldProps & { label: str
   );
 }
 
-function TextField({ name, label, hint }: FieldProps) {
+function TextField({ name, label }: FieldProps) {
   return (
     <FieldShell
       label={label}
       name={name}
-      hint={hint}
       render={({ field, required, readOnly }) => (
         <input {...field} type="text" aria-required={required} readOnly={readOnly} />
       )}
@@ -159,17 +156,7 @@ export function SchemaField({ name, fieldSchema }: { name: string; fieldSchema: 
     case SchemaType.NUMBER:
       return <NumberField name={name} label={label} />;
     case SchemaType.STRING:
-      return (
-        <TextField
-          name={name}
-          label={label}
-          hint={
-            isPrivateSchema(fieldSchema)
-              ? "Private — shown masked. Leave it to keep the stored value, or type a new one."
-              : undefined
-          }
-        />
-      );
+      return <TextField name={name} label={label} />;
     default:
       return (
         <p className="note">

@@ -1,6 +1,10 @@
 import type { Schema } from "../types";
-import { isMaskedValue, isPrivateSchema } from "./is-private";
+import { getPrivateData } from "./get-private-data";
 
 export function isValueMasked<T extends Schema>(schema: T, value: unknown): boolean {
-  return isPrivateSchema(schema) && isMaskedValue(value);
+  if (schema.private === true) {
+    return getPrivateData(value).state === "masked";
+  }
+
+  return false;
 }
