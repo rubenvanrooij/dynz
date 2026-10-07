@@ -1,4 +1,6 @@
 import type { ParamaterValue, Predicate } from "../../functions";
+import { withStandard } from "../../standard/standard";
+import type { StandardProps } from "../../standard/types";
 import type { JsonRecord, SchemaMeta } from "../../types";
 import { SchemaType } from "../../types";
 
@@ -17,6 +19,8 @@ export type ExprFluent<TValue extends ParamaterValue, TProps> = {
   /** The computed expression (ref, transformer, static value, etc.) */
   readonly value: TValue;
 } & TProps & {
+    /** Standard Schema interface (https://standardschema.dev) */
+    readonly "~standard": StandardProps<ExprFluent<TValue, TProps>>;
     // — Property setters —
     /** Marks field as required or conditionally required. @param value - Boolean or predicate */
     setRequired: <P extends boolean | Predicate>(value: P) => ExprFluent<TValue, TProps & { required: P }>;
@@ -44,7 +48,7 @@ function createFluent<TValue extends ParamaterValue, TProps>(val: TValue, props:
   const setProp = <K extends string, V>(key: K, value: V): ExprFluent<TValue, TProps & Record<K, V>> =>
     createFluent(val, { ...props, [key]: value } as TProps & Record<K, V>);
 
-  return {
+  return withStandard({
     type: SchemaType.EXPRESSION,
     value: val,
     ...props,
@@ -58,7 +62,7 @@ function createFluent<TValue extends ParamaterValue, TProps>(val: TValue, props:
     setUi: <TUI extends JsonRecord>(config: TUI) => setProp("ui", config),
     setMeta: <M extends SchemaMeta>(meta: M) => setProp("meta", { ...(props as { meta?: SchemaMeta }).meta, ...meta }),
     describe: (description: string) => setProp("meta", { ...(props as { meta?: SchemaMeta }).meta, description }),
-  } as ExprFluent<TValue, TProps>;
+  } as ExprFluent<TValue, TProps>);
 }
 
 // ---------------------------------------------------------------------------

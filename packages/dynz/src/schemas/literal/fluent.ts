@@ -1,4 +1,6 @@
 import type { Predicate } from "../../functions";
+import { withStandard } from "../../standard/standard";
+import type { StandardProps } from "../../standard/types";
 import type { JsonRecord, SchemaMeta } from "../../types";
 import { SchemaType } from "../../types";
 import type { LiteralValue } from "./types";
@@ -11,6 +13,8 @@ export type LiteralFluent<TValue extends LiteralValue, TProps> = {
   readonly type: typeof SchemaType.LITERAL;
   readonly value: TValue;
 } & TProps & {
+    /** Standard Schema interface (https://standardschema.dev) */
+    readonly "~standard": StandardProps<LiteralFluent<TValue, TProps>>;
     setRequired: <P extends boolean | Predicate>(value: P) => LiteralFluent<TValue, TProps & { required: P }>;
     optional: () => LiteralFluent<TValue, TProps & { required: false }>;
     setMutable: <P extends boolean | Predicate>(value: P) => LiteralFluent<TValue, TProps & { mutable: P }>;
@@ -33,7 +37,7 @@ function createFluent<TValue extends LiteralValue, TProps>(
   const setProp = <K extends string, V>(key: K, v: V): LiteralFluent<TValue, TProps & Record<K, V>> =>
     createFluent(value, { ...props, [key]: v } as TProps & Record<K, V>);
 
-  return {
+  return withStandard({
     type: SchemaType.LITERAL,
     value,
     ...props,
@@ -47,7 +51,7 @@ function createFluent<TValue extends LiteralValue, TProps>(
     setUi: <TUI extends JsonRecord>(config: TUI) => setProp("ui", config),
     setMeta: <M extends SchemaMeta>(meta: M) => setProp("meta", { ...(props as { meta?: SchemaMeta }).meta, ...meta }),
     describe: (description: string) => setProp("meta", { ...(props as { meta?: SchemaMeta }).meta, description }),
-  } as LiteralFluent<TValue, TProps>;
+  } as LiteralFluent<TValue, TProps>);
 }
 
 // ---------------------------------------------------------------------------

@@ -18,6 +18,8 @@ import {
   type SameCalendarRule,
   type SatisfiesRule,
 } from "../../rules";
+import { withStandard } from "../../standard/standard";
+import type { StandardProps } from "../../standard/types";
 import type { JsonRecord, SchemaMeta } from "../../types";
 import { SchemaType } from "../../types";
 import type { DateUnit } from "../../utils/date-utils";
@@ -74,6 +76,8 @@ export type DateFluent<TRules extends Rule[], TProps> = {
   /** Accumulated validation rules for this date */
   readonly rules: TRules;
 } & TProps & {
+    /** Standard Schema interface (https://standardschema.dev) */
+    readonly "~standard": StandardProps<DateFluent<TRules, TProps>>;
     // — Rule methods —
     /** Validates date is strictly after a given date (exclusive). @param date - Boundary date. @param code - Optional error code */
     after: <P extends ParamaterValue<Date> | Date>(
@@ -184,7 +188,7 @@ function createFluent<TRules extends Rule[], TProps>(rules: TRules, props: TProp
   const setProp = <K extends string, V>(key: K, value: V): DateFluent<TRules, TProps & Record<K, V>> =>
     createFluent(rules, { ...props, [key]: value } as TProps & Record<K, V>);
 
-  return {
+  return withStandard({
     type: SchemaType.DATE,
     rules,
     ...props,
@@ -228,7 +232,7 @@ function createFluent<TRules extends Rule[], TProps>(rules: TRules, props: TProp
     setUi: <TUI extends JsonRecord>(config: TUI) => setProp("ui", config),
     setMeta: <M extends SchemaMeta>(meta: M) => setProp("meta", { ...(props as { meta?: SchemaMeta }).meta, ...meta }),
     describe: (description: string) => setProp("meta", { ...(props as { meta?: SchemaMeta }).meta, description }),
-  } as DateFluent<TRules, TProps>;
+  } as DateFluent<TRules, TProps>);
 }
 
 // ---------------------------------------------------------------------------

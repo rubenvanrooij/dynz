@@ -30,6 +30,8 @@ import {
   type Rule,
   type SatisfiesRule,
 } from "../../rules";
+import { withStandard } from "../../standard/standard";
+import type { StandardProps } from "../../standard/types";
 import type { JsonRecord, SchemaMeta } from "../../types";
 import { SchemaType } from "../../types";
 import { type ToParam, toParamaterValue } from "../shared";
@@ -105,6 +107,8 @@ export type StrFluent<TRules extends Rule[], TProps> = {
   /** Accumulated validation rules for this string */
   readonly rules: TRules;
 } & TProps & {
+    /** Standard Schema interface (https://standardschema.dev) */
+    readonly "~standard": StandardProps<StrFluent<TRules, TProps>>;
     // — Rule methods —
     /** Sets minimum string length. @param min - Minimum character count. @param code - Optional error code */
     min: <P extends ParamaterValue<number> | number>(
@@ -244,7 +248,7 @@ function createFluent<TRules extends Rule[], TProps>(rules: TRules, props: TProp
   const setProp = <K extends string, V>(key: K, value: V): StrFluent<TRules, TProps & Record<K, V>> =>
     createFluent(rules, { ...props, [key]: value } as TProps & Record<K, V>);
 
-  return {
+  return withStandard({
     type: SchemaType.STRING,
     rules,
     ...props,
@@ -297,7 +301,7 @@ function createFluent<TRules extends Rule[], TProps>(rules: TRules, props: TProp
     setUi: <TUI extends JsonRecord>(config: TUI) => setProp("ui", config),
     setMeta: <M extends SchemaMeta>(meta: M) => setProp("meta", { ...(props as { meta?: SchemaMeta }).meta, ...meta }),
     describe: (description: string) => setProp("meta", { ...(props as { meta?: SchemaMeta }).meta, description }),
-  } as StrFluent<TRules, TProps>;
+  } as StrFluent<TRules, TProps>);
 }
 
 // ---------------------------------------------------------------------------
