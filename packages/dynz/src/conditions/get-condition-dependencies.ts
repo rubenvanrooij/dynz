@@ -1,5 +1,6 @@
 import type { ParamaterValue, Predicate, Transformer } from "../functions";
 import { isReference } from "../reference";
+import { isResourceReference } from "../resource";
 import type { Rule } from "../rules";
 import { type Schema, SchemaType } from "../types";
 import { ensureAbsolutePath, findPossibleSchemasByPath } from "../utils";
@@ -87,7 +88,8 @@ export function getParamaterDependencies(param: ParamaterValue, path: string, sc
     return [...new Set([referencePath, ...dependencies])];
   }
 
-  if (param === undefined || param.type === "st") {
+  // TODO: resources are not fields; their dependencies come with resource resolution
+  if (param === undefined || param.type === "st" || isResourceReference(param)) {
     return [];
   }
 
@@ -102,7 +104,8 @@ function isFunction(value: unknown): value is Predicate | Transformer {
     "type" in value &&
     typeof value.type === "string" &&
     value.type !== "st" &&
-    !isReference(value)
+    !isReference(value) &&
+    !isResourceReference(value)
   );
 }
 

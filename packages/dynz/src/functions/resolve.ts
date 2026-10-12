@@ -102,6 +102,11 @@ export function resolve<TParam extends ParamaterValue, TPath extends string, TSc
     return input.value;
   }
 
+  // TODO: resolve resources; until then a resource is never available
+  if (input.type === "_rref") {
+    return undefined;
+  }
+
   return resolveFunction(input, path, context);
 }
 

@@ -3,6 +3,7 @@ export * from "./functions";
 export * from "./introspection";
 export * from "./private";
 export * from "./reference";
+export * from "./resource";
 export * from "./rules";
 export * from "./schemas";
 export * from "./serialize";
