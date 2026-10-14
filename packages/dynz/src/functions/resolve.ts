@@ -1,8 +1,9 @@
-import { isIncluded } from "../conditions";
+import { resolveProperty } from "../conditions";
 import type { Reference } from "../reference";
+import type { ResourceReference } from "../resource";
 import type { ResolveContext, Schema, SchemaType, ValueType } from "../types";
-import { coerce, coerceSchema, ensureAbsolutePath, getNested } from "../utils";
-import { validateShallowType, validateType } from "../validate/validate-type";
+import { coerce, coerceSchema, ensureAbsolutePath, getNested, pathSegments } from "../utils";
+import { isObject, validateShallowType, validateType } from "../validate/validate-type";
 import type { Predicate } from "./predicate-types";
 import { PREDICATES } from "./predicates";
 import type { Transformer } from "./transformer-types";
@@ -29,8 +30,9 @@ export function unpackRef<T extends SchemaType = SchemaType>(
 
   const { schema, value } = ret;
 
-  // only return when the schema is actually included
-  if (!isIncluded(context.schema, absolutePath, context.values)) {
+  // only return when the schema is actually included; resolved with this context so
+  // resource references in `included` see the same resources
+  if (!resolveProperty("included", absolutePath, true, context)) {
     return undefined;
   }
 
@@ -60,6 +62,39 @@ export function unpackRef<T extends SchemaType = SchemaType>(
   }
 
   return undefined;
+}
+
+/**
+ * Resolves a resource reference (`vehicle.outcome`, `vehicle.data.make`) from `path`.
+ *
+ * The resource is looked up in `context.resources` by walking up from `path`, longest
+ * prefix first: from `$.drivers.[2].plate`, `vehicle` is tried as
+ * `$.drivers.[2].plate.vehicle`, `$.drivers.[2].vehicle`, `$.drivers.vehicle` and
+ * `$.vehicle`. The nearest one wins. The rest of the reference is read from its state.
+ *
+ * Paths are compared by their segments, so `path` and the keys of `context.resources` may
+ * write array items differently (`.[2]`, `[2]` or `.2`).
+ *
+ * @returns `undefined` when no resource is found or the addressed part does not exist
+ */
+export function unpackResourceRef(
+  ref: ResourceReference,
+  path: string,
+  context: ResolveContext
+): ValueType | undefined {
+  const [name, ...field] = ref.path.split(".");
+  const segments = pathSegments(path);
+  const states = Object.entries(context.resources ?? {}).map(([resourcePath, state]) => ({
+    path: pathSegments(resourcePath).join("."),
+    state,
+  }));
+
+  const state = segments
+    .map((_, index) => [...segments.slice(0, segments.length - index), name].join("."))
+    .map((resourcePath) => states.find((candidate) => candidate.path === resourcePath)?.state)
+    .find((state) => state !== undefined);
+
+  return field.reduce<unknown>((acc, cur) => (isObject(acc) ? acc[cur] : undefined), state) as ValueType | undefined;
 }
 
 export function resolveExpected<T extends SchemaType = SchemaType>(
@@ -102,9 +137,8 @@ export function resolve<TParam extends ParamaterValue, TPath extends string, TSc
     return input.value;
   }
 
-  // TODO: resolve resources; until then a resource is never available
   if (input.type === "_rref") {
-    return undefined;
+    return unpackResourceRef(input, path, context);
   }
 
   return resolveFunction(input, path, context);

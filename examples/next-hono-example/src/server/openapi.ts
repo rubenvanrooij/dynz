@@ -1,5 +1,5 @@
 import { toStandardJsonSchema } from "@dynz/to-json-schema";
-import { RECEIPT_REQUIRED_FROM, expenseClaimSchema } from "./expense-claim-schema";
+import { expenseClaimSchema, RECEIPT_REQUIRED_FROM } from "./expense-claim-schema";
 
 /**
  * The OpenAPI document is *generated from the dynz schema*, not maintained alongside

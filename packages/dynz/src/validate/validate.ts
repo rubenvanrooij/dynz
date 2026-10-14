@@ -1,6 +1,7 @@
 import { resolveProperty, resolveRules } from "../conditions";
 import { resolve } from "../functions";
 import { isPrivateValue, isValueMasked, type PrivateValue } from "../private";
+import { evaluateResources } from "../resource";
 import { validateRule } from "../rules";
 import {
   type Context,
@@ -16,12 +17,16 @@ import {
 import { coerceSchema, withDefault } from "../utils";
 import { isArray, isObject, validateType } from "./validate-type";
 
-export function validate<T extends Schema>(
+export async function validate<T extends Schema>(
   schema: T,
   currentValues: SchemaValues<T> | undefined,
   newValues: unknown,
   options: ValidateOptions = {}
 ): Promise<ValidationResult<SchemaValues<T>>> {
+  // resources are looked up once, up front, against the submitted values
+  const resources =
+    options.resolvers === undefined ? undefined : await evaluateResources(schema, newValues, options.resolvers);
+
   return _validate(schema, { current: currentValues, new: newValues }, "$", {
     type: "validate",
     schema,
@@ -29,6 +34,7 @@ export function validate<T extends Schema>(
     validateMutable: currentValues !== undefined,
     currentValues: currentValues,
     values: newValues,
+    resources,
   }) as Promise<ValidationResult<SchemaValues<T>>>;
 }
 

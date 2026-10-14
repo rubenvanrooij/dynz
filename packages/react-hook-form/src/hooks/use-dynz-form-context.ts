@@ -1,10 +1,14 @@
 import type { ObjectSchema, RulesDependencyMap, SchemaValues } from "dynz";
 import { type FieldValues, useFormContext } from "react-hook-form";
+import { createResourceStore, type ResourceStore } from "./resource-store";
+
+/** For forms set up without `useDynzForm`'s store: no resources, never notifies. */
+const NO_RESOURCES = createResourceStore();
 
 export function useDynzFormContext<T extends ObjectSchema<never>, TFieldValues extends FieldValues>() {
   const context = useFormContext<
     TFieldValues,
-    { schema: T; dependencies: RulesDependencyMap; name?: string | undefined },
+    { schema: T; dependencies: RulesDependencyMap; resources?: ResourceStore; name?: string | undefined },
     SchemaValues<T>
   >();
 
@@ -28,6 +32,7 @@ export function useDynzFormContext<T extends ObjectSchema<never>, TFieldValues e
     ...context,
     schema: schema,
     name: context.control._options.context?.name,
+    resources: context.control._options.context?.resources ?? NO_RESOURCES,
     getDependencies: getDependencies,
   };
 }

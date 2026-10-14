@@ -159,6 +159,9 @@ importers:
       '@hookform/resolvers':
         specifier: 5.2.2
         version: 5.2.2(react-hook-form@7.80.0(react@19.2.0))
+      '@tanstack/react-query':
+        specifier: ^5.104.2
+        version: 5.104.2(react@19.2.0)
       dynz:
         specifier: workspace:*
         version: link:../../packages/dynz
@@ -1600,6 +1603,14 @@ packages:
 
   '@tailwindcss/postcss@4.1.13':
     resolution: {integrity: sha512-HLgx6YSFKJT7rJqh9oJs/TkBFhxuMOfUKSBEPYwV+t78POOBsdQ7crhZLzwcH3T0UyUuOzU/GK5pk5eKr3wCiQ==}
+
+  '@tanstack/query-core@5.104.2':
+    resolution: {integrity: sha512-/qbsxJK5c3Ve1aFIULWYNcT2jeRUAiD4HME6Eu2ZdpofHoVgAjpkQhLg5xHuOoBkTPQUJLfP7zOxy0qsBcqROA==}
+
+  '@tanstack/react-query@5.104.2':
+    resolution: {integrity: sha512-xKmzWGhadbE5wGS/ZmXShRITnI9oItox5GO14KvFZco3+vhTAyXS1erYzJWdiY280zapAGJXFUL9nHgwP6SV/g==}
+    peerDependencies:
+      react: ^18 || ^19
 
   '@testing-library/dom@10.4.1':
     resolution: {integrity: sha512-o4PXJQidqJl82ckFaXUeoAW+XysPLauYI43Abki5hABd853iMhitooc6znOnczgbTYmEP6U6/y1ZyKAIsvMKGg==}
@@ -5348,6 +5359,13 @@ snapshots:
       '@tailwindcss/oxide': 4.1.13
       postcss: 8.5.26
       tailwindcss: 4.1.13
+
+  '@tanstack/query-core@5.104.2': {}
+
+  '@tanstack/react-query@5.104.2(react@19.2.0)':
+    dependencies:
+      '@tanstack/query-core': 5.104.2
+      react: 19.2.0
 
   '@testing-library/dom@10.4.1':
     dependencies:

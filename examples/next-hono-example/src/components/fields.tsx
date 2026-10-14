@@ -1,7 +1,11 @@
 "use client";
 
-import { DynzField, type DynzFieldProps, IsIncluded, useOptions } from "@dynz/react-hook-form";
-import { type ObjectSchema, type Schema, SchemaType } from "dynz";
+import { DynzField, type DynzFieldProps, IsIncluded, useDynzFormContext, useOptions } from "@dynz/react-hook-form";
+import { type ArraySchema, type ObjectSchema, type Schema, SchemaType } from "dynz";
+import type { ReactNode } from "react";
+import { get, useFieldArray, useFormState } from "react-hook-form";
+
+type ItemExtra = (index: number) => ReactNode;
 
 type FieldProps = {
   name: string;
@@ -37,6 +41,18 @@ function TextField({ name, label }: FieldProps) {
       name={name}
       render={({ field, required, readOnly }) => (
         <input {...field} type="text" aria-required={required} readOnly={readOnly} />
+      )}
+    />
+  );
+}
+
+function DateField({ name, label }: FieldProps) {
+  return (
+    <FieldShell
+      label={label}
+      name={name}
+      render={({ field, required, readOnly }) => (
+        <input {...field} value={field.value ?? ""} type="date" required={required} readOnly={readOnly} />
       )}
     />
   );
@@ -131,6 +147,77 @@ function ObjectField({ name, label, fieldSchema }: FieldProps & { fieldSchema: O
   );
 }
 
+/** A blank item for an array of objects: empty text fields, everything else unset. */
+function emptyItem(itemSchema: ObjectSchema<never>): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(itemSchema.fields).map(([key, field]) => [
+      key,
+      field.type === SchemaType.STRING ? "" : field.type === SchemaType.OBJECT ? emptyItem(field) : undefined,
+    ])
+  );
+}
+
+/**
+ * A list of objects with add and remove buttons. Each item renders its fields like a
+ * nested object; the array's own rules (e.g. `max(5)`) show as an error under the list.
+ */
+function ArrayField({
+  name,
+  label,
+  fieldSchema,
+  itemExtra,
+}: FieldProps & { fieldSchema: ArraySchema<Schema>; itemExtra?: ItemExtra }) {
+  const { control } = useDynzFormContext();
+  const { fields, append, remove } = useFieldArray({ control, name });
+  const { errors } = useFormState({ control, name });
+  const error = get(errors, name) as { message?: string; root?: { message?: string } } | undefined;
+  const message = error?.message ?? error?.root?.message;
+  const itemSchema = fieldSchema.schema;
+
+  if (itemSchema.type !== SchemaType.OBJECT) {
+    return (
+      <p className="note">
+        Only arrays of objects have a control in this example (<code>{name}</code>).
+      </p>
+    );
+  }
+
+  return (
+    <IsIncluded name={name}>
+      <fieldset className="group">
+        <legend>{label}</legend>
+        <div className="fields">
+          {fields.map((item, index) => (
+            <div key={item.id} className="array-item">
+              <div className="array-item__header">
+                <strong>{index + 1}.</strong>
+                <button type="button" className="link" onClick={() => remove(index)}>
+                  Remove
+                </button>
+              </div>
+              {Object.entries(itemSchema.fields).map(([key, childSchema]) => (
+                <SchemaField key={key} name={`${name}.${index}.${key}`} fieldSchema={childSchema} />
+              ))}
+              {itemExtra?.(index)}
+            </div>
+          ))}
+          {fields.length === 0 && <p className="lookup">None added.</p>}
+          {message && <p className="error">{message}</p>}
+          <div>
+            <button
+              type="button"
+              className="secondary"
+              onClick={() => append(emptyItem(itemSchema as ObjectSchema<never>))}
+            >
+              Add
+            </button>
+          </div>
+        </div>
+      </fieldset>
+    </IsIncluded>
+  );
+}
+
 /** `travel.plateNumber` → `Plate number` */
 function humanize(name: string): string {
   const leaf = name.split(".").pop() ?? name;
@@ -142,12 +229,25 @@ function humanize(name: string): string {
  * Picks a control based on the schema type alone, recursing into nested objects. The
  * browser has never seen this schema before — it arrived over the wire a moment ago.
  */
-export function SchemaField({ name, fieldSchema }: { name: string; fieldSchema: Schema }) {
+export function SchemaField({
+  name,
+  fieldSchema,
+  itemExtra,
+}: {
+  name: string;
+  fieldSchema: Schema;
+  /** For an array: extra content under each item, e.g. a lookup result for that item. */
+  itemExtra?: ItemExtra;
+}) {
   const label = humanize(name);
 
   switch (fieldSchema.type) {
     case SchemaType.OBJECT:
       return <ObjectField name={name} label={label} fieldSchema={fieldSchema as ObjectSchema<never>} />;
+    case SchemaType.ARRAY:
+      return (
+        <ArrayField name={name} label={label} fieldSchema={fieldSchema as ArraySchema<Schema>} itemExtra={itemExtra} />
+      );
     case SchemaType.OPTIONS:
     case SchemaType.ENUM:
       return <SelectField name={name} label={label} />;
@@ -157,6 +257,11 @@ export function SchemaField({ name, fieldSchema }: { name: string; fieldSchema: 
       return <NumberField name={name} label={label} />;
     case SchemaType.STRING:
       return <TextField name={name} label={label} />;
+    case SchemaType.DATE:
+      return <DateField name={name} label={label} />;
+    // derived on validation, never typed in
+    case SchemaType.EXPRESSION:
+      return null;
     default:
       return (
         <p className="note">

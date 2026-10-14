@@ -1,4 +1,5 @@
 import { resolvePredicate } from "../functions";
+import type { ResourceStates } from "../resource";
 import type { OptionsSchema } from "../schemas";
 import { type Schema, SchemaType } from "../types";
 import { ensureAbsolutePath, findSchemaByPath } from "../utils";
@@ -54,12 +55,16 @@ export function getOptions<T extends Schema>(
  * relative `ref(...)` inside that predicate resolves against `path`'s own
  * siblings: passing the wrong path silently resolves the ref against the
  * wrong field (or the schema root).
+ *
+ * `resources` are the looked-up resource states; an `enabled` predicate with a
+ * `resourceRef` resolves against them (without them it sees `undefined`).
  */
 export function getOptionsForSchema<T extends Schema>(
   schema: OptionsSchema,
   path: string,
   rootSchema: T,
-  values: unknown
+  values: unknown,
+  resources?: ResourceStates
 ): Array<{ enabled: boolean; value: string | number | boolean }> {
   return schema.options.map((option) => {
     if (typeof option !== "object") {
@@ -72,7 +77,7 @@ export function getOptionsForSchema<T extends Schema>(
 
     return {
       value: option.value,
-      enabled: resolvePredicate(option.enabled, path, { schema: rootSchema, values }) ?? false,
+      enabled: resolvePredicate(option.enabled, path, { schema: rootSchema, values, resources }) ?? false,
     };
   });
 }

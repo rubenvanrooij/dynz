@@ -13,6 +13,7 @@ import {
   type Resource,
   resource,
   resourceRef,
+  resourceReferencePath,
 } from "./resource";
 
 type Vehicle = { make: string; model: string };
@@ -63,6 +64,19 @@ describe("resource", () => {
   it("is recognised by isResource", () => {
     expect(isResource(resource({ key: ref("plate"), outcomes: [] }))).toBe(true);
     expect(isResource(ref("plate"))).toBe(false);
+  });
+});
+
+describe("resourceReferencePath", () => {
+  it("resolves a bare reference from the object declaring the resource", () => {
+    expect(resourceReferencePath("plate", "$")).toBe("$.plate");
+    expect(resourceReferencePath("plate", "$.driver")).toBe("$.driver.plate");
+    expect(resourceReferencePath("car.plate", "$.drivers.[2]")).toBe("$.drivers.[2].car.plate");
+  });
+
+  it("resolves a `$` reference from the root", () => {
+    expect(resourceReferencePath("$.plate", "$.driver")).toBe("$.plate");
+    expect(resourceReferencePath("$", "$.driver")).toBe("$");
   });
 });
 
