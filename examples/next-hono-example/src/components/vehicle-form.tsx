@@ -1,19 +1,13 @@
 "use client";
 
-import {
-  DynzFormProvider,
-  IsIncluded,
-  useDynzForm,
-  useDynzFormContext,
-  usePredicate,
-  useResource,
-} from "@dynz/react-hook-form";
+import { DynzFormProvider, useDynzForm, useDynzFormContext, usePredicate, useResource } from "@dynz/react-hook-form";
 import { useMutation } from "@tanstack/react-query";
-import type { ObjectSchema, ResourceResolver, ResourceState } from "dynz";
-import type { ReactNode } from "react";
+import { findSchemaByPath, type ObjectSchema, type ResourceResolver, type ResourceState } from "dynz";
+import { type ReactNode, useState } from "react";
 import type { FieldValues } from "react-hook-form";
 import { client } from "@/lib/client";
 import { queryClient } from "@/lib/query-client";
+import type { FunnelStep } from "@/server/vehicle-funnel";
 import {
   ALL_RISK,
   ALL_RISK_MIN_YEAR,
@@ -23,39 +17,7 @@ import {
   QUOTE_ONLY,
   type Vehicle,
 } from "@/server/vehicle-schema";
-import { SchemaField } from "./fields";
-
-const FUNNEL = {
-  steps: [{
-    id: 'vehicle',
-    fields: [{
-      path: 'ownership',
-      widget: 'dropdown'
-    }, {
-      path: 'vehicleConfirmed',
-      widget: 'checkbox'
-    }, {
-      path: 'manualVehicle.make',
-      widget: 'short_text'
-    }, {
-      path: 'manualVehicle.model',
-      widget: 'short_text'
-    }, {
-      path: 'manualVehicle.year',
-      widget: 'short_text'
-    }]
-  }, {
-    id: 'driver',
-    fields: [{
-      path: 'driver.name',
-      widget: 'short_text'
-    },
-    {
-      path: 'driver.birthDate',
-      widget: 'date'
-    }]
-  }]
-}
+import { WidgetField } from "./fields";
 
 /**
  * A resolver through React Query: lookups of the same key share one request, a settled key
@@ -228,19 +190,6 @@ function PaymentHint() {
   ) : null;
 }
 
-function SubmitButton({ pending }: { pending: boolean }) {
-  const notDeclined = usePredicate(NOT_DECLINED);
-  const quoteOnly = usePredicate(QUOTE_ONLY);
-
-  return notDeclined ? (
-    <div className="actions">
-      <button type="submit" disabled={pending}>
-        {quoteOnly ? "Request a quote" : "Buy"}
-      </button>
-    </div>
-  ) : null;
-}
-
 function Step({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="fields">
@@ -250,96 +199,190 @@ function Step({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-export function VehicleForm({ schema }: { schema: ObjectSchema<never> }) {
+type Values = Record<string, unknown>;
+
+const isRecord = (value: unknown): value is Values => typeof value === "object" && value !== null;
+
+const getPath = (values: unknown, path: string): unknown =>
+  path.split(".").reduce<unknown>((acc, key) => (isRecord(acc) ? acc[key] : undefined), values);
+
+const setPath = (values: Values, path: string, value: unknown): Values => {
+  const [head, ...rest] = path.split(".") as [string, ...string[]];
+
+  return {
+    ...values,
+    [head]: rest.length === 0 ? value : setPath(isRecord(values[head]) ? values[head] : {}, rest.join("."), value),
+  };
+};
+
+/** A step's own answers into what the funnel has so far; the fields it only reads stay as they were. */
+const mergeStep = (values: Values, step: FunnelStep, answers: Values) =>
+  step.fields.reduce((acc, { path }) => setPath(acc, path, getPath(answers, path)), values);
+
+const INITIAL_VALUES: Values = {
+  plate: "",
+  vehicleConfirmed: false,
+  manualVehicle: { make: "", model: "" },
+  driver: {
+    name: "",
+    birthDate: "",
+    licenceNumber: "",
+    licenceDate: "",
+    address: { street: "", postcode: "", city: "" },
+    previousInsurer: "",
+  },
+  additionalDrivers: [],
+};
+
+/** What this channel shows next to a field, beyond the field itself. */
+const AFTER_FIELD: Record<string, ReactNode> = {
+  plate: <VehicleCard />,
+  "driver.licenceNumber": <ClaimsHint />,
+  coverage: <AllRiskHint />,
+  paymentMethod: <PaymentHint />,
+};
+
+const AFTER_STEP: Record<string, ReactNode> = {
+  vehicle: <Eligibility />,
+};
+
+function Navigation({ last, pending, onBack }: { last: boolean; pending: boolean; onBack?: () => void }) {
+  const notDeclined = usePredicate(NOT_DECLINED);
+  const quoteOnly = usePredicate(QUOTE_ONLY);
+
+  return (
+    <div className="actions">
+      {onBack && (
+        <button type="button" className="secondary" onClick={onBack}>
+          Back
+        </button>
+      )}
+      {notDeclined && (
+        <button type="submit" disabled={pending}>
+          {!last ? "Next" : quoteOnly ? "Request a quote" : "Buy"}
+        </button>
+      )}
+    </div>
+  );
+}
+
+/**
+ * One step, one form: its own schema (the step's fields plus what they depend on), started
+ * from everything answered so far. The fields it only depends on aren't rendered; their
+ * values are the earlier steps' answers, and its resources are looked up again from them
+ * (React Query answers from its cache).
+ */
+function StepForm({
+  step,
+  number,
+  values,
+  last,
+  pending,
+  onBack,
+  onNext,
+}: {
+  step: FunnelStep;
+  number: number;
+  values: Values;
+  last: boolean;
+  pending: boolean;
+  onBack?: (values: Values) => void;
+  onNext: (values: Values) => void;
+}) {
   const methods = useDynzForm<ObjectSchema<never>, FieldValues>({
-    schema,
-    defaultValues: {
-      plate: "",
-      vehicleConfirmed: false,
-      manualVehicle: { make: "", model: "" },
-      driver: {
-        name: "",
-        birthDate: "",
-        licenceNumber: "",
-        licenceDate: "",
-        address: { street: "", postcode: "", city: "" },
-        previousInsurer: "",
-      },
-      additionalDrivers: [],
-    },
+    schema: step.schema,
+    defaultValues: values,
     mode: "onBlur",
     reValidateMode: "onChange",
     schemaOptions: SCHEMA_OPTIONS,
   });
 
-  // the server looks every resource up again: only the user's input goes over the wire
+  // the raw answers: a field left out by a condition keeps its value for when it comes back,
+  // the server strips it anyway
+  const answers = () => mergeStep(values, step, methods.getValues());
+
+  return (
+    <DynzFormProvider {...methods}>
+      <form onSubmit={methods.handleSubmit(() => onNext(answers()))} noValidate>
+        <Step title={`${number}. ${step.title}`}>
+          {step.fields.map(({ path, widget }) => (
+            <div key={path}>
+              <WidgetField
+                name={path}
+                widget={widget}
+                fieldSchema={findSchemaByPath(`$.${path}`, step.schema)}
+                itemExtra={(index) => <ClaimsHint path={`$.${path}.[${index}].driverClaims`} />}
+              />
+              {AFTER_FIELD[path]}
+            </div>
+          ))}
+          {AFTER_STEP[step.id]}
+        </Step>
+        <Navigation last={last} pending={pending} onBack={onBack && (() => onBack(answers()))} />
+      </form>
+    </DynzFormProvider>
+  );
+}
+
+export function VehicleForm({ steps }: { steps: FunnelStep[] }) {
+  const [values, setValues] = useState(INITIAL_VALUES);
+  const [index, setIndex] = useState(0);
+  const step = steps[index] as FunnelStep;
+  const last = index === steps.length - 1;
+
+  // the server checks the collected answers against the full schema and looks every
+  // resource up again: the per-step schemas are only for the user
   const application = useMutation({
-    mutationFn: async (values: FieldValues) => {
+    mutationFn: async (values: Values) => {
       const response = await client.api["vehicle-registrations"].$post({ json: values });
       return response.json();
     },
     onSuccess: (body) => {
       if (body.status === "invalid") {
-        for (const error of body.errors) {
-          methods.setError(error.path.slice(2), { type: error.code, message: error.message });
-        }
+        // back to the step that asks the first rejected field
+        const path = body.errors[0]?.path.slice(2) ?? "";
+        const found = steps.findIndex((s) =>
+          s.fields.some((field) => path === field.path || path.startsWith(`${field.path}.`))
+        );
+        setIndex(found === -1 ? index : found);
       }
     },
   });
 
-  const onSubmit = methods.handleSubmit((values) => application.mutateAsync(values));
-  const field = (name: string) => <SchemaField name={name} fieldSchema={schema.fields[name]} />;
   const outcome = application.data;
 
   return (
     <>
-      <DynzFormProvider {...methods}>
-        <form
-          onSubmit={(event) => {
+      <p className="note">
+        Step {index + 1} of {steps.length}
+      </p>
+
+      <StepForm
+        key={step.id}
+        step={step}
+        number={index + 1}
+        values={values}
+        last={last}
+        pending={application.isPending}
+        onBack={
+          index > 0
+            ? (next) => {
+                setValues(next);
+                setIndex(index - 1);
+              }
+            : undefined
+        }
+        onNext={(next) => {
+          setValues(next);
+
+          if (last) {
             application.reset();
-            void onSubmit(event);
-          }}
-          noValidate
-        >
-          <Step title="1. Vehicle">
-            {field("ownership")}
-            {field("plate")}
-            <VehicleCard />
-            {field("vehicleConfirmed")}
-            {field("manualVehicle")}
-            <Eligibility />
-          </Step>
-
-          <IsIncluded name="driver">
-            <Step title="2. Policyholder">
-              {field("driver")}
-              <ClaimsHint />
-              <SchemaField
-                name="additionalDrivers"
-                fieldSchema={schema.fields.additionalDrivers}
-                itemExtra={(index) => <ClaimsHint path={`$.additionalDrivers.[${index}].driverClaims`} />}
-              />
-            </Step>
-          </IsIncluded>
-
-          <IsIncluded name="coverage">
-            <Step title="3. Coverage">
-              {field("coverage")}
-              <AllRiskHint />
-              {field("roadsideAssistance")}
-            </Step>
-          </IsIncluded>
-
-          <IsIncluded name="paymentMethod">
-            <Step title="4. Payment">
-              {field("paymentMethod")}
-              <PaymentHint />
-            </Step>
-          </IsIncluded>
-
-          <SubmitButton pending={application.isPending} />
-        </form>
-      </DynzFormProvider>
+            application.mutate(next);
+          } else {
+            setIndex(index + 1);
+          }
+        }}
+      />
 
       {outcome?.status === "valid" && (
         <div className="result">

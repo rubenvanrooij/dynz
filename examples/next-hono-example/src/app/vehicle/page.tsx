@@ -1,12 +1,12 @@
-import type { ObjectSchema } from "dynz";
 import { VehicleForm } from "@/components/vehicle-form";
 import { serverClient } from "@/lib/server-client";
+import type { FunnelStep } from "@/server/vehicle-funnel";
 
 export const dynamic = "force-dynamic";
 
 export default async function VehiclePage() {
   const response = await serverClient.api.forms.vehicle.$get();
-  const { schema, knownPlates, unreachablePlate, knownLicences, unreachableLicence, unreachableCountry } =
+  const { steps, knownPlates, unreachablePlate, knownLicences, unreachableLicence, unreachableCountry } =
     await response.json();
 
   return (
@@ -46,7 +46,7 @@ export default async function VehiclePage() {
           </li>
         </ul>
 
-        <VehicleForm schema={schema as unknown as ObjectSchema<never>} />
+        <VehicleForm steps={steps as unknown as FunnelStep[]} />
       </div>
     </main>
   );

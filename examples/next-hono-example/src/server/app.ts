@@ -11,6 +11,7 @@ import {
 import { buildOpenApiDocument } from "./openapi";
 import { lookupPaymentOptions, UNREACHABLE_COUNTRY } from "./payment-options";
 import { serverResolvers } from "./resolvers";
+import { vehicleFunnel } from "./vehicle-funnel";
 import { KNOWN_PLATES, lookupVehicle, RegistryUnavailableError, UNREACHABLE_PLATE } from "./vehicle-registry";
 import { type Vehicle, vehicleSchema } from "./vehicle-schema";
 
@@ -84,10 +85,14 @@ const routes = app
     );
   })
 
-  /** The insurance form. The resources are declared in the schema; how they're looked up is not. */
+  /**
+   * The insurance form as a funnel: every step with its own schema, picked from the full
+   * one with whatever its fields depend on. The final submit is still checked against the
+   * full schema.
+   */
   .get("/forms/vehicle", (c) =>
     c.json({
-      schema: vehicleSchema,
+      steps: vehicleFunnel,
       knownPlates: KNOWN_PLATES,
       unreachablePlate: UNREACHABLE_PLATE,
       knownLicences: KNOWN_LICENCES,

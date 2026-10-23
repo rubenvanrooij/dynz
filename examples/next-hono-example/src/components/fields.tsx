@@ -4,6 +4,7 @@ import { DynzField, type DynzFieldProps, IsIncluded, useDynzFormContext, useOpti
 import { type ArraySchema, type ObjectSchema, type Schema, SchemaType } from "dynz";
 import type { ReactNode } from "react";
 import { get, useFieldArray, useFormState } from "react-hook-form";
+import type { Widget } from "@/server/vehicle-funnel";
 
 type ItemExtra = (index: number) => ReactNode;
 
@@ -223,6 +224,38 @@ function humanize(name: string): string {
   const leaf = name.split(".").pop() ?? name;
   const spaced = leaf.replace(/([a-z0-9])([A-Z])/g, "$1 $2").toLowerCase();
   return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+}
+
+/** A control picked by a channel config's `widget` instead of the schema type. */
+export function WidgetField({
+  name,
+  widget,
+  fieldSchema,
+  itemExtra,
+}: {
+  name: string;
+  widget: Widget;
+  fieldSchema: Schema;
+  itemExtra?: ItemExtra;
+}) {
+  const label = humanize(name);
+
+  switch (widget) {
+    case "short_text":
+      return <TextField name={name} label={label} />;
+    case "number":
+      return <NumberField name={name} label={label} />;
+    case "date":
+      return <DateField name={name} label={label} />;
+    case "checkbox":
+      return <CheckboxField name={name} label={label} />;
+    case "dropdown":
+      return <SelectField name={name} label={label} />;
+    case "repeater":
+      return (
+        <ArrayField name={name} label={label} fieldSchema={fieldSchema as ArraySchema<Schema>} itemExtra={itemExtra} />
+      );
+  }
 }
 
 /**
