@@ -134,7 +134,7 @@ describe("getNested", () => {
       );
     });
 
-    it("should throw error when field does not exist in schema", () => {
+    it("returns null when the field does not exist in the schema", () => {
       const schema = {
         type: SchemaType.OBJECT,
         fields: {
@@ -145,7 +145,7 @@ describe("getNested", () => {
       };
       const value = { existing: "value" };
 
-      expect(() => getNested("$.nonexistent", schema, value)).toThrow("No schema found for path $.nonexistent");
+      expect(getNested("$.nonexistent", schema, value)).toBeNull();
     });
   });
 
@@ -344,6 +344,52 @@ describe("getNested", () => {
 
       expect(getNested("$.contact.email", schema, value)).toBeNull();
     });
+
+    describe("a path declared by another member", () => {
+      // `holder` is a leaf in the card member and an object in the iban member
+      const paymentSchema = {
+        type: SchemaType.OBJECT,
+        fields: {
+          payment: {
+            type: SchemaType.DISCRIMINATED_UNION,
+            key: "method",
+            schemas: [
+              { method: "card", card: { type: SchemaType.STRING }, holder: { type: SchemaType.STRING } },
+              {
+                method: "iban",
+                iban: { type: SchemaType.STRING },
+                holder: { type: SchemaType.OBJECT, fields: { name: { type: SchemaType.STRING } } },
+              },
+            ],
+          },
+        },
+      };
+
+      it("returns null when the active member declares it as a leaf", () => {
+        expect(
+          getNested("$.payment.holder.name", paymentSchema, { payment: { method: "card", holder: "Jan" } })
+        ).toBeNull();
+      });
+
+      it("returns null when the active member declares it as a leaf without a value", () => {
+        expect(getNested("$.payment.holder.name", paymentSchema, { payment: { method: "card" } })).toBeNull();
+      });
+
+      it("returns null when the active member doesn't declare it", () => {
+        expect(getNested("$.payment.iban", paymentSchema, { payment: { method: "card" } })).toBeNull();
+      });
+
+      it("resolves it when its own member is active", () => {
+        expect(
+          getNested("$.payment.holder.name", paymentSchema, { payment: { method: "iban", holder: { name: "Jan" } } })
+        ).toEqual({ schema: { type: SchemaType.STRING }, value: "Jan" });
+      });
+
+      it("returns null when no member declares it", () => {
+        expect(getNested("$.payment.doesNotExist", paymentSchema, { payment: { method: "card" } })).toBeNull();
+        expect(getNested("$.payment.card.number", paymentSchema, { payment: { method: "card" } })).toBeNull();
+      });
+    });
   });
 
   describe("coercion integration", () => {
@@ -368,14 +414,14 @@ describe("getNested", () => {
     });
   });
 
-  describe("error cases", () => {
-    it("should throw error when trying to traverse non-object, non-array", () => {
+  describe("leaf traversal", () => {
+    it("returns null when trying to traverse a non-object, non-array", () => {
       const schema = {
         type: SchemaType.STRING,
       };
       const value = "string value";
 
-      expect(() => getNested("$.field", schema, value)).toThrow("Cannot get nested value on non array or non object");
+      expect(getNested("$.field", schema, value)).toBeNull();
     });
   });
 
