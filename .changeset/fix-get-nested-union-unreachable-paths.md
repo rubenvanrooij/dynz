@@ -7,4 +7,4 @@ Fix `isIncluded`, `isRequired`, `isMutable` and `ref()` throwing `Cannot get nes
 
 `getNested` now returns `null` for every path it can't reach, including a path the schema doesn't declare at all. As a result, a mistyped path no longer throws `No schema found for path …` from `isIncluded`/`isRequired`/`isMutable` or `ref()`; it resolves as not included / `undefined`.
 
-`@dynz/vue`'s `dynzTypedSchema().describe()` now checks whether a path exists in the schema explicitly, so it keeps reporting unknown paths as `exists: false`.
+`@dynz/vue`'s `dynzTypedSchema().describe()` now reports a path the schema doesn't declare as `{ required: false, exists: true }` instead of `exists: false`. VeeValidate only reads `required` (for `meta.required`), which is unchanged.
