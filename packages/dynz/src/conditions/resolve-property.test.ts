@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { v } from "../functions";
 import { eq } from "../functions/equals-function";
 import { ref } from "../reference";
-import { object, string } from "../schemas";
+import { discriminatedUnion, object, string } from "../schemas";
 import type { ResolveContext } from "../types";
 import { resolveProperty } from "./resolve-property";
 
@@ -92,5 +92,35 @@ describe("resolveProperty", () => {
     const result = resolveProperty("included", "$", true, context);
 
     expect(result).toBe(true);
+  });
+
+  describe("paths through a discriminated union", () => {
+    const schema = object({
+      payment: discriminatedUnion("method", [
+        { method: "card", card: string(), holder: string() },
+        { method: "iban", iban: string(), holder: object({ name: string() }) },
+      ]),
+    });
+    const resolveIncluded = (path: string, values: unknown) =>
+      resolveProperty("included", path, true, { schema, values });
+
+    it("is not included when the active member declares a parent of the path as a leaf", () => {
+      expect(resolveIncluded("$.payment.holder.name", { payment: { method: "card", holder: "Jan" } })).toBe(false);
+      expect(resolveIncluded("$.payment.holder.name", { payment: { method: "card" } })).toBe(false);
+    });
+
+    it("is included when the member declaring the path is active", () => {
+      expect(resolveIncluded("$.payment.holder.name", { payment: { method: "iban", holder: { name: "Jan" } } })).toBe(
+        true
+      );
+    });
+
+    it("is not included when the union is absent", () => {
+      expect(resolveIncluded("$.payment.holder.name", {})).toBe(false);
+    });
+
+    it("is not included for a path no member declares", () => {
+      expect(resolveIncluded("$.payment.doesNotExist", { payment: { method: "card" } })).toBe(false);
+    });
   });
 });

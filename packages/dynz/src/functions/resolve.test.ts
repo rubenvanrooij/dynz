@@ -40,4 +40,28 @@ describe("resolve", () => {
       expect(resolve(ref("$.options.0.value"), "$", context)).toBe("a");
     });
   });
+
+  describe("reference into a path another union member declares", () => {
+    const schema = object({
+      payment: discriminatedUnion("method", [
+        { method: "card", holder: string() },
+        { method: "iban", holder: object({ name: string() }) },
+      ]),
+    });
+
+    it("resolves to undefined while a member declaring a leaf there is active", () => {
+      expect(resolve(ref("$.payment.holder.name"), "$", { schema, values: { payment: { method: "card" } } })).toBe(
+        undefined
+      );
+    });
+
+    it("resolves the value while its own member is active", () => {
+      expect(
+        resolve(ref("$.payment.holder.name"), "$", {
+          schema,
+          values: { payment: { method: "iban", holder: { name: "Jan" } } },
+        })
+      ).toBe("Jan");
+    });
+  });
 });
