@@ -1,4 +1,11 @@
-import { type ObjectSchema, type SchemaValues, type ValidateOptions, resolveProperty, validate } from "dynz";
+import {
+  findPossibleSchemasByPath,
+  type ObjectSchema,
+  type SchemaValues,
+  type ValidateOptions,
+  resolveProperty,
+  validate,
+} from "dynz";
 import { type MessageTransformerFunc, toFieldErrorList } from "../errors";
 import { toAbsolutePath } from "../utils";
 
@@ -82,16 +89,20 @@ export function dynzTypedSchema<TSchema extends ObjectSchema<never>>(
         return { required: false, exists: true };
       }
 
+      const absolutePath = toAbsolutePath(path);
       const context = { schema, values: options.getValues?.() ?? {} };
 
       try {
+        // Throws when the path is not part of the schema — VeeValidate asks about fields
+        // it knows of, which is not necessarily the same set the schema describes.
+        // `resolveProperty` can't tell us: it treats an unknown path as merely unreachable.
+        findPossibleSchemasByPath(absolutePath, schema);
+
         return {
-          required: resolveProperty("required", toAbsolutePath(path), true, context) !== false,
+          required: resolveProperty("required", absolutePath, true, context) !== false,
           exists: true,
         };
       } catch {
-        // The path is not part of the schema — VeeValidate asks about fields it knows
-        // of, which is not necessarily the same set the schema describes.
         return { required: false, exists: false };
       }
     },
