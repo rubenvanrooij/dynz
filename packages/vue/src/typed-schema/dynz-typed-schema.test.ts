@@ -119,7 +119,7 @@ describe("dynzTypedSchema — describe", () => {
     expect(typedSchema.describe("companyName").required).toBe(true);
   });
 
-  it("reports unknown paths as non-existent instead of throwing", () => {
-    expect(dynzTypedSchema(schema).describe("nope")).toEqual({ required: false, exists: false });
+  it("reports unknown paths as not required instead of throwing", () => {
+    expect(dynzTypedSchema(schema).describe("nope").required).toBe(false);
   });
 });

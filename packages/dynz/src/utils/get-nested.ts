@@ -4,6 +4,15 @@ import { coerceSchema } from "./coerce";
 import { discriminantSchema } from "./discriminant-schema";
 import { withDefault } from "./with-default";
 
+/**
+ * Walks `path` through `schema` and `value` together, returning the schema and the
+ * (defaulted, coerced) value found there.
+ *
+ * Returns `null` when the path can't be reached: the schema doesn't declare it, or it
+ * runs through a discriminated union whose active member doesn't lead to it. Callers
+ * treat `null` as "not accessible" (not included, a `ref()` resolves to `undefined`).
+ * A mistyped path therefore also yields `null` rather than an error.
+ */
 export function getNested<T extends Schema>(
   path: string,
   schema: T,
@@ -15,6 +24,7 @@ export function getNested<T extends Schema>(
     .splice(1)
     .reduce<{ schema: Schema; value: unknown } | null>(
       (acc, cur) => {
+        // an earlier segment was already unreachable, so everything below it is too
         if (acc === null) {
           return null;
         }
@@ -44,8 +54,9 @@ export function getNested<T extends Schema>(
           const val = resolvedValue === undefined || resolvedValue === null ? undefined : resolvedValue[cur];
           const childSchema = acc.schema.fields[cur];
 
+          // the object doesn't declare this field
           if (childSchema === undefined) {
-            throw new Error(`No schema found for path ${path}`);
+            return null;
           }
 
           return {
@@ -69,6 +80,7 @@ export function getNested<T extends Schema>(
             };
           }
 
+          // no union value (and no default), so there is no active member to walk into
           if (resolvedValue === undefined || resolvedValue === null) {
             return null;
           }
@@ -81,12 +93,15 @@ export function getNested<T extends Schema>(
           const discriminatorValue = resolvedValue[key];
           const matchingMember = acc.schema.schemas.find((s) => s[key] === discriminatorValue);
 
+          // the discriminator value doesn't select any member (e.g. empty or unknown)
           if (matchingMember === undefined) {
             return null;
           }
 
           const childSchema = matchingMember[cur];
 
+          // the active member doesn't declare this field; another member may, but
+          // it isn't reachable under the current values
           if (childSchema === undefined) {
             return null;
           }
@@ -104,7 +119,9 @@ export function getNested<T extends Schema>(
           };
         }
 
-        throw new Error("Cannot get nested value on non array or non object");
+        // a leaf with segments left over, e.g. `holder` declared as a string in the
+        // active union member and as an object in another: there is nothing to walk into
+        return null;
       },
       { value, schema }
     );
