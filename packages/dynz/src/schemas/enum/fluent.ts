@@ -14,6 +14,8 @@ import {
   type Rule,
   type SatisfiesRule,
 } from "../../rules";
+import { withStandard } from "../../standard/standard";
+import type { StandardProps } from "../../standard/types";
 import type { JsonRecord, SchemaMeta } from "../../types";
 import { SchemaType } from "../../types";
 import { type ToParam, toParamaterValue } from "../shared";
@@ -73,6 +75,8 @@ export type EnumFluent<TEnum extends Enum, TRules extends Rule[], TProps> = {
   /** Accumulated validation rules for this enum */
   readonly rules: TRules;
 } & TProps & {
+    /** Standard Schema interface (https://standardschema.dev) */
+    readonly "~standard": StandardProps<EnumFluent<TEnum, TRules, TProps>>;
     // — Rule methods —
     /** Validates value equals a specific enum member. @param value - Expected enum value. @param code - Optional error code */
     equals: <P extends ParamaterValue<EnumValues<TEnum>> | EnumValues<TEnum>>(
@@ -171,7 +175,7 @@ function createFluent<TEnum extends Enum, TRules extends Rule[], TProps>(
   const setProp = <K extends string, V>(key: K, value: V): EnumFluent<TEnum, TRules, TProps & Record<K, V>> =>
     createFluent(theEnum, rules, { ...props, [key]: value } as TProps & Record<K, V>);
 
-  return {
+  return withStandard({
     type: SchemaType.ENUM,
     enum: theEnum,
     rules,
@@ -212,7 +216,7 @@ function createFluent<TEnum extends Enum, TRules extends Rule[], TProps>(
     setUi: <TUI extends JsonRecord>(config: TUI) => setProp("ui", config),
     setMeta: <M extends SchemaMeta>(meta: M) => setProp("meta", { ...(props as { meta?: SchemaMeta }).meta, ...meta }),
     describe: (description: string) => setProp("meta", { ...(props as { meta?: SchemaMeta }).meta, description }),
-  } as EnumFluent<TEnum, TRules, TProps>;
+  } as EnumFluent<TEnum, TRules, TProps>);
 }
 
 // ---------------------------------------------------------------------------

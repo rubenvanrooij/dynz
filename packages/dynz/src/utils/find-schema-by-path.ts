@@ -105,9 +105,9 @@ export function findSchemaByPath<T extends Schema = Schema>(
 
             if (childSchema !== undefined) {
               /**
-               * A primitive childSchema is a literal with no schema of its own.
-               * For the discriminator, synthesise an options schema of every
-               * member's value; any other literal resolves to the union itself.
+               * When the childSchema is a primitive type then we need
+               * to return the union schema since the union type doesnt
+               * have an actual schema attached to it.
                */
               if (
                 typeof childSchema === "boolean" ||
