@@ -79,6 +79,20 @@ describe("useDynzForm", () => {
     expect(form.errors.value["address.zip"]).toBe("translated:min_length");
   });
 
+  it("lets transformResult filter out errors", async () => {
+    const { form } = mountDynzForm({
+      schema,
+      initialValues: { plan: "free", slug: "acme", address: { street: "Main st", zip: "1" }, tags: ["a"] },
+      transformResult: (result) =>
+        result.success ? result : { ...result, errors: result.errors.filter((e) => !e.path.startsWith("$.address")) },
+    });
+
+    await form.validate();
+
+    expect(form.errors.value["address.zip"]).toBeUndefined();
+    expect(form.errors.value["tags[0]"]).toBeDefined();
+  });
+
   it("enforces mutability only when currentValues are passed", async () => {
     const { form: withCurrent } = mountDynzForm({ schema, currentValues: validValues() });
     withCurrent.setFieldValue("slug", "changed");
