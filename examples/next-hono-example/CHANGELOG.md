@@ -1,5 +1,14 @@
 # next-hono-example
 
+## 0.0.2
+
+### Patch Changes
+
+- Updated dependencies [47e2627]
+  - dynz@1.2.1
+  - @dynz/react-hook-form@1.2.1
+  - @dynz/to-json-schema@0.1.1
+
 ## 0.0.1
 
 ### Patch Changes
