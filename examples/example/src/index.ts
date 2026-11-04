@@ -13,8 +13,6 @@ const schema = d.discriminatedUnion("kind", [
   },
 ]);
 
-const result = await d.validate(schema, undefined, {});
-
 async function example() {
   const schema = d
     .object({
@@ -24,10 +22,18 @@ async function example() {
       }),
       nameSize: d.expr(d.sum(d.size(d.ref("name.first")), d.size(d.ref("name.last")))),
     })
-    .setDefault({
-      name: { first: "kees" },
-    });
-  const result = await d.validate(schema, undefined, undefined);
+  // .setDefault({
+  //   name: { first: "kees" },
+  // });
+
+  const a = d.standardSchema(schema, {
+    currentValues: undefined,                               // enables mutability enforcement
+    customRules: { passwordStrength: () => false },
+    messageTransformer: (error) => "foo", // defaults to error.message
+  })
+
+  const result = await a['~standard'].validate(undefined)
+
 
   console.log(result);
 }
