@@ -1,8 +1,8 @@
 {
   "name": "@dynz/vue",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "private": false,
-  "license": "BUSL-1.1",
+  "license": "MIT",
   "type": "module",
   "sideEffects": false,
   "keywords": [
@@ -49,7 +49,7 @@
     "test:watch": "vitest run --watch"
   },
   "peerDependencies": {
-    "dynz": "^1.2.0",
+    "dynz": "^1.2.1",
     "vee-validate": "^4.0.0",
     "vue": "^3.3.0"
   },

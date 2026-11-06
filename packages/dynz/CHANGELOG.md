@@ -1,5 +1,11 @@
 # dynz
 
+## 1.2.1
+
+### Patch Changes
+
+- 47e2627: Correct package license metadata to MIT to match the repository license.
+
 ## 1.2.0
 
 ### Minor Changes
