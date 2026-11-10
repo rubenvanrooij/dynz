@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { eq, resolve, v } from "../functions";
+import { eq, neq, resolve, v } from "../functions";
 import { ref } from "../reference";
 import { array, boolean, discriminatedUnion, number, object, string } from "../schemas";
 import { evaluateResources, getEnabledResources } from "./evaluate-resources";
@@ -305,5 +305,114 @@ describe("evaluateResources", () => {
         }
       )
     ).rejects.toThrow("lookup failed");
+  });
+});
+
+describe("resources that depend on other resources", () => {
+  const vehicleByPlate = resource({ key: ref("plate"), outcomes: ["found", "not_found"] });
+  const vinCheck = resource({ key: ref("vin"), outcomes: ["ok", "stolen"] });
+  const claims = resource({
+    key: ref("licence"),
+    enabled: neq(resourceRef("vehicle.data.eligibility"), "declined"),
+    outcomes: ["found", "not_found"],
+  });
+
+  /** The plate is not found, so the VIN is entered manually and checked on its own. */
+  const manualVin = object({
+    plate: string(),
+    manual: object({ vin: string() })
+      .setIncluded(eq(resourceRef("vehicle.outcome"), "not_found"))
+      .setResources({ vinCheck }),
+  }).setResources({ vehicle: vehicleByPlate });
+  const manualValues = { plate: "AB-123-C", manual: { vin: "VIN-1" } };
+
+  const withClaims = object({ plate: string(), licence: string() }).setResources({
+    vehicle: vehicleByPlate,
+    claims,
+  });
+
+  describe("getEnabledResources", () => {
+    it("evaluates an included that references a resource against the given states", () => {
+      expect(paths(getEnabledResources(manualVin, manualValues))).toEqual(["$.vehicle"]);
+      expect(paths(getEnabledResources(manualVin, manualValues, { "$.vehicle": { outcome: "not_found" } }))).toEqual([
+        "$.vehicle",
+        "$.manual.vinCheck",
+      ]);
+      expect(paths(getEnabledResources(manualVin, manualValues, { "$.vehicle": { outcome: "found" } }))).toEqual([
+        "$.vehicle",
+      ]);
+    });
+
+    it("evaluates an enabled that references a resource against the given states", () => {
+      const values = { plate: "AB-123-C", licence: "L-1" };
+      const vehicleState = (eligibility: string) => ({
+        "$.vehicle": { outcome: "found", data: { eligibility } },
+      });
+
+      expect(paths(getEnabledResources(withClaims, values, vehicleState("declined")))).toEqual(["$.vehicle"]);
+      expect(paths(getEnabledResources(withClaims, values, vehicleState("accepted")))).toEqual([
+        "$.vehicle",
+        "$.claims",
+      ]);
+    });
+  });
+
+  describe("evaluateResources", () => {
+    it("looks up a resource on an object included by another resource, after that one", async () => {
+      const order: string[] = [];
+      const states = await evaluateResources(manualVin, manualValues, {
+        vehicle: async () => {
+          order.push("vehicle");
+          return { outcome: "not_found" };
+        },
+        vinCheck: async (vin) => {
+          order.push(`vinCheck:${vin}`);
+          return { outcome: "stolen" };
+        },
+      });
+
+      expect(order).toEqual(["vehicle", "vinCheck:VIN-1"]);
+      expect(states).toEqual({
+        "$.vehicle": { outcome: "not_found" },
+        "$.manual.vinCheck": { outcome: "stolen" },
+      });
+    });
+
+    it("does not look up a resource whose object stays excluded", async () => {
+      const check = vi.fn(() => ({ outcome: "ok" }));
+
+      expect(
+        await evaluateResources(manualVin, manualValues, { vehicle: () => ({ outcome: "found" }), vinCheck: check })
+      ).toEqual({ "$.vehicle": { outcome: "found" } });
+      expect(check).not.toHaveBeenCalled();
+    });
+
+    it("drops a resource that was enabled before its dependency settled", async () => {
+      // `neq(undefined, "declined")` enables claims in the first round
+      const lookupClaims = vi.fn(() => ({ outcome: "found" }));
+
+      const states = await evaluateResources(
+        withClaims,
+        { plate: "AB-123-C", licence: "L-1" },
+        {
+          vehicle: () => ({ outcome: "found", data: { eligibility: "declined" } }),
+          claims: lookupClaims,
+        }
+      );
+
+      expect(states).toEqual({ "$.vehicle": { outcome: "found", data: { eligibility: "declined" } } });
+    });
+
+    it("terminates on a cycle between resources", async () => {
+      const cyclic = object({ a: string(), b: string() }).setResources({
+        first: resource({ key: ref("a"), enabled: neq(resourceRef("second.outcome"), "x"), outcomes: ["x"] }),
+        second: resource({ key: ref("b"), enabled: neq(resourceRef("first.outcome"), "x"), outcomes: ["x"] }),
+      });
+      const resolver = vi.fn(() => ({ outcome: "x" }));
+
+      await evaluateResources(cyclic, { a: "1", b: "2" }, { first: resolver, second: resolver });
+
+      expect(resolver.mock.calls.length).toBeLessThanOrEqual(6);
+    });
   });
 });

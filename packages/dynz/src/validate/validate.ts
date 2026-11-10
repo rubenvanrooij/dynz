@@ -23,7 +23,7 @@ export async function validate<T extends Schema>(
   newValues: unknown,
   options: ValidateOptions = {}
 ): Promise<ValidationResult<SchemaValues<T>>> {
-  // resources are looked up once, up front, against the submitted values
+  // resources are looked up up front, against the submitted values (in rounds, see evaluateResources)
   const resources =
     options.resolvers === undefined ? undefined : await evaluateResources(schema, newValues, options.resolvers);
 

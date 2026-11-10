@@ -128,7 +128,7 @@ describe("useResource", () => {
     expect(entries.filter((entry) => entry?.status === "pending")).toHaveLength(1);
   });
 
-  it("is failed when the resolver throws, and retries on the next change", async () => {
+  it("is failed when the resolver throws, and retries only when the key changes", async () => {
     const vehicle = vi.fn<(plate: unknown) => ResourceState>(() => {
       throw new Error("registry down");
     });
@@ -138,8 +138,14 @@ describe("useResource", () => {
 
     vehicle.mockImplementation(lookup);
     act(() => form().setValue("other", "x"));
+    act(() => form().setValue("other", "y"));
 
-    await waitFor(() => expect(latest()).toMatchObject({ status: "settled", state: { outcome: "found" } }));
+    expect(latest()).toMatchObject({ status: "failed", key: "KNOWN" });
+    expect(vehicle).toHaveBeenCalledTimes(1);
+
+    act(() => form().setValue("plate", "UNKNOWN"));
+
+    await waitFor(() => expect(latest()).toMatchObject({ status: "settled", state: { outcome: "not_found" } }));
     expect(vehicle).toHaveBeenCalledTimes(2);
   });
 
@@ -268,5 +274,68 @@ describe("resources inside an array", () => {
 
     expect(entries[0]).toMatchObject({ status: "settled", key: "KNOWN", state: { outcome: "found" } });
     expect(included).toEqual({ 0: false, 1: true });
+  });
+});
+
+describe("resources that depend on other resources", () => {
+  const chained = object({
+    plate: string().optional(),
+    manual: object({ vin: string().optional() })
+      .setIncluded(eq(resourceRef("vehicle.outcome"), "not_found"))
+      .setResources({ vinCheck: resource({ key: ref("vin"), outcomes: ["ok", "stolen"] }) }),
+  }).setResources({
+    vehicle: resource({ key: ref("plate"), outcomes: ["found", "not_found"] }),
+  });
+
+  function setupChained(resolvers: ResourceResolvers) {
+    const entries: (ResourceEntry | undefined)[] = [];
+
+    function VinCheck() {
+      entries.push(useResource("$.manual.vinCheck"));
+      return null;
+    }
+
+    function Form({ children }: { children: ReactNode }) {
+      const form = useDynzForm<typeof chained>({
+        schema: chained,
+        defaultValues: { plate: "UNKNOWN", manual: { vin: "VIN-1" } },
+        schemaOptions: { resolvers },
+      });
+      return <DynzFormProvider {...form}>{children}</DynzFormProvider>;
+    }
+
+    render(
+      <Form>
+        <VinCheck />
+      </Form>
+    );
+
+    return { latest: () => entries.at(-1) };
+  }
+
+  it("looks up a resource once the resource its object's inclusion depends on settles", async () => {
+    const vehicle = deferred<ResourceState>();
+    const vinCheck = vi.fn((): ResourceState => ({ outcome: "ok" }));
+    const { latest } = setupChained({ vehicle: () => vehicle.promise, vinCheck });
+
+    await waitFor(() => expect(latest()).toBeUndefined());
+    expect(vinCheck).not.toHaveBeenCalled();
+
+    await act(async () => vehicle.resolve({ outcome: "not_found" }));
+
+    await waitFor(() => expect(latest()).toEqual({ status: "settled", key: "VIN-1", state: { outcome: "ok" } }));
+    expect(vinCheck).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not look up the dependent resource when its object stays excluded", async () => {
+    const vinCheck = vi.fn((): ResourceState => ({ outcome: "ok" }));
+    const vehicle = vi.fn((): ResourceState => ({ outcome: "found" }));
+    const { latest } = setupChained({ vehicle, vinCheck });
+
+    await waitFor(() => expect(vehicle).toHaveBeenCalled());
+    await act(async () => {});
+
+    expect(latest()).toBeUndefined();
+    expect(vinCheck).not.toHaveBeenCalled();
   });
 });

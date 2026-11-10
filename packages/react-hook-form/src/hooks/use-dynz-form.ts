@@ -74,9 +74,10 @@ export function useDynzForm<TSchema extends ObjectSchema<never>, TFieldValues ex
   const resolvers = schemaOptions?.resolvers;
   const { watch, getValues } = methods;
 
-  // Re-evaluates which resources are enabled on every change and looks up the instances
-  // whose key changed (or that failed); caching lookups is up to the resolvers.
-  // Keep `resolvers` stable: a new object re-subscribes and re-evaluates.
+  // Re-evaluates which resources are enabled on every value change and every settled lookup
+  // (a resource may depend on another one's state), and looks up the instances whose key
+  // changed. A failed lookup is retried only when its key changes; caching lookups is up to
+  // the resolvers. Keep `resolvers` stable: a new object re-subscribes and re-evaluates.
   useEffect(() => {
     if (resolvers === undefined) {
       return;
@@ -108,11 +109,11 @@ export function useDynzForm<TSchema extends ObjectSchema<never>, TFieldValues ex
 
     const evaluate = (values: unknown) => {
       const current = resources.getEntries();
-      const instances = getEnabledResources(schema, values);
+      const instances = getEnabledResources(schema, values, resources.getStates());
       const next = Object.fromEntries(
         instances.map(({ path, key }) => {
           const entry = current[path];
-          const keep = entry !== undefined && entry.key === key && entry.status !== "failed";
+          const keep = entry !== undefined && entry.key === key;
           return [path, keep ? entry : ({ status: "pending", key } as const)];
         })
       );
@@ -127,8 +128,14 @@ export function useDynzForm<TSchema extends ObjectSchema<never>, TFieldValues ex
 
     evaluate(getValues());
     const { unsubscribe } = watch((values) => evaluate(values));
+    // a settled lookup may enable (or disable) resources that depend on it; `evaluate` only
+    // sets the store when the entries change, so the notification it causes settles at once
+    const unsubscribeResources = resources.subscribe(() => evaluate(getValues()));
 
-    return unsubscribe;
+    return () => {
+      unsubscribe();
+      unsubscribeResources();
+    };
   }, [schema, resolvers, resources, watch, getValues]);
 
   return {

@@ -411,6 +411,92 @@ await d.validate(schema, undefined, { note: "hi" });
 // { success: true, values: { contact: { type: "email", email: "hello@example.com" }, note: "hi" } }
 ```
 
+### Resources
+
+A resource is external data a form depends on, looked up by a key. An example is a vehicle looked up by its licence plate. Declare it on an object with `setResources` and read it anywhere below that object with `resourceRef`:
+
+```typescript
+import * as d from "dynz";
+
+const schema = d
+  .object({
+    plate: d.string(),
+    // only asked when the plate is not found
+    make: d
+      .string()
+      .setIncluded(d.eq(d.resourceRef("vehicle.outcome"), "not_found")),
+  })
+  .setResources({
+    vehicle: d.resource<{ make: string }>({
+      key: d.ref("plate"), // bare refs resolve from the object declaring the resource
+      outcomes: ["found", "not_found"],
+    }),
+  });
+
+// how a resource is fetched is not part of the schema: pass a resolver per resource
+await d.validate(schema, undefined, values, {
+  resolvers: {
+    vehicle: async (plate) => {
+      const car = await api.lookup(plate);
+      return car ? { outcome: "found", data: car } : { outcome: "not_found" };
+    },
+  },
+});
+```
+
+`resourceRef("vehicle.outcome")` reads the outcome of the lookup, and `resourceRef("vehicle.data.make")` reads a field of the looked-up data.
+
+#### Resources that depend on other resources
+
+A resource can depend on another resource in three ways: through its `enabled`, its `key`, or the `included` of the object it is declared on. dynz first looks up the resources it depends on, and only then decides whether to look up the dependent one:
+
+```typescript
+d.object({
+  plate: d.string(),
+  manual: d
+    .object({ vin: d.string() })
+    // the VIN is asked for (and checked) only when the plate is not found
+    .setIncluded(d.eq(d.resourceRef("vehicle.outcome"), "not_found"))
+    .setResources({
+      vinCheck: d.resource({ key: d.ref("vin"), outcomes: ["ok", "stolen"] }),
+    }),
+}).setResources({
+  vehicle: d.resource({
+    key: d.ref("plate"),
+    outcomes: ["found", "not_found"],
+  }),
+});
+```
+
+#### Writing resource conditions
+
+**A resource without a result reads as `undefined`.** That is the case while its lookup is pending, when it is not enabled, and, in a form, when its lookup failed. So write every condition on a resource so that `undefined` means "no":
+
+```typescript
+// ✅ false until the vehicle is known
+d.eq(d.resourceRef("vehicle.outcome"), "not_found");
+d.or(
+  d.eq(d.resourceRef("vehicle.data.eligibility"), "accepted"),
+  d.eq(d.resourceRef("vehicle.data.eligibility"), "review"),
+);
+d.and(
+  d.eq(d.resourceRef("vehicle.outcome"), "found"),
+  d.neq(d.resourceRef("vehicle.data.eligibility"), "declined"),
+);
+
+// ❌ already true before the vehicle is known: neq(undefined, "declined") is true
+d.neq(d.resourceRef("vehicle.outcome"), "found");
+d.neq(d.resourceRef("vehicle.data.eligibility"), "declined");
+```
+
+A condition from the second group is `true` before the lookup is done. A field gated on it appears and then disappears again, and a resource gated on it is looked up for nothing. If you need a "not", combine it with an `eq` that only becomes true once the lookup is done, as the `and` above does.
+
+Also keep in mind:
+
+- **Give resources distinct names.** A `resourceRef` uses the nearest resource with that name, walking up from where it is used. If a nested resource has the same name as an outer one, the outer one is read while the nested lookup is still pending.
+- **Avoid cycles.** If resource A depends on resource B and B depends on A, the result is undefined. dynz stops after a bounded number of rounds.
+- **Every level of dependency adds a round-trip.** A resource is only looked up after the resources it depends on have returned, so a chain of three resources means three requests one after the other, instead of three parallel requests.
+
 ## Advanced Usage
 
 ### Custom Rules

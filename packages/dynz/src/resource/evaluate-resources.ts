@@ -28,10 +28,19 @@ export type ResourceResolvers = Record<string, ResourceResolver>;
 
 /**
  * Looks up every enabled resource (see {@link getEnabledResources}) with the resolver
- * registered under its name, in parallel.
+ * registered under its name.
  *
- * Resources are evaluated in a single pass: a `resourceRef` in an `included`, `key` or
- * `enabled` does not see the states being looked up here.
+ * Resources may depend on other resources: a `resourceRef` in a resource's `key` or
+ * `enabled`, or in the `included` of the object declaring it (or an ancestor), resolves
+ * against the states looked up so far. Lookups therefore run in rounds: every instance that
+ * is enabled given the current states is looked up in parallel, the results are added, and
+ * the next round picks up what they enabled, until a round enables nothing new. A resource
+ * without a state yet resolves to `undefined`.
+ *
+ * Only the instances enabled in the final round are returned: one enabled early (e.g. by
+ * `neq(resourceRef("vehicle.outcome"), "found")` before `vehicle` settled) and disabled once
+ * its dependency settled is dropped. Rounds are capped at the number of declared resources
+ * plus one, so a cycle between resources terminates (with an unspecified result).
  *
  * @returns the states by resource instance path, ready to pass as `resources` in a
  *   resolve context
@@ -51,19 +60,39 @@ export async function evaluateResources(
   values: unknown,
   resolvers: ResourceResolvers
 ): Promise<ResourceStates> {
-  const entries = await Promise.all(
-    getEnabledResources(schema, values).map(async (enabled) => {
-      const resolver = resolvers[enabled.name];
+  const maxRounds = findResources(schema).length + 1;
+  let states: ResourceStates = {};
+  let enabled = getEnabledResources(schema, values, states);
 
-      if (resolver === undefined) {
-        throw new Error(`No resolver for resource "${enabled.name}" at ${enabled.path}`);
-      }
+  for (let round = 0; round < maxRounds; round++) {
+    // values are fixed, so an instance with a state has its current key
+    const todo = enabled.filter(({ path }) => !(path in states));
 
-      return [enabled.path, await resolver(enabled.key, enabled)] as const;
-    })
-  );
+    if (todo.length === 0) {
+      break;
+    }
 
-  return Object.fromEntries(entries);
+    states = {
+      ...states,
+      ...Object.fromEntries(await Promise.all(todo.map((instance) => lookup(instance, resolvers)))),
+    };
+    enabled = getEnabledResources(schema, values, states);
+  }
+
+  return Object.fromEntries(enabled.flatMap(({ path }) => (path in states ? [[path, states[path]]] : [])));
+}
+
+async function lookup(
+  instance: EnabledResource,
+  resolvers: ResourceResolvers
+): Promise<readonly [string, ResourceState]> {
+  const resolver = resolvers[instance.name];
+
+  if (resolver === undefined) {
+    throw new Error(`No resolver for resource "${instance.name}" at ${instance.path}`);
+  }
+
+  return [instance.path, await resolver(instance.key, instance)];
 }
 
 /**
@@ -77,10 +106,14 @@ export async function evaluateResources(
  * - its `enabled` does not evaluate to `true`.
  *
  * References in `key` and `enabled` resolve from the object declaring the resource:
- * `ref("plate")` is that object's field, `ref("$.plate")` the root's.
+ * `ref("plate")` is that object's field, `ref("$.plate")` the root's. Resource references
+ * (in `key`, `enabled` and `included`) resolve against `resources`; one without a state
+ * resolves to `undefined`.
+ *
+ * @param resources - States of the resources looked up so far
  */
-export function getEnabledResources(schema: Schema, values: unknown): EnabledResource[] {
-  const context: ResolveContext = { schema, values };
+export function getEnabledResources(schema: Schema, values: unknown, resources?: ResourceStates): EnabledResource[] {
+  const context: ResolveContext = { schema, values, resources };
 
   return findResources(schema)
     .flatMap((declaration) =>
@@ -90,7 +123,7 @@ export function getEnabledResources(schema: Schema, values: unknown): EnabledRes
         path: `${objectPath}${declaration.path.slice(declaration.objectPath.length)}`,
       }))
     )
-    .filter(({ objectPath, resource }) => isDeclaredOn(objectPath, resource, schema, values))
+    .filter(({ objectPath, resource }) => isDeclaredOn(objectPath, resource, context))
     .flatMap((declaration) => {
       // evaluated from the resource's own path (a child of the declaring object), bare
       // references address the fields of that object
@@ -112,10 +145,9 @@ export function getEnabledResources(schema: Schema, values: unknown): EnabledRes
 function isDeclaredOn(
   objectPath: string,
   resource: ResourceDeclaration["resource"],
-  schema: Schema,
-  values: unknown
+  { schema, values, resources }: ResolveContext
 ): boolean {
-  if (!isIncluded(schema, objectPath, values)) {
+  if (!isIncluded(schema, objectPath, values, resources)) {
     return false;
   }
 
