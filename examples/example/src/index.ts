@@ -1,23 +1,5 @@
 import * as d from "dynz";
 
-// runExample();
-
-const schema = d
-  .object({
-    numberOfProducts: d.number(),
-    howMuchOfEach: d.number(),
-
-    total: d.expr(d.sum(d.ref("numberOfProducts"), d.ref("howMuchOfEach"))),
-  })
-  .setResources({
-    address,
-  });
-
-const result = await d.validate(schema, undefined, {
-  numberOfProducts: 3,
-  howMuchOfEach: 4,
-});
-
 async function example() {
   const schema = d
     .object({
