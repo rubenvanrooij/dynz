@@ -6,7 +6,6 @@ import { useState } from "react";
 import { client } from "@/lib/client";
 import { SchemaField } from "./fields";
 
-
 type ServerError = { path: string; code: string; message: string };
 
 export type Policy = {
