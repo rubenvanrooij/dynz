@@ -1,7 +1,7 @@
 import { isIncluded } from "../conditions";
 import { resolve, resolvePredicate } from "../functions";
 import { type ResolveContext, type Schema, SchemaType } from "../types";
-import { getNested } from "../utils";
+import { expandArrayItems, getNested } from "../utils";
 import { findResources, type ResourceDeclaration } from "./find-resource";
 import type { ResourceState, ResourceStates } from "./resource";
 
@@ -102,7 +102,7 @@ async function lookup(
  * in (`$.drivers.[].vehicle` → `$.drivers.[0].vehicle`, `$.drivers.[1].vehicle`, …).
  * An instance is discarded when:
  * - the object declaring it is not included (or is not the union member the values select);
- * - its `key` does not resolve to a primitive (string, number or boolean);
+ * - its `key` does not resolve to a non-empty string, a finite number or a boolean;
  * - its `enabled` does not evaluate to `true`.
  *
  * References in `key` and `enabled` resolve from the object declaring the resource:
@@ -159,25 +159,11 @@ function isDeclaredOn(
   );
 }
 
-/**
- * Replaces every `[]` (any array item) in `path` with the indices of the items present in
- * `values`, outermost first.
- */
-function expandArrayItems(path: string, schema: Schema, values: unknown): string[] {
-  const index = path.indexOf("[]");
-
-  if (index === -1) {
-    return [path];
+/** A non-empty string, a finite number or a boolean: an empty field is not worth a lookup. */
+function isResourceKey(value: unknown): value is ResourceKey {
+  if (typeof value === "string") {
+    return value !== "";
   }
 
-  // the array itself: the path up to the `.` before `[]`
-  const items = getNested(path.slice(0, index - 1), schema, values)?.value;
-
-  return (Array.isArray(items) ? items : []).flatMap((_, item) =>
-    expandArrayItems(`${path.slice(0, index)}[${item}]${path.slice(index + 2)}`, schema, values)
-  );
-}
-
-function isResourceKey(value: unknown): value is ResourceKey {
-  return typeof value === "string" || typeof value === "number" || typeof value === "boolean";
+  return typeof value === "number" ? Number.isFinite(value) : typeof value === "boolean";
 }

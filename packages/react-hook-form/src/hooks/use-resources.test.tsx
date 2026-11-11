@@ -115,6 +115,62 @@ describe("resources in hooks", () => {
   });
 });
 
+describe("re-validation when a resource settles", () => {
+  it("re-validates a touched field that reads the resource", async () => {
+    const { latest, form } = setup();
+    await waitFor(() => expect(latest()?.status).toBe("settled"));
+
+    // found: manualDetails is not included, so a value for it is an error
+    act(() => form().setValue("manualDetails", "Saab", { shouldTouch: true }));
+    await act(() => form().trigger());
+    expect(form().getFieldState("manualDetails").error?.type).toBe("included");
+
+    // not_found: the error clears without validating again by hand
+    act(() => form().setValue("plate", "UNKNOWN"));
+
+    await waitFor(() => expect(form().getFieldState("manualDetails").error).toBeUndefined());
+  });
+
+  it("re-validates a touched field without an error", async () => {
+    const { latest, included, form } = setup();
+    await waitFor(() => expect(latest()?.status).toBe("settled"));
+    act(() => form().setValue("plate", "UNKNOWN"));
+    await waitFor(() => expect(included.manualDetails).toBe(true));
+    act(() => form().setValue("manualDetails", "Saab", { shouldTouch: true }));
+
+    act(() => form().setValue("plate", "KNOWN"));
+
+    await waitFor(() => expect(form().getFieldState("manualDetails").error?.type).toBe("included"));
+  });
+
+  it("does not re-validate a field the user has not interacted with", async () => {
+    const { latest, included, form } = setup();
+    await waitFor(() => expect(latest()?.status).toBe("settled"));
+    act(() => form().setValue("plate", "UNKNOWN"));
+    await waitFor(() => expect(included.manualDetails).toBe(true));
+    act(() => form().setValue("manualDetails", "Saab"));
+
+    act(() => form().setValue("plate", "KNOWN"));
+    await waitFor(() => expect(included.manualDetails).toBe(false));
+    await act(async () => {});
+
+    expect(form().getFieldState("manualDetails").error).toBeUndefined();
+  });
+
+  it("re-validates every dependent field after a submit", async () => {
+    const { latest, included, form } = setup();
+    await waitFor(() => expect(latest()?.status).toBe("settled"));
+    act(() => form().setValue("plate", "UNKNOWN"));
+    await waitFor(() => expect(included.manualDetails).toBe(true));
+    act(() => form().setValue("manualDetails", "Saab"));
+    await act(() => form().handleSubmit(() => {})());
+
+    act(() => form().setValue("plate", "KNOWN"));
+
+    await waitFor(() => expect(form().getFieldState("manualDetails").error?.type).toBe("included"));
+  });
+});
+
 describe("useResource", () => {
   it("is pending while the lookup runs, then settled", async () => {
     const pending = deferred<ResourceState>();

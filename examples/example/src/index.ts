@@ -2,18 +2,21 @@ import * as d from "dynz";
 
 // runExample();
 
-const schema = d.discriminatedUnion("kind", [
-  {
-    kind: "card",
-    last4: d.string(),
-  },
-  {
-    kind: "bank",
-    iban: d.string(),
-  },
-]);
+const schema = d.object({
 
-const result = await d.validate(schema, undefined, {});
+  numberOfProducts: d.number(),
+  howMuchOfEach: d.number(),
+
+  total: d.expr(d.sum(d.ref('numberOfProducts'), d.ref('howMuchOfEach')))
+
+}).setResources({
+  address
+})
+
+const result = await d.validate(schema, undefined, {
+  numberOfProducts: 3,
+  howMuchOfEach: 4
+});
 
 async function example() {
   const schema = d

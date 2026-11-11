@@ -103,7 +103,21 @@ describe("getEnabledResources", () => {
       expect(keyed("x")).toBe("x");
       expect(keyed(1)).toBe(1);
       expect(keyed(false)).toBe(false);
+      expect(keyed(0)).toBe(0);
       expect(keyed(v(new Date(0)))).toBeUndefined();
+    });
+
+    it("discards an empty string and a non-finite number", () => {
+      const keyed = (value: unknown) =>
+        getEnabledResources(
+          object({ a: string() }).setResources({ r: resource({ key: ref("a"), outcomes: ["found"] }) }),
+          { a: value }
+        );
+
+      expect(keyed("")).toEqual([]);
+      expect(keyed(Number.NaN)).toEqual([]);
+      expect(keyed(Number.POSITIVE_INFINITY)).toEqual([]);
+      expect(paths(keyed("x"))).toEqual(["$.r"]);
     });
 
     it("resolves the key from the declaring object, and `$` from the root", () => {
