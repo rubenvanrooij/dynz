@@ -1,3 +1,4 @@
+import type { Resource } from "../../resource";
 import type { Rule } from "../../rules";
 import type { BaseSchema, Schema, SchemaType, SchemaValuesInternal } from "../../types";
 
@@ -10,4 +11,6 @@ export type ObjectSchema<T extends Record<string, Schema>> = BaseSchema<
   Rule[]
 > & {
   fields: [T] extends [never] ? Record<string, Schema> : T;
+  /** Resources available to references inside the object, by name. @see resource */
+  resources?: Record<string, Resource> | undefined;
 };

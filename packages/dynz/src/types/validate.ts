@@ -1,3 +1,4 @@
+import type { ResourceResolvers, ResourceStates } from "../resource";
 import type {
   AfterRuleErrorMessage,
   BeforeRuleErrorMessage,
@@ -150,6 +151,13 @@ export type ValidateOptions<TCustomRuleMap extends CustomRuleMap = CustomRuleMap
    * result instead of returning an 'included' error
    */
   stripNotIncludedValues?: boolean;
+
+  /**
+   * Resolvers by resource name. Before validating, every enabled resource in the schema is
+   * looked up with these (see `evaluateResources`), so resource references resolve against
+   * the outcomes. Without resolvers, resource references resolve to `undefined`.
+   */
+  resolvers?: ResourceResolvers | undefined;
 };
 
 export type Context<T extends Schema = Schema> = {
@@ -167,11 +175,15 @@ export type Context<T extends Schema = Schema> = {
   currentValues: unknown;
   // new values
   values: unknown;
+  /** States of the looked-up resources; resource references resolve against these. */
+  resources?: ResourceStates | undefined;
 };
 
 export type ResolveContext<T extends Schema = Schema, A = unknown> = {
   schema: T;
   values: A;
+  /** States of the looked-up resources; resource references resolve against these. */
+  resources?: ResourceStates | undefined;
 };
 
 export type ErrorMessageForRule<T extends BaseRule> = Omit<T, "type"> & BaseErrorMessage<T["type"]>;

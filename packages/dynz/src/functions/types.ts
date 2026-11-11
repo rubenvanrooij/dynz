@@ -1,5 +1,6 @@
 // import type { Reference } from "../reference";
 import type { Reference } from "../reference";
+import type { ResourceReference } from "../resource";
 import type { ValueType } from "../types";
 import type { Predicate } from "./predicate-types";
 import type { Transformer } from "./transformer-types";
@@ -52,6 +53,7 @@ export type Static<T extends ValueType = ValueType> = {
  * This union type represents all possible value types:
  * - {@link Static} - A constant value wrapped with `v()`
  * - {@link Reference} - A reference to another field with `ref()`
+ * - {@link ResourceReference} - A reference to a resource with `resourceRef()`
  * - {@link Predicate} - A boolean expression
  * - {@link Transformer} - A computed/transformed value
  * - `undefined` - No value
@@ -62,6 +64,7 @@ export type ParamaterValue<T extends ValueType = ValueType> =
   | Static<T>
   | undefined
   | Reference
+  | ResourceReference
   | Predicate
   | Transformer;
 

@@ -1,20 +1,5 @@
 import * as d from "dynz";
 
-// runExample();
-
-const schema = d.discriminatedUnion("kind", [
-  {
-    kind: "card",
-    last4: d.string(),
-  },
-  {
-    kind: "bank",
-    iban: d.string(),
-  },
-]);
-
-const result = await d.validate(schema, undefined, {});
-
 async function example() {
   const schema = d
     .object({

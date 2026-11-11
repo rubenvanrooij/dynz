@@ -29,6 +29,7 @@ export default async function Home() {
         <a href="/api/docs">Swagger UI</a>
         <a href="/api/openapi.json">openapi.json</a>
         <a href="/api/forms/expense-claim">the schema</a>
+        <a href="/vehicle">Vehicle registration (resources)</a>
       </nav>
 
       <div className="card">
