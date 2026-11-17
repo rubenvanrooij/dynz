@@ -1,4 +1,11 @@
-import { type ObjectSchema, type SchemaValues, type ValidateOptions, resolveProperty, validate } from "dynz";
+import {
+  type ObjectSchema,
+  type ResourceStates,
+  resolveProperty,
+  type SchemaValues,
+  type ValidateOptions,
+  validate,
+} from "dynz";
 import { type MessageTransformerFunc, toFieldErrorList } from "../errors";
 import { toAbsolutePath } from "../utils";
 
@@ -32,6 +39,9 @@ export type DynzTypedSchemaOptions<TSchema extends ObjectSchema<never>> = {
    * against an empty value set.
    */
   getValues?: (() => Partial<SchemaValues<TSchema>>) | undefined;
+
+  /** Lets `describe()` resolve `resourceRef`s in conditional `required` against these. */
+  getResources?: (() => ResourceStates) | undefined;
 };
 
 /**
@@ -82,7 +92,7 @@ export function dynzTypedSchema<TSchema extends ObjectSchema<never>>(
         return { required: false, exists: true };
       }
 
-      const context = { schema, values: options.getValues?.() ?? {} };
+      const context = { schema, values: options.getValues?.() ?? {}, resources: options.getResources?.() };
 
       // `exists` is always reported as true: dynz treats a path it can't reach (including
       // one the schema doesn't declare) as not required rather than as an error, and

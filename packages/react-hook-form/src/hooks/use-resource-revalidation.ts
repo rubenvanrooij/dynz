@@ -1,4 +1,10 @@
-import { expandArrayItems, getResourceDependents, pathSegments, type Schema } from "dynz";
+import {
+  changedResourcePaths,
+  fieldPathsReadingResources,
+  getResourceDependents,
+  pathSegments,
+  type Schema,
+} from "dynz";
 import { useEffect, useMemo } from "react";
 import { type FieldPath, type FieldValues, type UseFormReturn, useFormState } from "react-hook-form";
 import type { ResourceStore } from "./resource-store";
@@ -25,17 +31,12 @@ export function useResourceRevalidation<TFieldValues extends FieldValues, TConte
 
     return resources.subscribe(() => {
       const states = resources.getStates();
-      // a settled entry keeps its state object across sets, so identity tells what changed
-      const changed = Object.keys({ ...previous, ...states }).filter((path) => previous[path] !== states[path]);
+      const changed = changedResourcePaths(previous, states);
       previous = states;
 
-      const values = getValues();
-      const fields = changed
-        .flatMap((path) => dependents[pathSegments(path).at(-1) ?? ""] ?? [])
-        .flatMap((path) => expandArrayItems(path, schema, values))
+      const fields = fieldPathsReadingResources(changed, dependents, schema, getValues())
         // field names come from the schema at runtime, not from the form's value type
         .map((path) => pathSegments(path).slice(1).join(".") as FieldPath<TFieldValues>)
-        .filter((field, index, all) => all.indexOf(field) === index)
         .filter((field) => {
           const { isTouched, error } = getFieldState(field);
           return isSubmitted || isTouched || error !== undefined;

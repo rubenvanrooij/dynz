@@ -27,6 +27,6 @@ export function useOptions(name: MaybeRefOrGetter<string>): ComputedRef<DynzOpti
     const values = context.getValues();
     const optionsSchema = findSchemaByPath<OptionsSchema>(fieldPath, context.schema, SchemaType.OPTIONS, values);
 
-    return getOptionsForSchema(optionsSchema, fieldPath, context.schema, values);
+    return getOptionsForSchema(optionsSchema, fieldPath, context.schema, values, context.getResources?.());
   });
 }

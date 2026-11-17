@@ -127,6 +127,7 @@ dynz always validates the document as a whole, so `validateField` scopes the _re
 | `useIsMutable(name)`      | `ComputedRef<boolean \| undefined>`                                           |
 | `useOptions(name)`        | `{ value, enabled }[]` for an options schema, or a discriminated union's key. |
 | `usePredicate(predicate)` | `ComputedRef<boolean \| undefined>`                                           |
+| `useResource(path)`       | The lookup at `path` (e.g. `"$.vehicle"`): see [Resources](#resources).       |
 | `useDynzFormContext()`    | The provided context.                                                         |
 
 All of these accept a plain string, a `ref`, or a getter, so the field name itself may be reactive. `useIsRequired`, `useIsIncluded` and `useIsMutable` also accept an array of names and then return an array of results.
@@ -134,6 +135,68 @@ All of these accept a plain string, a `ref`, or a getter, so the field name itse
 > **Keep the tri-state.** These return `boolean | undefined`. Compare with `required !== false` and `mutable === false`; coercing with `!` collapses the "unresolved" signal into a wrong answer.
 
 `useOptions` returns _every_ option with its resolved `enabled` flag, so a `<select>` can render disabled entries. Filter yourself if you only want the selectable ones. (This differs from `@dynz/react-hook-form`, which filters and returns values only.)
+
+## Resources
+
+If your schema declares resources (see the [dynz README](https://npmjs.com/package/dynz)), pass a resolver per resource in `schemaOptions.resolvers`. `useDynzForm` then looks each enabled resource up whenever its key changes, and the condition composables (`useIsIncluded`, `usePredicate`, `useOptions`, …) update as soon as a lookup settles:
+
+```vue
+<script setup lang="ts">
+const { values, context } = useDynzForm({
+  schema,
+  schemaOptions: {
+    resolvers: { vehicle: cached((plate) => api.lookupVehicle(plate)) },
+  },
+});
+
+// { status: "pending" | "settled" | "failed", key, state? }, or undefined when not enabled.
+// Pass `context` here: Vue's `inject` doesn't see the form this component provides itself.
+// In child components, `useResource("$.vehicle")` is enough.
+const vehicle = useResource("$.vehicle", context);
+</script>
+
+<template>
+  <p v-if="vehicle?.status === 'pending'">Looking up your car…</p>
+</template>
+```
+
+When a lookup settles, the fields that read it are validated again, but only fields the user has interacted with (touched, already showing an error, or after a submit).
+
+### Cache your resolvers
+
+**Resolvers are called a lot.** The form looks up a resource whenever its key changes, and every validation calls all enabled resolvers again. A resolver that sends a request each time sends one request per validation, for every resource. Every resolver you pass to a form should:
+
+1. **Cache by key**, so a repeated call with the same key returns the earlier result.
+2. **Share requests that are still in flight.** The form's lookup and a validation often call the resolver at the same moment. Cache the _promise_, not only the result.
+3. **Never throw.** Return a fallback outcome instead, e.g. `"unavailable"`. A resolver that throws makes validation reject.
+
+```ts
+import type { ResourceResolver, ResourceState } from "dynz";
+
+function cached(
+  lookup: (key: string) => Promise<ResourceState>,
+): ResourceResolver {
+  const cache = new Map<string, Promise<ResourceState>>();
+
+  return (key) => {
+    const id = String(key);
+
+    if (!cache.has(id)) {
+      cache.set(
+        id,
+        lookup(id).catch(() => {
+          cache.delete(id); // try again on the next call
+          return { outcome: "unavailable" };
+        }),
+      );
+    }
+
+    return cache.get(id)!;
+  };
+}
+```
+
+With TanStack Query, see the example in the [`@dynz/react-hook-form` README](https://npmjs.com/package/@dynz/react-hook-form): `fetchQuery` already shares in-flight requests, as long as you set a `staleTime`.
 
 ## VeeValidate
 

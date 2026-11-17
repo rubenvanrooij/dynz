@@ -1,23 +1,33 @@
 <script setup lang="ts">
-import { When, useDynzForm } from "@dynz/vue";
+import { When, useDynzForm, useResource } from "@dynz/vue";
 import { eq, ref as dynzRef, getDefaultValues } from "dynz";
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import CheckboxField from "../components/CheckboxField.vue";
 import SelectField from "../components/SelectField.vue";
 import TextField from "../components/TextField.vue";
-import { newsletterSchema } from "./newsletter-schema";
+import { newsletterResolvers } from "./newsletter-resolvers";
+import { type CompanyInfo, newsletterSchema } from "./newsletter-schema";
 
 const submitted = ref<unknown>(undefined);
 
-const { values, errors, isSubmitting, handleSubmit, resetForm } = useDynzForm({
+const { values, errors, isSubmitting, handleSubmit, resetForm, context } = useDynzForm({
   schema: newsletterSchema,
   initialValues: getDefaultValues(newsletterSchema),
   // Don't nag while someone is still filling the form in; once they have submitted
   // once, correct them as they type.
   mode: "onBlur",
   revalidateMode: "onInput",
-  schemaOptions: { stripNotIncludedValues: true },
+  schemaOptions: { stripNotIncludedValues: true, resolvers: newsletterResolvers },
 });
+
+// the `company` lookup: pending, settled or failed, or undefined while it isn't enabled.
+// This component calls `useDynzForm` itself, so it passes the context (`inject` would not find it).
+const company = useResource("$.company", context);
+const knownCompany = computed(() =>
+  company.value?.status === "settled" && company.value.state.outcome === "found"
+    ? (company.value.state.data as CompanyInfo)
+    : undefined
+);
 
 const onSubmit = handleSubmit((valid) => {
   submitted.value = valid;
@@ -63,9 +73,13 @@ function onReset() {
           hint="Turning this on makes 'Company' required and reveals the company size."
         />
 
-        <TextField name="nestedObject.foo" label="Damn" />
+        <TextField name="company" label="Company" placeholder="Acme Inc." hint="Try “Acme Inc.”" />
 
-        <TextField name="company" label="Company" placeholder="Acme Inc." />
+        <!-- The schema only asks for the size when the lookup doesn't know the company. -->
+        <p v-if="company?.status === 'pending'" class="note">Looking up your company…</p>
+        <p v-else-if="knownCompany !== undefined" class="note">
+          <strong>{{ knownCompany.name }}</strong>: {{ knownCompany.size }} employees, so we won't ask for the size.
+        </p>
         <SelectField name="companySize" label="Company size" />
 
         <div style="display: flex; gap: 0.5rem">

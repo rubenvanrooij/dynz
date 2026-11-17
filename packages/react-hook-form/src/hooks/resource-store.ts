@@ -1,10 +1,6 @@
-import type { ResourceKey, ResourceState, ResourceStates } from "dynz";
+import { type ResourceEntry, type ResourceStates, settledStates } from "dynz";
 
-/** The lookup of one resource instance, by the key it was looked up with. */
-export type ResourceEntry =
-  | { status: "pending"; key: ResourceKey }
-  | { status: "settled"; key: ResourceKey; state: ResourceState }
-  | { status: "failed"; key: ResourceKey; error: unknown };
+export type { ResourceEntry } from "dynz";
 
 /**
  * Holds the resource lookups of a form outside React state. Its identity never changes, so
@@ -30,9 +26,7 @@ export function createResourceStore(): ResourceStore {
     getStates: () => states,
     set: (next) => {
       entries = next;
-      states = Object.fromEntries(
-        Object.entries(next).flatMap(([path, entry]) => (entry.status === "settled" ? [[path, entry.state]] : []))
-      );
+      states = settledStates(next);
       for (const listener of listeners) {
         listener();
       }

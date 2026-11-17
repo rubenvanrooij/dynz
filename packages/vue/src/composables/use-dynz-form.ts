@@ -6,6 +6,8 @@ import type { MessageTransformerFunc } from "../errors";
 import type { DynzFormValues, DynzPartialFormValues } from "../types";
 import { dynzTypedSchema } from "../typed-schema";
 import { getByPath } from "../utils";
+import { type ResourceLookups, useResourceLookups } from "./use-resource-lookups";
+import { useResourceRevalidation } from "./use-resource-revalidation";
 
 export type { DynzFormMode } from "../context";
 
@@ -101,6 +103,8 @@ export function useDynzForm<TSchema extends ObjectSchema<never>>(
   // whole expression as self-referential; it is never *invoked* until validation
   // runs, well after `form` is assigned.
   let form: FormContext<DynzFormValues<TSchema>, SchemaValues<TSchema>>;
+  // Same reason: `describe()` reads the lookups, which can only start once `form` exists.
+  let resources: ResourceLookups;
 
   // `dynzTypedSchema` is typed against dynz's own (readonly) `SchemaValues`, and
   // `initialValues` may be a `DynzPartialFormValues`/`SchemaValues` mix — neither lines
@@ -112,8 +116,12 @@ export function useDynzForm<TSchema extends ObjectSchema<never>>(
     validationSchema: dynzTypedSchema(schema, currentValues, schemaOptions, {
       messageTransformer,
       getValues: () => form.values as unknown as Partial<SchemaValues<TSchema>>,
+      getResources: () => resources.states.value,
     }) as unknown as TypedSchema<DynzFormValues<TSchema>, SchemaValues<TSchema>>,
   });
+
+  resources = useResourceLookups(schema, () => form.values, schemaOptions?.resolvers);
+  useResourceRevalidation(form, schema, resources.states);
 
   const getDependencies = createDependencyResolver(schema);
 
@@ -125,6 +133,8 @@ export function useDynzForm<TSchema extends ObjectSchema<never>>(
     mode,
     revalidateMode,
     isSubmitted: () => form.submitCount.value > 0,
+    getResources: () => resources.states.value,
+    getResourceEntries: () => resources.entries.value,
   };
 
   if (provideContext && getCurrentInstance() !== null) {

@@ -38,7 +38,11 @@ export function useConditionalProperty(
     const values = context.getValues();
 
     const results = names.map((fieldName) =>
-      resolveProperty(property, toAbsolutePath(fieldName), true, { schema: context.schema, values })
+      resolveProperty(property, toAbsolutePath(fieldName), true, {
+        schema: context.schema,
+        values,
+        resources: context.getResources?.(),
+      })
     );
 
     return Array.isArray(resolved) ? results : results[0];
