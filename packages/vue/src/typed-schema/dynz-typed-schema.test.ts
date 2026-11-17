@@ -67,6 +67,57 @@ describe("dynzTypedSchema", () => {
     expect(result.errors).toEqual([{ path: "value", errors: ["translated:min_length"] }]);
   });
 
+  describe("transformResult", () => {
+    const schema = object({ a: string().min(5), b: string().min(5) });
+
+    it("can filter out the errors of a path", async () => {
+      const result = await dynzTypedSchema(schema, undefined, undefined, {
+        transformResult: (r) => (r.success ? r : { ...r, errors: r.errors.filter((e) => e.path !== "$.a") }),
+      }).parse({ a: "x", b: "y" });
+
+      expect(result.value).toBeUndefined();
+      expect(result.errors.map((e) => e.path)).toEqual(["b"]);
+    });
+
+    it("can turn a success into a failure", async () => {
+      const result = await dynzTypedSchema(schema, undefined, undefined, {
+        transformResult: () => ({
+          success: false,
+          errors: [{ path: "$.a", code: "custom", message: "nope" } as never],
+        }),
+      }).parse({ a: "valid", b: "valid" });
+
+      expect(result.errors).toEqual([{ path: "a", errors: ["nope"] }]);
+    });
+
+    it("awaits an async transformer and receives the input values", async () => {
+      const seen: unknown[] = [];
+      const result = await dynzTypedSchema(schema, undefined, undefined, {
+        transformResult: async (r, values) => {
+          seen.push(values);
+          return r.success ? r : { ...r, errors: [] };
+        },
+      }).parse({ a: "x", b: "y" });
+
+      expect(seen).toEqual([{ a: "x", b: "y" }]);
+      expect(result.errors).toEqual([]);
+    });
+
+    it("runs before the message transformer, on raw dynz paths", async () => {
+      const paths: string[] = [];
+      const result = await dynzTypedSchema(schema, undefined, undefined, {
+        transformResult: (r) => {
+          if (!r.success) paths.push(...r.errors.map((e) => e.path));
+          return r;
+        },
+        messageTransformer: (e) => `t:${e.code}`,
+      }).parse({ a: "x", b: "valid" });
+
+      expect(paths).toEqual(["$.a"]);
+      expect(result.errors).toEqual([{ path: "a", errors: ["t:min_length"] }]);
+    });
+  });
+
   it("enforces mutability when current values are supplied", async () => {
     const schema = object({ slug: string().setMutable(false) });
 

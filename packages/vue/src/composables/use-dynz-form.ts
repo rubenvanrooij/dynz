@@ -4,7 +4,7 @@ import { type FormContext, type TypedSchema, useForm } from "vee-validate";
 import { DYNZ_INJECTION_KEY, type DynzContext, type DynzFormMode, createDependencyResolver } from "../context";
 import type { MessageTransformerFunc } from "../errors";
 import type { DynzFormValues, DynzPartialFormValues } from "../types";
-import { dynzTypedSchema } from "../typed-schema";
+import { type ValidationResultTransformer, dynzTypedSchema } from "../typed-schema";
 import { getByPath } from "../utils";
 import { type ResourceLookups, useResourceLookups } from "./use-resource-lookups";
 import { useResourceRevalidation } from "./use-resource-revalidation";
@@ -32,6 +32,20 @@ export type UseDynzFormOptions<TSchema extends ObjectSchema<never>> = {
 
   /** Rewrites dynz error messages, for instance to run them through i18n. */
   messageTransformer?: MessageTransformerFunc | undefined;
+
+  /**
+   * Alters the dynz validation result before it becomes field errors, e.g. to filter
+   * out errors for certain paths. Runs before `messageTransformer`.
+   *
+   * @example
+   * ```ts
+   * transformResult: (result) =>
+   *   result.success
+   *     ? result
+   *     : { ...result, errors: result.errors.filter((error) => !error.path.startsWith("$.billing")) },
+   * ```
+   */
+  transformResult?: ValidationResultTransformer<TSchema> | undefined;
 
   /** When to validate before the first submit. Defaults to `"onSubmit"`. */
   mode?: DynzFormMode | undefined;
@@ -93,6 +107,7 @@ export function useDynzForm<TSchema extends ObjectSchema<never>>(
     currentValues,
     schemaOptions,
     messageTransformer,
+    transformResult,
     mode = "onSubmit",
     revalidateMode = "onInput",
     provideContext = true,
@@ -115,6 +130,7 @@ export function useDynzForm<TSchema extends ObjectSchema<never>>(
     initialValues: (options.initialValues ?? currentValues) as never,
     validationSchema: dynzTypedSchema(schema, currentValues, schemaOptions, {
       messageTransformer,
+      transformResult,
       getValues: () => form.values as unknown as Partial<SchemaValues<TSchema>>,
       getResources: () => resources.states.value,
     }) as unknown as TypedSchema<DynzFormValues<TSchema>, SchemaValues<TSchema>>,

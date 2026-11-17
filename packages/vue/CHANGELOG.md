@@ -1,5 +1,19 @@
 # @dynz/vue
 
+## 1.1.1
+
+### Patch Changes
+
+- 47e2627: Correct package license metadata to MIT to match the repository license.
+- Updated dependencies [47e2627]
+  - dynz@1.2.1
+
+## 1.1.0
+
+### Minor Changes
+
+- 1f9544d: Add a `transformResult` option to `useDynzForm` and `dynzTypedSchema` that lets you alter the dynz validation result before it is mapped to VeeValidate field errors, e.g. to filter out errors for certain paths. It receives the raw dynz result (with absolute `$.`-paths) and the validated values, may be async, and runs before `messageTransformer`.
+
 ## 1.0.0
 
 ### Minor Changes

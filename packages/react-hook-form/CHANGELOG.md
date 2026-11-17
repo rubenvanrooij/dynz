@@ -1,5 +1,13 @@
 # @dynz/react-hook-form-resolver
 
+## 1.2.1
+
+### Patch Changes
+
+- 47e2627: Correct package license metadata to MIT to match the repository license.
+- Updated dependencies [47e2627]
+  - dynz@1.2.1
+
 ## 1.2.0
 
 ### Minor Changes

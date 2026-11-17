@@ -4,6 +4,7 @@ import {
   resolveProperty,
   type SchemaValues,
   type ValidateOptions,
+  type ValidationResult,
   validate,
 } from "dynz";
 import { type MessageTransformerFunc, toFieldErrorList } from "../errors";
@@ -30,8 +31,21 @@ export type VeeValidateTypedSchema<TInput, TOutput = TInput> = {
   describe(path?: string): { required: boolean; exists: boolean };
 };
 
+/**
+ * Alters the raw dynz validation result before it is mapped onto VeeValidate's field
+ * errors, e.g. to filter out errors for certain paths. Error paths are dynz' absolute
+ * paths (`$.address.zip`, `$.tags.[1]`).
+ */
+export type ValidationResultTransformer<TSchema extends ObjectSchema<never>> = (
+  result: ValidationResult<SchemaValues<TSchema>>,
+  values: SchemaValues<TSchema>
+) => ValidationResult<SchemaValues<TSchema>> | Promise<ValidationResult<SchemaValues<TSchema>>>;
+
 export type DynzTypedSchemaOptions<TSchema extends ObjectSchema<never>> = {
   messageTransformer?: MessageTransformerFunc | undefined;
+
+  /** Alters the dynz validation result; runs before `messageTransformer`. */
+  transformResult?: ValidationResultTransformer<TSchema> | undefined;
 
   /**
    * Lets `describe()` resolve conditional `required` against the live values, which is
@@ -72,7 +86,8 @@ export function dynzTypedSchema<TSchema extends ObjectSchema<never>>(
     __type: "VVTypedSchema",
 
     async parse(values) {
-      const result = await validate(schema, currentValues, values, schemaOptions);
+      const raw = await validate(schema, currentValues, values, schemaOptions);
+      const result = options.transformResult ? await options.transformResult(raw, values) : raw;
 
       if (result.success) {
         return { value: result.values, errors: [] };
