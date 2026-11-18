@@ -497,6 +497,16 @@ Also keep in mind:
 - **Avoid cycles.** If resource A depends on resource B and B depends on A, the result is undefined. dynz stops after a bounded number of rounds.
 - **Every level of dependency adds a round-trip.** A resource is only looked up after the resources it depends on have returned, so a chain of three resources means three requests one after the other, instead of three parallel requests.
 
+#### Cache your resolvers
+
+dynz does not cache lookups: every `validate` call runs the resolver of every enabled resource again. In a form, that happens on top of the form's own lookups, often several times per change and often at the same moment. Caching is up to the resolver, so every resolver you pass should:
+
+1. **Cache by key**, so a repeated call with the same key returns the earlier result.
+2. **Share requests that are still in flight.** Cache the _promise_, not only the result.
+3. **Never throw.** Return a fallback outcome instead, e.g. `"unavailable"`, declared in the resource's `outcomes`. A resolver that throws makes `validate` reject.
+
+The [`@dynz/react-hook-form`](https://npmjs.com/package/@dynz/react-hook-form) and [`@dynz/vue`](https://npmjs.com/package/@dynz/vue) READMEs show a caching resolver, including one built on TanStack Query.
+
 ## Advanced Usage
 
 ### Custom Rules

@@ -119,16 +119,20 @@ describe("useResource", () => {
     expect(result.vehicle.value).toBeUndefined();
   });
 
+  // Resolver call counts are not asserted in these tests: vee-validate's (silent) validation
+  // runs dynz `validate` with the same resolvers at its own moments, and caching lookups is up
+  // to the resolvers. A new lookup by the form replaces the entry, so identity tells instead.
+
   it("does not look up again while the key stays the same", async () => {
-    const vehicle = vi.fn(lookup);
-    const { form } = setup({ vehicle });
+    const { form, result } = setup();
     await flushPromises();
+    const settled = result.vehicle.value;
 
     form.setFieldValue("other", "x", false);
     form.setFieldValue("other", "y", false);
     await flushPromises();
 
-    expect(vehicle).toHaveBeenCalledTimes(1);
+    expect(result.vehicle.value).toBe(settled);
   });
 
   it("is failed when the resolver throws, and retries only when the key changes", async () => {
@@ -138,27 +142,27 @@ describe("useResource", () => {
     const { form, result } = setup({ vehicle });
     await flushPromises();
 
-    expect(result.vehicle.value).toMatchObject({ status: "failed", key: "KNOWN" });
+    const failed = result.vehicle.value;
+    expect(failed).toMatchObject({ status: "failed", key: "KNOWN" });
 
     vehicle.mockImplementation(lookup);
     form.setFieldValue("other", "x", false);
     await flushPromises();
 
-    expect(result.vehicle.value).toMatchObject({ status: "failed" });
-    expect(vehicle).toHaveBeenCalledTimes(1);
+    expect(result.vehicle.value).toBe(failed);
 
     form.setFieldValue("plate", "UNKNOWN", false);
     await flushPromises();
 
     expect(result.vehicle.value).toMatchObject({ status: "settled", state: { outcome: "not_found" } });
-    expect(vehicle).toHaveBeenCalledTimes(2);
   });
 
   it("ignores a result for a key the instance no longer has", async () => {
+    // one pending lookup per key, shared by every call (as a caching resolver would)
     const lookups: Record<string, ReturnType<typeof deferred<ResourceState>>> = {};
     const { form, result } = setup({
       vehicle: (plate) => {
-        lookups[String(plate)] = deferred<ResourceState>();
+        lookups[String(plate)] ??= deferred<ResourceState>();
         return lookups[String(plate)]?.promise as Promise<ResourceState>;
       },
     });
@@ -207,7 +211,6 @@ describe("resources that depend on other resources", () => {
     await flushPromises();
 
     expect(result.value).toEqual({ status: "settled", key: "VIN-1", state: { outcome: "ok" } });
-    expect(vinCheck).toHaveBeenCalledTimes(1);
   });
 });
 
