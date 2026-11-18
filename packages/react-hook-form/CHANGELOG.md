@@ -1,5 +1,16 @@
 # @dynz/react-hook-form-resolver
 
+## 1.3.0
+
+### Minor Changes
+
+- a6266c0: Add resource support: `useDynzForm` looks up the schema's resources through `schemaOptions.resolvers`, re-looks them up when their keys change and revalidates dependent fields. New `useResource` hook reads a resource's state, and `useOptions`, `usePredicate` and `useConditionalProperty` now react to resource changes.
+
+### Patch Changes
+
+- Updated dependencies [a6266c0]
+  - dynz@1.3.0
+
 ## 1.2.1
 
 ### Patch Changes

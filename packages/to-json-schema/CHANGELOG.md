@@ -1,5 +1,12 @@
 # @dynz/to-json-schema
 
+## 0.1.2
+
+### Patch Changes
+
+- Updated dependencies [a6266c0]
+  - dynz@1.3.0
+
 ## 0.1.1
 
 ### Patch Changes
