@@ -34,11 +34,9 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/environment
       - name: Create and publish vers ions
-        uses: changesets/action@v1
+        uses: changesets/action@v2
         with:
-          version: pnpm ci:version
-          commit: "chore: update versions"
-          title: "chore: update versions"
-          publish: pnpm ci:publish --no-git-checks
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          version-script: pnpm ci:version
+          commit-message: "chore: update versions"
+          pr-title: "chore: update versions"
+          publish-script: pnpm ci:publish --no-git-checks
