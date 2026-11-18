@@ -1,4 +1,10 @@
-import { getRulesDependenciesMap, type ObjectSchema, type RulesDependencyMap } from "dynz";
+import {
+  getRulesDependenciesMap,
+  type ObjectSchema,
+  type ResourceEntries,
+  type ResourceStates,
+  type RulesDependencyMap,
+} from "dynz";
 import { type InjectionKey, inject, provide } from "vue";
 import { toFieldName } from "../utils";
 
@@ -46,6 +52,16 @@ export type DynzContext<TSchema extends ObjectSchema<never> = ObjectSchema<never
 
   /** Whether the form has been submitted at least once. Only set by `useDynzForm`. */
   isSubmitted?: (() => boolean) | undefined;
+
+  /**
+   * The settled resource lookups, by instance path. Must be a *reactive* read, so the
+   * condition composables re-run when a lookup settles. Without it, every `resourceRef`
+   * resolves to `undefined`.
+   */
+  getResources?: (() => ResourceStates) | undefined;
+
+  /** Every resource lookup (pending, settled or failed), by instance path. Backs `useResource`. */
+  getResourceEntries?: (() => ResourceEntries) | undefined;
 };
 
 export const DYNZ_INJECTION_KEY: InjectionKey<DynzContext> = Symbol("dynz");
@@ -59,6 +75,8 @@ export type CreateDynzContextOptions<TSchema extends ObjectSchema<never>> = {
   mode?: DynzFormMode | undefined;
   revalidateMode?: DynzFormMode | undefined;
   isSubmitted?: (() => boolean) | undefined;
+  getResources?: (() => ResourceStates) | undefined;
+  getResourceEntries?: (() => ResourceEntries) | undefined;
 };
 
 /**
@@ -93,6 +111,8 @@ export function createDynzContext<TSchema extends ObjectSchema<never>>({
   mode,
   revalidateMode,
   isSubmitted,
+  getResources,
+  getResourceEntries,
 }: CreateDynzContextOptions<TSchema>): DynzContext<TSchema> {
   return {
     schema,
@@ -102,6 +122,8 @@ export function createDynzContext<TSchema extends ObjectSchema<never>>({
     mode,
     revalidateMode,
     isSubmitted,
+    getResources,
+    getResourceEntries,
   };
 }
 

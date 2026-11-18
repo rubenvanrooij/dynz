@@ -149,6 +149,79 @@ function RegistrationForm() {
 - **`<DynzField name render>`** — a render-prop wrapper around `useDynzField`: renders nothing when the field isn't currently included, and calls `render(...)` with the same shape otherwise.
 - **`<IsIncluded name>children</IsIncluded>`** and **`<When cond={predicate}>children</When>`** — lighter-weight components for conditionally rendering non-field content based on the schema.
 
+## Resources
+
+If your schema declares resources (see the [dynz README](https://npmjs.com/package/dynz)), pass a resolver per resource in `schemaOptions.resolvers`. Read a lookup's state with `useResource(path)`:
+
+```tsx
+// define it outside the component (or memoize it): a new object re-subscribes the form
+const SCHEMA_OPTIONS = {
+  resolvers: {
+    vehicle: cached((plate) => api.lookupVehicle(plate)),
+  },
+};
+
+function VehicleForm() {
+  const form = useDynzForm({ schema, schemaOptions: SCHEMA_OPTIONS });
+  // { status: "pending" | "settled" | "failed", key, state? }, or undefined when not enabled
+  const vehicle = useResource("$.vehicle");
+  // ...
+}
+```
+
+### Cache your resolvers
+
+**Resolvers are called a lot.** The form looks up a resource whenever its key changes. On top of that, every validation calls all enabled resolvers again: that is every change in `mode: "onChange"`, every blur, and every submit. A resolver that sends a request each time sends one request per keystroke, for every resource.
+
+So every resolver you pass to a form should:
+
+1. **Cache by key**, so a repeated call with the same key returns the earlier result.
+2. **Share requests that are still in flight.** The form's lookup and a validation often call the resolver at the same moment, before the first request has returned. Cache the _promise_, not only the result.
+3. **Never throw.** Return a fallback outcome instead, e.g. `"unavailable"`. A resolver that throws makes validation reject, and `handleSubmit` then throws instead of showing field errors.
+
+A minimal version without dependencies:
+
+```ts
+import type { ResourceResolver, ResourceState } from "dynz";
+
+function cached(
+  lookup: (key: string) => Promise<ResourceState>,
+): ResourceResolver {
+  const cache = new Map<string, Promise<ResourceState>>();
+
+  return (key) => {
+    const id = String(key);
+
+    if (!cache.has(id)) {
+      cache.set(
+        id,
+        lookup(id).catch(() => {
+          cache.delete(id); // try again on the next call
+          return { outcome: "unavailable" };
+        }),
+      );
+    }
+
+    return cache.get(id)!;
+  };
+}
+```
+
+With TanStack Query, `fetchQuery` already shares in-flight requests and caches by key. Do set a `staleTime`: with the default of `0`, every call fetches again.
+
+```ts
+const vehicle: ResourceResolver = (plate) =>
+  queryClient
+    .fetchQuery({
+      queryKey: ["vehicle", String(plate)],
+      queryFn: () => api.lookupVehicle(String(plate)),
+      staleTime: 5 * 60_000,
+    })
+    .catch(() => ({ outcome: "unavailable" }));
+```
+
+The fallback outcome has to be one of the resource's declared `outcomes`. Handle it in your resource conditions like any other outcome.
+
 ## Advanced Examples
 
 ### Conditional Validation

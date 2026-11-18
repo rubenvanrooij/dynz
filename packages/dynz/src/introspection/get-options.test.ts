@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
+import { eq } from "../functions";
+import { resourceRef } from "../resource";
+import { options } from "../schemas";
 import { SchemaType } from "../types";
-import { getOptions } from "./get-options";
+import { getOptions, getOptionsForSchema } from "./get-options";
 
 describe("getOptions", () => {
   it("should resolve a plain options field", () => {
@@ -57,6 +60,25 @@ describe("getOptions", () => {
       expect(getOptions("subscription.plan", schema, { subscription: { audience: "personal" } })).toEqual([
         { value: "free", enabled: true },
         { value: "pro", enabled: true },
+      ]);
+    });
+  });
+
+  describe("getOptionsForSchema", () => {
+    const coverage = options(["basic", { value: "all_risk", enabled: eq(resourceRef("vehicle.outcome"), "found") }]);
+    const root = { type: SchemaType.OBJECT, fields: { coverage } } as const;
+
+    it("resolves resource references in an option's enabled against the resources", () => {
+      expect(getOptionsForSchema(coverage, "$.coverage", root, {}, { "$.vehicle": { outcome: "found" } })).toEqual([
+        { value: "basic", enabled: true },
+        { value: "all_risk", enabled: true },
+      ]);
+    });
+
+    it("treats a resource that is not looked up as unavailable", () => {
+      expect(getOptionsForSchema(coverage, "$.coverage", root, {})).toEqual([
+        { value: "basic", enabled: true },
+        { value: "all_risk", enabled: false },
       ]);
     });
   });

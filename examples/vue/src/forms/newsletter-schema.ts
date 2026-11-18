@@ -1,15 +1,16 @@
-import { boolean, eq, neq, object, options, ref, string } from "dynz";
+import { and, boolean, eq, matches, neq, object, options, ref, resource, resourceRef, string } from "dynz";
 
 /**
- * One schema, four kinds of dynamic behaviour — all of it data, none of it code:
+ * One schema, five kinds of dynamic behaviour — all of it data, none of it code:
  *
  * - `roleDetails.included`  — the field only exists while `role` is "other"
  * - `company.required`      — always visible, only mandatory for product-news subscribers
- * - `companySize.included`  — appears alongside `company` for product-news subscribers
  * - `format` options        — the digest option disables itself for daily subscribers
+ * - the `company` resource  — product-news subscribers' company is looked up by name
+ * - `companySize.included`  — only asked when that lookup doesn't know the company
  *
  * The same schema is what a backend would validate against, and it survives a JSON
- * round trip.
+ * round trip. How the company is looked up is not part of it: see `newsletter-resolvers.ts`.
  */
 export const newsletterSchema = object({
   email: string().min(1, "required").email(),
@@ -20,10 +21,6 @@ export const newsletterSchema = object({
     "html"
   ),
 
-  nestedObject: object({
-    foo: string(),
-  }).setDefault({}),
-
   role: options(["developer", "designer", "product manager", "other"]),
   roleDetails: string()
     .min(2)
@@ -33,5 +30,17 @@ export const newsletterSchema = object({
   company: string()
     .min(2)
     .setRequired(eq(ref("wantsProductNews"), true)),
-  companySize: options(["1–10", "11–50", "51–200", "200+"]).setIncluded(eq(ref("wantsProductNews"), true)),
+  // `eq(…, "not_found")` rather than `neq(…, "found")`: while the lookup is pending the outcome is
+  // `undefined`, and the field should stay hidden until we know we need it
+  companySize: options(["1–10", "11–50", "51–200", "200+"]).setIncluded(
+    and(eq(ref("wantsProductNews"), true), eq(resourceRef("company.outcome"), "not_found"))
+  ),
+}).setResources({
+  company: resource<CompanyInfo>({
+    key: ref("company"),
+    enabled: and(eq(ref("wantsProductNews"), true), matches(ref("company"), ".{2,}")),
+    outcomes: ["found", "not_found"],
+  }),
 });
+
+export type CompanyInfo = { name: string; size: string };

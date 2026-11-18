@@ -16,6 +16,7 @@ export function usePredicate(predicate: MaybeRefOrGetter<Predicate>): ComputedRe
     resolvePredicate(toValue(predicate), "$", {
       schema: context.schema,
       values: context.getValues(),
+      resources: context.getResources?.(),
     })
   );
 }

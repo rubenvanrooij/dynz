@@ -6,3 +6,4 @@ export * from "./use-is-mutable";
 export * from "./use-is-required";
 export * from "./use-options";
 export * from "./use-predicate";
+export * from "./use-resource";

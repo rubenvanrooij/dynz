@@ -1,4 +1,5 @@
 import type { ParamaterValue, Predicate } from "../../functions";
+import type { Resource } from "../../resource";
 import {
   buildConditionalRule,
   buildMaxEntriesRule,
@@ -111,6 +112,14 @@ export type ObjectFluent<TFields extends Record<string, Schema>, TRules extends 
     /** Marks field as private (masked in output). @param value - Boolean flag */
     setPrivate: <P extends boolean>(value: P) => ObjectFluent<TFields, TRules, TProps & { private: P }>;
     /**
+     * Declares the resources available inside the object, by name. Read them with
+     * `resourceRef("<name>.outcome")` or `resourceRef("<name>.data.<path>")`.
+     * @param resources - Resources created with `resource(...)`
+     */
+    setResources: <R extends Record<string, Resource>>(
+      resources: R
+    ) => ObjectFluent<TFields, TRules, TProps & { resources: R }>;
+    /**
      * Sets a default value used whenever the object is left empty. Continues through
      * completely normal validation afterward — every field's own default (if it has
      * one) still gets applied independently for whatever this default doesn't
@@ -196,6 +205,7 @@ function createFluent<TFields extends Record<string, Schema>, TRules extends Rul
     setMutable: <P extends boolean | Predicate>(value: P) => setProp("mutable", value),
     setIncluded: <P extends boolean | Predicate>(value: P) => setProp("included", value),
     setPrivate: <P extends boolean>(value: P) => setProp("private", value),
+    setResources: <R extends Record<string, Resource>>(resources: R) => setProp("resources", resources),
     setDefault: <V extends ObjectDefaultValue<TFields>>(value: V) => setProp("default", value),
     setUi: <TUI extends JsonRecord>(config: TUI) => setProp("ui", config),
     setMeta: <M extends SchemaMeta>(meta: M) => setProp("meta", { ...(props as { meta?: SchemaMeta }).meta, ...meta }),
