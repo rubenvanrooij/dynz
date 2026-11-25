@@ -123,7 +123,8 @@ export function createResourceCache(
     entries.set(id, entry);
 
     const { path, name, objectPath, resource, key } = instance;
-    Promise.resolve()
+    // never rejects: a throwing resolver becomes a `failed` entry
+    void Promise.resolve()
       .then(() => resolver(key, { path, name, objectPath, resource, key, signal: entry.controller.signal }))
       .then(
         (state): Entry => ({ status: "settled", state }),
