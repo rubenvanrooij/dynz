@@ -127,7 +127,7 @@ dynz always validates the document as a whole, so `validateField` scopes the _re
 | `useIsMutable(name)`      | `ComputedRef<boolean \| undefined>`                                           |
 | `useOptions(name)`        | `{ value, enabled }[]` for an options schema, or a discriminated union's key. |
 | `usePredicate(predicate)` | `ComputedRef<boolean \| undefined>`                                           |
-| `useResource(path)`       | The lookup at `path` (e.g. `"$.vehicle"`): see [Resources](#resources).       |
+| `useResources()`          | Every enabled resource instance by path: see [Resources](#resources).         |
 | `useDynzFormContext()`    | The provided context.                                                         |
 
 All of these accept a plain string, a `ref`, or a getter, so the field name itself may be reactive. `useIsRequired`, `useIsIncluded` and `useIsMutable` also accept an array of names and then return an array of results.
@@ -138,65 +138,74 @@ All of these accept a plain string, a `ref`, or a getter, so the field name itse
 
 ## Resources
 
-If your schema declares resources (see the [dynz README](https://npmjs.com/package/dynz)), pass a resolver per resource in `schemaOptions.resolvers`. `useDynzForm` then looks each enabled resource up whenever its key changes, and the condition composables (`useIsIncluded`, `usePredicate`, `useOptions`, …) update as soon as a lookup settles:
+If your schema declares resources (see the [dynz README](https://npmjs.com/package/dynz)), pass how to look each one up with `resolvers`: the same resolvers `validate` takes on the server. The form looks up every enabled instance as the values change, and its conditions, expressions, UI and validation all read those results.
 
 ```vue
 <script setup lang="ts">
-const { values, context } = useDynzForm({
+import { useDynzForm, useResources } from "@dynz/vue";
+import { computed } from "vue";
+
+const { context } = useDynzForm({
   schema,
-  schemaOptions: {
-    resolvers: { vehicle: cached((plate) => api.lookupVehicle(plate)) },
+  resolvers: {
+    vehicle: (plate, { signal }) =>
+      api
+        .lookupVehicle(String(plate), { signal })
+        .catch(() => ({ outcome: "unavailable" })),
   },
 });
 
-// { status: "pending" | "settled" | "failed", key, state? }, or undefined when not enabled.
-// Pass `context` here: Vue's `inject` doesn't see the form this component provides itself.
-// In child components, `useResource("$.vehicle")` is enough.
-const vehicle = useResource("$.vehicle", context);
+// every enabled resource instance, by path. Pass `context` here: Vue's `inject` doesn't see
+// the form this component provides itself.
+const resources = useResources(context);
+
+// { key, status: "pending" | "settled" | "failed", state?, error?, retry }, or undefined when not enabled
+const vehicle = computed(() => resources.value["$.vehicle"]);
 </script>
 
 <template>
   <p v-if="vehicle?.status === 'pending'">Looking up your car…</p>
+  <p
+    v-else-if="
+      vehicle?.status === 'settled' && vehicle.state.outcome === 'unavailable'
+    "
+  >
+    The registry is unavailable.
+    <button type="button" @click="vehicle.retry()">Try again</button>
+  </p>
 </template>
 ```
 
+- **Once per key.** An instance is looked up when it becomes enabled, and the result is kept for the form's lifetime: typing a key that was looked up before shows its result right away. Instances with the same resource name and key share a lookup.
+- **Debounce with the `signal`.** A running lookup is aborted once its key is no longer current (the user typed on). To debounce, wait in the resolver before the request, and give up when the signal is aborted. A key that only matters when complete is better kept out with the resource's `enabled` (e.g. `matches(ref("plate"), PLATE_PATTERN)`).
+- **Two kinds of failure.**
+  - **An outcome** is a failure you expect, and the schema handles: catch the failed request and return one of the resource's declared outcomes (`"unavailable"` above). The schema's conditions decide what it means, e.g. ask for the details by hand, so the user can always continue.
+  - **`status: "failed"`** is the unexpected: the resolver threw. The error is logged with `console.error`, `retry()` looks it up again, and validation has no state for it meanwhile (a `resourceRef` to it is `undefined`).
+- **Validation waits for running lookups**, and uses the form's results instead of looking up again, so the UI and validation always agree, and no field error and no submit is ever based on a lookup that is still going on. A validation for a key the user has since changed stops waiting; the next validation replaces it. A form without `resolvers` ignores resources altogether.
+- `useResources()` lists every enabled instance, e.g. one per array item (`$.drivers.[0].vehicle`), with its `status` (`pending`, `settled` or `failed`) and `retry()`.
+
 When a lookup settles, the fields that read it are validated again, but only fields the user has interacted with (touched, already showing an error, or after a submit).
 
-### Cache your resolvers
+### With TanStack Query
 
-**Resolvers are called a lot.** The form looks up a resource whenever its key changes, and every validation calls all enabled resolvers again. A resolver that sends a request each time sends one request per validation, for every resource. Every resolver you pass to a form should:
-
-1. **Cache by key**, so a repeated call with the same key returns the earlier result.
-2. **Share requests that are still in flight.** The form's lookup and a validation often call the resolver at the same moment. Cache the _promise_, not only the result.
-3. **Never throw.** Return a fallback outcome instead, e.g. `"unavailable"`. A resolver that throws makes validation reject.
+The form keeps results for its own lifetime. To share them between forms, or keep them across page visits, look up through your data-fetching library:
 
 ```ts
-import type { ResourceResolver, ResourceState } from "dynz";
+const queryClient = useQueryClient();
 
-function cached(
-  lookup: (key: string) => Promise<ResourceState>,
-): ResourceResolver {
-  const cache = new Map<string, Promise<ResourceState>>();
-
-  return (key) => {
-    const id = String(key);
-
-    if (!cache.has(id)) {
-      cache.set(
-        id,
-        lookup(id).catch(() => {
-          cache.delete(id); // try again on the next call
-          return { outcome: "unavailable" };
-        }),
-      );
-    }
-
-    return cache.get(id)!;
-  };
-}
+useDynzForm({
+  schema,
+  resolvers: {
+    vehicle: (plate, { signal }) =>
+      queryClient
+        .fetchQuery({
+          queryKey: ["vehicle", plate],
+          queryFn: () => api.lookupVehicle(String(plate), { signal }),
+        })
+        .catch(() => ({ outcome: "unavailable" })),
+  },
+});
 ```
-
-With TanStack Query, see the example in the [`@dynz/react-hook-form` README](https://npmjs.com/package/@dynz/react-hook-form): `fetchQuery` already shares in-flight requests, as long as you set a `staleTime`.
 
 ## VeeValidate
 

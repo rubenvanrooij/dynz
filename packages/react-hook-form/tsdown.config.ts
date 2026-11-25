@@ -1,13 +1,17 @@
 import { defineConfig } from "tsdown";
 
+/** Internal, never published: bundled into this package, code and types. */
+const BUNDLED = "@dynz/form-resources";
+
 export default defineConfig([
   {
     entry: ["./src/index.tsx"],
     clean: true,
     format: ["esm", "cjs"],
     external: ["react", "react-dom", "react/jsx-runtime", "react-hook-form"],
+    noExternal: [BUNDLED],
     minify: false,
-    dts: true,
+    dts: { resolve: [BUNDLED] },
     outDir: "./dist",
   },
   {
@@ -15,6 +19,7 @@ export default defineConfig([
     clean: true,
     format: ["esm", "cjs"],
     external: ["react", "react-dom", "react/jsx-runtime", "react-hook-form"],
+    noExternal: [BUNDLED],
     minify: true,
     dts: false,
     outDir: "./dist",

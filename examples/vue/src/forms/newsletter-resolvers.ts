@@ -1,74 +1,37 @@
-import type { ResourceResolver, ResourceResolvers, ResourceState } from "dynz";
+import type { ResourceResolvers, ResourceState } from "dynz";
+import { debounced } from "../lib/debounced";
 import type { CompanyInfo } from "./newsletter-schema";
 
 /**
- * How the schema's resources are looked up. In a real app this would call an API; here it is
- * a mock with a delay, so the pending state is visible.
- *
- * Defined once at module level: the form re-runs its lookups when it gets a new object.
+ * How the schema's resources are looked up: the form calls these for every enabled instance,
+ * once per key, and its conditions, UI and validation all read the results. In a real app this
+ * would call an API; here it is a mock with a delay, so the pending state is visible.
  */
 export const newsletterResolvers: ResourceResolvers = {
-  company: cachedAndDebounced(async (name) => {
-    await delay(300);
-    const company = COMPANIES[name.trim().toLowerCase()];
-
-    return company ? { outcome: "found", data: company } : { outcome: "not_found" };
-  }),
+  // the key is the company name, so every keystroke is a new key: wait for the user to stop
+  // typing. A failure becomes an outcome the schema handles, so the form never blocks on it.
+  company: debounced(300, (name) => findCompany(String(name)).catch((): ResourceState => ({ outcome: "failed" }))),
 };
 
 const COMPANIES: Record<string, CompanyInfo> = {
   "acme inc.": { name: "Acme Inc.", size: "51–200" },
+  "flaky co.": { name: "Flaky Co.", size: "11–50" },
 };
 
-/** What a failed or skipped lookup resolves to: the form then simply asks for the size. */
-const FALLBACK: ResourceState = { outcome: "not_found" };
+/** "Flaky Co." fails every other attempt, to show the retry. */
+let flakyAttempts = 0;
 
-/**
- * Resolvers are called on every key change and again on every validation, so this one is:
- *
- * - **debounced**: the key is the company name, so every keystroke is a new key. Each call waits
- *   `wait` ms and only sends its request if no call for another key came in meanwhile. The form
- *   shows "Looking up…" right away regardless, because its entry turns pending immediately.
- * - **cached** by key, sharing a request that is still running;
- * - **never throwing**: a failed lookup falls back to {@link FALLBACK}.
- *
- * "The latest call wins" assumes one instance of the resource. A resource inside an array has
- * one instance per item, each with its own key; it would need the latest key per instance path
- * (the resolver's second argument).
- */
-function cachedAndDebounced(lookup: (key: string) => Promise<ResourceState>, wait = 300): ResourceResolver {
-  const cache = new Map<string, Promise<ResourceState>>();
-  let latest: string | undefined;
+async function findCompany(name: string): Promise<ResourceState<CompanyInfo>> {
+  await delay(300);
+  const id = name.trim().toLowerCase();
 
-  return (key) => {
-    const id = String(key);
-    latest = id;
+  if (id === "flaky co." && flakyAttempts++ % 2 === 0) {
+    throw new Error("The company registry is unavailable");
+  }
 
-    const hit = cache.get(id);
+  const company = COMPANIES[id];
 
-    if (hit !== undefined) {
-      return hit;
-    }
-
-    const request = delay(wait)
-      .then(() => {
-        if (latest !== id) {
-          // superseded while waiting: the form no longer has this key and ignores the result,
-          // so skip the request, and don't keep the placeholder in the cache
-          cache.delete(id);
-          return FALLBACK;
-        }
-
-        return lookup(id);
-      })
-      .catch(() => {
-        cache.delete(id); // try again on the next call
-        return FALLBACK;
-      });
-
-    cache.set(id, request);
-    return request;
-  };
+  return company ? { outcome: "found", data: company } : { outcome: "not_found" };
 }
 
 function delay(ms: number): Promise<void> {

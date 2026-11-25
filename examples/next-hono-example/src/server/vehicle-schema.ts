@@ -47,18 +47,6 @@ export const LICENCE_PATTERN = "^[0-9]{10}$";
 /** All-risk only covers cars from this year on. */
 export const ALL_RISK_MIN_YEAR = 2018;
 
-/**
- * What a resolver answers when its lookup still fails after a retry: behave like
- * `not_found`, but flagged. The browser and the server fall back the same way, so a failed
- * lookup never blocks the user.
- */
-export const FALLBACK_STATES = {
-  vehicle: { outcome: "unverified" },
-  claims: { outcome: "to_verify" },
-  driverClaims: { outcome: "to_verify" },
-  paymentOptions: { outcome: "fallback" },
-} as const;
-
 const HAS_CAR = eq(ref("$.ownership"), "existing");
 const FOUND = eq(resourceRef("vehicle.outcome"), "found");
 const ELIGIBILITY = resourceRef("vehicle.data.eligibility");

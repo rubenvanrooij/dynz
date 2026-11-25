@@ -1,7 +1,7 @@
 import { findSchemaByPath, getConditionDependencies, getOptionsForSchema, type OptionsSchema, SchemaType } from "dynz";
-import { useSyncExternalStore } from "react";
 import { useWatch } from "react-hook-form";
 import { getUnionKeyDependencies } from "./get-union-key-dependencies";
+import { useResourceStates } from "./resources-context";
 import { useDynzFormContext } from "./use-dynz-form-context";
 
 /**
@@ -22,7 +22,8 @@ export function useOptionsSchema(
   fieldPath: string = "$"
 ): Array<{ enabled: boolean; value: string | number | boolean }> {
   "use no memo";
-  const { control, getValues, schema: rootSchema, resources } = useDynzFormContext();
+  const { control, getValues, schema: rootSchema } = useDynzFormContext();
+  const resourceStates = useResourceStates();
 
   const dependencies = schema.options.reduce<string[]>(
     (acc, option) => {
@@ -41,18 +42,7 @@ export function useOptionsSchema(
     control,
   });
 
-  // The snapshot is the enabled flags as a string, so a change in the resources only
-  // re-renders this hook when an option flips.
-  const getSnapshot = () =>
-    getOptionsForSchema(schema, fieldPath, rootSchema, getValues(), resources.getStates())
-      .map(({ enabled }) => (enabled ? "1" : "0"))
-      .join("");
-  const enabled = useSyncExternalStore(resources.subscribe, getSnapshot, getSnapshot);
-
-  return schema.options.map((option, index) => ({
-    value: typeof option === "object" ? option.value : option,
-    enabled: enabled[index] === "1",
-  }));
+  return getOptionsForSchema(schema, fieldPath, rootSchema, getValues(), resourceStates);
 }
 
 /**

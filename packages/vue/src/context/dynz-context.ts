@@ -1,10 +1,5 @@
-import {
-  getRulesDependenciesMap,
-  type ObjectSchema,
-  type ResourceEntries,
-  type ResourceStates,
-  type RulesDependencyMap,
-} from "dynz";
+import type { CurrentResource } from "@dynz/form-resources";
+import { getRulesDependenciesMap, type ObjectSchema, type ResourceStates, type RulesDependencyMap } from "dynz";
 import { type InjectionKey, inject, provide } from "vue";
 import { toFieldName } from "../utils";
 
@@ -54,14 +49,17 @@ export type DynzContext<TSchema extends ObjectSchema<never> = ObjectSchema<never
   isSubmitted?: (() => boolean) | undefined;
 
   /**
-   * The settled resource lookups, by instance path. Must be a *reactive* read, so the
-   * condition composables re-run when a lookup settles. Without it, every `resourceRef`
+   * The states of the settled resource instances, by instance path. Must be a *reactive* read,
+   * so the condition composables re-run when a state changes. Without it, every `resourceRef`
    * resolves to `undefined`.
    */
   getResources?: (() => ResourceStates) | undefined;
 
-  /** Every resource lookup (pending, settled or failed), by instance path. Backs `useResource`. */
-  getResourceEntries?: (() => ResourceEntries) | undefined;
+  /**
+   * Every enabled resource instance (pending, settled or failed), by instance path. Must be a
+   * *reactive* read. Backs `useResources`.
+   */
+  getResourceInstances?: (() => Record<string, CurrentResource>) | undefined;
 };
 
 export const DYNZ_INJECTION_KEY: InjectionKey<DynzContext> = Symbol("dynz");
@@ -76,7 +74,7 @@ export type CreateDynzContextOptions<TSchema extends ObjectSchema<never>> = {
   revalidateMode?: DynzFormMode | undefined;
   isSubmitted?: (() => boolean) | undefined;
   getResources?: (() => ResourceStates) | undefined;
-  getResourceEntries?: (() => ResourceEntries) | undefined;
+  getResourceInstances?: (() => Record<string, CurrentResource>) | undefined;
 };
 
 /**
@@ -112,7 +110,7 @@ export function createDynzContext<TSchema extends ObjectSchema<never>>({
   revalidateMode,
   isSubmitted,
   getResources,
-  getResourceEntries,
+  getResourceInstances,
 }: CreateDynzContextOptions<TSchema>): DynzContext<TSchema> {
   return {
     schema,
@@ -123,7 +121,7 @@ export function createDynzContext<TSchema extends ObjectSchema<never>>({
     revalidateMode,
     isSubmitted,
     getResources,
-    getResourceEntries,
+    getResourceInstances,
   };
 }
 

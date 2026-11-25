@@ -223,6 +223,7 @@ describe("evaluateResources", () => {
       path: "$.vehicle",
       resource: vehicle,
       key: "AB-123-C",
+      signal: expect.any(AbortSignal),
     });
   });
 

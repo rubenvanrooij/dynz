@@ -1,14 +1,19 @@
+import type { CurrentResource } from "@dynz/form-resources";
 import type { ObjectSchema, RulesDependencyMap, SchemaValues } from "dynz";
+import { useContext } from "react";
 import { type FieldValues, useFormContext } from "react-hook-form";
-import { createResourceStore, type ResourceStore } from "./resource-store";
+import { ResourcesContext } from "./resources-context";
 
-/** For forms set up without `useDynzForm`'s store: no resources, never notifies. */
-const NO_RESOURCES = createResourceStore();
+/** The resources `useDynzForm` returns (and `DynzFormProvider` provides). */
+export type DynzFormResources = {
+  /** Every enabled resource instance, by path (`$.vehicle`, `$.drivers.[0].vehicle`). */
+  resources: Record<string, CurrentResource>;
+};
 
 export function useDynzFormContext<T extends ObjectSchema<never>, TFieldValues extends FieldValues>() {
   const context = useFormContext<
     TFieldValues,
-    { schema: T; dependencies: RulesDependencyMap; resources?: ResourceStore; name?: string | undefined },
+    { schema: T; dependencies: RulesDependencyMap; name?: string | undefined },
     SchemaValues<T>
   >();
 
@@ -28,11 +33,13 @@ export function useDynzFormContext<T extends ObjectSchema<never>, TFieldValues e
     return deps ? [...deps].map((v) => v.slice(2)) : undefined;
   };
 
+  const { resources } = useContext(ResourcesContext);
+
   return {
     ...context,
+    resources,
     schema: schema,
     name: context.control._options.context?.name,
-    resources: context.control._options.context?.resources ?? NO_RESOURCES,
     getDependencies: getDependencies,
   };
 }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { When, useDynzForm, useResource } from "@dynz/vue";
+import { When, useDynzForm, useResources } from "@dynz/vue";
 import { eq, ref as dynzRef, getDefaultValues } from "dynz";
 import { computed, ref } from "vue";
 import CheckboxField from "../components/CheckboxField.vue";
@@ -17,17 +17,16 @@ const { values, errors, isSubmitting, handleSubmit, resetForm, context } = useDy
   // once, correct them as they type.
   mode: "onBlur",
   revalidateMode: "onInput",
-  schemaOptions: { stripNotIncludedValues: true, resolvers: newsletterResolvers },
+  schemaOptions: { stripNotIncludedValues: true },
+  // how to look the schema's resources up; the form calls these as the values change
+  resolvers: newsletterResolvers,
 });
 
-// the `company` lookup: pending, settled or failed, or undefined while it isn't enabled.
 // This component calls `useDynzForm` itself, so it passes the context (`inject` would not find it).
-const company = useResource("$.company", context);
-const knownCompany = computed(() =>
-  company.value?.status === "settled" && company.value.state.outcome === "found"
-    ? (company.value.state.data as CompanyInfo)
-    : undefined
-);
+const resources = useResources(context);
+
+// the `company` lookup: pending or settled, or undefined while the resource isn't enabled
+const company = computed(() => resources.value["$.company"]);
 
 const onSubmit = handleSubmit((valid) => {
   submitted.value = valid;
@@ -73,12 +72,17 @@ function onReset() {
           hint="Turning this on makes 'Company' required and reveals the company size."
         />
 
-        <TextField name="company" label="Company" placeholder="Acme Inc." hint="Try “Acme Inc.”" />
+        <TextField name="company" label="Company" placeholder="Acme Inc." hint="Try “Acme Inc.”, or “Flaky Co.” for a failing lookup" />
 
         <!-- The schema only asks for the size when the lookup doesn't know the company. -->
         <p v-if="company?.status === 'pending'" class="note">Looking up your company…</p>
-        <p v-else-if="knownCompany !== undefined" class="note">
-          <strong>{{ knownCompany.name }}</strong>: {{ knownCompany.size }} employees, so we won't ask for the size.
+        <p v-else-if="company?.status === 'settled' && company.state.outcome === 'failed'" class="note">
+          We couldn't look up your company.
+          <button type="button" class="link" @click="company.retry()">Try again</button>
+        </p>
+        <p v-else-if="company?.status === 'settled' && company.state.outcome === 'found'" class="note">
+          <strong>{{ (company.state.data as CompanyInfo).name }}</strong>:
+          {{ (company.state.data as CompanyInfo).size }} employees, so we won't ask for the size.
         </p>
         <SelectField name="companySize" label="Company size" />
 

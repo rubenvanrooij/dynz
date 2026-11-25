@@ -1,0 +1,53 @@
+{
+  "name": "@dynz/form-resources",
+  "version": "0.0.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "keywords": [
+    "typescript",
+    "schema",
+    "validation",
+    "form",
+    "resources",
+    "dynz"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rubenvanrooij/dynz"
+  },
+  "files": [
+    "dist"
+  ],
+  "author": "Ruben van Rooij <ruben.van.rooij@gmail.com>",
+  "description": "Internal: a form's resource lookups for the dynz form integrations, bundled into @dynz/vue and @dynz/react-hook-form. Never published.",
+  "main": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "scripts": {
+    "build": "tsdown",
+    "dev": "tsdown --watch",
+    "check-types": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest run --watch"
+  },
+  "devDependencies": {
+    "dynz": "workspace:*",
+    "tsdown": "^0.16.5"
+  },
+  "peerDependencies": {
+    "dynz": "workspace:^"
+  }
+}
