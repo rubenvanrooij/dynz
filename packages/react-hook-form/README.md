@@ -151,76 +151,62 @@ function RegistrationForm() {
 
 ## Resources
 
-If your schema declares resources (see the [dynz README](https://npmjs.com/package/dynz)), pass a resolver per resource in `schemaOptions.resolvers`. Read a lookup's state with `useResource(path)`:
+If your schema declares resources (see the [dynz README](https://npmjs.com/package/dynz)), pass how to look each one up with the `resolvers` prop: the same resolvers `validate` takes on the server. The form looks up every enabled instance as the values change, and its conditions, expressions, UI and validation all read those results.
 
 ```tsx
-// define it outside the component (or memoize it): a new object re-subscribes the form
-const SCHEMA_OPTIONS = {
-  resolvers: {
-    vehicle: cached((plate) => api.lookupVehicle(plate)),
-  },
+const resolvers: ResourceResolvers = {
+  vehicle: (plate, { signal }) =>
+    api
+      .lookupVehicle(String(plate), { signal })
+      .catch(() => ({ outcome: "unavailable" })),
 };
 
 function VehicleForm() {
-  const form = useDynzForm({ schema, schemaOptions: SCHEMA_OPTIONS });
-  // { status: "pending" | "settled" | "failed", key, state? }, or undefined when not enabled
-  const vehicle = useResource("$.vehicle");
+  const form = useDynzForm({ schema, resolvers });
+
+  return <DynzFormProvider {...form}>{/* ... */}</DynzFormProvider>;
+}
+
+function VehicleCard() {
+  // { key, status: "pending" | "settled" | "failed", state?, error?, retry }, or undefined when not enabled
+  const vehicle = useResources()["$.vehicle"];
+
+  if (vehicle?.status === "pending") return <Spinner />;
+  if (
+    vehicle?.status === "settled" &&
+    vehicle.state.outcome === "unavailable"
+  ) {
+    return <button onClick={vehicle.retry}>Try again</button>;
+  }
   // ...
 }
 ```
 
-### Cache your resolvers
+In the component that calls `useDynzForm` itself, read `form.resources`: it is outside its own `DynzFormProvider`. Resolvers may be written inline: the form always calls the latest ones.
 
-**Resolvers are called a lot.** The form looks up a resource whenever its key changes. On top of that, every validation calls all enabled resolvers again: that is every change in `mode: "onChange"`, every blur, and every submit. A resolver that sends a request each time sends one request per keystroke, for every resource.
+- **Once per key.** An instance is looked up when it becomes enabled, and the result is kept for the form's lifetime: typing a key that was looked up before shows its result right away. Instances with the same resource name and key share a lookup.
+- **Debounce with the `signal`.** A running lookup is aborted once its key is no longer current (the user typed on). To debounce, wait in the resolver before the request, and give up when the signal is aborted. A key that only matters when complete is better kept out with the resource's `enabled` (e.g. `matches(ref("plate"), PLATE_PATTERN)`).
+- **Return a failure as an outcome.** Catch a failed request and return one of the resource's declared outcomes (`"unavailable"` above), and let the schema decide what it means. A resolver that throws leaves its instance `failed` (with its `error`) and logs the error with `console.error`; validation then gets no state for it (a `resourceRef` to it is `undefined`) until it is retried.
+- **Validation waits for running lookups**, and uses the form's results instead of looking up again, so the UI and validation always agree, and no field error and no submit is ever based on a lookup that is still going on. A validation for a key the user has since changed stops waiting; the next validation replaces it. A form without `resolvers` ignores resources altogether.
+- `useResources()` lists every enabled instance, e.g. one per array item (`$.drivers.[0].vehicle`), with its `status` (`pending`, `settled` or `failed`) and `retry()`.
 
-So every resolver you pass to a form should:
+When a lookup settles, the fields that read it are validated again, but only fields the user has interacted with (touched, already showing an error, or after a submit).
 
-1. **Cache by key**, so a repeated call with the same key returns the earlier result.
-2. **Share requests that are still in flight.** The form's lookup and a validation often call the resolver at the same moment, before the first request has returned. Cache the _promise_, not only the result.
-3. **Never throw.** Return a fallback outcome instead, e.g. `"unavailable"`. A resolver that throws makes validation reject, and `handleSubmit` then throws instead of showing field errors.
+### With TanStack Query
 
-A minimal version without dependencies:
-
-```ts
-import type { ResourceResolver, ResourceState } from "dynz";
-
-function cached(
-  lookup: (key: string) => Promise<ResourceState>,
-): ResourceResolver {
-  const cache = new Map<string, Promise<ResourceState>>();
-
-  return (key) => {
-    const id = String(key);
-
-    if (!cache.has(id)) {
-      cache.set(
-        id,
-        lookup(id).catch(() => {
-          cache.delete(id); // try again on the next call
-          return { outcome: "unavailable" };
-        }),
-      );
-    }
-
-    return cache.get(id)!;
-  };
-}
-```
-
-With TanStack Query, `fetchQuery` already shares in-flight requests and caches by key. Do set a `staleTime`: with the default of `0`, every call fetches again.
+The form keeps results for its own lifetime. To share them between forms (e.g. one per step), or keep them across page visits, look up through your data-fetching library:
 
 ```ts
-const vehicle: ResourceResolver = (plate) =>
-  queryClient
-    .fetchQuery({
-      queryKey: ["vehicle", String(plate)],
-      queryFn: () => api.lookupVehicle(String(plate)),
-      staleTime: 5 * 60_000,
-    })
-    .catch(() => ({ outcome: "unavailable" }));
+const resolvers: ResourceResolvers = {
+  vehicle: (plate, { signal }) =>
+    queryClient
+      .fetchQuery({
+        queryKey: ["vehicle", plate],
+        queryFn: () => api.lookupVehicle(String(plate), { signal }),
+      })
+      .catch(() => ({ outcome: "unavailable" })),
+};
 ```
-
-The fallback outcome has to be one of the resource's declared `outcomes`. Handle it in your resource conditions like any other outcome.
 
 ## Advanced Examples
 

@@ -1,10 +1,5 @@
-import {
-  changedResourcePaths,
-  fieldPathsReadingResources,
-  getResourceDependents,
-  type ResourceStates,
-  type Schema,
-} from "dynz";
+import { changedResourcePaths, fieldPathsReadingResources } from "@dynz/form-resources";
+import { getResourceDependents, type ResourceStates, type Schema } from "dynz";
 import type { FormContext } from "vee-validate";
 import { type Ref, watch } from "vue";
 import { toFieldName } from "../utils";

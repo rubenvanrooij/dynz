@@ -1,7 +1,8 @@
 import type { ObjectSchema } from "dynz";
-import type { ReactNode } from "react";
+import { type ReactNode, useMemo } from "react";
 import { type FieldValues, FormProvider } from "react-hook-form";
 import type { UseDynzFormReturn } from "../hooks/use-dynz-form";
+import { DynzResourcesContext } from "../hooks/use-dynz-form-context";
 
 /**
  * Props for DynzFormProvider component
@@ -76,5 +77,12 @@ export const DynzFormProvider = <TSchema extends ObjectSchema<never>, TFieldValu
   children,
   ...props
 }: DynzFormProviderProps<TSchema, TFieldValues>) => {
-  return <FormProvider {...props}>{children}</FormProvider>;
+  const { resources, resourceStates } = props;
+  const value = useMemo(() => ({ resources, resourceStates }), [resources, resourceStates]);
+
+  return (
+    <FormProvider {...props}>
+      <DynzResourcesContext.Provider value={value}>{children}</DynzResourcesContext.Provider>
+    </FormProvider>
+  );
 };

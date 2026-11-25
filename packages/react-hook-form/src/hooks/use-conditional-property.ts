@@ -1,5 +1,4 @@
 import { findPossibleSchemasByPath, getConditionDependencies, resolveProperty, type Schema } from "dynz";
-import { useSyncExternalStore } from "react";
 import { useWatch } from "react-hook-form";
 import { getUnionKeyDependencies } from "./get-union-key-dependencies";
 import { useDynzFormContext } from "./use-dynz-form-context";
@@ -36,7 +35,7 @@ export function useConditionalProperty(
   name: string | string[],
   property: ConditionalProperty
 ): boolean | undefined | (boolean | undefined)[] {
-  const { getValues, schema, control, resources } = useDynzFormContext();
+  const { getValues, schema, control, resourceStates } = useDynzFormContext();
 
   const names = Array.isArray(name) ? name : [name];
   const paths = names.map((n) => `$.${n}`);
@@ -59,16 +58,8 @@ export function useConditionalProperty(
     disabled: dependencies.length === 0,
   });
 
-  // The snapshot is the results as a string, so a change in the resources only re-renders
-  // this hook when one of its results flips.
-  const getSnapshot = () =>
-    paths
-      .map((path) =>
-        resolveProperty(property, path, true, { schema, values: getValues(), resources: resources.getStates() })
-      )
-      .join(",");
-  const snapshot = useSyncExternalStore(resources.subscribe, getSnapshot, getSnapshot);
-
-  const results = snapshot === "" ? [] : snapshot.split(",").map((result) => result === "true");
+  const results = paths.map((path) =>
+    resolveProperty(property, path, true, { schema, values: getValues(), resources: resourceStates })
+  );
   return Array.isArray(name) ? results : results[0];
 }

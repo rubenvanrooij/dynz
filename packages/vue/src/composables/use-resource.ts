@@ -1,24 +1,24 @@
-import type { ResourceEntry } from "dynz";
-import { type ComputedRef, computed, type MaybeRefOrGetter, toValue } from "vue";
+import type { CurrentResource } from "@dynz/form-resources";
+import { type ComputedRef, computed } from "vue";
 import { type DynzContext, useDynzFormContext } from "../context";
 
 /**
- * The lookup of the resource instance at `path` (e.g. `"$.vehicle"`, `"$.drivers.[0].vehicle"`),
- * or `undefined` when it isn't enabled.
+ * Every enabled resource instance of the form, by path (`$.vehicle`, `$.drivers.[0].vehicle`),
+ * with its `key` and its lookup: `pending`, `settled` with its `state`, or `failed` with its
+ * `error`. `retry()` looks it up again. An instance that isn't enabled is absent.
  *
- * In a descendant of the form the context is injected. In the component that calls
- * `useDynzForm` itself, pass the form's `context`: Vue's `inject` does not see a component's
- * own `provide`.
+ * In a descendant of the form the context is injected; in the component that calls
+ * `useDynzForm` itself, pass the form's `context` (Vue's `inject` does not see a component's
+ * own `provide`).
  *
  * ```ts
- * const { context } = useDynzForm({ schema, schemaOptions: { resolvers } });
- * const vehicle = useResource("$.vehicle", context);
- * const loading = computed(() => vehicle.value?.status === "pending");
+ * const resources = useResources();
+ * const vehicle = computed(() => resources.value["$.vehicle"]);
+ * // v-if="vehicle?.status === 'failed'" @click="vehicle.retry()"
  * ```
  */
-export function useResource(
-  path: MaybeRefOrGetter<string>,
+export function useResources(
   context: DynzContext<never> | DynzContext = useDynzFormContext()
-): ComputedRef<ResourceEntry | undefined> {
-  return computed(() => context.getResourceEntries?.()[toValue(path)]);
+): ComputedRef<Record<string, CurrentResource>> {
+  return computed(() => context.getResourceInstances?.() ?? {});
 }

@@ -1,19 +1,20 @@
-import { useSyncExternalStore } from "react";
-import type { ResourceEntry } from "./resource-store";
+import type { CurrentResource } from "@dynz/form-resources";
 import { useDynzFormContext } from "./use-dynz-form-context";
 
 /**
- * The lookup of the resource instance at `path` (e.g. `"$.vehicle"`, `"$.drivers.[0].vehicle"`),
- * or `undefined` when it isn't enabled. Re-renders only when that instance's lookup changes.
+ * Every enabled resource instance of the form, by path (`$.vehicle`, `$.drivers.[0].vehicle`),
+ * with its `key` and its lookup: `pending`, `settled` with its `state`, or `failed` with its
+ * `error`. `retry()` looks it up again. An instance that isn't enabled is absent.
+ *
+ * Reads the form provided by `DynzFormProvider`. In the component that calls `useDynzForm`
+ * itself, read `form.resources` instead.
  *
  * ```tsx
- * const vehicle = useResource("$.vehicle");
+ * const vehicle = useResources()["$.vehicle"];
  * if (vehicle?.status === "pending") return <Spinner />;
+ * if (vehicle?.status === "failed") return <button onClick={vehicle.retry}>Try again</button>;
  * ```
  */
-export function useResource(path: string): ResourceEntry | undefined {
-  const { resources } = useDynzFormContext();
-  const getSnapshot = () => resources.getEntries()[path];
-
-  return useSyncExternalStore(resources.subscribe, getSnapshot, getSnapshot);
+export function useResources(): Record<string, CurrentResource> {
+  return useDynzFormContext().resources;
 }

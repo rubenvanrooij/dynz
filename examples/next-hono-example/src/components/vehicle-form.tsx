@@ -1,73 +1,22 @@
 "use client";
 
-import { DynzFormProvider, useDynzForm, useDynzFormContext, usePredicate, useResource } from "@dynz/react-hook-form";
+import { DynzFormProvider, useDynzForm, useDynzFormContext, usePredicate, useResources } from "@dynz/react-hook-form";
 import { useMutation } from "@tanstack/react-query";
-import { findSchemaByPath, type ObjectSchema, type ResourceResolver, type ResourceState } from "dynz";
+import { findSchemaByPath, type ObjectSchema } from "dynz";
 import { type ReactNode, useState } from "react";
 import type { FieldValues } from "react-hook-form";
 import { client } from "@/lib/client";
-import { queryClient } from "@/lib/query-client";
 import type { FunnelStep } from "@/server/vehicle-funnel";
 import {
   ALL_RISK,
   ALL_RISK_MIN_YEAR,
   type Claims,
-  FALLBACK_STATES,
   NOT_DECLINED,
   QUOTE_ONLY,
   type Vehicle,
 } from "@/server/vehicle-schema";
+import { browserResolvers } from "./browser-resolvers";
 import { WidgetField } from "./fields";
-
-/**
- * A resolver through React Query: lookups of the same key share one request, a settled key
- * is answered from the cache, and a failed one is retried once. When it still fails, the
- * resource's fallback state is used, the same way the server falls back.
- */
-function queryResolver(
-  name: keyof typeof FALLBACK_STATES,
-  request: (key: string, init: { signal: AbortSignal }) => Promise<{ status: number; json: () => Promise<unknown> }>,
-  /** Shares the cache with another resource that looks up the same thing. */
-  cache: string = name
-): ResourceResolver {
-  return (key) =>
-    queryClient
-      .fetchQuery({
-        queryKey: [cache, String(key)],
-        queryFn: async ({ signal }) => {
-          const response = await request(String(key), { signal });
-
-          if (response.status !== 200) {
-            throw new Error(`The ${name} lookup failed`);
-          }
-
-          return (await response.json()) as ResourceState;
-        },
-        retry: 1,
-      })
-      .catch(() => FALLBACK_STATES[name]);
-}
-
-// stable, so the form does not re-subscribe to its values on every render
-const SCHEMA_OPTIONS = {
-  stripNotIncludedValues: true,
-  resolvers: {
-    vehicle: queryResolver("vehicle", (plate, init) =>
-      client.api.vehicles[":plate"].$get({ param: { plate } }, { init })
-    ),
-    claims: queryResolver("claims", (licence, init) =>
-      client.api.claims[":licence"].$get({ param: { licence } }, { init })
-    ),
-    driverClaims: queryResolver(
-      "driverClaims",
-      (licence, init) => client.api.claims[":licence"].$get({ param: { licence } }, { init }),
-      "claims"
-    ),
-    paymentOptions: queryResolver("paymentOptions", (country, init) =>
-      client.api["payment-options"][":country"].$get({ param: { country } }, { init })
-    ),
-  },
-};
 
 function Spinner({ children }: { children: ReactNode }) {
   return (
@@ -79,7 +28,7 @@ function Spinner({ children }: { children: ReactNode }) {
 
 /** Step 1: the lookup of the plate, with the found car to confirm. */
 function VehicleCard() {
-  const vehicle = useResource("$.vehicle");
+  const vehicle = useResources()["$.vehicle"];
   const { setValue } = useDynzFormContext();
 
   if (vehicle?.status === "pending") {
@@ -93,7 +42,10 @@ function VehicleCard() {
   if (vehicle.state.outcome === "unverified") {
     return (
       <p className="lookup lookup--failed">
-        The registry could not be reached: enter the car below. It is marked as unverified.
+        The registry could not be reached: enter the car below. It is marked as unverified.{" "}
+        <button type="button" className="link" onClick={vehicle.retry}>
+          Try again
+        </button>
       </p>
     );
   }
@@ -116,7 +68,7 @@ function VehicleCard() {
 
 /** Step 1, continued: no input, only the outcome of the eligibility check. */
 function Eligibility() {
-  const vehicle = useResource("$.vehicle");
+  const vehicle = useResources()["$.vehicle"];
   const notDeclined = usePredicate(NOT_DECLINED);
   const quoteOnly = usePredicate(QUOTE_ONLY);
 
@@ -147,7 +99,7 @@ function Eligibility() {
  * the policyholder's, or one per additional driver (`$.additionalDrivers.[0].driverClaims`).
  */
 function ClaimsHint({ path = "$.claims" }: { path?: string }) {
-  const claims = useResource(path);
+  const claims = useResources()[path];
 
   if (claims?.status === "pending") {
     return <Spinner>Looking up your claims history…</Spinner>;
@@ -179,7 +131,7 @@ function AllRiskHint() {
 
 /** Step 4: the payment methods for the driver's country. */
 function PaymentHint() {
-  const payment = useResource("$.paymentOptions");
+  const payment = useResources()["$.paymentOptions"];
 
   if (payment?.status === "pending") {
     return <Spinner>Loading the payment methods…</Spinner>;
@@ -270,7 +222,7 @@ function Navigation({ last, pending, onBack }: { last: boolean; pending: boolean
  * One step, one form: its own schema (the step's fields plus what they depend on), started
  * from everything answered so far. The fields it only depends on aren't rendered; their
  * values are the earlier steps' answers, and its resources are looked up again from them
- * (React Query answers from its cache).
+ * with the same resolvers.
  */
 function StepForm({
   step,
@@ -294,7 +246,8 @@ function StepForm({
     defaultValues: values,
     mode: "onBlur",
     reValidateMode: "onChange",
-    schemaOptions: SCHEMA_OPTIONS,
+    schemaOptions: { stripNotIncludedValues: true },
+    resolvers: browserResolvers,
   });
 
   // the raw answers: a field left out by a condition keeps its value for when it comes back,

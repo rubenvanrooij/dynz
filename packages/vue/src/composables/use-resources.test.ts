@@ -1,25 +1,15 @@
 import { flushPromises } from "@vue/test-utils";
-import {
-  boolean,
-  eq,
-  object,
-  options,
-  type ResourceResolvers,
-  type ResourceState,
-  ref,
-  resource,
-  resourceRef,
-  string,
-} from "dynz";
+import { array, boolean, eq, object, options, type ResourceResolver, ref, resource, resourceRef, string } from "dynz";
 import { describe, expect, it, vi } from "vitest";
+import { computed } from "vue";
 import { mountComposable } from "../testing/mount-composable";
 import { mountDynzForm, waitForValidation } from "../testing/mount-form";
-import { useDynzForm } from "./use-dynz-form";
 import { useDynzField } from "./use-dynz-field";
+import { useDynzForm } from "./use-dynz-form";
 import { useIsIncluded } from "./use-is-included";
 import { useOptions } from "./use-options";
 import { usePredicate } from "./use-predicate";
-import { useResource } from "./use-resource";
+import { useResources } from "./use-resource";
 
 const schema = object({
   hasCar: boolean(),
@@ -33,36 +23,65 @@ const schema = object({
   vehicle: resource({ key: ref("plate"), enabled: eq(ref("hasCar"), true), outcomes: ["found", "not_found"] }),
 });
 
-const lookup = (plate: unknown): ResourceState => ({ outcome: plate === "KNOWN" ? "found" : "not_found" });
+const outcomeFor = (key: unknown) => ({ outcome: key === "KNOWN" ? "found" : "not_found" });
 
-function setup(resolvers: ResourceResolvers = { vehicle: vi.fn(lookup) }) {
-  return mountDynzForm(
-    { schema, initialValues: { hasCar: true, plate: "KNOWN" }, schemaOptions: { resolvers } },
+/** Looks every key up right away. */
+const lookup: ResourceResolver = async (key) => outcomeFor(key);
+
+/** A resolver whose lookups the test settles or fails, by key. */
+function controlled() {
+  const running = new Map<string, { resolve: (state: unknown) => void; reject: (error: unknown) => void }>();
+  const calls: unknown[] = [];
+  const resolver: ResourceResolver = (key) =>
+    new Promise((resolve, reject) => {
+      calls.push(key);
+      running.set(String(key), { resolve: resolve as (state: unknown) => void, reject });
+    });
+
+  return {
+    resolver,
+    calls,
+    settle: async (key: string, state = outcomeFor(key)) => {
+      await flushPromises();
+      running.get(key)?.resolve(state);
+      await flushPromises();
+    },
+    fail: async (key: string) => {
+      await flushPromises();
+      running.get(key)?.reject(new Error("offline"));
+      await flushPromises();
+    },
+  };
+}
+
+async function setup(resolver: ResourceResolver = lookup) {
+  const mounted = mountDynzForm(
+    { schema, initialValues: { hasCar: true, plate: "KNOWN" }, resolvers: { vehicle: resolver } },
     () => ({
       included: useIsIncluded("manualDetails"),
       found: usePredicate(eq(resourceRef("vehicle.outcome"), "found")),
       coverage: useOptions("coverage"),
-      vehicle: useResource("$.vehicle"),
+      ...(() => {
+        const resources = useResources();
+        return { vehicle: computed(() => resources.value["$.vehicle"]) };
+      })(),
       field: useDynzField("manualDetails"),
     })
   );
-}
+  await flushPromises();
 
-/** A promise to settle by hand, to observe the pending state. */
-function deferred<T>() {
-  let resolve!: (value: T) => void;
-  let reject!: (error: unknown) => void;
-  const promise = new Promise<T>((res, rej) => {
-    resolve = res;
-    reject = rej;
-  });
-  return { promise, resolve, reject };
+  /** Changes the plate, and lets its lookup finish. */
+  const lookUp = async (plate: string) => {
+    mounted.form.setFieldValue("plate", plate, false);
+    await flushPromises();
+  };
+
+  return { ...mounted, lookUp };
 }
 
 describe("resources in the condition composables", () => {
-  it("follows a settled lookup", async () => {
-    const { form, result } = setup();
-    await flushPromises();
+  it("looks resources up, and follows the results", async () => {
+    const { result, lookUp } = await setup();
 
     expect(result.included.value).toBe(false);
     expect(result.found.value).toBe(true);
@@ -71,113 +90,108 @@ describe("resources in the condition composables", () => {
       { value: "full", enabled: true },
     ]);
 
-    form.setFieldValue("plate", "UNKNOWN", false);
-    await flushPromises();
+    await lookUp("UNKNOWN");
 
     expect(result.included.value).toBe(true);
     expect(result.found.value).toBe(false);
     expect(result.coverage.value[1]).toEqual({ value: "full", enabled: false });
   });
-});
 
-describe("useResource", () => {
-  it("is pending while the lookup runs, then settled", async () => {
-    const pending = deferred<ResourceState>();
-    const { result } = setup({ vehicle: () => pending.promise });
+  it("is pending while a new key is looked up", async () => {
+    const vehicle = controlled();
+    const { form, result } = await setup(vehicle.resolver);
+    await vehicle.settle("KNOWN");
 
-    expect(result.vehicle.value).toEqual({ status: "pending", key: "KNOWN" });
+    form.setFieldValue("plate", "OTHER", false);
 
-    pending.resolve({ outcome: "found" });
-    await flushPromises();
-
-    expect(result.vehicle.value).toEqual({ status: "settled", key: "KNOWN", state: { outcome: "found" } });
+    expect(result.vehicle.value).toMatchObject({ status: "pending", key: "OTHER" });
+    expect(result.found.value).toBe(false);
   });
 
+  it("looks a key up once", async () => {
+    const vehicle = controlled();
+    const { lookUp } = await setup(vehicle.resolver);
+    await vehicle.settle("KNOWN");
+
+    await lookUp("OTHER");
+    await lookUp("KNOWN");
+
+    expect(vehicle.calls).toEqual(["KNOWN", "OTHER"]);
+  });
+
+  it("fails a throwing lookup, and looks it up again on retry", async () => {
+    const vehicle = controlled();
+    const { result } = await setup(vehicle.resolver);
+
+    await vehicle.fail("KNOWN");
+    expect(result.vehicle.value).toMatchObject({ status: "failed", error: new Error("offline") });
+
+    result.vehicle.value?.retry();
+    expect(result.vehicle.value?.status).toBe("pending");
+
+    await vehicle.settle("KNOWN");
+    expect(result.found.value).toBe(true);
+  });
+});
+
+describe("useResources", () => {
   it("works in the component that calls useDynzForm, given the form's context", async () => {
-    let vehicle: ReturnType<typeof useResource> | undefined;
+    let resources: ReturnType<typeof useResources> | undefined;
     const { wrapper } = mountComposable(() => {
       const form = useDynzForm({
         schema,
         initialValues: { hasCar: true, plate: "KNOWN" },
-        schemaOptions: { resolvers: { vehicle: lookup } },
+        resolvers: { vehicle: lookup },
       });
-      vehicle = useResource("$.vehicle", form.context);
+      resources = useResources(form.context);
     });
     await flushPromises();
 
-    expect(vehicle?.value).toEqual({ status: "settled", key: "KNOWN", state: { outcome: "found" } });
+    expect(resources?.value["$.vehicle"]).toMatchObject({
+      status: "settled",
+      key: "KNOWN",
+      state: { outcome: "found" },
+    });
     wrapper.unmount();
   });
 
   it("is undefined when the resource is not enabled", async () => {
-    const { form, result } = setup();
-    await flushPromises();
+    const { form, result } = await setup();
 
     form.setFieldValue("hasCar", false, false);
-    await flushPromises();
 
     expect(result.vehicle.value).toBeUndefined();
   });
 
-  // Resolver call counts are not asserted in these tests: vee-validate's (silent) validation
-  // runs dynz `validate` with the same resolvers at its own moments, and caching lookups is up
-  // to the resolvers. A new lookup by the form replaces the entry, so identity tells instead.
-
-  it("does not look up again while the key stays the same", async () => {
-    const { form, result } = setup();
-    await flushPromises();
-    const settled = result.vehicle.value;
-
-    form.setFieldValue("other", "x", false);
-    form.setFieldValue("other", "y", false);
-    await flushPromises();
-
-    expect(result.vehicle.value).toBe(settled);
-  });
-
-  it("is failed when the resolver throws, and retries only when the key changes", async () => {
-    const vehicle = vi.fn<(plate: unknown) => ResourceState>(() => {
-      throw new Error("registry down");
+  it("lists one instance per array item", async () => {
+    const drivers = object({
+      drivers: array(
+        object({ plate: string().optional() }).setResources({
+          vehicle: resource({ key: ref("plate"), outcomes: ["found"] }),
+        })
+      ),
     });
-    const { form, result } = setup({ vehicle });
-    await flushPromises();
-
-    const failed = result.vehicle.value;
-    expect(failed).toMatchObject({ status: "failed", key: "KNOWN" });
-
-    vehicle.mockImplementation(lookup);
-    form.setFieldValue("other", "x", false);
-    await flushPromises();
-
-    expect(result.vehicle.value).toBe(failed);
-
-    form.setFieldValue("plate", "UNKNOWN", false);
-    await flushPromises();
-
-    expect(result.vehicle.value).toMatchObject({ status: "settled", state: { outcome: "not_found" } });
-  });
-
-  it("ignores a result for a key the instance no longer has", async () => {
-    // one pending lookup per key, shared by every call (as a caching resolver would)
-    const lookups: Record<string, ReturnType<typeof deferred<ResourceState>>> = {};
-    const { form, result } = setup({
-      vehicle: (plate) => {
-        lookups[String(plate)] ??= deferred<ResourceState>();
-        return lookups[String(plate)]?.promise as Promise<ResourceState>;
+    const { form, result } = mountDynzForm(
+      {
+        schema: drivers,
+        initialValues: { drivers: [{ plate: "A" }, { plate: "B" }] },
+        resolvers: { vehicle: lookup },
       },
-    });
+      () => {
+        const resources = useResources();
+        return computed(() => Object.values(resources.value));
+      }
+    );
 
-    form.setFieldValue("plate", "UNKNOWN", false);
+    expect(result.value.map(({ path, key }) => [path, key])).toEqual([
+      ["$.drivers.[0].vehicle", "A"],
+      ["$.drivers.[1].vehicle", "B"],
+    ]);
+
+    form.setFieldValue("drivers", [{ plate: "C" }], false);
     await flushPromises();
-    lookups.KNOWN?.resolve({ outcome: "found" });
-    await flushPromises();
 
-    expect(result.vehicle.value).toEqual({ status: "pending", key: "UNKNOWN" });
-
-    lookups.UNKNOWN?.resolve({ outcome: "not_found" });
-    await flushPromises();
-
-    expect(result.vehicle.value).toEqual({ status: "settled", key: "UNKNOWN", state: { outcome: "not_found" } });
+    expect(result.value.map(({ path, key }) => [path, key])).toEqual([["$.drivers.[0].vehicle", "C"]]);
   });
 });
 
@@ -191,33 +205,102 @@ describe("resources that depend on other resources", () => {
     vehicle: resource({ key: ref("plate"), outcomes: ["found", "not_found"] }),
   });
 
-  it("looks up a resource once the resource its object's inclusion depends on settles", async () => {
-    const vehicle = deferred<ResourceState>();
-    const vinCheck = vi.fn((): ResourceState => ({ outcome: "ok" }));
+  function mountChained(plate: string) {
+    const vinCheck = vi.fn(async () => ({ outcome: "ok" }));
     const { result } = mountDynzForm(
       {
         schema: chained,
-        initialValues: { plate: "UNKNOWN", manual: { vin: "VIN-1" } },
-        schemaOptions: { resolvers: { vehicle: () => vehicle.promise, vinCheck } },
+        initialValues: { plate, manual: { vin: "VIN-1" } },
+        resolvers: { vehicle: lookup, vinCheck },
       },
-      () => useResource("$.manual.vinCheck")
+      () => {
+        const resources = useResources();
+        return computed(() => resources.value["$.manual.vinCheck"]);
+      }
     );
+
+    return { result, vinCheck };
+  }
+
+  it("looks up a resource once the resource its object's inclusion depends on is settled", async () => {
+    const { result, vinCheck } = mountChained("UNKNOWN");
+
+    expect(result.value).toBeUndefined();
+
+    await flushPromises();
+
+    expect(result.value).toMatchObject({ key: "VIN-1", status: "settled", state: { outcome: "ok" } });
+    expect(vinCheck).toHaveBeenCalledOnce();
+  });
+
+  it("keeps the dependent resource disabled when its object stays excluded", async () => {
+    const { result, vinCheck } = mountChained("KNOWN");
     await flushPromises();
 
     expect(result.value).toBeUndefined();
     expect(vinCheck).not.toHaveBeenCalled();
-
-    vehicle.resolve({ outcome: "not_found" });
-    await flushPromises();
-
-    expect(result.value).toEqual({ status: "settled", key: "VIN-1", state: { outcome: "ok" } });
   });
 });
 
-describe("re-validation when a resource settles", () => {
-  it("re-validates a touched field that reads the resource", async () => {
-    const { form, result } = setup();
+describe("validation", () => {
+  it("validates against the looked up states, without looking up again", async () => {
+    const resolver = vi.fn(lookup);
+    const { form, lookUp } = await setup(resolver);
+    form.setFieldValue("manualDetails", "Saab", false);
+
+    // found: manualDetails is not included, so a value for it is an error
+    expect((await form.validate()).valid).toBe(false);
+
+    await lookUp("UNKNOWN");
+
+    expect((await form.validate()).valid).toBe(true);
+    expect(resolver).toHaveBeenCalledTimes(2);
+  });
+
+  it("waits for a running lookup", async () => {
+    const vehicle = controlled();
+    const { form } = await setup(vehicle.resolver);
+    // manualDetails is only included once the vehicle is not found
+    form.setFieldValue("manualDetails", "Saab", false);
+
+    const validating = form.validate();
+    await vehicle.settle("KNOWN", { outcome: "not_found" });
+
+    expect((await validating).valid).toBe(true);
+  });
+});
+
+describe("handleSubmit", () => {
+  it("submits once the lookups it reads are done: validation waits", async () => {
+    const onValid = vi.fn();
+    const vehicle = controlled();
+    const { form } = await setup(vehicle.resolver);
+
+    const submitting = form.handleSubmit(onValid)();
     await flushPromises();
+    await waitForValidation();
+
+    expect(onValid).not.toHaveBeenCalled();
+
+    await vehicle.settle("KNOWN");
+    await submitting;
+
+    expect(onValid).toHaveBeenCalledOnce();
+  });
+
+  it("does not wait when the form is given no resources", async () => {
+    const onValid = vi.fn();
+    const { form } = mountDynzForm({ schema, initialValues: { hasCar: true, plate: "KNOWN" } });
+
+    await form.handleSubmit(onValid)();
+
+    expect(onValid).toHaveBeenCalledOnce();
+  });
+});
+
+describe("re-validation when a resource changes", () => {
+  it("re-validates a touched field that reads the resource", async () => {
+    const { form, result, lookUp } = await setup();
 
     // found: manualDetails is not included, so a value for it is an error
     result.field.setValue("Saab");
@@ -226,21 +309,18 @@ describe("re-validation when a resource settles", () => {
     expect(form.errors.value.manualDetails).toBeDefined();
 
     // not_found: the error clears without validating again by hand
-    form.setFieldValue("plate", "UNKNOWN", false);
-    await flushPromises();
+    await lookUp("UNKNOWN");
     await waitForValidation();
 
     expect(form.errors.value.manualDetails).toBeUndefined();
   });
 
   it("does not re-validate a field the user has not interacted with", async () => {
-    const { form, result } = setup();
-    form.setFieldValue("plate", "UNKNOWN", false);
-    await flushPromises();
+    const { form, result, lookUp } = await setup();
+    await lookUp("UNKNOWN");
     form.setFieldValue("manualDetails", "Saab", false);
 
-    form.setFieldValue("plate", "KNOWN", false);
-    await flushPromises();
+    await lookUp("KNOWN");
     await waitForValidation();
 
     expect(result.included.value).toBe(false);
@@ -248,14 +328,12 @@ describe("re-validation when a resource settles", () => {
   });
 
   it("re-validates every dependent field after a submit", async () => {
-    const { form } = setup();
-    form.setFieldValue("plate", "UNKNOWN", false);
-    await flushPromises();
+    const { form, lookUp } = await setup();
+    await lookUp("UNKNOWN");
     form.setFieldValue("manualDetails", "Saab", false);
     await form.handleSubmit(() => {})();
 
-    form.setFieldValue("plate", "KNOWN", false);
-    await flushPromises();
+    await lookUp("KNOWN");
     await waitForValidation();
 
     expect(form.errors.value.manualDetails).toBeDefined();

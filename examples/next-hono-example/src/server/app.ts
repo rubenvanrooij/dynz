@@ -1,7 +1,7 @@
 import { swaggerUI } from "@hono/swagger-ui";
-import { type EnabledResource, type ResourceKey, type ResourceState, type SchemaValues, validate } from "dynz";
-import { type Context, Hono } from "hono";
-import { KNOWN_LICENCES, lookupClaims, UNREACHABLE_LICENCE } from "./claims-registry";
+import { type ResourceResolver, type ResourceState, type SchemaValues, validate } from "dynz";
+import { Hono } from "hono";
+import { KNOWN_LICENCES, UNREACHABLE_LICENCE } from "./claims-registry";
 import {
   APPROVAL_REQUIRED_FROM,
   CLIENT_REFERENCE_REQUIRED_FROM,
@@ -9,10 +9,10 @@ import {
   RECEIPT_REQUIRED_FROM,
 } from "./expense-claim-schema";
 import { buildOpenApiDocument } from "./openapi";
-import { lookupPaymentOptions, UNREACHABLE_COUNTRY } from "./payment-options";
-import { serverResolvers } from "./resolvers";
+import { UNREACHABLE_COUNTRY } from "./payment-options";
+import { registries, serverResolvers } from "./resolvers";
 import { vehicleFunnel } from "./vehicle-funnel";
-import { KNOWN_PLATES, lookupVehicle, RegistryUnavailableError, UNREACHABLE_PLATE } from "./vehicle-registry";
+import { KNOWN_PLATES, UNREACHABLE_PLATE } from "./vehicle-registry";
 import { type Vehicle, vehicleSchema } from "./vehicle-schema";
 
 /**
@@ -101,10 +101,10 @@ const routes = app
     })
   )
 
-  /** The browser's way into the registries: one lookup each, by key. Failures are a 503. */
-  .get("/vehicles/:plate", (c) => lookupOr503(c, () => lookupVehicle(c.req.param("plate"))))
-  .get("/claims/:licence", (c) => lookupOr503(c, () => lookupClaims(c.req.param("licence"))))
-  .get("/payment-options/:country", (c) => lookupOr503(c, () => lookupPaymentOptions(c.req.param("country"))))
+  /** The browser's way into the registries: one lookup each, by key, falling back like the server. */
+  .get("/vehicles/:plate", async (c) => c.json(await registries.vehicle(c.req.param("plate"))))
+  .get("/claims/:licence", async (c) => c.json(await registries.claims(c.req.param("licence"))))
+  .get("/payment-options/:country", async (c) => c.json(await registries.paymentOptions(c.req.param("country"))))
 
   /**
    * Await mode. The body is only what the user typed: vehicle, claims and payment options
@@ -122,7 +122,7 @@ const routes = app
         resolvers: Object.fromEntries(
           Object.entries(serverResolvers).map(([name, resolver]) => [
             name,
-            async (key: ResourceKey, resource: EnabledResource) => {
+            async (...[key, resource]: Parameters<ResourceResolver>) => {
               lookups[resource.path] = await resolver(key, resource);
               return lookups[resource.path] as ResourceState;
             },
@@ -168,18 +168,6 @@ const routes = app
       );
     }
   });
-
-/** Answers a lookup with 200, or 503 when the registry can't be reached. */
-async function lookupOr503<T extends ResourceState>(c: Context, lookup: () => Promise<T>) {
-  try {
-    return c.json(await lookup(), 200);
-  } catch (error) {
-    if (error instanceof RegistryUnavailableError) {
-      return c.json({ error: "registry_unavailable" as const }, 503);
-    }
-    throw error;
-  }
-}
 
 export { routes };
 

@@ -55,6 +55,7 @@
     "react-hook-form": "^7.0.0"
   },
   "devDependencies": {
+    "@dynz/form-resources": "workspace:*",
     "@hookform/resolvers": "^5.0.0",
     "@testing-library/react": "^16.1.0",
     "@types/react": "^19.3.0",

@@ -1,14 +1,26 @@
-import type { ObjectSchema, RulesDependencyMap, SchemaValues } from "dynz";
+import type { CurrentResource } from "@dynz/form-resources";
+import type { ObjectSchema, ResourceStates, RulesDependencyMap, SchemaValues } from "dynz";
+import { createContext, useContext } from "react";
 import { type FieldValues, useFormContext } from "react-hook-form";
-import { createResourceStore, type ResourceStore } from "./resource-store";
 
-/** For forms set up without `useDynzForm`'s store: no resources, never notifies. */
-const NO_RESOURCES = createResourceStore();
+/** The resources `useDynzForm` returns (and `DynzFormProvider` provides). */
+export type DynzFormResources = {
+  /** Every enabled resource instance, by path (`$.vehicle`, `$.drivers.[0].vehicle`). */
+  resources: Record<string, CurrentResource>;
+  /** The settled instances' states, as dynz resolves `resourceRef`s against them. */
+  resourceStates: ResourceStates;
+};
+
+/**
+ * Provided by `DynzFormProvider`, next to react-hook-form's own context (which only carries
+ * react-hook-form's methods). A form without resources has none.
+ */
+export const DynzResourcesContext = createContext<DynzFormResources>({ resources: {}, resourceStates: {} });
 
 export function useDynzFormContext<T extends ObjectSchema<never>, TFieldValues extends FieldValues>() {
   const context = useFormContext<
     TFieldValues,
-    { schema: T; dependencies: RulesDependencyMap; resources?: ResourceStore; name?: string | undefined },
+    { schema: T; dependencies: RulesDependencyMap; name?: string | undefined },
     SchemaValues<T>
   >();
 
@@ -28,11 +40,14 @@ export function useDynzFormContext<T extends ObjectSchema<never>, TFieldValues e
     return deps ? [...deps].map((v) => v.slice(2)) : undefined;
   };
 
+  const { resources, resourceStates } = useContext(DynzResourcesContext);
+
   return {
     ...context,
+    resources,
+    resourceStates,
     schema: schema,
     name: context.control._options.context?.name,
-    resources: context.control._options.context?.resources ?? NO_RESOURCES,
     getDependencies: getDependencies,
   };
 }

@@ -1,12 +1,12 @@
-import type { ObjectSchema, SchemaValues, ValidateOptions } from "dynz";
-import { getCurrentInstance, provide } from "vue";
+import { createResourceCache } from "@dynz/form-resources";
+import type { ObjectSchema, ResourceResolvers, SchemaValues, ValidateOptions } from "dynz";
 import { type FormContext, type TypedSchema, useForm } from "vee-validate";
-import { DYNZ_INJECTION_KEY, type DynzContext, type DynzFormMode, createDependencyResolver } from "../context";
+import { computed, getCurrentInstance, onScopeDispose, provide, shallowRef, watch } from "vue";
+import { createDependencyResolver, DYNZ_INJECTION_KEY, type DynzContext, type DynzFormMode } from "../context";
 import type { MessageTransformerFunc } from "../errors";
+import { dynzTypedSchema, type ValidationResultTransformer } from "../typed-schema";
 import type { DynzFormValues, DynzPartialFormValues } from "../types";
-import { type ValidationResultTransformer, dynzTypedSchema } from "../typed-schema";
 import { getByPath } from "../utils";
-import { type ResourceLookups, useResourceLookups } from "./use-resource-lookups";
 import { useResourceRevalidation } from "./use-resource-revalidation";
 
 export type { DynzFormMode } from "../context";
@@ -28,7 +28,30 @@ export type UseDynzFormOptions<TSchema extends ObjectSchema<never>> = {
   currentValues?: SchemaValues<TSchema> | undefined;
 
   /** Forwarded to dynz' `validate` (custom rules, stripping excluded values, …). */
-  schemaOptions?: ValidateOptions | undefined;
+  schemaOptions?: Omit<ValidateOptions, "resolvers"> | undefined;
+
+  /**
+   * How to look up each resource, by resource name: the same resolvers `validate` takes on the
+   * server. The form looks up every enabled instance as the values change, once per key, and
+   * its conditions, its UI (`useResources`) and its validation all read those results.
+   * Validation waits for a lookup that is still running.
+   *
+   * A resolver that throws leaves its instance `failed`, logged with `console.error`, until it
+   * is retried; validation gets no state for it meanwhile. Rather return a fallback outcome the
+   * schema handles. Without this option the form ignores resources: every `resourceRef`
+   * resolves to `undefined`.
+   *
+   * @example
+   * ```ts
+   * useDynzForm({
+   *   schema,
+   *   resolvers: {
+   *     vehicle: async (plate, { signal }) => (await fetch(`/api/vehicles/${plate}`, { signal })).json(),
+   *   },
+   * });
+   * ```
+   */
+  resolvers?: ResourceResolvers | undefined;
 
   /** Rewrites dynz error messages, for instance to run them through i18n. */
   messageTransformer?: MessageTransformerFunc | undefined;
@@ -118,8 +141,8 @@ export function useDynzForm<TSchema extends ObjectSchema<never>>(
   // whole expression as self-referential; it is never *invoked* until validation
   // runs, well after `form` is assigned.
   let form: FormContext<DynzFormValues<TSchema>, SchemaValues<TSchema>>;
-  // Same reason: `describe()` reads the lookups, which can only start once `form` exists.
-  let resources: ResourceLookups;
+  const cache = createResourceCache(schema, options.resolvers ?? {});
+  const resources = shallowRef(cache.current());
 
   // `dynzTypedSchema` is typed against dynz's own (readonly) `SchemaValues`, and
   // `initialValues` may be a `DynzPartialFormValues`/`SchemaValues` mix — neither lines
@@ -128,16 +151,35 @@ export function useDynzForm<TSchema extends ObjectSchema<never>>(
   form = useForm<DynzFormValues<TSchema>, SchemaValues<TSchema>>({
     ...(name !== undefined ? { name } : {}),
     initialValues: (options.initialValues ?? currentValues) as never,
-    validationSchema: dynzTypedSchema(schema, currentValues, schemaOptions, {
-      messageTransformer,
-      transformResult,
-      getValues: () => form.values as unknown as Partial<SchemaValues<TSchema>>,
-      getResources: () => resources.states.value,
-    }) as unknown as TypedSchema<DynzFormValues<TSchema>, SchemaValues<TSchema>>,
+    validationSchema: dynzTypedSchema(
+      schema,
+      currentValues,
+      // validation reads the form's lookups, and waits for running ones
+      options.resolvers === undefined ? schemaOptions : { ...schemaOptions, resolvers: cache.resolvers },
+      {
+        messageTransformer,
+        transformResult,
+        getValues: () => form.values as unknown as Partial<SchemaValues<TSchema>>,
+        getResources: () => resources.value.states,
+      }
+    ) as unknown as TypedSchema<DynzFormValues<TSchema>, SchemaValues<TSchema>>,
   });
 
-  resources = useResourceLookups(schema, () => form.values, schemaOptions?.resolvers);
-  useResourceRevalidation(form, schema, resources.states);
+  if (options.resolvers !== undefined) {
+    cache.subscribe(() => {
+      resources.value = cache.current();
+    });
+    // synchronously, so the composables never read the previous values' resources
+    watch(
+      () => form.values,
+      (values) => cache.update(values),
+      { deep: true, immediate: true, flush: "sync" }
+    );
+    onScopeDispose(() => cache.dispose());
+  }
+
+  const states = computed(() => resources.value.states);
+  useResourceRevalidation(form, schema, states);
 
   const getDependencies = createDependencyResolver(schema);
 
@@ -149,8 +191,8 @@ export function useDynzForm<TSchema extends ObjectSchema<never>>(
     mode,
     revalidateMode,
     isSubmitted: () => form.submitCount.value > 0,
-    getResources: () => resources.states.value,
-    getResourceEntries: () => resources.entries.value,
+    getResources: () => states.value,
+    getResourceInstances: () => resources.value.instances,
   };
 
   if (provideContext && getCurrentInstance() !== null) {

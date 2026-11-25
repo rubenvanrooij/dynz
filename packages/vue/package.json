@@ -54,6 +54,7 @@
     "vue": "^3.3.0"
   },
   "devDependencies": {
+    "@dynz/form-resources": "workspace:*",
     "@vue/test-utils": "^2.4.11",
     "dynz": "workspace:*",
     "happy-dom": "^21.0.4",

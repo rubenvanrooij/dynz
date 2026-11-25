@@ -16,11 +16,12 @@ export type EnabledResource = ResourceDeclaration & {
  * Looks up one resource instance by its key.
  *
  * @param key - The resolved key of the instance
- * @param resource - The instance being looked up (its path, name, declaration and key)
+ * @param resource - The instance being looked up (its path, name, declaration and key), and
+ *   a `signal` that aborts when the lookup is no longer needed (a form retries or unmounts)
  */
 export type ResourceResolver<TData = unknown> = (
   key: ResourceKey,
-  resource: EnabledResource
+  resource: EnabledResource & { signal: AbortSignal }
 ) => Promise<ResourceState<TData>> | ResourceState<TData>;
 
 /** Resolvers by resource name. */
@@ -92,8 +93,11 @@ async function lookup(
     throw new Error(`No resolver for resource "${instance.name}" at ${instance.path}`);
   }
 
-  return [instance.path, await resolver(instance.key, instance)];
+  return [instance.path, await resolver(instance.key, { ...instance, signal: NEVER_ABORTED })];
 }
+
+/** `validate` looks every resource up to the end. */
+const NEVER_ABORTED = new AbortController().signal;
 
 /**
  * The resource instances that should be looked up for `values`.
