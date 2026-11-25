@@ -1,6 +1,7 @@
 import { findPossibleSchemasByPath, getConditionDependencies, resolveProperty, type Schema } from "dynz";
 import { useWatch } from "react-hook-form";
 import { getUnionKeyDependencies } from "./get-union-key-dependencies";
+import { useResourceStates } from "./resources-context";
 import { useDynzFormContext } from "./use-dynz-form-context";
 
 type ConditionalProperty = "mutable" | "required" | "included";
@@ -35,7 +36,8 @@ export function useConditionalProperty(
   name: string | string[],
   property: ConditionalProperty
 ): boolean | undefined | (boolean | undefined)[] {
-  const { getValues, schema, control, resourceStates } = useDynzFormContext();
+  const { getValues, schema, control } = useDynzFormContext();
+  const resourceStates = useResourceStates();
 
   const names = Array.isArray(name) ? name : [name];
   const paths = names.map((n) => `$.${n}`);

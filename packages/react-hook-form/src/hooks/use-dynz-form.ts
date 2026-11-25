@@ -28,10 +28,11 @@ export type UseDynzFormProps<TSchema extends ObjectSchema<never>, TFieldValues e
    * its conditions, its UI (`useResources`) and its validation all read those results.
    * Validation waits for a lookup that is still running.
    *
-   * A resolver that throws leaves its instance `failed`, logged with `console.error`, until it
-   * is retried; validation gets no state for it meanwhile. Rather return a fallback outcome the
-   * schema handles. Without this prop the form ignores resources: every `resourceRef`
-   * resolves to `undefined`.
+   * Return an expected failure (a service that is down) as one of the resource's outcomes, so
+   * the schema handles it. A resolver that throws is unexpected: its instance is `failed`,
+   * logged with `console.error`, until it is retried, and validation has no state for it
+   * meanwhile. Without this prop the form ignores resources: every `resourceRef` resolves to
+   * `undefined`.
    *
    * @example
    * ```ts
@@ -136,6 +137,5 @@ export function useDynzForm<TSchema extends ObjectSchema<never>, TFieldValues ex
     name,
     schema,
     resources: current.instances,
-    resourceStates: current.states,
   };
 }

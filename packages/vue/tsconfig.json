@@ -1,7 +1,9 @@
 {
   "extends": "../../.configs/tsconfig.base.json",
   "compilerOptions": {
-    "outDir": "dist"
+    "outDir": "dist",
+    // internal, bundled into this package: compile against its source, never a stale build
+    "paths": { "@dynz/form-resources": ["../form-resources/src/index.ts"] }
   },
   "include": ["src"],
   "exclude": ["node_modules", "dist"]

@@ -41,7 +41,11 @@ export type ResourceCache = {
    * forgotten: a resolver can debounce by waiting first and checking its `signal`.
    */
   update: (values: unknown) => void;
-  /** Calls `listener` whenever `current()` changed; returns the unsubscribe. */
+  /**
+   * Calls `listener` whenever the cache changed: a lookup started, settled, failed or was
+   * dropped. Read `current()` in it: it keeps its identity unless what it shows changed.
+   * Returns the unsubscribe.
+   */
   subscribe: (listener: () => void) => () => void;
   /**
    * Resolvers for `validate`, reading this cache: a lookup that already ran is not repeated,
@@ -69,9 +73,12 @@ const NONE: CurrentResources = { instances: {}, states: {} };
  *
  * Each lookup gets a `signal`, aborted once its key is no longer current (the user typed on)
  * or it is retried. Debounce a resolver by waiting before the request, and give up when the
- * signal is aborted. A resolver that throws leaves its instance `failed`, and logs the error: it
- * is not looked up again until it is retried, and validation gets no state for it (a
- * `resourceRef` to it is `undefined`). Rather return a fallback outcome the schema handles.
+ * signal is aborted.
+ *
+ * Two kinds of failure: an expected one is an outcome the resolver returns, which the schema
+ * handles. A resolver that throws is unexpected: its instance is `failed` and the error logged;
+ * it is not looked up again until it is retried, and validation gets no state for it (a
+ * `resourceRef` to it is `undefined`).
  *
  * @example
  * const cache = createResourceCache(schema, {
@@ -85,10 +92,8 @@ export function createResourceCache(
   resolvers: ResourceResolvers | (() => ResourceResolvers)
 ): ResourceCache {
   const entries = new Map<string, Entry>();
-  // `current` changed: the form's hooks
+  // the form, and validations waiting for a lookup
   const listeners = new Set<() => void>();
-  // any entry changed: validations waiting for a lookup, also of a key that is no longer current
-  const waiting = new Set<() => void>();
   const maxRounds = findResources(schema).length;
 
   let values: unknown;
@@ -176,23 +181,34 @@ export function createResourceCache(
     return { instances, states };
   };
 
-  const refresh = () => {
-    const next = evaluate();
-
-    // keep (and don't notify) what did not change: hooks compare snapshots by identity
-    if (!sameResources(current, next)) {
-      current = next;
-      for (const listener of [...listeners]) {
-        listener();
-      }
+  const notify = () => {
+    for (const listener of [...listeners]) {
+      listener();
     }
   };
 
-  const changed = () => {
-    for (const listener of [...waiting]) {
-      listener();
+  const subscribe = (listener: () => void) => {
+    listeners.add(listener);
+    return () => {
+      listeners.delete(listener);
+    };
+  };
+
+  /** Evaluates `current` again; keeps the snapshot (hooks compare by identity) when the same. */
+  const refresh = (): boolean => {
+    const next = evaluate();
+    const moved = !sameResources(current, next);
+
+    if (moved) {
+      current = next;
     }
+    return moved;
+  };
+
+  // an entry changed
+  const changed = () => {
     refresh();
+    notify();
   };
 
   const retryEntry = (instance: EnabledResource) => {
@@ -207,7 +223,7 @@ export function createResourceCache(
   };
 
   /** Aborts and forgets the running lookups of keys the values moved away from. */
-  const dropOutdated = () => {
+  const dropOutdated = (): boolean => {
     const live = new Set(Object.values(current.instances).map(idOf));
     const outdated = [...entries].filter(([id, entry]) => entry.status === "pending" && !live.has(id));
 
@@ -217,12 +233,7 @@ export function createResourceCache(
       }
       entries.delete(id);
     }
-
-    if (outdated.length > 0) {
-      for (const listener of [...waiting]) {
-        listener();
-      }
-    }
+    return outdated.length > 0;
   };
 
   const resolver: ResourceResolver = (_key, instance) => {
@@ -234,17 +245,16 @@ export function createResourceCache(
     }
 
     return new Promise<ResourceState>((resolve) => {
-      const listener = () => {
+      const stop = subscribe(() => {
         const entry = entries.get(id);
 
         // dropped: the values moved on, so this validation is outdated and the next one
         // replaces it; resolve without a state (a `resourceRef` to it is `undefined`)
         if (entry === undefined || entry.status !== "pending") {
-          waiting.delete(listener);
+          stop();
           resolve(stateOf(entry));
         }
-      };
-      waiting.add(listener);
+      });
     });
   };
 
@@ -252,15 +262,14 @@ export function createResourceCache(
     current: () => current,
     update: (next) => {
       values = next;
-      refresh();
-      dropOutdated();
+      const moved = refresh();
+      const dropped = dropOutdated();
+
+      if (moved || dropped) {
+        notify();
+      }
     },
-    subscribe: (listener) => {
-      listeners.add(listener);
-      return () => {
-        listeners.delete(listener);
-      };
-    },
+    subscribe,
     resolvers: Object.fromEntries(findResources(schema).map(({ name }) => [name, resolver])),
     dispose: () => {
       for (const entry of entries.values()) {
@@ -272,9 +281,7 @@ export function createResourceCache(
       // keeps its cache, which looks the instances up again on the next `update`
       entries.clear();
       // validations still waiting resolve without the states, instead of waiting forever
-      for (const listener of [...waiting]) {
-        listener();
-      }
+      notify();
     },
   };
 }

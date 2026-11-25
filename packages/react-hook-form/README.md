@@ -186,7 +186,9 @@ In the component that calls `useDynzForm` itself, read `form.resources`: it is o
 
 - **Once per key.** An instance is looked up when it becomes enabled, and the result is kept for the form's lifetime: typing a key that was looked up before shows its result right away. Instances with the same resource name and key share a lookup.
 - **Debounce with the `signal`.** A running lookup is aborted once its key is no longer current (the user typed on). To debounce, wait in the resolver before the request, and give up when the signal is aborted. A key that only matters when complete is better kept out with the resource's `enabled` (e.g. `matches(ref("plate"), PLATE_PATTERN)`).
-- **Return a failure as an outcome.** Catch a failed request and return one of the resource's declared outcomes (`"unavailable"` above), and let the schema decide what it means. A resolver that throws leaves its instance `failed` (with its `error`) and logs the error with `console.error`; validation then gets no state for it (a `resourceRef` to it is `undefined`) until it is retried.
+- **Two kinds of failure.**
+  - **An outcome** is a failure you expect, and the schema handles: catch the failed request and return one of the resource's declared outcomes (`"unavailable"` above). The schema's conditions decide what it means, e.g. ask for the details by hand, so the user can always continue.
+  - **`status: "failed"`** is the unexpected: the resolver threw. The error is logged with `console.error`, `retry()` looks it up again, and validation has no state for it meanwhile (a `resourceRef` to it is `undefined`).
 - **Validation waits for running lookups**, and uses the form's results instead of looking up again, so the UI and validation always agree, and no field error and no submit is ever based on a lookup that is still going on. A validation for a key the user has since changed stops waiting; the next validation replaces it. A form without `resolvers` ignores resources altogether.
 - `useResources()` lists every enabled instance, e.g. one per array item (`$.drivers.[0].vehicle`), with its `status` (`pending`, `settled` or `failed`) and `retry()`.
 

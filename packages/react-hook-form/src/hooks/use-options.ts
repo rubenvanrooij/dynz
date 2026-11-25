@@ -1,6 +1,7 @@
 import { findSchemaByPath, getConditionDependencies, getOptionsForSchema, type OptionsSchema, SchemaType } from "dynz";
 import { useWatch } from "react-hook-form";
 import { getUnionKeyDependencies } from "./get-union-key-dependencies";
+import { useResourceStates } from "./resources-context";
 import { useDynzFormContext } from "./use-dynz-form-context";
 
 /**
@@ -21,7 +22,8 @@ export function useOptionsSchema(
   fieldPath: string = "$"
 ): Array<{ enabled: boolean; value: string | number | boolean }> {
   "use no memo";
-  const { control, getValues, schema: rootSchema, resourceStates } = useDynzFormContext();
+  const { control, getValues, schema: rootSchema } = useDynzFormContext();
+  const resourceStates = useResourceStates();
 
   const dependencies = schema.options.reduce<string[]>(
     (acc, option) => {

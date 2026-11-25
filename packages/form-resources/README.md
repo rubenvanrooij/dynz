@@ -25,7 +25,7 @@ await validate(schema, undefined, values, { resolvers: cache.resolvers });
 
 - `current()` gives every enabled instance by path (`$.vehicle`, `$.drivers.[0].vehicle`), each `pending`, `settled` (with its `state`) or `failed` (with its `error`), with `retry()`, and the settled `states` for resolving `resourceRef`s. It returns the same object while nothing changed.
 - A running lookup is aborted (its `signal`) once its key is no longer current: a resolver can debounce by waiting first.
-- A resolver that throws leaves its instance `failed` and logs the error with `console.error`. Validation gets no state for it (a `resourceRef` to it is `undefined`) until it is retried. Return a fallback outcome instead, so the schema decides what a failure means.
+- Two kinds of failure. An expected one is an outcome the resolver returns (e.g. `"unavailable"`), which the schema handles. An unexpected one is a resolver that throws: its instance is `failed`, the error is logged with `console.error`, `retry()` looks it up again, and validation has no state for it meanwhile (a `resourceRef` to it is `undefined`).
 - `dispose()` aborts the running lookups and forgets every result.
 
 `changedResourcePaths` and `fieldPathsReadingResources` tell which fields read the resources that changed, to validate them again.
